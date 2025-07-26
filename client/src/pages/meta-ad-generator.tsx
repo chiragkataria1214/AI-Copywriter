@@ -717,24 +717,24 @@ export default function MetaAdGenerator() {
                         </Badge>
                       </div>
                       
-                      {/* Modern Facebook Feed Ad Format */}
-                      <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg border overflow-hidden">
-                        {/* Page Header */}
-                        <div className="flex items-center p-3 bg-white border-b">
+                      {/* Mobile Facebook Feed Ad Format */}
+                      <div className="max-w-sm mx-auto bg-white shadow-sm border-0 overflow-hidden" style={{ width: '375px' }}>
+                        {/* Mobile Page Header */}
+                        <div className="flex items-center px-4 py-3 bg-white">
                           <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #004182 0%, #003366 100%)' }}>
                             <span className="text-white font-bold text-sm">JR</span>
                           </div>
                           <div className="ml-3 flex-1">
-                            <div className="font-semibold text-sm text-gray-900 flex items-center">
+                            <div className="font-medium text-[15px] text-gray-900 flex items-center">
                               Jones Road Beauty
-                              <svg className="w-4 h-4 ml-1" style={{ color: '#004182' }} fill="currentColor" viewBox="0 0 20 20">
+                              <svg className="w-3.5 h-3.5 ml-1.5" style={{ color: '#1877f2' }} fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                               </svg>
                             </div>
-                            <div className="text-xs text-gray-500 flex items-center">
+                            <div className="text-[13px] text-gray-500 flex items-center">
                               <span>Sponsored</span>
                               <span className="mx-1">•</span>
-                              <Globe size={10} />
+                              <Globe size={9} />
                             </div>
                           </div>
                           <div className="text-gray-400">
@@ -744,60 +744,60 @@ export default function MetaAdGenerator() {
                           </div>
                         </div>
 
-                        {/* Primary Text */}
+                        {/* Mobile Primary Text */}
                         {generatedPrimaryText && (
-                          <div className="px-3 py-2">
-                            <p className="text-sm text-gray-900 leading-relaxed">
+                          <div className="px-4 pb-3">
+                            <p className="text-[15px] text-gray-900 leading-[1.4]">
                               {generatedPrimaryText}
                             </p>
                           </div>
                         )}
 
-                        {/* Product Image */}
-                        <div className="aspect-square flex items-center justify-center relative" style={{ background: 'linear-gradient(135deg, #f0f4ff 0%, #e6efff 100%)' }}>
-                          <div className="absolute inset-0 opacity-20">
-                            <div className="absolute top-6 left-6 w-16 h-16 rounded-full blur-xl" style={{ backgroundColor: '#004182' }}></div>
-                            <div className="absolute bottom-8 right-8 w-24 h-24 rounded-full blur-xl" style={{ backgroundColor: '#1a5a9e' }}></div>
+                        {/* Mobile Product Image */}
+                        <div className="aspect-square flex items-center justify-center relative bg-white">
+                          <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%)' }}>
+                            <div className="absolute top-8 left-8 w-12 h-12 rounded-full blur-lg opacity-30" style={{ backgroundColor: '#004182' }}></div>
+                            <div className="absolute bottom-12 right-12 w-20 h-20 rounded-full blur-lg opacity-20" style={{ backgroundColor: '#1a5a9e' }}></div>
                           </div>
-                          <div className="relative text-center">
-                            <div className="w-32 h-32 bg-white rounded-full shadow-xl flex items-center justify-center mb-4 mx-auto">
-                              <div className="w-24 h-24 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #004182 0%, #003366 100%)' }}>
-                                <span className="text-white font-bold text-lg">WTF</span>
+                          <div className="relative text-center z-10">
+                            <div className="w-28 h-28 bg-white rounded-full shadow-lg flex items-center justify-center mb-3 mx-auto border border-gray-100">
+                              <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #004182 0%, #003366 100%)' }}>
+                                <span className="text-white font-bold text-base">WTF</span>
                               </div>
                             </div>
-                            <div className="text-gray-600 text-xs">What The Foundation</div>
+                            <div className="text-gray-500 text-xs font-medium">What The Foundation</div>
                           </div>
                         </div>
 
-                        {/* Link Preview Section with Headline */}
+                        {/* Mobile Link Preview Section */}
                         {generatedHeadlines.length > 0 && (
-                          <div className="p-3 bg-gray-50 border-t">
-                            <div className="font-semibold text-sm text-gray-900 mb-1 leading-tight">
-                              {generatedHeadlines[0]?.copy || 'Your Next Beauty Game-Changer'}
-                            </div>
-                            <div className="text-xs text-gray-600 mb-3 uppercase tracking-wide">
+                          <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+                            <div className="text-[13px] text-gray-500 mb-1 uppercase tracking-wide font-medium">
                               JONESROADBEAUTY.COM
+                            </div>
+                            <div className="font-medium text-[15px] text-gray-900 mb-3 leading-tight">
+                              {generatedHeadlines[0]?.copy || 'Your Next Beauty Game-Changer'}
                             </div>
                             <Button 
                               size="sm" 
-                              className="w-full text-white text-sm py-2 h-8 rounded-md font-medium hover:opacity-90"
-                              style={{ backgroundColor: '#004182' }}
+                              className="w-full text-white text-[14px] py-2.5 h-9 rounded-md font-semibold hover:opacity-90 shadow-sm"
+                              style={{ backgroundColor: '#1877f2' }}
                             >
-                              Shop Now
+                              Learn More
                             </Button>
                           </div>
                         )}
 
-                        {/* Engagement Section */}
-                        <div className="px-3 py-2 border-t bg-white">
-                          <div className="flex items-center justify-between text-sm text-gray-500">
-                            <div className="flex items-center space-x-6">
-                              <span className="flex items-center cursor-pointer" style={{ color: 'inherit' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#004182'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = 'inherit'}>
-                                <ThumbsUp size={16} className="mr-2" />
+                        {/* Mobile Engagement Section */}
+                        <div className="px-4 py-3 border-t border-gray-200 bg-white">
+                          <div className="flex items-center justify-between text-[15px] text-gray-600">
+                            <div className="flex items-center space-x-8">
+                              <span className="flex items-center cursor-pointer font-medium hover:text-gray-800 transition-colors">
+                                <ThumbsUp size={18} className="mr-1.5" />
                                 Like
                               </span>
-                              <span className="cursor-pointer" style={{ color: 'inherit' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#004182'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = 'inherit'}>Comment</span>
-                              <span className="cursor-pointer" style={{ color: 'inherit' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#004182'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = 'inherit'}>Share</span>
+                              <span className="cursor-pointer font-medium hover:text-gray-800 transition-colors">Comment</span>
+                              <span className="cursor-pointer font-medium hover:text-gray-800 transition-colors">Share</span>
                             </div>
                           </div>
                         </div>
@@ -805,7 +805,7 @@ export default function MetaAdGenerator() {
 
                       <div className="mt-4 text-center">
                         <p className="text-xs text-gray-500">
-                          Preview shows how your ad will appear in Facebook feeds with headlines and link previews
+                          Mobile Facebook feed preview showing how your ad will appear to users on mobile devices
                         </p>
                       </div>
                     </CardContent>
