@@ -1203,7 +1203,7 @@ export default function MetaAdGenerator() {
                                   corePositioning: e.target.value
                                 }
                               })}
-                              className="mt-1"
+                              className="mt-1 text-gray-900 font-medium"
                               rows={3}
                               placeholder="Your Skin But Better - natural, effortless enhancement..."
                               disabled={!isAdmin}
@@ -1272,7 +1272,7 @@ export default function MetaAdGenerator() {
                                         }
                                       });
                                     }}
-                                    className={`w-full ml-0 ${editingConfig?.brandGuidelines?.enabledBrandVoice?.[index] === false ? 'opacity-50' : ''}`}
+                                    className={`w-full ml-0 text-gray-900 font-medium ${editingConfig?.brandGuidelines?.enabledBrandVoice?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter brand voice rule..."
                                     disabled={!isAdmin}
                                   />
@@ -1366,7 +1366,7 @@ export default function MetaAdGenerator() {
                                         }
                                       });
                                     }}
-                                    className={`w-full ml-0 ${editingConfig?.brandGuidelines?.enabledKeyTerminology?.[index] === false ? 'opacity-50' : ''}`}
+                                    className={`w-full ml-0 text-gray-900 font-medium ${editingConfig?.brandGuidelines?.enabledKeyTerminology?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter key term or phrase..."
                                     disabled={!isAdmin}
                                   />
@@ -1465,7 +1465,7 @@ export default function MetaAdGenerator() {
                                         }
                                       });
                                     }}
-                                    className={`w-full ml-0 border-green-200 focus:border-green-400 ${editingConfig?.brandGuidelines?.enabledApprovedLanguage?.[index] === false ? 'opacity-50' : ''}`}
+                                    className={`w-full ml-0 text-gray-900 font-medium border-green-200 focus:border-green-400 ${editingConfig?.brandGuidelines?.enabledApprovedLanguage?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter approved phrase..."
                                     disabled={!isAdmin}
                                   />
@@ -1564,7 +1564,7 @@ export default function MetaAdGenerator() {
                                         }
                                       });
                                     }}
-                                    className={`w-full ml-0 border-red-200 focus:border-red-400 ${editingConfig?.brandGuidelines?.enabledAvoidedLanguage?.[index] === false ? 'opacity-50' : ''}`}
+                                    className={`w-full ml-0 text-gray-900 font-medium border-red-200 focus:border-red-400 ${editingConfig?.brandGuidelines?.enabledAvoidedLanguage?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter phrase to avoid..."
                                     disabled={!isAdmin}
                                   />
