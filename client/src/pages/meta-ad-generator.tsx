@@ -700,94 +700,116 @@ export default function MetaAdGenerator() {
                           <Globe className="text-jones-primary mr-3" size={20} />
                           Ad Preview
                         </h3>
-                        <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                          Facebook/Meta Format
+                        <Badge variant="secondary" className="bg-gradient-to-r from-pink-100 to-orange-100 text-pink-700">
+                          Instagram Story/Reel
                         </Badge>
                       </div>
                       
-                      <div className="border rounded-lg bg-white shadow-sm max-w-lg mx-auto">
-                        {/* Page Header */}
-                        <div className="flex items-center p-3 border-b bg-gray-50">
-                          <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-orange-400 rounded-full flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">JR</span>
+                      {/* Modern Instagram Story/Feed Format */}
+                      <div className="max-w-sm mx-auto bg-black rounded-3xl overflow-hidden shadow-2xl" style={{ aspectRatio: '9/16' }}>
+                        {/* Status Bar */}
+                        <div className="flex justify-between items-center px-4 py-2 text-white text-xs">
+                          <span>9:41</span>
+                          <div className="flex gap-1">
+                            <div className="w-4 h-2 bg-white rounded-full"></div>
+                            <div className="w-4 h-2 bg-white rounded-full"></div>
+                            <div className="w-4 h-2 bg-white rounded-full"></div>
+                          </div>
+                        </div>
+
+                        {/* Story Header */}
+                        <div className="flex items-center px-4 py-3">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-400 via-purple-500 to-orange-400 p-0.5">
+                            <div className="w-full h-full rounded-full bg-gradient-to-br from-pink-400 to-orange-400 flex items-center justify-center">
+                              <span className="text-white font-bold text-xs">JR</span>
+                            </div>
                           </div>
                           <div className="ml-3 flex-1">
-                            <div className="font-semibold text-sm text-gray-900">Jones Road Beauty</div>
-                            <div className="text-xs text-gray-500 flex items-center">
-                              <span>Sponsored</span>
-                              <span className="mx-1">•</span>
-                              <Globe size={12} />
-                            </div>
+                            <div className="text-white font-medium text-sm">jonesroadbeauty</div>
+                            <div className="text-gray-300 text-xs">Sponsored</div>
                           </div>
-                          <div className="text-gray-400">
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <button className="text-white">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
                             </svg>
+                          </button>
+                        </div>
+
+                        {/* Main Content Area */}
+                        <div className="relative flex-1 bg-gradient-to-br from-pink-100 via-orange-50 to-pink-50" style={{ height: '60%' }}>
+                          {/* Background Pattern */}
+                          <div className="absolute inset-0 opacity-10">
+                            <div className="absolute top-10 left-10 w-20 h-20 bg-pink-300 rounded-full blur-xl"></div>
+                            <div className="absolute bottom-20 right-10 w-32 h-32 bg-orange-300 rounded-full blur-xl"></div>
+                          </div>
+                          
+                          {/* Product Showcase */}
+                          <div className="relative h-full flex flex-col items-center justify-center p-6 text-center">
+                            <div className="w-24 h-24 bg-white rounded-full shadow-lg flex items-center justify-center mb-4">
+                              <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-orange-400 rounded-full flex items-center justify-center">
+                                <span className="text-white font-bold">WTF</span>
+                              </div>
+                            </div>
+                            
+                            {/* Headline */}
+                            {generatedHeadlines.length > 0 && (
+                              <h2 className="text-gray-900 font-bold text-lg mb-2 leading-tight">
+                                {generatedHeadlines[0]}
+                              </h2>
+                            )}
+                            
+                            {/* Primary Text */}
+                            {generatedPrimaryText && (
+                              <p className="text-gray-700 text-sm leading-relaxed mb-4 max-w-xs">
+                                {generatedPrimaryText}
+                              </p>
+                            )}
+
+                            {/* CTA Button */}
+                            <button className="bg-gradient-to-r from-pink-500 to-orange-500 text-white px-8 py-3 rounded-full font-semibold text-sm shadow-lg transform hover:scale-105 transition-transform">
+                              Shop Now
+                            </button>
                           </div>
                         </div>
 
-                        {/* Primary Text */}
-                        {generatedPrimaryText && (
-                          <div className="p-3">
-                            <p className="text-sm text-gray-900 leading-relaxed">
-                              {generatedPrimaryText}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Mock Image Placeholder */}
-                        <div className="bg-gradient-to-br from-pink-100 to-orange-100 aspect-video flex items-center justify-center border-y">
-                          <div className="text-center text-gray-500">
-                            <Video size={32} className="mx-auto mb-2 opacity-50" />
-                            <p className="text-xs">Your product image/video</p>
-                          </div>
-                        </div>
-
-                        {/* Headlines Section */}
-                        {generatedHeadlines.length > 0 && (
-                          <div className="p-3 bg-gray-50">
-                            <div className="font-semibold text-sm text-gray-900 mb-2">
-                              {generatedHeadlines[0]}
-                            </div>
-                            <div className="text-xs text-gray-600 mb-3">
-                              jonesroadbeauty.com
-                            </div>
-                            <div className="flex gap-2">
-                              <Button 
-                                size="sm" 
-                                className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-1 h-7 rounded"
-                              >
-                                Shop Now
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="text-xs px-4 py-1 h-7 rounded border-gray-300"
-                              >
-                                Learn More
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Engagement Section */}
-                        <div className="px-3 py-2 border-t bg-white">
-                          <div className="flex items-center justify-between text-xs text-gray-500">
+                        {/* Bottom Actions */}
+                        <div className="px-4 py-4 space-y-3">
+                          {/* Engagement Row */}
+                          <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4">
-                              <span className="flex items-center">
-                                <ThumbsUp size={12} className="mr-1" />
-                                Like
-                              </span>
-                              <span>Comment</span>
-                              <span>Share</span>
+                              <button className="text-white">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                              </button>
+                              <button className="text-white">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                              </button>
+                              <button className="text-white">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
+                              </button>
                             </div>
+                            <button className="text-white">
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                              </svg>
+                            </button>
+                          </div>
+
+                          {/* Website Link */}
+                          <div className="text-gray-300 text-xs">
+                            jonesroadbeauty.com
                           </div>
                         </div>
                       </div>
 
                       <div className="mt-4 text-center">
                         <p className="text-xs text-gray-500">
-                          Preview shows how your ad will appear on Facebook and Instagram feeds
+                          Preview shows how your ad will appear on Instagram Stories and Reels (9:16 format)
                         </p>
                       </div>
                     </CardContent>
