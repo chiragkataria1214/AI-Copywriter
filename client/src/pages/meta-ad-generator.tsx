@@ -55,7 +55,7 @@ export default function MetaAdGenerator() {
   const [copiedPrimaryText, setCopiedPrimaryText] = useState(false);
   const [copiedLandingCopy, setCopiedLandingCopy] = useState(false);
   const [useJonesBrandGuide, setUseJonesBrandGuide] = useState(true);
-  const [brandDrBalance, setBrandDrBalance] = useState([70]);
+  const [brandDrBalance, setBrandDrBalance] = useState([50]);
 
   // Define personas
   const personas = {
@@ -375,9 +375,7 @@ export default function MetaAdGenerator() {
 
   const getBrandDrLabel = () => {
     const value = brandDrBalance[0];
-    if (value < 30) return `${100 - value}% DR`;
-    if (value > 70) return `${value}% Brand`;
-    return 'Balanced';
+    return `${value}% Brand / ${100 - value}% DR`;
   };
 
   return (
