@@ -456,9 +456,7 @@ export default function MetaAdGenerator() {
                           />
                         </div>
                         
-                        <div className="flex items-center text-sm text-gray-500">
-                          <span className="mr-2">💡 Tip: Press Cmd/Ctrl + Enter to generate your ad copy</span>
-                        </div>
+
                       </div>
                     </div>
                   </CardContent>
