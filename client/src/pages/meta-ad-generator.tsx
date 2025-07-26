@@ -689,26 +689,7 @@ export default function MetaAdGenerator() {
                   </CardContent>
                 </Card>
 
-                {/* Performance Insights */}
-                <Card>
-                  <CardContent className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Zap className="text-jones-primary mr-3" size={20} />
-                      Performance Insights
-                    </h3>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-4 bg-gray-50 rounded-lg">
-                        <div className="text-2xl font-bold text-green-600">$0.42</div>
-                        <div className="text-sm text-gray-600">Estimated CPC</div>
-                      </div>
-                      <div className="text-center p-4 bg-gray-50 rounded-lg">
-                        <div className="text-2xl font-bold text-blue-600">85%</div>
-                        <div className="text-sm text-gray-600">Brand Alignment</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+
               </div>
             </div>
           </TabsContent>
