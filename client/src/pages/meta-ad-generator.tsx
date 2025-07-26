@@ -672,7 +672,7 @@ export default function MetaAdGenerator() {
                         
                         <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
                           <div className="flex items-center space-x-4">
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                            <Badge variant="secondary" style={{ backgroundColor: '#f0f4ff', color: '#004182' }}>
                               {getWordCount(generatedPrimaryText)} words
                             </Badge>
                             <Badge variant="secondary" className="bg-green-100 text-green-700">
@@ -700,7 +700,7 @@ export default function MetaAdGenerator() {
                           <Globe className="text-jones-primary mr-3" size={20} />
                           Ad Preview
                         </h3>
-                        <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                        <Badge variant="secondary" style={{ backgroundColor: '#f0f4ff', color: '#004182' }}>
                           Facebook Feed Ad
                         </Badge>
                       </div>
@@ -709,13 +709,13 @@ export default function MetaAdGenerator() {
                       <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg border overflow-hidden">
                         {/* Page Header */}
                         <div className="flex items-center p-3 bg-white border-b">
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #004182 0%, #003366 100%)' }}>
                             <span className="text-white font-bold text-sm">JR</span>
                           </div>
                           <div className="ml-3 flex-1">
                             <div className="font-semibold text-sm text-gray-900 flex items-center">
                               Jones Road Beauty
-                              <svg className="w-4 h-4 ml-1 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                              <svg className="w-4 h-4 ml-1" style={{ color: '#004182' }} fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                               </svg>
                             </div>
@@ -742,14 +742,14 @@ export default function MetaAdGenerator() {
                         )}
 
                         {/* Product Image */}
-                        <div className="bg-gradient-to-br from-blue-50 via-blue-25 to-blue-50 aspect-square flex items-center justify-center relative">
+                        <div className="aspect-square flex items-center justify-center relative" style={{ background: 'linear-gradient(135deg, #f0f4ff 0%, #e6efff 100%)' }}>
                           <div className="absolute inset-0 opacity-20">
-                            <div className="absolute top-6 left-6 w-16 h-16 bg-blue-300 rounded-full blur-xl"></div>
-                            <div className="absolute bottom-8 right-8 w-24 h-24 bg-blue-400 rounded-full blur-xl"></div>
+                            <div className="absolute top-6 left-6 w-16 h-16 rounded-full blur-xl" style={{ backgroundColor: '#004182' }}></div>
+                            <div className="absolute bottom-8 right-8 w-24 h-24 rounded-full blur-xl" style={{ backgroundColor: '#1a5a9e' }}></div>
                           </div>
                           <div className="relative text-center">
                             <div className="w-32 h-32 bg-white rounded-full shadow-xl flex items-center justify-center mb-4 mx-auto">
-                              <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                              <div className="w-24 h-24 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #004182 0%, #003366 100%)' }}>
                                 <span className="text-white font-bold text-lg">WTF</span>
                               </div>
                             </div>
@@ -768,7 +768,8 @@ export default function MetaAdGenerator() {
                             </div>
                             <Button 
                               size="sm" 
-                              className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 h-8 rounded-md font-medium"
+                              className="w-full text-white text-sm py-2 h-8 rounded-md font-medium hover:opacity-90"
+                              style={{ backgroundColor: '#004182' }}
                             >
                               Shop Now
                             </Button>
@@ -779,12 +780,12 @@ export default function MetaAdGenerator() {
                         <div className="px-3 py-2 border-t bg-white">
                           <div className="flex items-center justify-between text-sm text-gray-500">
                             <div className="flex items-center space-x-6">
-                              <span className="flex items-center hover:text-blue-600 cursor-pointer">
+                              <span className="flex items-center cursor-pointer" style={{ color: 'inherit' }} onMouseEnter={(e) => e.target.style.color = '#004182'} onMouseLeave={(e) => e.target.style.color = 'inherit'}>
                                 <ThumbsUp size={16} className="mr-2" />
                                 Like
                               </span>
-                              <span className="hover:text-blue-600 cursor-pointer">Comment</span>
-                              <span className="hover:text-blue-600 cursor-pointer">Share</span>
+                              <span className="cursor-pointer" style={{ color: 'inherit' }} onMouseEnter={(e) => e.target.style.color = '#004182'} onMouseLeave={(e) => e.target.style.color = 'inherit'}>Comment</span>
+                              <span className="cursor-pointer" style={{ color: 'inherit' }} onMouseEnter={(e) => e.target.style.color = '#004182'} onMouseLeave={(e) => e.target.style.color = 'inherit'}>Share</span>
                             </div>
                           </div>
                         </div>
@@ -988,14 +989,14 @@ export default function MetaAdGenerator() {
                         </span>
                       </div>
                       
-                      <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                      <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: '#f0f4ff' }}>
                         <span className="text-sm text-gray-700">Brand Alignment</span>
-                        <span className="text-sm font-medium text-blue-700">92%</span>
+                        <span className="text-sm font-medium" style={{ color: '#004182' }}>92%</span>
                       </div>
                       
-                      <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                      <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: '#f0f4ff' }}>
                         <span className="text-sm text-gray-700">Readability Score</span>
-                        <span className="text-sm font-medium text-blue-700">8.5/10</span>
+                        <span className="text-sm font-medium" style={{ color: '#004182' }}>8.5/10</span>
                       </div>
                     </div>
                   </CardContent>

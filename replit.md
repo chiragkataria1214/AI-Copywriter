@@ -21,7 +21,7 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
-Preferred color scheme: Replit agent button blue (replaces Jones Road Beauty brand colors).
+Preferred color scheme: #004182 blue (replaces Jones Road Beauty brand colors and previous Replit blue).
 
 ## System Architecture
 
