@@ -19,7 +19,7 @@ export default function MetaAdGenerator() {
   const [transcription, setTranscription] = useState('');
   const [concept, setConcept] = useState('lifeJuggler');
   const [subPersona, setSubPersona] = useState('newMom');
-  const [targetAudience, setTargetAudience] = useState('Working mothers aged 28-35 who value clean beauty');
+  const [targetAudience, setTargetAudience] = useState('');
   
   // Ad Copy States
   const [generatedHeadlines, setGeneratedHeadlines] = useState<string[]>([]);
