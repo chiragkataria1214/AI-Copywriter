@@ -77,11 +77,45 @@ DIRECT RESPONSE APPROACH (when DR % > 50):
 TRANSCRIPTION/CONTENT:
 ${transcription}
 
-Please provide:
-1. 5 headlines (max 5 words each)
-2. 1 primary text (15-25 words optimal)
+COPYWRITING FRAMEWORK REQUIREMENTS:
+Generate exactly 5 headlines using these specific frameworks (one headline per framework):
 
-Focus on the specified brand/DR balance and make it highly relevant to the target persona and audience.`;
+1. BENEFIT DRIVEN: Lead with the primary benefit/transformation the product delivers
+2. SOCIAL PROOF DRIVEN: Incorporate trust signals, reviews, or popularity metrics  
+3. OFFER DRIVEN: Focus on a specific promotion, deal, or exclusive access
+4. VALUE PROPS: Highlight unique product attributes or competitive advantages
+5. PROBLEM FOCUSED: Address a specific pain point your audience faces
+
+FRAMEWORK PRINCIPLES:
+- Lead with a hook: Start with concise, memorable phrase that distills core promise
+- Use sensory or outcome-oriented language ("weightless color meets soft-focus filter")
+- Keep sentences to 8-12 words for mobile comprehension
+- Front-load differentiators (cruelty-free, talc-free, SPF) early
+- Use repetition or alliteration for memorability
+- Single clear CTA at the end
+
+PRIMARY TEXT STRUCTURE:
+Use one of these proven templates:
+- Hook → Benefit → CTA (most common)
+- Problem → Solution → Social Proof → CTA
+- Mission → Benefit Stack → Offer → CTA
+
+REQUIREMENTS:
+- Headlines: Maximum 5 words each, must fit in 1 line on mobile
+- Primary text: 15-25 words optimal
+- Authentic, conversational tone that feels genuine
+- Benefits over features
+- Subtle urgency without being pushy
+
+Please format your response as:
+1. [benefit-driven headline]
+2. [social proof-driven headline]  
+3. [offer-driven headline]
+4. [value props headline]
+5. [problem-focused headline]
+
+PRIMARY TEXT:
+[primary text using one of the framework templates]`;
 
   try {
     const response = await anthropic.messages.create({
