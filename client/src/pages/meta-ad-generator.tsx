@@ -709,7 +709,7 @@ export default function MetaAdGenerator() {
                       <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg border overflow-hidden">
                         {/* Page Header */}
                         <div className="flex items-center p-3 bg-white border-b">
-                          <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-orange-400 rounded-full flex items-center justify-center">
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
                             <span className="text-white font-bold text-sm">JR</span>
                           </div>
                           <div className="ml-3 flex-1">
@@ -742,14 +742,14 @@ export default function MetaAdGenerator() {
                         )}
 
                         {/* Product Image */}
-                        <div className="bg-gradient-to-br from-pink-100 via-orange-50 to-pink-50 aspect-square flex items-center justify-center relative">
+                        <div className="bg-gradient-to-br from-blue-50 via-blue-25 to-blue-50 aspect-square flex items-center justify-center relative">
                           <div className="absolute inset-0 opacity-20">
-                            <div className="absolute top-6 left-6 w-16 h-16 bg-pink-300 rounded-full blur-xl"></div>
-                            <div className="absolute bottom-8 right-8 w-24 h-24 bg-orange-300 rounded-full blur-xl"></div>
+                            <div className="absolute top-6 left-6 w-16 h-16 bg-blue-300 rounded-full blur-xl"></div>
+                            <div className="absolute bottom-8 right-8 w-24 h-24 bg-blue-400 rounded-full blur-xl"></div>
                           </div>
                           <div className="relative text-center">
                             <div className="w-32 h-32 bg-white rounded-full shadow-xl flex items-center justify-center mb-4 mx-auto">
-                              <div className="w-24 h-24 bg-gradient-to-br from-pink-400 to-orange-400 rounded-full flex items-center justify-center">
+                              <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
                                 <span className="text-white font-bold text-lg">WTF</span>
                               </div>
                             </div>

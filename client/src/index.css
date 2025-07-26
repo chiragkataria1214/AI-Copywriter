@@ -24,11 +24,11 @@
   --ring: hsl(20, 14.3%, 4.1%);
   --radius: 0.5rem;
   
-  /* Jones Road Beauty Colors */
-  --jones-primary: hsl(0, 29%, 45%);
-  --jones-secondary: hsl(32, 35%, 74%);
-  --jones-accent: hsl(30, 27%, 50%);
-  --jones-light: hsl(38, 37%, 96%);
+  /* Replit Agent Blue Colors */
+  --jones-primary: hsl(217, 91%, 60%);
+  --jones-secondary: hsl(217, 91%, 70%);
+  --jones-accent: hsl(217, 91%, 50%);
+  --jones-light: hsl(217, 91%, 97%);
 }
 
 .dark {

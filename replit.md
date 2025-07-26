@@ -13,6 +13,7 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 - **API Structure Fixed**: Resolved fetch API request structure issues that were causing frontend errors
 - **Response Parsing Enhanced**: Robust parsing system for Claude's natural language responses into structured headlines and primary text
 - **Application Rebranding**: Updated from "Meta Ad Generator" to "AI Copywriter" to reflect broader platform capabilities
+- **Color Scheme Update**: Changed from Jones Road Beauty colors to Replit agent button blue throughout application per user preference
 - **Advanced Copywriting Frameworks**: Integrated 6 specific headline frameworks (benefit-driven, social proof, offer-driven, value props, problem-focused, urgency/scarcity) with intelligent selection and proven template structures
 - **Landing Page Integration**: Added optional landing page URL input for holistic funnel creation - analyzes existing landing pages to ensure ad copy messaging is congruent with landing page content
 - **Ad Preview Component**: Built authentic Facebook feed ad preview showing headlines in proper link preview section, with accurate platform layout, branding, and engagement elements
@@ -20,6 +21,7 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Preferred color scheme: Replit agent button blue (replaces Jones Road Beauty brand colors).
 
 ## System Architecture
 
