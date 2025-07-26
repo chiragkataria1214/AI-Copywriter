@@ -12,8 +12,12 @@ When copying code from this code snippet, ensure you also include this informati
 const DEFAULT_MODEL_STR = "claude-sonnet-4-20250514";
 // </important_do_not_delete>
 
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error('ANTHROPIC_API_KEY environment variable is not set');
+}
+
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+  apiKey: process.env.ANTHROPIC_API_KEY || 'dummy-key',
 });
 
 export interface AdCopyRequest {
@@ -89,21 +93,56 @@ Focus on the specified brand/DR balance and make it highly relevant to the targe
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
     
-    // Parse the response to extract headlines and primary text
-    const headlines: string[] = [];
-    const primaryTextMatch = content.match(/PRIMARY TEXT:?\s*(.+?)(?=\n\n|\n$|$)/s);
+    // Response parsing successful
     
-    // Extract headlines
-    const headlineMatches = content.match(/HEADLINES?:?\s*([\s\S]*?)(?=PRIMARY TEXT|$)/i);
-    if (headlineMatches) {
-      const headlineText = headlineMatches[1];
-      const extractedHeadlines = headlineText.match(/^\d+\.\s*(.+)$/gm);
-      if (extractedHeadlines) {
-        headlines.push(...extractedHeadlines.map((h: string) => h.replace(/^\d+\.\s*/, '').trim()));
+    // Simple robust parsing approach
+    const headlines: string[] = [];
+    let primaryText = '';
+    
+    // Split into lines and clean them safely
+    const lines = content.split('\n').map(line => line ? line.trim() : '').filter(line => line.length > 0);
+    
+    // Look for numbered items (1., 2., etc) or bullet points
+    for (const line of lines) {
+      if (!line || typeof line !== 'string') continue;
+      // Try to extract numbered headlines
+      const numberedMatch = line.match(/^(\d+)\.?\s*(.+)$/);
+      if (numberedMatch && headlines.length < 5) {
+        let headline = numberedMatch[2];
+        // Clean formatting
+        headline = headline.replace(/^\*\*(.+)\*\*$/, '$1').replace(/^"(.+)"$/, '$1').trim();
+        if (headline.length > 0) {
+          headlines.push(headline);
+        }
+        continue;
+      }
+      
+      // Look for primary text after collecting headlines
+      if (headlines.length >= 3 && !primaryText) {
+        // Skip lines that look like section headers but capture the actual content
+        if (line.match(/^(primary text|primary):/i)) {
+          // Skip the header line
+          continue;
+        } else if (!line.match(/^(\*|word count|brand\/dr|persona)/i) && line.length > 15) {
+          primaryText = line.replace(/^\*\*(.+)\*\*$/, '$1').replace(/^"(.+)"$/, '$1').trim();
+        }
       }
     }
     
-    const primaryText = primaryTextMatch ? primaryTextMatch[1].trim() : '';
+    // Fallback: if no numbered format, try bullet points or quotes
+    if (headlines.length === 0) {
+      for (const line of lines) {
+        // Try bullet points or dashes
+        const bulletMatch = line.match(/^[-*•]\s*(.+)$/);
+        if (bulletMatch && headlines.length < 5) {
+          let headline = bulletMatch[1];
+          headline = headline.replace(/^\*\*(.+)\*\*$/, '$1').replace(/^"(.+)"$/, '$1').trim();
+          if (headline.length > 0) {
+            headlines.push(headline);
+          }
+        }
+      }
+    }
     
     return {
       headlines: headlines.slice(0, 5),
