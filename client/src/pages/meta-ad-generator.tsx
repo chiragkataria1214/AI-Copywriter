@@ -526,8 +526,8 @@ export default function MetaAdGenerator() {
               <span className="text-xs sm:text-sm">Landing Page</span>
             </TabsTrigger>
             <TabsTrigger value="debug" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
-              <Target size={16} />
-              <span className="text-xs sm:text-sm">Debug</span>
+              <Settings size={16} />
+              <span className="text-xs sm:text-sm">AI Settings</span>
             </TabsTrigger>
           </TabsList>
 
