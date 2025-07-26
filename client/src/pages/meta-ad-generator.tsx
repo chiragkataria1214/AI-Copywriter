@@ -1219,7 +1219,6 @@ export default function MetaAdGenerator() {
                                     <Switch 
                                       checked={editingConfig?.brandGuidelines?.enabledBrandVoice?.[index] !== false}
                                       onCheckedChange={(checked) => {
-                                        if (!isAdmin) return;
                                         const enabled = [...(editingConfig?.brandGuidelines?.enabledBrandVoice || [])];
                                         enabled[index] = checked;
                                         setEditingConfig({
@@ -1230,7 +1229,7 @@ export default function MetaAdGenerator() {
                                           }
                                         });
                                       }}
-                                      disabled={!isAdmin}
+                                      disabled={false}
                                       className="flex-shrink-0"
                                     />
                                     <span className="text-blue-500 text-sm font-bold flex-shrink-0">•</span>
@@ -1314,7 +1313,6 @@ export default function MetaAdGenerator() {
                                     <Switch 
                                       checked={editingConfig?.brandGuidelines?.enabledKeyTerminology?.[index] !== false}
                                       onCheckedChange={(checked) => {
-                                        if (!isAdmin) return;
                                         const enabled = [...(editingConfig?.brandGuidelines?.enabledKeyTerminology || [])];
                                         enabled[index] = checked;
                                         setEditingConfig({
@@ -1325,7 +1323,7 @@ export default function MetaAdGenerator() {
                                           }
                                         });
                                       }}
-                                      disabled={!isAdmin}
+                                      disabled={false}
                                       className="flex-shrink-0"
                                     />
                                     <span className="text-gray-400 text-sm font-bold flex-shrink-0">•</span>
@@ -1414,7 +1412,6 @@ export default function MetaAdGenerator() {
                                     <Switch 
                                       checked={editingConfig?.brandGuidelines?.enabledApprovedLanguage?.[index] !== false}
                                       onCheckedChange={(checked) => {
-                                        if (!isAdmin) return;
                                         const enabled = [...(editingConfig?.brandGuidelines?.enabledApprovedLanguage || [])];
                                         enabled[index] = checked;
                                         setEditingConfig({
@@ -1425,7 +1422,7 @@ export default function MetaAdGenerator() {
                                           }
                                         });
                                       }}
-                                      disabled={!isAdmin}
+                                      disabled={false}
                                       className="flex-shrink-0"
                                     />
                                     <span className="text-green-500 text-sm font-bold flex-shrink-0">✓</span>
@@ -1514,7 +1511,6 @@ export default function MetaAdGenerator() {
                                     <Switch 
                                       checked={editingConfig?.brandGuidelines?.enabledAvoidedLanguage?.[index] !== false}
                                       onCheckedChange={(checked) => {
-                                        if (!isAdmin) return;
                                         const enabled = [...(editingConfig?.brandGuidelines?.enabledAvoidedLanguage || [])];
                                         enabled[index] = checked;
                                         setEditingConfig({
@@ -1525,7 +1521,7 @@ export default function MetaAdGenerator() {
                                           }
                                         });
                                       }}
-                                      disabled={!isAdmin}
+                                      disabled={false}
                                       className="flex-shrink-0"
                                     />
                                     <span className="text-red-500 text-sm font-bold flex-shrink-0">✗</span>
