@@ -1911,17 +1911,17 @@ Keep sentences to 8-12 words for mobile comprehension"
                             <p className="text-xs text-gray-600 mb-3">This tells Claude what role to play and what guidelines to follow</p>
                             <Textarea 
                               value={editingConfig?.systemPrompts?.adCopyGeneration || ''}
-                              onChange={(e) => isAdmin && setEditingConfig({
+                              onChange={(e) => setEditingConfig({
                                 ...editingConfig,
                                 systemPrompts: {
                                   ...editingConfig.systemPrompts,
                                   adCopyGeneration: e.target.value
                                 }
                               })}
-                              className="border-purple-200 focus:border-purple-400"
+                              className="text-gray-900 font-medium border-purple-200 focus:border-purple-400"
                               rows={15}
                               placeholder="You are an expert Meta ad copywriter specializing in Jones Road Beauty..."
-                              disabled={!isAdmin}
+                              disabled={false}
                             />
                           </div>
                           
@@ -1935,20 +1935,20 @@ Keep sentences to 8-12 words for mobile comprehension"
                             <p className="text-xs text-gray-600 mb-3">This template defines the specific task and format for each request</p>
                             <Textarea 
                               value={editingConfig?.userPromptTemplates?.adCopy || ''}
-                              onChange={(e) => isAdmin && setEditingConfig({
+                              onChange={(e) => setEditingConfig({
                                 ...editingConfig,
                                 userPromptTemplates: {
                                   ...editingConfig.userPromptTemplates,
                                   adCopy: e.target.value
                                 }
                               })}
-                              className="border-indigo-200 focus:border-indigo-400"
+                              className="text-gray-900 font-medium border-indigo-200 focus:border-indigo-400"
                               rows={12}
                               placeholder="Generate Meta ad copy based on this content:
 
 TRANSCRIPTION/CONTENT:
 {transcription}..."
-                              disabled={!isAdmin}
+                              disabled={false}
                             />
                           </div>
                         </div>
@@ -1973,16 +1973,16 @@ TRANSCRIPTION/CONTENT:
                               </Label>
                               <Input 
                                 value={editingConfig?.modelParameters?.model || ''}
-                                onChange={(e) => isAdmin && setEditingConfig({
+                                onChange={(e) => setEditingConfig({
                                   ...editingConfig,
                                   modelParameters: {
                                     ...editingConfig.modelParameters,
                                     model: e.target.value
                                   }
                                 })}
-                                className="border-purple-200 focus:border-purple-400"
+                                className="text-gray-900 font-medium border-purple-200 focus:border-purple-400"
                                 placeholder="claude-sonnet-4-20250514"
-                                disabled={!isAdmin}
+                                disabled={false}
                               />
                               <p className="text-xs text-gray-600 mt-1">Latest available Claude model version</p>
                             </div>
@@ -1996,16 +1996,16 @@ TRANSCRIPTION/CONTENT:
                               <Input 
                                 type="number"
                                 value={editingConfig?.modelParameters?.maxTokens || ''}
-                                onChange={(e) => isAdmin && setEditingConfig({
+                                onChange={(e) => setEditingConfig({
                                   ...editingConfig,
                                   modelParameters: {
                                     ...editingConfig.modelParameters,
                                     maxTokens: parseInt(e.target.value) || 1024
                                   }
                                 })}
-                                className="border-indigo-200 focus:border-indigo-400"
+                                className="text-gray-900 font-medium border-indigo-200 focus:border-indigo-400"
                                 placeholder="1024"
-                                disabled={!isAdmin}
+                                disabled={false}
                               />
                               <p className="text-xs text-gray-600 mt-1">Maximum response length (1024-4000 recommended)</p>
                             </div>
