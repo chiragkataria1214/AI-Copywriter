@@ -574,7 +574,8 @@ export default function MetaAdGenerator() {
 
                 <Button 
                   onClick={generateAdCopy} 
-                  className="w-full bg-jones-primary hover:bg-jones-accent"
+                  className="w-full text-white hover:opacity-90"
+                  style={{ backgroundColor: '#004182' }}
                   disabled={generateAdCopyMutation.isPending}
                 >
                   {generateAdCopyMutation.isPending ? (
@@ -890,7 +891,8 @@ export default function MetaAdGenerator() {
 
                 <Button 
                   onClick={generateAdCopy} 
-                  className="w-full bg-jones-primary hover:bg-jones-accent"
+                  className="w-full text-white hover:opacity-90"
+                  style={{ backgroundColor: '#004182' }}
                   disabled={generateLandingCopyMutation.isPending}
                 >
                   {generateLandingCopyMutation.isPending ? (
