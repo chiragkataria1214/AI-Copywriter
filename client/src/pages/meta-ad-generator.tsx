@@ -41,6 +41,13 @@ export default function MetaAdGenerator() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   
+  // Auto-load training config when debug tab is accessed
+  useEffect(() => {
+    if (activeTab === 'debug' && !trainingConfig && !configLoading) {
+      loadTrainingConfigMutation.mutate();
+    }
+  }, [activeTab]);
+  
   // Landing Page States
   const [landingPageType, setLandingPageType] = useState('listicle');
   const [useAdsForLanding, setUseAdsForLanding] = useState(false);
@@ -1126,35 +1133,10 @@ export default function MetaAdGenerator() {
                       AI Training Configuration
                     </h3>
                     <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-                      <Button 
-                        onClick={() => loadTrainingConfigMutation.mutate()}
-                        disabled={loadTrainingConfigMutation.isPending}
-                        variant="outline"
-                        size="sm"
-                        className="w-full sm:w-auto"
-                      >
-                        {loadTrainingConfigMutation.isPending ? "Loading..." : "Load Config"}
-                      </Button>
-                      {!isAdmin && editingConfig && (
-                        <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-2">
-                          <Input 
-                            type="password"
-                            placeholder="Admin password"
-                            value={adminPassword}
-                            onChange={(e) => setAdminPassword(e.target.value)}
-                            className="w-full sm:w-32"
-                          />
-                          <Button 
-                            onClick={authenticateAdmin}
-                            variant="outline"
-                            size="sm"
-                            className="w-full sm:w-auto"
-                          >
-                            Unlock
-                          </Button>
-                        </div>
+                      {loadTrainingConfigMutation.isPending && (
+                        <div className="text-sm text-gray-600">Loading configuration...</div>
                       )}
-                      {isAdmin && editingConfig && (
+                      {editingConfig && (
                         <Button 
                           onClick={() => saveTrainingConfigMutation.mutate(editingConfig)}
                           disabled={saveTrainingConfigMutation.isPending}
@@ -1167,19 +1149,7 @@ export default function MetaAdGenerator() {
                     </div>
                   </div>
                   
-                  {!isAdmin && trainingConfig && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                      <div className="flex items-start space-x-2">
-                        <AlertCircle className="text-yellow-600 mt-0.5" size={16} />
-                        <div>
-                          <p className="text-sm text-yellow-800 font-medium">Admin Access Required</p>
-                          <p className="text-sm text-yellow-700 mt-1">
-                            These training materials are read-only. Enter the admin password above to make changes.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+
 
                   {trainingConfig ? (
                     <Tabs defaultValue="brand-guidelines" className="w-full">
