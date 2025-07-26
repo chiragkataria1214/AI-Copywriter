@@ -517,15 +517,15 @@ export default function MetaAdGenerator() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6 sm:mb-8">
-            <TabsTrigger value="ads" className="flex flex-col sm:flex-row items-center justify-center space-y-0 sm:space-y-0 sm:space-x-2 py-3 sm:py-4 min-h-[3rem]">
+            <TabsTrigger value="ads" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
               <Sparkles size={16} />
               <span className="text-xs sm:text-sm">Ad Copy</span>
             </TabsTrigger>
-            <TabsTrigger value="landing" className="flex flex-col sm:flex-row items-center justify-center space-y-0 sm:space-y-0 sm:space-x-2 py-3 sm:py-4 min-h-[3rem]">
+            <TabsTrigger value="landing" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
               <FileText size={16} />
               <span className="text-xs sm:text-sm">Landing Page</span>
             </TabsTrigger>
-            <TabsTrigger value="debug" className="flex flex-col sm:flex-row items-center justify-center space-y-0 sm:space-y-0 sm:space-x-2 py-3 sm:py-4 min-h-[3rem]">
+            <TabsTrigger value="debug" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
               <Target size={16} />
               <span className="text-xs sm:text-sm">Debug</span>
             </TabsTrigger>

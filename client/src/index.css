@@ -106,3 +106,24 @@
     background-color: var(--jones-light);
   }
 }
+
+/* Fix tab alignment issues */
+@layer components {
+  .tabs-trigger-fix {
+    height: 3rem !important;
+    min-height: 3rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  [data-state="active"].tabs-trigger-fix {
+    height: 3rem !important;
+    min-height: 3rem !important;
+  }
+  
+  [data-state="inactive"].tabs-trigger-fix {
+    height: 3rem !important;
+    min-height: 3rem !important;
+  }
+}
