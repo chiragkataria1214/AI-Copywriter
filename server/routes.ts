@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { registerTrainingRoutes } from "./routes-training";
 import { storage } from "./storage";
 import multer from "multer";
 import { generateAdCopy, generateLandingPageCopy } from "./anthropic";
@@ -101,6 +102,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to generate landing page copy' });
     }
   });
+
+  // Training configuration routes
+  registerTrainingRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;

@@ -34,6 +34,11 @@ export default function MetaAdGenerator() {
     rawResponse: string;
   } | null>(null);
   
+  // Training Configuration States
+  const [trainingConfig, setTrainingConfig] = useState<any>(null);
+  const [editingConfig, setEditingConfig] = useState<any>(null);
+  const [configLoading, setConfigLoading] = useState(false);
+  
   // Landing Page States
   const [landingPageType, setLandingPageType] = useState('listicle');
   const [useAdsForLanding, setUseAdsForLanding] = useState(false);
@@ -277,6 +282,48 @@ export default function MetaAdGenerator() {
     };
     reader.readAsText(file);
   };
+
+  // Load training configuration
+  const loadTrainingConfigMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/training-config', { method: 'GET' });
+    },
+    onSuccess: (data) => {
+      setTrainingConfig(data);
+      setEditingConfig(JSON.parse(JSON.stringify(data))); // Deep clone for editing
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to Load Configuration",
+        description: "Could not load training configuration.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Save training configuration
+  const saveTrainingConfigMutation = useMutation({
+    mutationFn: async (config: any) => {
+      return await apiRequest('/api/training-config', {
+        method: 'POST',
+        body: config
+      });
+    },
+    onSuccess: () => {
+      setTrainingConfig(editingConfig);
+      toast({
+        title: "Configuration Saved",
+        description: "Training configuration updated successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to Save Configuration", 
+        description: "Could not save training configuration.",
+        variant: "destructive"
+      });
+    }
+  });
 
   // API mutations for generating copy
   const generateAdCopyMutation = useMutation({
@@ -1047,10 +1094,258 @@ export default function MetaAdGenerator() {
           {/* Debug Tab */}
           <TabsContent value="debug">
             <div className="space-y-6">
+              {/* Training Configuration Section */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                      <Settings className="text-jones-primary mr-3" size={20} />
+                      AI Training Configuration
+                    </h3>
+                    <div className="flex space-x-2">
+                      <Button 
+                        onClick={() => loadTrainingConfigMutation.mutate()}
+                        disabled={loadTrainingConfigMutation.isPending}
+                        variant="outline"
+                        size="sm"
+                      >
+                        {loadTrainingConfigMutation.isPending ? "Loading..." : "Load Config"}
+                      </Button>
+                      {editingConfig && (
+                        <Button 
+                          onClick={() => saveTrainingConfigMutation.mutate(editingConfig)}
+                          disabled={saveTrainingConfigMutation.isPending}
+                          size="sm"
+                        >
+                          {saveTrainingConfigMutation.isPending ? "Saving..." : "Save Changes"}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {trainingConfig ? (
+                    <Tabs defaultValue="brand-guidelines" className="w-full">
+                      <TabsList className="grid w-full grid-cols-4">
+                        <TabsTrigger value="brand-guidelines">Brand Guidelines</TabsTrigger>
+                        <TabsTrigger value="frameworks">Copy Frameworks</TabsTrigger>
+                        <TabsTrigger value="prompts">System Prompts</TabsTrigger>
+                        <TabsTrigger value="model">Model Settings</TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="brand-guidelines" className="mt-4">
+                        <div className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium text-gray-900">Core Positioning</Label>
+                            <Textarea 
+                              value={editingConfig?.brandGuidelines?.corePositioning || ''}
+                              onChange={(e) => setEditingConfig({
+                                ...editingConfig,
+                                brandGuidelines: {
+                                  ...editingConfig.brandGuidelines,
+                                  corePositioning: e.target.value
+                                }
+                              })}
+                              className="mt-1"
+                              rows={3}
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label className="text-sm font-medium text-gray-900">Approved Language (comma separated)</Label>
+                            <Textarea 
+                              value={editingConfig?.brandGuidelines?.approvedLanguage?.join(', ') || ''}
+                              onChange={(e) => setEditingConfig({
+                                ...editingConfig,
+                                brandGuidelines: {
+                                  ...editingConfig.brandGuidelines,
+                                  approvedLanguage: e.target.value.split(',').map(item => item.trim()).filter(Boolean)
+                                }
+                              })}
+                              className="mt-1"
+                              rows={3}
+                              placeholder="skin-nourishing oils, subtle radiance, creamy, glow, effortless, natural, barely there"
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label className="text-sm font-medium text-gray-900">Avoided Language (comma separated)</Label>
+                            <Textarea 
+                              value={editingConfig?.brandGuidelines?.avoidedLanguage?.join(', ') || ''}
+                              onChange={(e) => setEditingConfig({
+                                ...editingConfig,
+                                brandGuidelines: {
+                                  ...editingConfig.brandGuidelines,
+                                  avoidedLanguage: e.target.value.split(',').map(item => item.trim()).filter(Boolean)
+                                }
+                              })}
+                              className="mt-1"
+                              rows={2}
+                              placeholder="dramatic transformation, flawless perfection, aggressive claims"
+                            />
+                          </div>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="frameworks" className="mt-4">
+                        <div className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium text-gray-900">Headline Frameworks</Label>
+                            <div className="mt-2 space-y-3">
+                              {editingConfig?.copyFrameworks?.headlineFrameworks?.map((framework: any, index: number) => (
+                                <div key={index} className="border rounded-lg p-3">
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                      <Label className="text-xs text-gray-600">Framework Name</Label>
+                                      <Input 
+                                        value={framework.name}
+                                        onChange={(e) => {
+                                          const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
+                                          updated[index] = { ...updated[index], name: e.target.value };
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            copyFrameworks: {
+                                              ...editingConfig.copyFrameworks,
+                                              headlineFrameworks: updated
+                                            }
+                                          });
+                                        }}
+                                        className="mt-1"
+                                        size="sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs text-gray-600">Template</Label>
+                                      <Input 
+                                        value={framework.template}
+                                        onChange={(e) => {
+                                          const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
+                                          updated[index] = { ...updated[index], template: e.target.value };
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            copyFrameworks: {
+                                              ...editingConfig.copyFrameworks,
+                                              headlineFrameworks: updated
+                                            }
+                                          });
+                                        }}
+                                        className="mt-1"
+                                        size="sm"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="mt-2">
+                                    <Label className="text-xs text-gray-600">Description</Label>
+                                    <Textarea 
+                                      value={framework.description}
+                                      onChange={(e) => {
+                                        const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
+                                        updated[index] = { ...updated[index], description: e.target.value };
+                                        setEditingConfig({
+                                          ...editingConfig,
+                                          copyFrameworks: {
+                                            ...editingConfig.copyFrameworks,
+                                            headlineFrameworks: updated
+                                          }
+                                        });
+                                      }}
+                                      className="mt-1"
+                                      rows={2}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="prompts" className="mt-4">
+                        <div className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium text-gray-900">Ad Copy System Prompt</Label>
+                            <Textarea 
+                              value={editingConfig?.systemPrompts?.adCopyGeneration || ''}
+                              onChange={(e) => setEditingConfig({
+                                ...editingConfig,
+                                systemPrompts: {
+                                  ...editingConfig.systemPrompts,
+                                  adCopyGeneration: e.target.value
+                                }
+                              })}
+                              className="mt-1 font-mono text-sm"
+                              rows={12}
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label className="text-sm font-medium text-gray-900">User Prompt Template</Label>
+                            <Textarea 
+                              value={editingConfig?.userPromptTemplates?.adCopy || ''}
+                              onChange={(e) => setEditingConfig({
+                                ...editingConfig,
+                                userPromptTemplates: {
+                                  ...editingConfig.userPromptTemplates,
+                                  adCopy: e.target.value
+                                }
+                              })}
+                              className="mt-1 font-mono text-sm"
+                              rows={8}
+                            />
+                          </div>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="model" className="mt-4">
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm font-medium text-gray-900">Model</Label>
+                              <Input 
+                                value={editingConfig?.modelParameters?.model || ''}
+                                onChange={(e) => setEditingConfig({
+                                  ...editingConfig,
+                                  modelParameters: {
+                                    ...editingConfig.modelParameters,
+                                    model: e.target.value
+                                  }
+                                })}
+                                className="mt-1"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium text-gray-900">Max Tokens</Label>
+                              <Input 
+                                type="number"
+                                value={editingConfig?.modelParameters?.maxTokens || ''}
+                                onChange={(e) => setEditingConfig({
+                                  ...editingConfig,
+                                  modelParameters: {
+                                    ...editingConfig.modelParameters,
+                                    maxTokens: parseInt(e.target.value) || 1024
+                                  }
+                                })}
+                                className="mt-1"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Settings size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>Load configuration to view and edit AI training settings</p>
+                      <p className="text-sm mt-2">This includes brand guidelines, copy frameworks, prompts, and model parameters</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Debug Information Section */}
               <Card>
                 <CardContent className="p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <Settings className="text-jones-primary mr-3" size={20} />
+                    <Target className="text-jones-primary mr-3" size={20} />
                     Prompt Debug Information
                   </h3>
                   
@@ -1133,51 +1428,6 @@ export default function MetaAdGenerator() {
                       <p className="text-sm mt-2">This will show the exact prompts, payloads, and responses sent to Claude AI</p>
                     </div>
                   )}
-                </CardContent>
-              </Card>
-
-              {/* Prompt Editing Section */}
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <AlertCircle className="text-jones-primary mr-3" size={20} />
-                    Fine-tune Prompts
-                  </h3>
-                  
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                    <div className="flex items-start space-x-2">
-                      <AlertCircle className="text-blue-600 mt-0.5" size={16} />
-                      <div>
-                        <p className="text-sm text-blue-800 font-medium">Coming Soon</p>
-                        <p className="text-sm text-blue-700 mt-1">
-                          In-app prompt editing will be available in the next update. For now, you can copy the prompts above and test modifications in the Claude interface, then update the code.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Current Model</h4>
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        Claude 4.0 Sonnet (claude-sonnet-4-20250514)
-                      </Badge>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Key Parameters</h4>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="bg-gray-50 rounded p-3">
-                          <span className="font-medium text-gray-900">Max Tokens:</span>
-                          <span className="ml-2 text-gray-600">1024</span>
-                        </div>
-                        <div className="bg-gray-50 rounded p-3">
-                          <span className="font-medium text-gray-900">Temperature:</span>
-                          <span className="ml-2 text-gray-600">Default</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
             </div>

@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { defaultTrainingConfig, type TrainingConfig } from '@shared/training-config';
 
 /*
 <important_code_snippet_instructions>
@@ -40,39 +41,18 @@ export interface LandingPageRequest {
   brandDrBalance: number;
 }
 
-export async function generateAdCopy(request: AdCopyRequest) {
+export async function generateAdCopy(request: AdCopyRequest, trainingConfig: TrainingConfig = defaultTrainingConfig) {
   const { transcription, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide } = request;
   
   const brandPercent = brandDrBalance;
   const drPercent = 100 - brandPercent;
   
-  const systemPrompt = `You are an expert Meta ad copywriter specializing in Jones Road Beauty. You create ad copy that balances brand voice with direct response tactics.
-
-JONES ROAD BEAUTY BRAND GUIDELINES:
-- Core positioning: "Your Skin But Better" - natural, effortless enhancement
-- Brand voice: Natural, welcoming, never pushy or aggressive
-- Key concepts: "no-makeup makeup", "one and done", "universal shades"
-- Always use "moisturizing" not "hydrating" for makeup products
-- Focus on enhancement, not transformation
-- Avoid superlatives and exaggerated claims
-
-COPY REQUIREMENTS:
-- Headlines: Maximum 5 words, must fit in 1 line on mobile
-- Primary text: 15-25 words optimal
-- Brand/DR Balance: ${brandPercent}% brand voice, ${drPercent}% direct response
-- Target audience: ${targetAudience}
-- Persona: ${concept}${subPersona ? ` (${subPersona})` : ''}
-
-BRAND-FIRST APPROACH (when brand % > 50):
-- Lead with natural, effortless messaging
-- Use approved language: "skin-nourishing oils", "subtle radiance", "creamy", "glow", "effortless", "natural", "barely there"
-- Social proof should feel natural and brand-aligned
-
-DIRECT RESPONSE APPROACH (when DR % > 50):
-- Focus on specific benefits and outcomes
-- Include stronger calls to action
-- Use urgency/scarcity framework when strategically appropriate (limited stock, seasonal launches, exclusive access)
-- Maintain brand voice even with urgency - avoid aggressive or pushy language`;
+  const systemPrompt = trainingConfig.systemPrompts.adCopyGeneration
+    .replace('{brandPercent}', brandPercent.toString())
+    .replace('{drPercent}', drPercent.toString())
+    .replace('{targetAudience}', targetAudience)
+    .replace('{concept}', concept)
+    .replace('{subPersona}', subPersona ? ` (${subPersona})` : '');
 
   // Fetch landing page content if URL is provided
   let landingPageContent = '';
@@ -95,84 +75,23 @@ DIRECT RESPONSE APPROACH (when DR % > 50):
     }
   }
 
-  const userPrompt = `Generate Meta ad copy based on this content:
-
-TRANSCRIPTION/CONTENT:
-${transcription}
-
-${landingPageContent ? `
+  const landingPageContext = landingPageContent ? `
 LANDING PAGE CONTEXT:
 ${landingPageContent}
 
 FUNNEL ALIGNMENT REQUIREMENT:
 Ensure the ad copy creates a seamless transition from ad to landing page. The messaging should be congruent - if the landing page emphasizes certain benefits or uses specific language, mirror that in the ad copy to create expectation alignment and reduce bounce rate.
-` : ''}
+` : '';
 
-COPYWRITING FRAMEWORK REQUIREMENTS:
-Generate exactly 5 headlines using these specific frameworks (select the 5 most appropriate):
-
-1. BENEFIT DRIVEN: Lead with the primary benefit/transformation the product delivers
-2. SOCIAL PROOF DRIVEN: Incorporate trust signals, reviews, or popularity metrics  
-3. OFFER DRIVEN: Focus on a specific promotion, deal, or exclusive access
-4. VALUE PROPS: Highlight unique product attributes or competitive advantages
-5. PROBLEM FOCUSED: Address a specific pain point your audience faces
-6. URGENCY/SCARCITY: Create time-sensitive or limited-availability motivation (use only when it makes strategic sense and aligns with the content provided)
-
-FRAMEWORK PRINCIPLES:
-- Lead with a hook: Start with concise, memorable phrase that distills core promise
-- Use sensory or outcome-oriented language ("weightless color meets soft-focus filter")
-- Keep sentences to 8-12 words for mobile comprehension
-- Front-load differentiators (cruelty-free, talc-free, SPF) early
-- Use repetition or alliteration for memorability
-- Single clear CTA at the end
-
-PRIMARY TEXT STRUCTURE:
-Use one of these proven templates:
-- Hook → Benefit → CTA (most common)
-- Problem → Solution → Social Proof → CTA
-- Mission → Benefit Stack → Offer → CTA
-
-REQUIREMENTS:
-- Headlines: Maximum 5 words each, must fit in 1 line on mobile
-- Primary text: 15-25 words optimal
-- Authentic, conversational tone that feels genuine
-- Benefits over features
-- Subtle urgency without being pushy
-
-Please format your response as JSON with this exact structure:
-{
-  "headlines": [
-    {
-      "framework": "BENEFIT DRIVEN",
-      "copy": "Your Amazing Headlines"
-    },
-    {
-      "framework": "SOCIAL PROOF",
-      "copy": "Clean headline copy"
-    },
-    {
-      "framework": "VALUE PROPS", 
-      "copy": "Pure headline text"
-    },
-    {
-      "framework": "PROBLEM FOCUSED",
-      "copy": "Problem solving copy"
-    },
-    {
-      "framework": "OFFER DRIVEN",
-      "copy": "Offer headline text"
-    }
-  ],
-  "primaryText": "Your primary text using one of the framework templates"
-}
-
-Note: Include urgency/scarcity framework only when the content suggests limited availability, time-sensitive offers, or seasonal relevance. Otherwise, use the other 5 frameworks. Always return exactly 5 headlines.`;
+  const userPrompt = trainingConfig.userPromptTemplates.adCopy
+    .replace('{transcription}', transcription)
+    .replace('{landingPageContext}', landingPageContext);
 
   try {
     const response = await anthropic.messages.create({
-      model: DEFAULT_MODEL_STR,
+      model: trainingConfig.modelParameters.model,
       system: systemPrompt,
-      max_tokens: 1024,
+      max_tokens: trainingConfig.modelParameters.maxTokens,
       messages: [{ role: 'user', content: userPrompt }],
     });
 
@@ -213,7 +132,7 @@ Note: Include urgency/scarcity framework only when the content suggests limited 
           systemPrompt,
           userPrompt,
           rawResponse: content,
-          modelUsed: DEFAULT_MODEL_STR,
+          modelUsed: trainingConfig.modelParameters.model,
           fallbackUsed: true
         }
       };
@@ -241,7 +160,7 @@ Note: Include urgency/scarcity framework only when the content suggests limited 
         systemPrompt,
         userPrompt,
         rawResponse: content,
-        modelUsed: DEFAULT_MODEL_STR
+        modelUsed: trainingConfig.modelParameters.model
       }
     };
   } catch (error) {
