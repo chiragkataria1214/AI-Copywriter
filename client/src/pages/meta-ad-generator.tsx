@@ -1212,173 +1212,381 @@ export default function MetaAdGenerator() {
                           </div>
                           
                           <div>
-                            <div className="flex items-center justify-between mb-3">
-                              <Label className="text-sm font-medium text-gray-900">Brand Voice Rules</Label>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-xs text-gray-600">Enable</span>
-                                <Switch 
-                                  checked={editingConfig?.brandGuidelines?.enableBrandVoice !== false}
-                                  onCheckedChange={(checked) => isAdmin && setEditingConfig({
-                                    ...editingConfig,
-                                    brandGuidelines: {
-                                      ...editingConfig.brandGuidelines,
-                                      enableBrandVoice: checked
-                                    }
-                                  })}
-                                  disabled={!isAdmin}
-                                />
-                              </div>
+                            <Label className="text-sm font-medium text-gray-900 mb-3 block">Brand Voice Rules</Label>
+                            <div className="space-y-2">
+                              {(editingConfig?.brandGuidelines?.brandVoice || ['', '', '']).map((rule: string, index: number) => (
+                                <div key={index} className="flex items-center space-x-3">
+                                  <Switch 
+                                    checked={editingConfig?.brandGuidelines?.enabledBrandVoice?.[index] !== false}
+                                    onCheckedChange={(checked) => {
+                                      if (!isAdmin) return;
+                                      const enabled = [...(editingConfig?.brandGuidelines?.enabledBrandVoice || [])];
+                                      enabled[index] = checked;
+                                      setEditingConfig({
+                                        ...editingConfig,
+                                        brandGuidelines: {
+                                          ...editingConfig.brandGuidelines,
+                                          enabledBrandVoice: enabled
+                                        }
+                                      });
+                                    }}
+                                    disabled={!isAdmin}
+                                    className="flex-shrink-0"
+                                  />
+                                  <span className="text-blue-500 text-sm font-bold flex-shrink-0">•</span>
+                                  <Input
+                                    value={rule}
+                                    onChange={(e) => {
+                                      if (!isAdmin) return;
+                                      const rules = [...(editingConfig.brandGuidelines.brandVoice || [])];
+                                      rules[index] = e.target.value;
+                                      setEditingConfig({
+                                        ...editingConfig,
+                                        brandGuidelines: {
+                                          ...editingConfig.brandGuidelines,
+                                          brandVoice: rules
+                                        }
+                                      });
+                                    }}
+                                    className={`flex-1 ${editingConfig?.brandGuidelines?.enabledBrandVoice?.[index] === false ? 'opacity-50' : ''}`}
+                                    placeholder="Enter brand voice rule..."
+                                    disabled={!isAdmin}
+                                  />
+                                  {isAdmin && (editingConfig?.brandGuidelines?.brandVoice?.length > 3) && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-500 hover:text-red-700 flex-shrink-0"
+                                      onClick={() => {
+                                        const rules = [...(editingConfig.brandGuidelines.brandVoice || [])];
+                                        const enabled = [...(editingConfig.brandGuidelines.enabledBrandVoice || [])];
+                                        rules.splice(index, 1);
+                                        enabled.splice(index, 1);
+                                        setEditingConfig({
+                                          ...editingConfig,
+                                          brandGuidelines: {
+                                            ...editingConfig.brandGuidelines,
+                                            brandVoice: rules,
+                                            enabledBrandVoice: enabled
+                                          }
+                                        });
+                                      }}
+                                    >
+                                      ×
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
+                              {isAdmin && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const rules = [...(editingConfig?.brandGuidelines?.brandVoice || [])];
+                                    const enabled = [...(editingConfig?.brandGuidelines?.enabledBrandVoice || [])];
+                                    rules.push('');
+                                    enabled.push(true);
+                                    setEditingConfig({
+                                      ...editingConfig,
+                                      brandGuidelines: {
+                                        ...editingConfig.brandGuidelines,
+                                        brandVoice: rules,
+                                        enabledBrandVoice: enabled
+                                      }
+                                    });
+                                  }}
+                                  className="w-full border-dashed mt-2"
+                                >
+                                  + Add brand voice rule
+                                </Button>
+                              )}
                             </div>
-                            <div className="relative">
-                              <Textarea 
-                                value={editingConfig?.brandGuidelines?.brandVoice?.join('\n') || ''}
-                                onChange={(e) => isAdmin && setEditingConfig({
-                                  ...editingConfig,
-                                  brandGuidelines: {
-                                    ...editingConfig.brandGuidelines,
-                                    brandVoice: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
-                                  }
-                                })}
-                                className={`pl-8 ${!isAdmin ? 'bg-gray-50' : ''} ${editingConfig?.brandGuidelines?.enableBrandVoice === false ? 'opacity-50' : ''}`}
-                                rows={4}
-                                placeholder="• Natural, welcoming, never pushy or aggressive&#10;• Focus on enhancement not transformation&#10;• Use inclusive, welcoming language"
-                                disabled={!isAdmin}
-                              />
-                              <div className="absolute left-2 top-3 text-blue-500 text-sm font-bold pointer-events-none">
-                                •<br/>•<br/>•<br/>•
-                              </div>
-                            </div>
-                            <p className="text-xs text-gray-600 mt-1">Enter one rule per line. Use bullet points for clarity.</p>
                           </div>
                           
                           <div>
-                            <div className="flex items-center justify-between mb-3">
-                              <Label className="text-sm font-medium text-gray-900">Key Terms & Phrases</Label>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-xs text-gray-600">Enable</span>
-                                <Switch 
-                                  checked={editingConfig?.brandGuidelines?.enableKeyTerminology !== false}
-                                  onCheckedChange={(checked) => isAdmin && setEditingConfig({
-                                    ...editingConfig,
-                                    brandGuidelines: {
-                                      ...editingConfig.brandGuidelines,
-                                      enableKeyTerminology: checked
-                                    }
-                                  })}
-                                  disabled={!isAdmin}
-                                />
-                              </div>
+                            <Label className="text-sm font-medium text-gray-900 mb-3 block">Key Terms & Phrases</Label>
+                            <div className="space-y-2">
+                              {(editingConfig?.brandGuidelines?.keyTerminology || ['', '', '']).map((term: string, index: number) => (
+                                <div key={index} className="flex items-center space-x-3">
+                                  <Switch 
+                                    checked={editingConfig?.brandGuidelines?.enabledKeyTerminology?.[index] !== false}
+                                    onCheckedChange={(checked) => {
+                                      if (!isAdmin) return;
+                                      const enabled = [...(editingConfig?.brandGuidelines?.enabledKeyTerminology || [])];
+                                      enabled[index] = checked;
+                                      setEditingConfig({
+                                        ...editingConfig,
+                                        brandGuidelines: {
+                                          ...editingConfig.brandGuidelines,
+                                          enabledKeyTerminology: enabled
+                                        }
+                                      });
+                                    }}
+                                    disabled={!isAdmin}
+                                    className="flex-shrink-0"
+                                  />
+                                  <span className="text-gray-400 text-sm font-bold flex-shrink-0">•</span>
+                                  <Input
+                                    value={term}
+                                    onChange={(e) => {
+                                      if (!isAdmin) return;
+                                      const terms = [...(editingConfig.brandGuidelines.keyTerminology || [])];
+                                      terms[index] = e.target.value;
+                                      setEditingConfig({
+                                        ...editingConfig,
+                                        brandGuidelines: {
+                                          ...editingConfig.brandGuidelines,
+                                          keyTerminology: terms
+                                        }
+                                      });
+                                    }}
+                                    className={`flex-1 ${editingConfig?.brandGuidelines?.enabledKeyTerminology?.[index] === false ? 'opacity-50' : ''}`}
+                                    placeholder="Enter key term or phrase..."
+                                    disabled={!isAdmin}
+                                  />
+                                  {isAdmin && (editingConfig?.brandGuidelines?.keyTerminology?.length > 3) && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-500 hover:text-red-700 flex-shrink-0"
+                                      onClick={() => {
+                                        const terms = [...(editingConfig.brandGuidelines.keyTerminology || [])];
+                                        const enabled = [...(editingConfig.brandGuidelines.enabledKeyTerminology || [])];
+                                        terms.splice(index, 1);
+                                        enabled.splice(index, 1);
+                                        setEditingConfig({
+                                          ...editingConfig,
+                                          brandGuidelines: {
+                                            ...editingConfig.brandGuidelines,
+                                            keyTerminology: terms,
+                                            enabledKeyTerminology: enabled
+                                          }
+                                        });
+                                      }}
+                                    >
+                                      ×
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
+                              {isAdmin && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const terms = [...(editingConfig?.brandGuidelines?.keyTerminology || [])];
+                                    const enabled = [...(editingConfig?.brandGuidelines?.enabledKeyTerminology || [])];
+                                    terms.push('');
+                                    enabled.push(true);
+                                    setEditingConfig({
+                                      ...editingConfig,
+                                      brandGuidelines: {
+                                        ...editingConfig.brandGuidelines,
+                                        keyTerminology: terms,
+                                        enabledKeyTerminology: enabled
+                                      }
+                                    });
+                                  }}
+                                  className="w-full border-dashed mt-2"
+                                >
+                                  + Add key term
+                                </Button>
+                              )}
                             </div>
-                            <div className="relative">
-                              <Textarea 
-                                value={editingConfig?.brandGuidelines?.keyTerminology?.join('\n') || ''}
-                                onChange={(e) => isAdmin && setEditingConfig({
-                                  ...editingConfig,
-                                  brandGuidelines: {
-                                    ...editingConfig.brandGuidelines,
-                                    keyTerminology: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
-                                  }
-                                })}
-                                className={`pl-8 ${!isAdmin ? 'bg-gray-50' : ''} ${editingConfig?.brandGuidelines?.enableKeyTerminology === false ? 'opacity-50' : ''}`}
-                                rows={3}
-                                placeholder="• no-makeup makeup&#10;• Your Skin But Better&#10;• one and done"
-                                disabled={!isAdmin}
-                              />
-                              <div className="absolute left-2 top-3 text-gray-400 text-sm font-bold pointer-events-none">
-                                •<br/>•<br/>•
-                              </div>
-                            </div>
-                            <p className="text-xs text-gray-600 mt-1">Enter one term per line. These phrases will be prioritized in copy generation.</p>
                           </div>
                           
                           <div>
-                            <div className="flex items-center justify-between mb-3">
-                              <Label className="text-sm font-medium text-gray-900">
-                                <span className="inline-flex items-center">
-                                  <span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-                                  Approved Language
-                                </span>
-                              </Label>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-xs text-gray-600">Enable</span>
-                                <Switch 
-                                  checked={editingConfig?.brandGuidelines?.enableApprovedLanguage !== false}
-                                  onCheckedChange={(checked) => isAdmin && setEditingConfig({
-                                    ...editingConfig,
-                                    brandGuidelines: {
-                                      ...editingConfig.brandGuidelines,
-                                      enableApprovedLanguage: checked
-                                    }
-                                  })}
-                                  disabled={!isAdmin}
-                                />
-                              </div>
+                            <Label className="text-sm font-medium text-gray-900 mb-3 block">
+                              <span className="inline-flex items-center">
+                                <span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+                                Approved Language
+                              </span>
+                            </Label>
+                            <div className="space-y-2">
+                              {(editingConfig?.brandGuidelines?.approvedLanguage || ['', '', '']).map((phrase: string, index: number) => (
+                                <div key={index} className="flex items-center space-x-3">
+                                  <Switch 
+                                    checked={editingConfig?.brandGuidelines?.enabledApprovedLanguage?.[index] !== false}
+                                    onCheckedChange={(checked) => {
+                                      if (!isAdmin) return;
+                                      const enabled = [...(editingConfig?.brandGuidelines?.enabledApprovedLanguage || [])];
+                                      enabled[index] = checked;
+                                      setEditingConfig({
+                                        ...editingConfig,
+                                        brandGuidelines: {
+                                          ...editingConfig.brandGuidelines,
+                                          enabledApprovedLanguage: enabled
+                                        }
+                                      });
+                                    }}
+                                    disabled={!isAdmin}
+                                    className="flex-shrink-0"
+                                  />
+                                  <span className="text-green-500 text-sm font-bold flex-shrink-0">✓</span>
+                                  <Input
+                                    value={phrase}
+                                    onChange={(e) => {
+                                      if (!isAdmin) return;
+                                      const phrases = [...(editingConfig.brandGuidelines.approvedLanguage || [])];
+                                      phrases[index] = e.target.value;
+                                      setEditingConfig({
+                                        ...editingConfig,
+                                        brandGuidelines: {
+                                          ...editingConfig.brandGuidelines,
+                                          approvedLanguage: phrases
+                                        }
+                                      });
+                                    }}
+                                    className={`flex-1 border-green-200 focus:border-green-400 ${editingConfig?.brandGuidelines?.enabledApprovedLanguage?.[index] === false ? 'opacity-50' : ''}`}
+                                    placeholder="Enter approved phrase..."
+                                    disabled={!isAdmin}
+                                  />
+                                  {isAdmin && (editingConfig?.brandGuidelines?.approvedLanguage?.length > 3) && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-500 hover:text-red-700 flex-shrink-0"
+                                      onClick={() => {
+                                        const phrases = [...(editingConfig.brandGuidelines.approvedLanguage || [])];
+                                        const enabled = [...(editingConfig.brandGuidelines.enabledApprovedLanguage || [])];
+                                        phrases.splice(index, 1);
+                                        enabled.splice(index, 1);
+                                        setEditingConfig({
+                                          ...editingConfig,
+                                          brandGuidelines: {
+                                            ...editingConfig.brandGuidelines,
+                                            approvedLanguage: phrases,
+                                            enabledApprovedLanguage: enabled
+                                          }
+                                        });
+                                      }}
+                                    >
+                                      ×
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
+                              {isAdmin && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const phrases = [...(editingConfig?.brandGuidelines?.approvedLanguage || [])];
+                                    const enabled = [...(editingConfig?.brandGuidelines?.enabledApprovedLanguage || [])];
+                                    phrases.push('');
+                                    enabled.push(true);
+                                    setEditingConfig({
+                                      ...editingConfig,
+                                      brandGuidelines: {
+                                        ...editingConfig.brandGuidelines,
+                                        approvedLanguage: phrases,
+                                        enabledApprovedLanguage: enabled
+                                      }
+                                    });
+                                  }}
+                                  className="w-full border-dashed border-green-300 text-green-600 hover:bg-green-50 mt-2"
+                                >
+                                  + Add approved phrase
+                                </Button>
+                              )}
                             </div>
-                            <div className="relative">
-                              <Textarea 
-                                value={editingConfig?.brandGuidelines?.approvedLanguage?.join('\n') || ''}
-                                onChange={(e) => isAdmin && setEditingConfig({
-                                  ...editingConfig,
-                                  brandGuidelines: {
-                                    ...editingConfig.brandGuidelines,
-                                    approvedLanguage: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
-                                  }
-                                })}
-                                className={`pl-8 border-green-200 focus:border-green-400 ${!isAdmin ? 'bg-gray-50' : ''} ${editingConfig?.brandGuidelines?.enableApprovedLanguage === false ? 'opacity-50' : ''}`}
-                                rows={4}
-                                placeholder="✓ skin-nourishing oils&#10;✓ subtle radiance&#10;✓ creamy&#10;✓ glow"
-                                disabled={!isAdmin}
-                              />
-                              <div className="absolute left-2 top-3 text-green-500 text-sm font-bold pointer-events-none">
-                                ✓<br/>✓<br/>✓<br/>✓
-                              </div>
-                            </div>
-                            <p className="text-xs text-gray-600 mt-1">Words and phrases to prioritize in copy generation.</p>
                           </div>
                           
                           <div>
-                            <div className="flex items-center justify-between mb-3">
-                              <Label className="text-sm font-medium text-gray-900">
-                                <span className="inline-flex items-center">
-                                  <span className="w-3 h-3 bg-red-500 rounded-full mr-2"></span>
-                                  Avoided Language
-                                </span>
-                              </Label>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-xs text-gray-600">Enable</span>
-                                <Switch 
-                                  checked={editingConfig?.brandGuidelines?.enableAvoidedLanguage !== false}
-                                  onCheckedChange={(checked) => isAdmin && setEditingConfig({
-                                    ...editingConfig,
-                                    brandGuidelines: {
-                                      ...editingConfig.brandGuidelines,
-                                      enableAvoidedLanguage: checked
-                                    }
-                                  })}
-                                  disabled={!isAdmin}
-                                />
-                              </div>
+                            <Label className="text-sm font-medium text-gray-900 mb-3 block">
+                              <span className="inline-flex items-center">
+                                <span className="w-3 h-3 bg-red-500 rounded-full mr-2"></span>
+                                Avoided Language
+                              </span>
+                            </Label>
+                            <div className="space-y-2">
+                              {(editingConfig?.brandGuidelines?.avoidedLanguage || ['', '', '']).map((phrase: string, index: number) => (
+                                <div key={index} className="flex items-center space-x-3">
+                                  <Switch 
+                                    checked={editingConfig?.brandGuidelines?.enabledAvoidedLanguage?.[index] !== false}
+                                    onCheckedChange={(checked) => {
+                                      if (!isAdmin) return;
+                                      const enabled = [...(editingConfig?.brandGuidelines?.enabledAvoidedLanguage || [])];
+                                      enabled[index] = checked;
+                                      setEditingConfig({
+                                        ...editingConfig,
+                                        brandGuidelines: {
+                                          ...editingConfig.brandGuidelines,
+                                          enabledAvoidedLanguage: enabled
+                                        }
+                                      });
+                                    }}
+                                    disabled={!isAdmin}
+                                    className="flex-shrink-0"
+                                  />
+                                  <span className="text-red-500 text-sm font-bold flex-shrink-0">✗</span>
+                                  <Input
+                                    value={phrase}
+                                    onChange={(e) => {
+                                      if (!isAdmin) return;
+                                      const phrases = [...(editingConfig.brandGuidelines.avoidedLanguage || [])];
+                                      phrases[index] = e.target.value;
+                                      setEditingConfig({
+                                        ...editingConfig,
+                                        brandGuidelines: {
+                                          ...editingConfig.brandGuidelines,
+                                          avoidedLanguage: phrases
+                                        }
+                                      });
+                                    }}
+                                    className={`flex-1 border-red-200 focus:border-red-400 ${editingConfig?.brandGuidelines?.enabledAvoidedLanguage?.[index] === false ? 'opacity-50' : ''}`}
+                                    placeholder="Enter phrase to avoid..."
+                                    disabled={!isAdmin}
+                                  />
+                                  {isAdmin && (editingConfig?.brandGuidelines?.avoidedLanguage?.length > 3) && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-500 hover:text-red-700 flex-shrink-0"
+                                      onClick={() => {
+                                        const phrases = [...(editingConfig.brandGuidelines.avoidedLanguage || [])];
+                                        const enabled = [...(editingConfig.brandGuidelines.enabledAvoidedLanguage || [])];
+                                        phrases.splice(index, 1);
+                                        enabled.splice(index, 1);
+                                        setEditingConfig({
+                                          ...editingConfig,
+                                          brandGuidelines: {
+                                            ...editingConfig.brandGuidelines,
+                                            avoidedLanguage: phrases,
+                                            enabledAvoidedLanguage: enabled
+                                          }
+                                        });
+                                      }}
+                                    >
+                                      ×
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
+                              {isAdmin && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const phrases = [...(editingConfig?.brandGuidelines?.avoidedLanguage || [])];
+                                    const enabled = [...(editingConfig?.brandGuidelines?.enabledAvoidedLanguage || [])];
+                                    phrases.push('');
+                                    enabled.push(true);
+                                    setEditingConfig({
+                                      ...editingConfig,
+                                      brandGuidelines: {
+                                        ...editingConfig.brandGuidelines,
+                                        avoidedLanguage: phrases,
+                                        enabledAvoidedLanguage: enabled
+                                      }
+                                    });
+                                  }}
+                                  className="w-full border-dashed border-red-300 text-red-600 hover:bg-red-50 mt-2"
+                                >
+                                  + Add phrase to avoid
+                                </Button>
+                              )}
                             </div>
-                            <div className="relative">
-                              <Textarea 
-                                value={editingConfig?.brandGuidelines?.avoidedLanguage?.join('\n') || ''}
-                                onChange={(e) => isAdmin && setEditingConfig({
-                                  ...editingConfig,
-                                  brandGuidelines: {
-                                    ...editingConfig.brandGuidelines,
-                                    avoidedLanguage: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
-                                  }
-                                })}
-                                className={`pl-8 border-red-200 focus:border-red-400 ${!isAdmin ? 'bg-gray-50' : ''} ${editingConfig?.brandGuidelines?.enableAvoidedLanguage === false ? 'opacity-50' : ''}`}
-                                rows={3}
-                                placeholder="✗ dramatic transformation&#10;✗ flawless perfection&#10;✗ aggressive claims"
-                                disabled={!isAdmin}
-                              />
-                              <div className="absolute left-2 top-3 text-red-500 text-sm font-bold pointer-events-none">
-                                ✗<br/>✗<br/>✗
-                              </div>
-                            </div>
-                            <p className="text-xs text-gray-600 mt-1">Words and phrases to actively avoid in copy generation.</p>
                           </div>
                         </div>
                       </TabsContent>
