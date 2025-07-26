@@ -25,6 +25,7 @@ export interface AdCopyRequest {
   concept: string;
   subPersona?: string;
   targetAudience: string;
+  landingPageUrl?: string;
   brandDrBalance: number;
   useJonesBrandGuide: boolean;
 }
@@ -40,7 +41,7 @@ export interface LandingPageRequest {
 }
 
 export async function generateAdCopy(request: AdCopyRequest) {
-  const { transcription, concept, subPersona, targetAudience, brandDrBalance, useJonesBrandGuide } = request;
+  const { transcription, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide } = request;
   
   const brandPercent = brandDrBalance;
   const drPercent = 100 - brandPercent;
@@ -73,10 +74,39 @@ DIRECT RESPONSE APPROACH (when DR % > 50):
 - Use urgency/scarcity framework when strategically appropriate (limited stock, seasonal launches, exclusive access)
 - Maintain brand voice even with urgency - avoid aggressive or pushy language`;
 
+  // Fetch landing page content if URL is provided
+  let landingPageContent = '';
+  if (landingPageUrl && landingPageUrl.trim()) {
+    try {
+      const response = await fetch(landingPageUrl);
+      if (response.ok) {
+        const html = await response.text();
+        // Extract basic text content (simplified approach)
+        landingPageContent = html
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+          .replace(/<[^>]*>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .substring(0, 2000); // Limit to first 2000 characters
+      }
+    } catch (error) {
+      console.error('Failed to fetch landing page:', error);
+    }
+  }
+
   const userPrompt = `Generate Meta ad copy based on this content:
 
 TRANSCRIPTION/CONTENT:
 ${transcription}
+
+${landingPageContent ? `
+LANDING PAGE CONTEXT:
+${landingPageContent}
+
+FUNNEL ALIGNMENT REQUIREMENT:
+Ensure the ad copy creates a seamless transition from ad to landing page. The messaging should be congruent - if the landing page emphasizes certain benefits or uses specific language, mirror that in the ad copy to create expectation alignment and reduce bounce rate.
+` : ''}
 
 COPYWRITING FRAMEWORK REQUIREMENTS:
 Generate exactly 5 headlines using these specific frameworks (select the 5 most appropriate):

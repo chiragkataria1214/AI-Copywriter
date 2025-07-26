@@ -20,6 +20,7 @@ export default function MetaAdGenerator() {
   const [concept, setConcept] = useState('lifeJuggler');
   const [subPersona, setSubPersona] = useState('newMom');
   const [targetAudience, setTargetAudience] = useState('');
+  const [landingPageUrl, setLandingPageUrl] = useState('');
   
   // Ad Copy States
   const [generatedHeadlines, setGeneratedHeadlines] = useState<string[]>([]);
@@ -270,6 +271,7 @@ export default function MetaAdGenerator() {
           concept,
           subPersona,
           targetAudience,
+          landingPageUrl,
           brandDrBalance: brandDrBalance[0],
           useJonesBrandGuide
         }
@@ -510,6 +512,22 @@ export default function MetaAdGenerator() {
                           value={targetAudience}
                           onChange={(e) => setTargetAudience(e.target.value)}
                         />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="landingPageUrl" className="block text-sm font-medium text-gray-700 mb-2">
+                          Landing Page URL <span className="text-xs text-gray-500">(Optional)</span>
+                        </Label>
+                        <Input 
+                          type="url" 
+                          id="landingPageUrl"
+                          placeholder="https://your-landing-page.com"
+                          value={landingPageUrl}
+                          onChange={(e) => setLandingPageUrl(e.target.value)}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Provide your existing landing page URL to ensure ad copy aligns with your landing page messaging
+                        </p>
                       </div>
                     </div>
                   </CardContent>

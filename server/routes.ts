@@ -30,7 +30,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate ad copy endpoint
   app.post('/api/generate-ad-copy', async (req, res) => {
     try {
-      const { transcription, concept, subPersona, targetAudience, brandDrBalance, useJonesBrandGuide } = req.body;
+      const { transcription, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide } = req.body;
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -41,6 +41,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         concept,
         subPersona,
         targetAudience,
+        landingPageUrl,
         brandDrBalance,
         useJonesBrandGuide
       });

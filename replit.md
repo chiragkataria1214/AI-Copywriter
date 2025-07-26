@@ -14,6 +14,7 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 - **Response Parsing Enhanced**: Robust parsing system for Claude's natural language responses into structured headlines and primary text
 - **Application Rebranding**: Updated from "Meta Ad Generator" to "AI Copywriter" to reflect broader platform capabilities
 - **Advanced Copywriting Frameworks**: Integrated 6 specific headline frameworks (benefit-driven, social proof, offer-driven, value props, problem-focused, urgency/scarcity) with intelligent selection and proven template structures
+- **Landing Page Integration**: Added optional landing page URL input for holistic funnel creation - analyzes existing landing pages to ensure ad copy messaging is congruent with landing page content
 
 ## User Preferences
 
