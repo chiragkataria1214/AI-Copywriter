@@ -518,7 +518,7 @@ export default function MetaAdGenerator() {
               <FileText size={16} />
               <span className="text-xs sm:text-sm">Landing Page</span>
             </TabsTrigger>
-            <TabsTrigger value="debug" className="flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-2 py-2 sm:py-3">
+            <TabsTrigger value="debug" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-2 sm:py-3">
               <Target size={16} />
               <span className="text-xs sm:text-sm">Debug</span>
             </TabsTrigger>
