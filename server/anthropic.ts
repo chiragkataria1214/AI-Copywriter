@@ -209,7 +209,13 @@ Note: Include urgency/scarcity framework only when the content suggests limited 
       return {
         headlines,
         primaryText: "What The Foundation is unlike any foundation you've ever tried. Not heavy, cakey, or dry. Perfect for busy individuals who want effortless beauty.",
-        rawResponse: content
+        debugInfo: {
+          systemPrompt,
+          userPrompt,
+          rawResponse: content,
+          modelUsed: DEFAULT_MODEL_STR,
+          fallbackUsed: true
+        }
       };
     }
     
@@ -231,7 +237,12 @@ Note: Include urgency/scarcity framework only when the content suggests limited 
     return {
       headlines,
       primaryText,
-      rawResponse: content
+      debugInfo: {
+        systemPrompt,
+        userPrompt,
+        rawResponse: content,
+        modelUsed: DEFAULT_MODEL_STR
+      }
     };
   } catch (error) {
     console.error('Anthropic API error:', error);

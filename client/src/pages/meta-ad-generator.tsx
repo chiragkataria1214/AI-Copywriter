@@ -26,6 +26,14 @@ export default function MetaAdGenerator() {
   const [generatedHeadlines, setGeneratedHeadlines] = useState<Array<{ framework: string; copy: string }>>([]);
   const [generatedPrimaryText, setGeneratedPrimaryText] = useState('');
   
+  // Debug States
+  const [debugInfo, setDebugInfo] = useState<{
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null>(null);
+  
   // Landing Page States
   const [landingPageType, setLandingPageType] = useState('listicle');
   const [useAdsForLanding, setUseAdsForLanding] = useState(false);
@@ -273,18 +281,32 @@ export default function MetaAdGenerator() {
   // API mutations for generating copy
   const generateAdCopyMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('/api/generate-ad-copy', {
+      const payload = {
+        transcription,
+        concept,
+        subPersona,
+        targetAudience,
+        landingPageUrl,
+        brandDrBalance: brandDrBalance[0],
+        useJonesBrandGuide
+      };
+      
+      const result = await apiRequest('/api/generate-ad-copy', {
         method: 'POST',
-        body: {
-          transcription,
-          concept,
-          subPersona,
-          targetAudience,
-          landingPageUrl,
-          brandDrBalance: brandDrBalance[0],
-          useJonesBrandGuide
-        }
+        body: payload
       });
+      
+      // Store debug information
+      if (result.debugInfo) {
+        setDebugInfo({
+          systemPrompt: result.debugInfo.systemPrompt,
+          userPrompt: result.debugInfo.userPrompt,
+          requestPayload: payload,
+          rawResponse: result.debugInfo.rawResponse
+        });
+      }
+      
+      return result;
     },
     onSuccess: (data) => {
       setGeneratedHeadlines(data.headlines || []);
@@ -420,7 +442,7 @@ export default function MetaAdGenerator() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="ads" className="flex items-center space-x-2">
               <Sparkles size={16} />
               <span>Ad Copy Generation</span>
@@ -428,6 +450,10 @@ export default function MetaAdGenerator() {
             <TabsTrigger value="landing" className="flex items-center space-x-2">
               <FileText size={16} />
               <span>Landing Page Copy</span>
+            </TabsTrigger>
+            <TabsTrigger value="debug" className="flex items-center space-x-2">
+              <Target size={16} />
+              <span>Prompt Debug</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1015,6 +1041,145 @@ export default function MetaAdGenerator() {
                   </CardContent>
                 </Card>
               </div>
+            </div>
+          </TabsContent>
+
+          {/* Debug Tab */}
+          <TabsContent value="debug">
+            <div className="space-y-6">
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <Settings className="text-jones-primary mr-3" size={20} />
+                    Prompt Debug Information
+                  </h3>
+                  
+                  {debugInfo ? (
+                    <div className="space-y-6">
+                      {/* Request Payload */}
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-2">Request Payload</h4>
+                        <div className="bg-gray-50 rounded-lg p-4 border">
+                          <pre className="text-sm text-gray-700 whitespace-pre-wrap overflow-x-auto">
+                            {JSON.stringify(debugInfo.requestPayload, null, 2)}
+                          </pre>
+                        </div>
+                      </div>
+
+                      {/* System Prompt */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium text-gray-900">System Prompt</h4>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => copyToClipboard(debugInfo.systemPrompt, 'system-prompt')}
+                          >
+                            <Copy size={16} className="mr-1" />
+                            Copy
+                          </Button>
+                        </div>
+                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 max-h-64 overflow-y-auto">
+                          <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+                            {debugInfo.systemPrompt}
+                          </pre>
+                        </div>
+                      </div>
+
+                      {/* User Prompt */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium text-gray-900">User Prompt</h4>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => copyToClipboard(debugInfo.userPrompt, 'user-prompt')}
+                          >
+                            <Copy size={16} className="mr-1" />
+                            Copy
+                          </Button>
+                        </div>
+                        <div className="bg-green-50 rounded-lg p-4 border border-green-200 max-h-64 overflow-y-auto">
+                          <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+                            {debugInfo.userPrompt}
+                          </pre>
+                        </div>
+                      </div>
+
+                      {/* Raw Response */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium text-gray-900">Raw AI Response</h4>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => copyToClipboard(debugInfo.rawResponse, 'raw-response')}
+                          >
+                            <Copy size={16} className="mr-1" />
+                            Copy
+                          </Button>
+                        </div>
+                        <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200 max-h-64 overflow-y-auto">
+                          <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+                            {debugInfo.rawResponse}
+                          </pre>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Target size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>Generate ad copy to see debug information</p>
+                      <p className="text-sm mt-2">This will show the exact prompts, payloads, and responses sent to Claude AI</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Prompt Editing Section */}
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <AlertCircle className="text-jones-primary mr-3" size={20} />
+                    Fine-tune Prompts
+                  </h3>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-start space-x-2">
+                      <AlertCircle className="text-blue-600 mt-0.5" size={16} />
+                      <div>
+                        <p className="text-sm text-blue-800 font-medium">Coming Soon</p>
+                        <p className="text-sm text-blue-700 mt-1">
+                          In-app prompt editing will be available in the next update. For now, you can copy the prompts above and test modifications in the Claude interface, then update the code.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Current Model</h4>
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        Claude 4.0 Sonnet (claude-sonnet-4-20250514)
+                      </Badge>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Key Parameters</h4>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="bg-gray-50 rounded p-3">
+                          <span className="font-medium text-gray-900">Max Tokens:</span>
+                          <span className="ml-2 text-gray-600">1024</span>
+                        </div>
+                        <div className="bg-gray-50 rounded p-3">
+                          <span className="font-medium text-gray-900">Temperature:</span>
+                          <span className="ml-2 text-gray-600">Default</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
         </Tabs>

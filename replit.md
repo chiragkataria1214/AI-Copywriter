@@ -17,6 +17,9 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 - **Advanced Copywriting Frameworks**: Integrated 6 specific headline frameworks (benefit-driven, social proof, offer-driven, value props, problem-focused, urgency/scarcity) with intelligent selection and proven template structures
 - **Landing Page Integration**: Added optional landing page URL input for holistic funnel creation - analyzes existing landing pages to ensure ad copy messaging is congruent with landing page content
 - **Ad Preview Component**: Built authentic Facebook feed ad preview showing headlines in proper link preview section, with accurate platform layout, branding, and engagement elements
+- **Framework Separation Fix**: Separated copywriting framework types from headline copy - now displays clean headlines with framework badges instead of bundled text
+- **Mobile Facebook Preview**: Optimized ad preview to authentic mobile feed layout (375px width, proper typography, Facebook blue colors)
+- **Prompt Debug System**: Added comprehensive debug tab showing exact system prompts, user prompts, request payloads, and raw AI responses for fine-tuning Claude AI performance
 
 ## User Preferences
 
