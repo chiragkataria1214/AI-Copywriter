@@ -506,7 +506,7 @@ export default function MetaAdGenerator() {
                         <Input 
                           type="text" 
                           id="targetAudience"
-                          placeholder="e.g., Working mothers aged 25-35 in urban areas"
+                          placeholder=""
                           value={targetAudience}
                           onChange={(e) => setTargetAudience(e.target.value)}
                         />
