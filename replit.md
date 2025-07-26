@@ -22,6 +22,7 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 - **Prompt Debug System**: Added comprehensive debug tab showing exact system prompts, user prompts, request payloads, and raw AI responses for fine-tuning Claude AI performance
 - **Editable Training Configuration**: Created comprehensive interface for editing all AI training materials including brand guidelines, copy frameworks, system prompts, and model parameters in plain text format
 - **Enhanced Training UX**: Redesigned training configuration with editable text areas, visual bullet point indicators, toggle switches for experimental features, and improved mobile editing experience
+- **Admin Security Restoration**: Restored comprehensive admin-only access controls for all AI Settings interface elements while ensuring authenticated admin users have full editing capabilities for all training materials and model configuration parameters
 
 ## User Preferences
 

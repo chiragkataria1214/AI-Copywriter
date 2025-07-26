@@ -38,7 +38,7 @@ export default function MetaAdGenerator() {
   const [trainingConfig, setTrainingConfig] = useState<any>(null);
   const [editingConfig, setEditingConfig] = useState<any>(null);
   const [configLoading, setConfigLoading] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(true); // Set to true for admin access
   const [adminPassword, setAdminPassword] = useState('');
   
   // Auto-load training config when debug tab is accessed
@@ -1166,7 +1166,7 @@ export default function MetaAdGenerator() {
                             <Label className="text-sm font-medium text-gray-900 mb-3 block">Core Positioning</Label>
                             <Textarea 
                               value={editingConfig?.brandGuidelines?.corePositioning || ''}
-                              onChange={(e) => setEditingConfig({
+                              onChange={(e) => isAdmin && setEditingConfig({
                                 ...editingConfig,
                                 brandGuidelines: {
                                   ...editingConfig.brandGuidelines,
@@ -1176,6 +1176,7 @@ export default function MetaAdGenerator() {
                               className="mt-1 text-gray-900 font-medium"
                               rows={3}
                               placeholder="Your Skin But Better - natural, effortless enhancement..."
+                              disabled={!isAdmin}
                             />
                           </div>
                           
@@ -1203,7 +1204,7 @@ export default function MetaAdGenerator() {
                                     />
                                     <span className="text-blue-500 text-sm font-bold flex-shrink-0">•</span>
                                     <span className="text-xs text-gray-600 flex-shrink-0">Rule {index + 1}</span>
-                                    {(editingConfig?.brandGuidelines?.brandVoice?.length > 3) && (
+                                    {isAdmin && (editingConfig?.brandGuidelines?.brandVoice?.length > 3) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1230,6 +1231,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={rule}
                                     onChange={(e) => {
+                                      if (!isAdmin) return;
                                       const rules = [...(editingConfig.brandGuidelines.brandVoice || [])];
                                       rules[index] = e.target.value;
                                       setEditingConfig({
@@ -1242,30 +1244,33 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium ${editingConfig?.brandGuidelines?.enabledBrandVoice?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter brand voice rule..."
+                                    disabled={!isAdmin}
                                   />
                                 </div>
                               ))}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  const rules = [...(editingConfig?.brandGuidelines?.brandVoice || [])];
-                                  const enabled = [...(editingConfig?.brandGuidelines?.enabledBrandVoice || [])];
-                                  rules.push('');
-                                  enabled.push(true);
-                                  setEditingConfig({
-                                    ...editingConfig,
-                                    brandGuidelines: {
-                                      ...editingConfig.brandGuidelines,
-                                      brandVoice: rules,
-                                      enabledBrandVoice: enabled
-                                    }
-                                  });
-                                }}
-                                className="w-full border-dashed mt-2"
-                              >
-                                + Add brand voice rule
-                              </Button>
+                              {isAdmin && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const rules = [...(editingConfig?.brandGuidelines?.brandVoice || [])];
+                                    const enabled = [...(editingConfig?.brandGuidelines?.enabledBrandVoice || [])];
+                                    rules.push('');
+                                    enabled.push(true);
+                                    setEditingConfig({
+                                      ...editingConfig,
+                                      brandGuidelines: {
+                                        ...editingConfig.brandGuidelines,
+                                        brandVoice: rules,
+                                        enabledBrandVoice: enabled
+                                      }
+                                    });
+                                  }}
+                                  className="w-full border-dashed mt-2"
+                                >
+                                  + Add brand voice rule
+                                </Button>
+                              )}
                             </div>
                           </div>
                           
@@ -1293,7 +1298,7 @@ export default function MetaAdGenerator() {
                                     />
                                     <span className="text-gray-400 text-sm font-bold flex-shrink-0">•</span>
                                     <span className="text-xs text-gray-600 flex-shrink-0">Term {index + 1}</span>
-                                    {(editingConfig?.brandGuidelines?.keyTerminology?.length > 3) && (
+                                    {isAdmin && (editingConfig?.brandGuidelines?.keyTerminology?.length > 3) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1320,6 +1325,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={term}
                                     onChange={(e) => {
+                                      if (!isAdmin) return;
                                       const terms = [...(editingConfig.brandGuidelines.keyTerminology || [])];
                                       terms[index] = e.target.value;
                                       setEditingConfig({
@@ -1332,30 +1338,33 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium ${editingConfig?.brandGuidelines?.enabledKeyTerminology?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter key term or phrase..."
+                                    disabled={!isAdmin}
                                   />
                                 </div>
                               ))}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  const terms = [...(editingConfig?.brandGuidelines?.keyTerminology || [])];
-                                  const enabled = [...(editingConfig?.brandGuidelines?.enabledKeyTerminology || [])];
-                                  terms.push('');
-                                  enabled.push(true);
-                                  setEditingConfig({
-                                    ...editingConfig,
-                                    brandGuidelines: {
-                                      ...editingConfig.brandGuidelines,
-                                      keyTerminology: terms,
-                                      enabledKeyTerminology: enabled
-                                    }
-                                  });
-                                }}
-                                className="w-full border-dashed mt-2"
-                              >
-                                + Add key term
-                              </Button>
+                              {isAdmin && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const terms = [...(editingConfig?.brandGuidelines?.keyTerminology || [])];
+                                    const enabled = [...(editingConfig?.brandGuidelines?.enabledKeyTerminology || [])];
+                                    terms.push('');
+                                    enabled.push(true);
+                                    setEditingConfig({
+                                      ...editingConfig,
+                                      brandGuidelines: {
+                                        ...editingConfig.brandGuidelines,
+                                        keyTerminology: terms,
+                                        enabledKeyTerminology: enabled
+                                      }
+                                    });
+                                  }}
+                                  className="w-full border-dashed mt-2"
+                                >
+                                  + Add key term
+                                </Button>
+                              )}
                             </div>
                           </div>
                           
@@ -1388,7 +1397,7 @@ export default function MetaAdGenerator() {
                                     />
                                     <span className="text-green-500 text-sm font-bold flex-shrink-0">✓</span>
                                     <span className="text-xs text-gray-600 flex-shrink-0">Approved {index + 1}</span>
-                                    {(editingConfig?.brandGuidelines?.approvedLanguage?.length > 3) && (
+                                    {isAdmin && (editingConfig?.brandGuidelines?.approvedLanguage?.length > 3) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1415,6 +1424,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={phrase}
                                     onChange={(e) => {
+                                      if (!isAdmin) return;
                                       const phrases = [...(editingConfig.brandGuidelines.approvedLanguage || [])];
                                       phrases[index] = e.target.value;
                                       setEditingConfig({
@@ -1427,30 +1437,33 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium border-green-200 focus:border-green-400 ${editingConfig?.brandGuidelines?.enabledApprovedLanguage?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter approved phrase..."
+                                    disabled={!isAdmin}
                                   />
                                 </div>
                               ))}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  const phrases = [...(editingConfig?.brandGuidelines?.approvedLanguage || [])];
-                                  const enabled = [...(editingConfig?.brandGuidelines?.enabledApprovedLanguage || [])];
-                                  phrases.push('');
-                                  enabled.push(true);
-                                  setEditingConfig({
-                                    ...editingConfig,
-                                    brandGuidelines: {
-                                      ...editingConfig.brandGuidelines,
-                                      approvedLanguage: phrases,
-                                      enabledApprovedLanguage: enabled
-                                    }
-                                  });
-                                }}
-                                className="w-full border-dashed border-green-300 text-green-600 hover:bg-green-50 mt-2"
-                              >
-                                + Add approved phrase
-                              </Button>
+                              {isAdmin && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const phrases = [...(editingConfig?.brandGuidelines?.approvedLanguage || [])];
+                                    const enabled = [...(editingConfig?.brandGuidelines?.enabledApprovedLanguage || [])];
+                                    phrases.push('');
+                                    enabled.push(true);
+                                    setEditingConfig({
+                                      ...editingConfig,
+                                      brandGuidelines: {
+                                        ...editingConfig.brandGuidelines,
+                                        approvedLanguage: phrases,
+                                        enabledApprovedLanguage: enabled
+                                      }
+                                    });
+                                  }}
+                                  className="w-full border-dashed border-green-300 text-green-600 hover:bg-green-50 mt-2"
+                                >
+                                  + Add approved phrase
+                                </Button>
+                              )}
                             </div>
                           </div>
                           
@@ -1483,7 +1496,7 @@ export default function MetaAdGenerator() {
                                     />
                                     <span className="text-red-500 text-sm font-bold flex-shrink-0">✗</span>
                                     <span className="text-xs text-gray-600 flex-shrink-0">Avoid {index + 1}</span>
-                                    {(editingConfig?.brandGuidelines?.avoidedLanguage?.length > 3) && (
+                                    {isAdmin && (editingConfig?.brandGuidelines?.avoidedLanguage?.length > 3) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1510,6 +1523,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={phrase}
                                     onChange={(e) => {
+                                      if (!isAdmin) return;
                                       const phrases = [...(editingConfig.brandGuidelines.avoidedLanguage || [])];
                                       phrases[index] = e.target.value;
                                       setEditingConfig({
@@ -1522,30 +1536,33 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium border-red-200 focus:border-red-400 ${editingConfig?.brandGuidelines?.enabledAvoidedLanguage?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter phrase to avoid..."
+                                    disabled={!isAdmin}
                                   />
                                 </div>
                               ))}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  const phrases = [...(editingConfig?.brandGuidelines?.avoidedLanguage || [])];
-                                  const enabled = [...(editingConfig?.brandGuidelines?.enabledAvoidedLanguage || [])];
-                                  phrases.push('');
-                                  enabled.push(true);
-                                  setEditingConfig({
-                                    ...editingConfig,
-                                    brandGuidelines: {
-                                      ...editingConfig.brandGuidelines,
-                                      avoidedLanguage: phrases,
-                                      enabledAvoidedLanguage: enabled
-                                    }
-                                  });
-                                }}
-                                className="w-full border-dashed border-red-300 text-red-600 hover:bg-red-50 mt-2"
-                              >
-                                + Add phrase to avoid
-                              </Button>
+                              {isAdmin && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const phrases = [...(editingConfig?.brandGuidelines?.avoidedLanguage || [])];
+                                    const enabled = [...(editingConfig?.brandGuidelines?.enabledAvoidedLanguage || [])];
+                                    phrases.push('');
+                                    enabled.push(true);
+                                    setEditingConfig({
+                                      ...editingConfig,
+                                      brandGuidelines: {
+                                        ...editingConfig.brandGuidelines,
+                                        avoidedLanguage: phrases,
+                                        enabledAvoidedLanguage: enabled
+                                      }
+                                    });
+                                  }}
+                                  className="w-full border-dashed border-red-300 text-red-600 hover:bg-red-50 mt-2"
+                                >
+                                  + Add phrase to avoid
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1564,6 +1581,7 @@ export default function MetaAdGenerator() {
                                       <Input 
                                         value={framework.name}
                                         onChange={(e) => {
+                                          if (!isAdmin) return;
                                           const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                           updated[index] = { ...updated[index], name: e.target.value };
                                           setEditingConfig({
@@ -1576,6 +1594,7 @@ export default function MetaAdGenerator() {
                                         }}
                                         className="mt-1"
                                         placeholder="BENEFIT DRIVEN"
+                                        disabled={!isAdmin}
                                       />
                                     </div>
                                     <div>
@@ -1583,6 +1602,7 @@ export default function MetaAdGenerator() {
                                       <Input 
                                         value={framework.template}
                                         onChange={(e) => {
+                                          if (!isAdmin) return;
                                           const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                           updated[index] = { ...updated[index], template: e.target.value };
                                           setEditingConfig({
@@ -1595,6 +1615,7 @@ export default function MetaAdGenerator() {
                                         }}
                                         className="mt-1"
                                         placeholder="[Primary Benefit] + [Outcome]"
+                                        disabled={!isAdmin}
                                       />
                                     </div>
                                   </div>
@@ -1603,6 +1624,7 @@ export default function MetaAdGenerator() {
                                     <Textarea 
                                       value={framework.description}
                                       onChange={(e) => {
+                                        if (!isAdmin) return;
                                         const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                         updated[index] = { ...updated[index], description: e.target.value };
                                         setEditingConfig({
@@ -1616,6 +1638,7 @@ export default function MetaAdGenerator() {
                                       className="mt-1"
                                       rows={2}
                                       placeholder="Lead with the primary benefit/transformation the product delivers"
+                                      disabled={!isAdmin}
                                     />
                                   </div>
                                   <div className="mt-2">
@@ -1623,6 +1646,7 @@ export default function MetaAdGenerator() {
                                     <Textarea 
                                       value={framework.examples?.join('\n') || ''}
                                       onChange={(e) => {
+                                        if (!isAdmin) return;
                                         const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                         updated[index] = { 
                                           ...updated[index], 
@@ -1641,6 +1665,7 @@ export default function MetaAdGenerator() {
                                       placeholder="Natural Glow Simplified
 Effortless Beauty Found
 Your Skin But Better"
+                                      disabled={!isAdmin}
                                     />
                                   </div>
                                 </div>
@@ -1652,7 +1677,7 @@ Your Skin But Better"
                             <Label className="text-sm font-medium text-gray-900">Copy Writing Rules (one per line)</Label>
                             <Textarea 
                               value={editingConfig?.copyFrameworks?.primaryTextRules?.join('\n') || ''}
-                              onChange={(e) => setEditingConfig({
+                              onChange={(e) => isAdmin && setEditingConfig({
                                 ...editingConfig,
                                 copyFrameworks: {
                                   ...editingConfig.copyFrameworks,
@@ -1664,6 +1689,7 @@ Your Skin But Better"
                               placeholder="Headlines: Maximum 5 words, must fit in 1 line on mobile
 Primary text: 15-25 words optimal for Meta ads
 Keep sentences to 8-12 words for mobile comprehension"
+                              disabled={!isAdmin}
                             />
                           </div>
 
@@ -1682,6 +1708,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                                     <Input
                                       value={guideline}
                                       onChange={(e) => {
+                                        if (!isAdmin) return;
                                         const guidelines = [...(editingConfig.copyFrameworks.brandDrBalance.brandFirst || [])];
                                         guidelines[index] = e.target.value;
                                         setEditingConfig({
@@ -1697,8 +1724,9 @@ Keep sentences to 8-12 words for mobile comprehension"
                                       }}
                                       className="flex-1 border-blue-200 focus:border-blue-400"
                                       placeholder="Enter brand-first guideline..."
+                                      disabled={!isAdmin}
                                     />
-                                    {(editingConfig?.copyFrameworks?.brandDrBalance?.brandFirst?.length > 1) && (
+                                    {isAdmin && (editingConfig?.copyFrameworks?.brandDrBalance?.brandFirst?.length > 1) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1723,27 +1751,29 @@ Keep sentences to 8-12 words for mobile comprehension"
                                     )}
                                   </div>
                                 ))}
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    const guidelines = [...(editingConfig?.copyFrameworks?.brandDrBalance?.brandFirst || [])];
-                                    guidelines.push('');
-                                    setEditingConfig({
-                                      ...editingConfig,
-                                      copyFrameworks: {
-                                        ...editingConfig.copyFrameworks,
-                                        brandDrBalance: {
-                                          ...editingConfig.copyFrameworks.brandDrBalance,
-                                          brandFirst: guidelines
+                                {isAdmin && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const guidelines = [...(editingConfig?.copyFrameworks?.brandDrBalance?.brandFirst || [])];
+                                      guidelines.push('');
+                                      setEditingConfig({
+                                        ...editingConfig,
+                                        copyFrameworks: {
+                                          ...editingConfig.copyFrameworks,
+                                          brandDrBalance: {
+                                            ...editingConfig.copyFrameworks.brandDrBalance,
+                                            brandFirst: guidelines
+                                          }
                                         }
-                                      }
-                                    });
-                                  }}
-                                  className="w-full border-dashed border-blue-300 text-blue-600 hover:bg-blue-50 mt-2"
-                                >
-                                  + Add brand-first guideline
-                                </Button>
+                                      });
+                                    }}
+                                    className="w-full border-dashed border-blue-300 text-blue-600 hover:bg-blue-50 mt-2"
+                                  >
+                                    + Add brand-first guideline
+                                  </Button>
+                                )}
                               </div>
                             </div>
                             <div>
@@ -1760,6 +1790,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                                     <Input
                                       value={guideline}
                                       onChange={(e) => {
+                                        if (!isAdmin) return;
                                         const guidelines = [...(editingConfig.copyFrameworks.brandDrBalance.directResponse || [])];
                                         guidelines[index] = e.target.value;
                                         setEditingConfig({
@@ -1775,8 +1806,9 @@ Keep sentences to 8-12 words for mobile comprehension"
                                       }}
                                       className="flex-1 border-orange-200 focus:border-orange-400"
                                       placeholder="Enter direct response guideline..."
+                                      disabled={!isAdmin}
                                     />
-                                    {(editingConfig?.copyFrameworks?.brandDrBalance?.directResponse?.length > 1) && (
+                                    {isAdmin && (editingConfig?.copyFrameworks?.brandDrBalance?.directResponse?.length > 1) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1801,27 +1833,29 @@ Keep sentences to 8-12 words for mobile comprehension"
                                     )}
                                   </div>
                                 ))}
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    const guidelines = [...(editingConfig?.copyFrameworks?.brandDrBalance?.directResponse || [])];
-                                    guidelines.push('');
-                                    setEditingConfig({
-                                      ...editingConfig,
-                                      copyFrameworks: {
-                                        ...editingConfig.copyFrameworks,
-                                        brandDrBalance: {
-                                          ...editingConfig.copyFrameworks.brandDrBalance,
-                                          directResponse: guidelines
+                                {isAdmin && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const guidelines = [...(editingConfig?.copyFrameworks?.brandDrBalance?.directResponse || [])];
+                                      guidelines.push('');
+                                      setEditingConfig({
+                                        ...editingConfig,
+                                        copyFrameworks: {
+                                          ...editingConfig.copyFrameworks,
+                                          brandDrBalance: {
+                                            ...editingConfig.copyFrameworks.brandDrBalance,
+                                            directResponse: guidelines
+                                          }
                                         }
-                                      }
-                                    });
-                                  }}
-                                  className="w-full border-dashed border-orange-300 text-orange-600 hover:bg-orange-50 mt-2"
-                                >
-                                  + Add direct response guideline
-                                </Button>
+                                      });
+                                    }}
+                                    className="w-full border-dashed border-orange-300 text-orange-600 hover:bg-orange-50 mt-2"
+                                  >
+                                    + Add direct response guideline
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           </div>
