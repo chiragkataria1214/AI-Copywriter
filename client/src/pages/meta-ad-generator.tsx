@@ -993,9 +993,9 @@ export default function MetaAdGenerator() {
                         <span className="text-sm font-medium text-blue-700">92%</span>
                       </div>
                       
-                      <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                      <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                         <span className="text-sm text-gray-700">Readability Score</span>
-                        <span className="text-sm font-medium text-yellow-700">8.5/10</span>
+                        <span className="text-sm font-medium text-blue-700">8.5/10</span>
                       </div>
                     </div>
                   </CardContent>
