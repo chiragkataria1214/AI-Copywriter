@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Upload, Copy, Check, Target, Sparkles, Video, FileText, Zap, ThumbsUp, ThumbsDown, Star, Globe, List, AlertCircle, Palette, Users, Settings } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +22,7 @@ export default function MetaAdGenerator() {
   const [targetAudience, setTargetAudience] = useState('Working mothers aged 28-35 who value clean beauty');
   
   // Ad Copy States
-  const [generatedHeadlines, setGeneratedHeadlines] = useState([]);
+  const [generatedHeadlines, setGeneratedHeadlines] = useState<string[]>([]);
   const [generatedPrimaryText, setGeneratedPrimaryText] = useState('');
   
   // Landing Page States
@@ -28,7 +30,16 @@ export default function MetaAdGenerator() {
   const [useAdsForLanding, setUseAdsForLanding] = useState(false);
   const [adsContent, setAdsContent] = useState('');
   const [productBrief, setProductBrief] = useState('Jones Road Beauty\'s What The Foundation is a revolutionary foundation that melts into your skin for a natural, "your skin but better" finish. Unlike traditional foundations that sit on top like a mask, WTF contains skin-nourishing oils that moisturize while providing buildable coverage. Perfect for busy women who want effortless beauty without the time-consuming routine. Available in universal shades that adapt to your skin tone.');
-  const [generatedLandingCopy, setGeneratedLandingCopy] = useState({
+  const [generatedLandingCopy, setGeneratedLandingCopy] = useState<{
+    headline: string;
+    subheadline: string;
+    introduction: string;
+    sections: Array<{ title: string; content: string }>;
+    socialProof: string;
+    riskReversal: string;
+    conclusion: string;
+    cta: string;
+  }>({
     headline: '',
     subheadline: '',
     introduction: '',
@@ -39,7 +50,7 @@ export default function MetaAdGenerator() {
     cta: ''
   });
   
-  const [isLoading, setIsLoading] = useState(false);
+  // Remove individual isLoading since we'll use mutation loading states
   const [copiedHeadlines, setCopiedHeadlines] = useState(false);
   const [copiedPrimaryText, setCopiedPrimaryText] = useState(false);
   const [copiedLandingCopy, setCopiedLandingCopy] = useState(false);
@@ -130,8 +141,8 @@ export default function MetaAdGenerator() {
   };
 
   const generateTemplateAds = () => {
-    const selectedPersona = personas[concept];
-    const selectedSubPersona = subPersona && selectedPersona?.subPersonas?.[subPersona] ? selectedPersona.subPersonas[subPersona] : null;
+    const selectedPersona = personas[concept as keyof typeof personas];
+    const selectedSubPersona = subPersona && selectedPersona?.subPersonas?.[subPersona as keyof typeof selectedPersona.subPersonas] ? selectedPersona.subPersonas[subPersona as keyof typeof selectedPersona.subPersonas] : null;
     const brandPercent = brandDrBalance[0];
     const drPercent = 100 - brandPercent;
 
@@ -194,7 +205,7 @@ export default function MetaAdGenerator() {
   };
 
   const generateTemplateLandingPage = () => {
-    const selectedPersona = personas[concept];
+    const selectedPersona = personas[concept as keyof typeof personas];
     const brandPercent = brandDrBalance[0];
     const drPercent = 100 - brandPercent;
 
@@ -235,35 +246,103 @@ export default function MetaAdGenerator() {
     setGeneratedLandingCopy(landingCopy);
   };
 
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      setTranscription(e.target.result);
+      const result = e.target?.result;
+      if (typeof result === 'string') {
+        setTranscription(result);
+      }
     };
     reader.readAsText(file);
   };
 
-  const generateAdCopy = () => {
-    setIsLoading(true);
-    
-    setTimeout(() => {
-      if (activeTab === 'ads') {
-        generateTemplateAds();
-      } else {
-        generateTemplateLandingPage();
-      }
-      setIsLoading(false);
-      toast({
-        title: "Copy Generated Successfully",
-        description: `Your ${activeTab === 'ads' ? 'ad copy' : 'landing page copy'} has been generated.`,
+  // API mutations for generating copy
+  const generateAdCopyMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/generate-ad-copy', {
+        method: 'POST',
+        body: {
+          transcription,
+          concept,
+          subPersona,
+          targetAudience,
+          brandDrBalance: brandDrBalance[0],
+          useJonesBrandGuide
+        }
       });
-    }, 2000);
+    },
+    onSuccess: (data) => {
+      setGeneratedHeadlines(data.headlines || []);
+      setGeneratedPrimaryText(data.primaryText || '');
+      toast({
+        title: "Ad Copy Generated Successfully",
+        description: "Your ad copy has been generated using Claude AI.",
+      });
+    },
+    onError: (error) => {
+      console.error('Generation error:', error);
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate ad copy. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const generateLandingCopyMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/generate-landing-copy', {
+        method: 'POST',
+        body: {
+          landingPageType,
+          productBrief,
+          concept,
+          subPersona,
+          useAdsContent: useAdsForLanding,
+          adsContent,
+          brandDrBalance: brandDrBalance[0]
+        }
+      });
+    },
+    onSuccess: (data) => {
+      setGeneratedLandingCopy(data.landingCopy || {
+        headline: '',
+        subheadline: '',
+        introduction: '',
+        sections: [],
+        socialProof: '',
+        riskReversal: '',
+        conclusion: '',
+        cta: ''
+      });
+      toast({
+        title: "Landing Page Copy Generated Successfully",
+        description: "Your landing page copy has been generated using Claude AI.",
+      });
+    },
+    onError: (error) => {
+      console.error('Generation error:', error);
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate landing page copy. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const generateAdCopy = () => {
+    if (activeTab === 'ads') {
+      generateAdCopyMutation.mutate();
+    } else {
+      generateLandingCopyMutation.mutate();
+    }
   };
 
-  const copyToClipboard = async (text, type) => {
+  const copyToClipboard = async (text: string, type: string) => {
     try {
       await navigator.clipboard.writeText(text);
       if (type === 'headlines') setCopiedHeadlines(true);
@@ -289,7 +368,8 @@ export default function MetaAdGenerator() {
     }
   };
 
-  const getWordCount = (text) => {
+  const getWordCount = (text: string) => {
+    if (!text || text.trim() === '') return 0;
     return text.trim().split(/\s+/).length;
   };
 
@@ -346,38 +426,42 @@ export default function MetaAdGenerator() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Input Section */}
               <div className="space-y-6">
-                {/* Video Upload Section */}
+                {/* Content Input Section */}
                 <Card>
                   <CardContent className="p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                       <Video className="text-jones-primary mr-3" size={20} />
-                      Video Transcription
+                      Content Input
                     </h3>
                     
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-jones-primary transition-colors mb-4">
-                      <Upload className="mx-auto text-gray-400 mb-4" size={48} />
-                      <div className="text-sm text-gray-600">
-                        <Label htmlFor="file-upload" className="cursor-pointer">
-                          <span className="text-jones-primary font-medium hover:text-jones-accent">Upload a video file</span>
-                          <span> or drag and drop</span>
-                        </Label>
-                        <Input id="file-upload" type="file" className="sr-only" accept="video/*" onChange={handleFileUpload} />
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">MP4, MOV, AVI up to 100MB</p>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="transcription" className="block text-sm font-medium text-gray-700 mb-2">
-                        Transcription Text
-                      </Label>
+                    <div className="space-y-4">
                       <Textarea 
-                        id="transcription" 
-                        rows={6}
+                        rows={8}
                         className="w-full resize-none"
-                        placeholder="Paste or edit your video transcription here..."
+                        placeholder="Paste your video transcription here or upload a file..."
                         value={transcription}
                         onChange={(e) => setTranscription(e.target.value)}
                       />
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Label htmlFor="file-upload" className="cursor-pointer flex items-center space-x-2 px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors">
+                            <Upload size={16} />
+                            <span>Upload Transcription</span>
+                          </Label>
+                          <Input 
+                            id="file-upload" 
+                            type="file" 
+                            className="sr-only" 
+                            accept=".txt,.doc,.docx" 
+                            onChange={handleFileUpload} 
+                          />
+                        </div>
+                        
+                        <div className="flex items-center text-sm text-gray-500">
+                          <span className="mr-2">💡 Tip: Press Cmd/Ctrl + Enter to generate your ad copy</span>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -405,7 +489,7 @@ export default function MetaAdGenerator() {
                         </Select>
                       </div>
                       
-                      {personas[concept]?.subPersonas && Object.keys(personas[concept].subPersonas).length > 0 && (
+                      {personas[concept as keyof typeof personas]?.subPersonas && Object.keys(personas[concept as keyof typeof personas].subPersonas).length > 0 && (
                         <div>
                           <Label htmlFor="subPersona" className="block text-sm font-medium text-gray-700 mb-2">Sub-Persona</Label>
                           <Select value={subPersona} onValueChange={setSubPersona}>
@@ -413,8 +497,8 @@ export default function MetaAdGenerator() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {Object.entries(personas[concept].subPersonas).map(([key, subPersona]) => (
-                                <SelectItem key={key} value={key}>{subPersona.label}</SelectItem>
+                              {Object.entries(personas[concept as keyof typeof personas].subPersonas).map(([key, subPersona]) => (
+                                <SelectItem key={key} value={key}>{(subPersona as any).label}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -477,9 +561,9 @@ export default function MetaAdGenerator() {
                 <Button 
                   onClick={generateAdCopy} 
                   className="w-full bg-jones-primary hover:bg-jones-accent"
-                  disabled={isLoading}
+                  disabled={generateAdCopyMutation.isPending}
                 >
-                  {isLoading ? (
+                  {generateAdCopyMutation.isPending ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                       Generating...
@@ -720,9 +804,9 @@ export default function MetaAdGenerator() {
                 <Button 
                   onClick={generateAdCopy} 
                   className="w-full bg-jones-primary hover:bg-jones-accent"
-                  disabled={isLoading}
+                  disabled={generateLandingCopyMutation.isPending}
                 >
-                  {isLoading ? (
+                  {generateLandingCopyMutation.isPending ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                       Generating...

@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import multer from "multer";
+import { generateAdCopy, generateLandingPageCopy } from "./anthropic";
 
 const upload = multer({ dest: 'uploads/' });
 
@@ -29,24 +30,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate ad copy endpoint
   app.post('/api/generate-ad-copy', async (req, res) => {
     try {
-      const { transcription, concept, subPersona, targetAudience, brandDrBalance } = req.body;
+      const { transcription, concept, subPersona, targetAudience, brandDrBalance, useJonesBrandGuide } = req.body;
       
-      // In a real implementation, this would call an AI service
-      // like OpenAI GPT or Claude to generate the copy
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(400).json({ message: 'Anthropic API key not configured' });
+      }
       
-      const headlines = [
-        'Your Skin But Better',
-        'Effortless Beauty Found',
-        'Natural Glow Simplified',
-        'One Step Beauty',
-        'Barely There Perfect'
-      ];
-      
-      const primaryText = 'What The Foundation is unlike any foundation you\'ve ever tried. Not heavy, cakey, or dry. WTF is light and moisturizing, and barely noticeable so every day can be a great skin day.';
+      const result = await generateAdCopy({
+        transcription,
+        concept,
+        subPersona,
+        targetAudience,
+        brandDrBalance,
+        useJonesBrandGuide
+      });
       
       res.json({
-        headlines,
-        primaryText,
+        headlines: result.headlines,
+        primaryText: result.primaryText,
         performance: {
           estimatedCpc: 0.42,
           brandAlignment: 85
@@ -61,30 +62,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate landing page copy endpoint
   app.post('/api/generate-landing-copy', async (req, res) => {
     try {
-      const { landingPageType, productBrief, concept, useAdsContent, adsContent } = req.body;
+      const { landingPageType, productBrief, concept, subPersona, useAdsContent, adsContent, brandDrBalance } = req.body;
       
-      // In a real implementation, this would call an AI service
-      // to generate the landing page copy based on the type and inputs
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(400).json({ message: 'Anthropic API key not configured' });
+      }
       
-      const landingCopy = {
-        headline: '5 Reasons Why Busy Moms Are Ditching Heavy Foundation for This Revolutionary Alternative',
-        subheadline: 'Discover the proven approach to effortless beauty that works for everyone',
-        introduction: 'If you\'re tired of foundation that feels like a mask, cakes up throughout the day, or takes forever to apply, you\'re not alone. Thousands of busy women have discovered a game-changing foundation that gives you flawless-looking skin in seconds.',
-        sections: [
-          {
-            title: 'REASON #1: It Actually Moisturizes Your Skin',
-            content: 'Unlike traditional foundations that can dry out your skin, What The Foundation contains skin-nourishing oils that hydrate while you wear it. This means your skin looks better at the end of the day than when you started.'
-          },
-          {
-            title: 'REASON #2: No More Cakey, Mask-Like Finish',
-            content: 'The secret is in the formula that melts into your skin rather than sitting on top. You get natural-looking coverage that moves with your face, never against it.'
-          }
-        ],
-        cta: 'Try What The Foundation Risk-Free for 30 Days →'
-      };
+      const result = await generateLandingPageCopy({
+        landingPageType,
+        productBrief,
+        concept,
+        subPersona,
+        useAdsContent,
+        adsContent,
+        brandDrBalance
+      });
       
       res.json({
-        landingCopy,
+        landingCopy: {
+          headline: result.headline,
+          subheadline: result.subheadline,
+          introduction: result.introduction,
+          sections: result.sections,
+          socialProof: '',
+          riskReversal: '',
+          conclusion: '',
+          cta: result.cta
+        },
         analysis: {
           headlineLength: 'Optimal',
           brandAlignment: 92,
