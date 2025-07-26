@@ -1147,40 +1147,85 @@ export default function MetaAdGenerator() {
                               })}
                               className="mt-1"
                               rows={3}
+                              placeholder="Your Skin But Better - natural, effortless enhancement..."
                             />
                           </div>
                           
                           <div>
-                            <Label className="text-sm font-medium text-gray-900">Approved Language (comma separated)</Label>
+                            <Label className="text-sm font-medium text-gray-900">Brand Voice Rules (one per line)</Label>
                             <Textarea 
-                              value={editingConfig?.brandGuidelines?.approvedLanguage?.join(', ') || ''}
+                              value={editingConfig?.brandGuidelines?.brandVoice?.join('\n') || ''}
                               onChange={(e) => setEditingConfig({
                                 ...editingConfig,
                                 brandGuidelines: {
                                   ...editingConfig.brandGuidelines,
-                                  approvedLanguage: e.target.value.split(',').map(item => item.trim()).filter(Boolean)
+                                  brandVoice: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                }
+                              })}
+                              className="mt-1"
+                              rows={4}
+                              placeholder="Natural, welcoming, never pushy or aggressive
+Focus on enhancement not transformation
+Use inclusive, welcoming language"
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label className="text-sm font-medium text-gray-900">Key Terms & Phrases (one per line)</Label>
+                            <Textarea 
+                              value={editingConfig?.brandGuidelines?.keyTerminology?.join('\n') || ''}
+                              onChange={(e) => setEditingConfig({
+                                ...editingConfig,
+                                brandGuidelines: {
+                                  ...editingConfig.brandGuidelines,
+                                  keyTerminology: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
                                 }
                               })}
                               className="mt-1"
                               rows={3}
-                              placeholder="skin-nourishing oils, subtle radiance, creamy, glow, effortless, natural, barely there"
+                              placeholder="no-makeup makeup
+Your Skin But Better
+one and done"
                             />
                           </div>
                           
                           <div>
-                            <Label className="text-sm font-medium text-gray-900">Avoided Language (comma separated)</Label>
+                            <Label className="text-sm font-medium text-gray-900">Approved Language (one per line)</Label>
                             <Textarea 
-                              value={editingConfig?.brandGuidelines?.avoidedLanguage?.join(', ') || ''}
+                              value={editingConfig?.brandGuidelines?.approvedLanguage?.join('\n') || ''}
                               onChange={(e) => setEditingConfig({
                                 ...editingConfig,
                                 brandGuidelines: {
                                   ...editingConfig.brandGuidelines,
-                                  avoidedLanguage: e.target.value.split(',').map(item => item.trim()).filter(Boolean)
+                                  approvedLanguage: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
                                 }
                               })}
                               className="mt-1"
-                              rows={2}
-                              placeholder="dramatic transformation, flawless perfection, aggressive claims"
+                              rows={4}
+                              placeholder="skin-nourishing oils
+subtle radiance
+creamy
+glow
+effortless"
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label className="text-sm font-medium text-gray-900">Avoided Language (one per line)</Label>
+                            <Textarea 
+                              value={editingConfig?.brandGuidelines?.avoidedLanguage?.join('\n') || ''}
+                              onChange={(e) => setEditingConfig({
+                                ...editingConfig,
+                                brandGuidelines: {
+                                  ...editingConfig.brandGuidelines,
+                                  avoidedLanguage: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                }
+                              })}
+                              className="mt-1"
+                              rows={3}
+                              placeholder="dramatic transformation
+flawless perfection
+aggressive claims"
                             />
                           </div>
                         </div>
@@ -1211,10 +1256,11 @@ export default function MetaAdGenerator() {
                                         }}
                                         className="mt-1"
                                         size="sm"
+                                        placeholder="BENEFIT DRIVEN"
                                       />
                                     </div>
                                     <div>
-                                      <Label className="text-xs text-gray-600">Template</Label>
+                                      <Label className="text-xs text-gray-600">Template Format</Label>
                                       <Input 
                                         value={framework.template}
                                         onChange={(e) => {
@@ -1230,11 +1276,12 @@ export default function MetaAdGenerator() {
                                         }}
                                         className="mt-1"
                                         size="sm"
+                                        placeholder="[Primary Benefit] + [Outcome]"
                                       />
                                     </div>
                                   </div>
                                   <div className="mt-2">
-                                    <Label className="text-xs text-gray-600">Description</Label>
+                                    <Label className="text-xs text-gray-600">Description & How to Use</Label>
                                     <Textarea 
                                       value={framework.description}
                                       onChange={(e) => {
@@ -1250,10 +1297,100 @@ export default function MetaAdGenerator() {
                                       }}
                                       className="mt-1"
                                       rows={2}
+                                      placeholder="Lead with the primary benefit/transformation the product delivers"
+                                    />
+                                  </div>
+                                  <div className="mt-2">
+                                    <Label className="text-xs text-gray-600">Example Headlines (one per line)</Label>
+                                    <Textarea 
+                                      value={framework.examples?.join('\n') || ''}
+                                      onChange={(e) => {
+                                        const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
+                                        updated[index] = { 
+                                          ...updated[index], 
+                                          examples: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                        };
+                                        setEditingConfig({
+                                          ...editingConfig,
+                                          copyFrameworks: {
+                                            ...editingConfig.copyFrameworks,
+                                            headlineFrameworks: updated
+                                          }
+                                        });
+                                      }}
+                                      className="mt-1"
+                                      rows={2}
+                                      placeholder="Natural Glow Simplified
+Effortless Beauty Found
+Your Skin But Better"
                                     />
                                   </div>
                                 </div>
                               ))}
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <Label className="text-sm font-medium text-gray-900">Copy Writing Rules (one per line)</Label>
+                            <Textarea 
+                              value={editingConfig?.copyFrameworks?.primaryTextRules?.join('\n') || ''}
+                              onChange={(e) => setEditingConfig({
+                                ...editingConfig,
+                                copyFrameworks: {
+                                  ...editingConfig.copyFrameworks,
+                                  primaryTextRules: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                }
+                              })}
+                              className="mt-1"
+                              rows={4}
+                              placeholder="Headlines: Maximum 5 words, must fit in 1 line on mobile
+Primary text: 15-25 words optimal for Meta ads
+Keep sentences to 8-12 words for mobile comprehension"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm font-medium text-gray-900">Brand-First Guidelines (one per line)</Label>
+                              <Textarea 
+                                value={editingConfig?.copyFrameworks?.brandDrBalance?.brandFirst?.join('\n') || ''}
+                                onChange={(e) => setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    brandDrBalance: {
+                                      ...editingConfig.copyFrameworks.brandDrBalance,
+                                      brandFirst: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                    }
+                                  }
+                                })}
+                                className="mt-1"
+                                rows={4}
+                                placeholder="Lead with natural, effortless messaging
+Use approved Jones Road language
+Social proof should feel natural"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium text-gray-900">Direct Response Guidelines (one per line)</Label>
+                              <Textarea 
+                                value={editingConfig?.copyFrameworks?.brandDrBalance?.directResponse?.join('\n') || ''}
+                                onChange={(e) => setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    brandDrBalance: {
+                                      ...editingConfig.copyFrameworks.brandDrBalance,
+                                      directResponse: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                    }
+                                  }
+                                })}
+                                className="mt-1"
+                                rows={4}
+                                placeholder="Focus on specific benefits and outcomes
+Include stronger calls to action
+Use urgency/scarcity framework when appropriate"
+                              />
                             </div>
                           </div>
                         </div>
@@ -1261,8 +1398,16 @@ export default function MetaAdGenerator() {
 
                       <TabsContent value="prompts" className="mt-4">
                         <div className="space-y-4">
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <p className="text-sm text-blue-800 font-medium">System & User Prompts</p>
+                            <p className="text-sm text-blue-700 mt-1">
+                              These are the core instructions sent to Claude AI. Edit them to fine-tune how the AI generates copy.
+                            </p>
+                          </div>
+                          
                           <div>
-                            <Label className="text-sm font-medium text-gray-900">Ad Copy System Prompt</Label>
+                            <Label className="text-sm font-medium text-gray-900">System Prompt - Main Instructions</Label>
+                            <p className="text-xs text-gray-600 mb-2">This tells Claude what role to play and what guidelines to follow</p>
                             <Textarea 
                               value={editingConfig?.systemPrompts?.adCopyGeneration || ''}
                               onChange={(e) => setEditingConfig({
@@ -1272,13 +1417,15 @@ export default function MetaAdGenerator() {
                                   adCopyGeneration: e.target.value
                                 }
                               })}
-                              className="mt-1 font-mono text-sm"
-                              rows={12}
+                              className="mt-1"
+                              rows={15}
+                              placeholder="You are an expert Meta ad copywriter specializing in Jones Road Beauty..."
                             />
                           </div>
                           
                           <div>
-                            <Label className="text-sm font-medium text-gray-900">User Prompt Template</Label>
+                            <Label className="text-sm font-medium text-gray-900">User Prompt Template - Task Instructions</Label>
+                            <p className="text-xs text-gray-600 mb-2">This template defines the specific task and format for each request</p>
                             <Textarea 
                               value={editingConfig?.userPromptTemplates?.adCopy || ''}
                               onChange={(e) => setEditingConfig({
@@ -1288,8 +1435,12 @@ export default function MetaAdGenerator() {
                                   adCopy: e.target.value
                                 }
                               })}
-                              className="mt-1 font-mono text-sm"
-                              rows={8}
+                              className="mt-1"
+                              rows={12}
+                              placeholder="Generate Meta ad copy based on this content:
+
+TRANSCRIPTION/CONTENT:
+{transcription}..."
                             />
                           </div>
                         </div>

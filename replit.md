@@ -20,6 +20,7 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 - **Framework Separation Fix**: Separated copywriting framework types from headline copy - now displays clean headlines with framework badges instead of bundled text
 - **Mobile Facebook Preview**: Optimized ad preview to authentic mobile feed layout (375px width, proper typography, Facebook blue colors)
 - **Prompt Debug System**: Added comprehensive debug tab showing exact system prompts, user prompts, request payloads, and raw AI responses for fine-tuning Claude AI performance
+- **Editable Training Configuration**: Created comprehensive interface for editing all AI training materials including brand guidelines, copy frameworks, system prompts, and model parameters in plain text format
 
 ## User Preferences
 
