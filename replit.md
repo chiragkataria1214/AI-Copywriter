@@ -2,7 +2,16 @@
 
 ## Overview
 
-This is a full-stack web application built for generating Meta (Facebook/Instagram) advertising copy and landing pages. The application uses a modern React frontend with a Node.js/Express backend, PostgreSQL database via Drizzle ORM, and is designed for deployment on Replit. The system focuses on AI-powered content generation with a sophisticated user interface built using shadcn/ui components.
+This is a full-stack web application built for generating Meta (Facebook/Instagram) advertising copy and landing pages, specifically tailored for Jones Road Beauty brand guidelines. The application uses Claude AI (via Anthropic SDK) for authentic copywriting generation, with a modern React frontend, Node.js/Express backend, and is designed for deployment on Replit. The system features sophisticated persona targeting, Brand/DR balance controls, and professional UI built with shadcn/ui components.
+
+## Recent Changes (July 2025)
+
+- **Claude AI Integration Complete**: Successfully integrated Anthropic's Claude 4.0 Sonnet for authentic ad copy generation
+- **Brand Guidelines Implementation**: Built Jones Road Beauty brand voice and positioning into system prompts
+- **Persona Targeting System**: Added detailed sub-personas (Life Juggler → New Mom, etc.) for precise audience targeting
+- **Brand/DR Balance Controls**: Real-time slider showing percentage balance (defaults to 50%), influences copy style
+- **API Structure Fixed**: Resolved fetch API request structure issues that were causing frontend errors
+- **Response Parsing Enhanced**: Robust parsing system for Claude's natural language responses into structured headlines and primary text
 
 ## User Preferences
 
