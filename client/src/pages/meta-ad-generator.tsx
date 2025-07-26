@@ -390,7 +390,7 @@ export default function MetaAdGenerator() {
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">Jones Road Beauty</h1>
-                <p className="text-sm text-gray-500">Meta Ad Generator</p>
+                <p className="text-sm text-gray-500">AI Copywriter</p>
               </div>
             </div>
             

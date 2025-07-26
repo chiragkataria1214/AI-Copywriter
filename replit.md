@@ -1,8 +1,8 @@
-# Meta Ad Generator - System Architecture
+# AI Copywriter - System Architecture
 
 ## Overview
 
-This is a full-stack web application built for generating Meta (Facebook/Instagram) advertising copy and landing pages, specifically tailored for Jones Road Beauty brand guidelines. The application uses Claude AI (via Anthropic SDK) for authentic copywriting generation, with a modern React frontend, Node.js/Express backend, and is designed for deployment on Replit. The system features sophisticated persona targeting, Brand/DR balance controls, and professional UI built with shadcn/ui components.
+This is a full-stack AI-powered copywriting platform built for generating advertising copy and landing pages across multiple platforms, specifically tailored for Jones Road Beauty brand guidelines. The application uses Claude AI (via Anthropic SDK) for authentic copywriting generation, with a modern React frontend, Node.js/Express backend, and is designed for deployment on Replit. The system features sophisticated persona targeting, Brand/DR balance controls, and professional UI built with shadcn/ui components.
 
 ## Recent Changes (July 2025)
 
@@ -12,6 +12,7 @@ This is a full-stack web application built for generating Meta (Facebook/Instagr
 - **Brand/DR Balance Controls**: Real-time slider showing percentage balance (defaults to 50%), influences copy style
 - **API Structure Fixed**: Resolved fetch API request structure issues that were causing frontend errors
 - **Response Parsing Enhanced**: Robust parsing system for Claude's natural language responses into structured headlines and primary text
+- **Application Rebranding**: Updated from "Meta Ad Generator" to "AI Copywriter" to reflect broader platform capabilities
 
 ## User Preferences
 
