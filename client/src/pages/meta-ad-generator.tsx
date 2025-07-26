@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Upload, Copy, Check, Target, Sparkles, Video, FileText, Zap, ThumbsUp, ThumbsDown, Star, Globe, List, AlertCircle, Palette, Users, Settings } from 'lucide-react';
+import { Upload, Copy, Check, Target, Sparkles, Video, FileText, Zap, ThumbsUp, ThumbsDown, Star, Globe, List, AlertCircle, Palette, Users, Settings, LogOut, User } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,9 +13,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function MetaAdGenerator() {
   const [activeTab, setActiveTab] = useState('ads');
+  const { user, logout, isLoggingOut } = useAuth();
   const [transcription, setTranscription] = useState('');
   const [concept, setConcept] = useState('lifeJuggler');
   const [subPersona, setSubPersona] = useState('newMom');
@@ -539,9 +541,32 @@ export default function MetaAdGenerator() {
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span className="text-sm font-medium text-green-700">Connected</span>
               </div>
-              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-jones-secondary rounded-full flex items-center justify-center">
-                <Users className="text-jones-primary" size={14} />
+              <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-600">
+                <User size={14} />
+                <span className="hidden sm:inline">Welcome, {user?.username}</span>
+                <span className="sm:hidden">{user?.username}</span>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={logout}
+                disabled={isLoggingOut}
+                className="flex items-center space-x-1 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
+              >
+                {isLoggingOut ? (
+                  <>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600"></div>
+                    <span className="hidden sm:inline">Signing out...</span>
+                    <span className="sm:hidden">...</span>
+                  </>
+                ) : (
+                  <>
+                    <LogOut size={12} />
+                    <span className="hidden sm:inline">Sign Out</span>
+                    <span className="sm:hidden">Out</span>
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </div>
