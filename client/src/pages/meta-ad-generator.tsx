@@ -188,13 +188,13 @@ export default function MetaAdGenerator() {
     if (drPercent > 75) {
       primaryText = `Transform your beauty routine today! ${selectedPersona?.description || 'Get the results you deserve.'} `;
       if (selectedSubPersona) {
-        primaryText += `Specifically designed for ${selectedSubPersona.label.toLowerCase()}s dealing with ${selectedSubPersona.valueProps.slice(0, 2).join(' and ').toLowerCase()}. `;
+        primaryText += `Specifically designed for ${(selectedSubPersona as any).label.toLowerCase()}s dealing with ${(selectedSubPersona as any).valueProps.slice(0, 2).join(' and ').toLowerCase()}. `;
       }
       primaryText += `Don't wait - thousands are already experiencing the Jones Road difference. Limited time offer!`;
     } else if (brandPercent > 50) {
       primaryText = `Embrace beauty that feels natural and effortless. ${selectedPersona?.description || 'Designed for your authentic self.'} `;
       if (selectedSubPersona) {
-        primaryText += `Lovingly crafted for ${selectedSubPersona.label.toLowerCase()}s who cherish ${selectedSubPersona.valueProps.slice(0, 2).join(' and ').toLowerCase()}. `;
+        primaryText += `Lovingly crafted for ${(selectedSubPersona as any).label.toLowerCase()}s who cherish ${(selectedSubPersona as any).valueProps.slice(0, 2).join(' and ').toLowerCase()}. `;
       }
       primaryText += `Jones Road Beauty believes in enhancing who you already are - your skin but better, always.`;
     } else {
@@ -241,6 +241,7 @@ export default function MetaAdGenerator() {
       ],
       socialProof: `Trusted by 50,000+ ${selectedPersona?.label?.toLowerCase() || 'beauty lovers'} who've discovered that the best makeup looks like no makeup at all.`,
       riskReversal: `${drPercent > 50 ? 'Limited time: Get your complete Jones Road starter kit with 30-day money-back guarantee.' : 'Experience the Jones Road difference with our gentle 30-day trial. Love your natural glow or get your money back.'}`,
+      conclusion: `Jones Road Beauty transforms your daily routine into moments of self-care and confidence, because the best version of you is already here.`,
       cta: `${drPercent > 50 ? 'Join 50,000+ Happy Customers → Start Your Natural Beauty Journey Today' : 'Discover Your Most Beautiful Self → Join the Jones Road Community'}`
     };
 
@@ -781,12 +782,12 @@ export default function MetaAdGenerator() {
                         <div className="px-3 py-2 border-t bg-white">
                           <div className="flex items-center justify-between text-sm text-gray-500">
                             <div className="flex items-center space-x-6">
-                              <span className="flex items-center cursor-pointer" style={{ color: 'inherit' }} onMouseEnter={(e) => e.target.style.color = '#004182'} onMouseLeave={(e) => e.target.style.color = 'inherit'}>
+                              <span className="flex items-center cursor-pointer" style={{ color: 'inherit' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#004182'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = 'inherit'}>
                                 <ThumbsUp size={16} className="mr-2" />
                                 Like
                               </span>
-                              <span className="cursor-pointer" style={{ color: 'inherit' }} onMouseEnter={(e) => e.target.style.color = '#004182'} onMouseLeave={(e) => e.target.style.color = 'inherit'}>Comment</span>
-                              <span className="cursor-pointer" style={{ color: 'inherit' }} onMouseEnter={(e) => e.target.style.color = '#004182'} onMouseLeave={(e) => e.target.style.color = 'inherit'}>Share</span>
+                              <span className="cursor-pointer" style={{ color: 'inherit' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#004182'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = 'inherit'}>Comment</span>
+                              <span className="cursor-pointer" style={{ color: 'inherit' }} onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#004182'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = 'inherit'}>Share</span>
                             </div>
                           </div>
                         </div>
