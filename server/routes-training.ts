@@ -20,7 +20,12 @@ export function registerTrainingRoutes(app: Express) {
   // Update training configuration
   app.post('/api/training-config', async (req, res) => {
     try {
-      const updatedConfig: TrainingConfig = req.body;
+      const { adminPassword, ...updatedConfig } = req.body;
+      
+      // Admin authentication check
+      if (adminPassword !== 'admin123') {
+        return res.status(403).json({ message: "Unauthorized: Invalid admin credentials" });
+      }
       
       // Validate the config structure (basic validation)
       if (!updatedConfig.brandGuidelines || !updatedConfig.copyFrameworks || !updatedConfig.systemPrompts) {

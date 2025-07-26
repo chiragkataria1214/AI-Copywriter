@@ -38,6 +38,8 @@ export default function MetaAdGenerator() {
   const [trainingConfig, setTrainingConfig] = useState<any>(null);
   const [editingConfig, setEditingConfig] = useState<any>(null);
   const [configLoading, setConfigLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
   
   // Landing Page States
   const [landingPageType, setLandingPageType] = useState('listicle');
@@ -306,7 +308,7 @@ export default function MetaAdGenerator() {
     mutationFn: async (config: any) => {
       return await apiRequest('/api/training-config', {
         method: 'POST',
-        body: config
+        body: { ...config, adminPassword }
       });
     },
     onSuccess: () => {
@@ -319,11 +321,29 @@ export default function MetaAdGenerator() {
     onError: (error) => {
       toast({
         title: "Failed to Save Configuration", 
-        description: "Could not save training configuration.",
+        description: "Could not save training configuration. Check admin password.",
         variant: "destructive"
       });
     }
   });
+
+  // Admin authentication
+  const authenticateAdmin = () => {
+    // Simple admin check - in production this would be more secure
+    if (adminPassword === 'admin123') {
+      setIsAdmin(true);
+      toast({
+        title: "Admin Access Granted",
+        description: "You can now edit training configuration.",
+      });
+    } else {
+      toast({
+        title: "Access Denied",
+        description: "Invalid admin password.",
+        variant: "destructive"
+      });
+    }
+  };
 
   // API mutations for generating copy
   const generateAdCopyMutation = useMutation({
@@ -1111,7 +1131,26 @@ export default function MetaAdGenerator() {
                       >
                         {loadTrainingConfigMutation.isPending ? "Loading..." : "Load Config"}
                       </Button>
-                      {editingConfig && (
+                      {!isAdmin && editingConfig && (
+                        <div className="flex items-center space-x-2">
+                          <Input 
+                            type="password"
+                            placeholder="Admin password"
+                            value={adminPassword}
+                            onChange={(e) => setAdminPassword(e.target.value)}
+                            className="w-32"
+                            size="sm"
+                          />
+                          <Button 
+                            onClick={authenticateAdmin}
+                            variant="outline"
+                            size="sm"
+                          >
+                            Unlock
+                          </Button>
+                        </div>
+                      )}
+                      {isAdmin && editingConfig && (
                         <Button 
                           onClick={() => saveTrainingConfigMutation.mutate(editingConfig)}
                           disabled={saveTrainingConfigMutation.isPending}
@@ -1123,6 +1162,20 @@ export default function MetaAdGenerator() {
                     </div>
                   </div>
                   
+                  {!isAdmin && trainingConfig && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                      <div className="flex items-start space-x-2">
+                        <AlertCircle className="text-yellow-600 mt-0.5" size={16} />
+                        <div>
+                          <p className="text-sm text-yellow-800 font-medium">Admin Access Required</p>
+                          <p className="text-sm text-yellow-700 mt-1">
+                            These training materials are read-only. Enter the admin password above to make changes.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {trainingConfig ? (
                     <Tabs defaultValue="brand-guidelines" className="w-full">
                       <TabsList className="grid w-full grid-cols-4">
@@ -1138,7 +1191,7 @@ export default function MetaAdGenerator() {
                             <Label className="text-sm font-medium text-gray-900">Core Positioning</Label>
                             <Textarea 
                               value={editingConfig?.brandGuidelines?.corePositioning || ''}
-                              onChange={(e) => setEditingConfig({
+                              onChange={(e) => isAdmin && setEditingConfig({
                                 ...editingConfig,
                                 brandGuidelines: {
                                   ...editingConfig.brandGuidelines,
@@ -1148,6 +1201,7 @@ export default function MetaAdGenerator() {
                               className="mt-1"
                               rows={3}
                               placeholder="Your Skin But Better - natural, effortless enhancement..."
+                              disabled={!isAdmin}
                             />
                           </div>
                           
@@ -1155,7 +1209,7 @@ export default function MetaAdGenerator() {
                             <Label className="text-sm font-medium text-gray-900">Brand Voice Rules (one per line)</Label>
                             <Textarea 
                               value={editingConfig?.brandGuidelines?.brandVoice?.join('\n') || ''}
-                              onChange={(e) => setEditingConfig({
+                              onChange={(e) => isAdmin && setEditingConfig({
                                 ...editingConfig,
                                 brandGuidelines: {
                                   ...editingConfig.brandGuidelines,
@@ -1167,6 +1221,7 @@ export default function MetaAdGenerator() {
                               placeholder="Natural, welcoming, never pushy or aggressive
 Focus on enhancement not transformation
 Use inclusive, welcoming language"
+                              disabled={!isAdmin}
                             />
                           </div>
                           
@@ -1174,7 +1229,7 @@ Use inclusive, welcoming language"
                             <Label className="text-sm font-medium text-gray-900">Key Terms & Phrases (one per line)</Label>
                             <Textarea 
                               value={editingConfig?.brandGuidelines?.keyTerminology?.join('\n') || ''}
-                              onChange={(e) => setEditingConfig({
+                              onChange={(e) => isAdmin && setEditingConfig({
                                 ...editingConfig,
                                 brandGuidelines: {
                                   ...editingConfig.brandGuidelines,
@@ -1186,6 +1241,7 @@ Use inclusive, welcoming language"
                               placeholder="no-makeup makeup
 Your Skin But Better
 one and done"
+                              disabled={!isAdmin}
                             />
                           </div>
                           
@@ -1193,7 +1249,7 @@ one and done"
                             <Label className="text-sm font-medium text-gray-900">Approved Language (one per line)</Label>
                             <Textarea 
                               value={editingConfig?.brandGuidelines?.approvedLanguage?.join('\n') || ''}
-                              onChange={(e) => setEditingConfig({
+                              onChange={(e) => isAdmin && setEditingConfig({
                                 ...editingConfig,
                                 brandGuidelines: {
                                   ...editingConfig.brandGuidelines,
@@ -1207,6 +1263,7 @@ subtle radiance
 creamy
 glow
 effortless"
+                              disabled={!isAdmin}
                             />
                           </div>
                           
@@ -1214,7 +1271,7 @@ effortless"
                             <Label className="text-sm font-medium text-gray-900">Avoided Language (one per line)</Label>
                             <Textarea 
                               value={editingConfig?.brandGuidelines?.avoidedLanguage?.join('\n') || ''}
-                              onChange={(e) => setEditingConfig({
+                              onChange={(e) => isAdmin && setEditingConfig({
                                 ...editingConfig,
                                 brandGuidelines: {
                                   ...editingConfig.brandGuidelines,
@@ -1226,6 +1283,7 @@ effortless"
                               placeholder="dramatic transformation
 flawless perfection
 aggressive claims"
+                              disabled={!isAdmin}
                             />
                           </div>
                         </div>
@@ -1244,6 +1302,7 @@ aggressive claims"
                                       <Input 
                                         value={framework.name}
                                         onChange={(e) => {
+                                          if (!isAdmin) return;
                                           const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                           updated[index] = { ...updated[index], name: e.target.value };
                                           setEditingConfig({
@@ -1257,6 +1316,7 @@ aggressive claims"
                                         className="mt-1"
                                         size="sm"
                                         placeholder="BENEFIT DRIVEN"
+                                        disabled={!isAdmin}
                                       />
                                     </div>
                                     <div>
@@ -1264,6 +1324,7 @@ aggressive claims"
                                       <Input 
                                         value={framework.template}
                                         onChange={(e) => {
+                                          if (!isAdmin) return;
                                           const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                           updated[index] = { ...updated[index], template: e.target.value };
                                           setEditingConfig({
@@ -1277,6 +1338,7 @@ aggressive claims"
                                         className="mt-1"
                                         size="sm"
                                         placeholder="[Primary Benefit] + [Outcome]"
+                                        disabled={!isAdmin}
                                       />
                                     </div>
                                   </div>
@@ -1285,6 +1347,7 @@ aggressive claims"
                                     <Textarea 
                                       value={framework.description}
                                       onChange={(e) => {
+                                        if (!isAdmin) return;
                                         const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                         updated[index] = { ...updated[index], description: e.target.value };
                                         setEditingConfig({
@@ -1298,6 +1361,7 @@ aggressive claims"
                                       className="mt-1"
                                       rows={2}
                                       placeholder="Lead with the primary benefit/transformation the product delivers"
+                                      disabled={!isAdmin}
                                     />
                                   </div>
                                   <div className="mt-2">
@@ -1305,6 +1369,7 @@ aggressive claims"
                                     <Textarea 
                                       value={framework.examples?.join('\n') || ''}
                                       onChange={(e) => {
+                                        if (!isAdmin) return;
                                         const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                         updated[index] = { 
                                           ...updated[index], 
@@ -1323,6 +1388,7 @@ aggressive claims"
                                       placeholder="Natural Glow Simplified
 Effortless Beauty Found
 Your Skin But Better"
+                                      disabled={!isAdmin}
                                     />
                                   </div>
                                 </div>
@@ -1334,7 +1400,7 @@ Your Skin But Better"
                             <Label className="text-sm font-medium text-gray-900">Copy Writing Rules (one per line)</Label>
                             <Textarea 
                               value={editingConfig?.copyFrameworks?.primaryTextRules?.join('\n') || ''}
-                              onChange={(e) => setEditingConfig({
+                              onChange={(e) => isAdmin && setEditingConfig({
                                 ...editingConfig,
                                 copyFrameworks: {
                                   ...editingConfig.copyFrameworks,
@@ -1346,6 +1412,7 @@ Your Skin But Better"
                               placeholder="Headlines: Maximum 5 words, must fit in 1 line on mobile
 Primary text: 15-25 words optimal for Meta ads
 Keep sentences to 8-12 words for mobile comprehension"
+                              disabled={!isAdmin}
                             />
                           </div>
 
@@ -1354,7 +1421,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                               <Label className="text-sm font-medium text-gray-900">Brand-First Guidelines (one per line)</Label>
                               <Textarea 
                                 value={editingConfig?.copyFrameworks?.brandDrBalance?.brandFirst?.join('\n') || ''}
-                                onChange={(e) => setEditingConfig({
+                                onChange={(e) => isAdmin && setEditingConfig({
                                   ...editingConfig,
                                   copyFrameworks: {
                                     ...editingConfig.copyFrameworks,
@@ -1369,13 +1436,14 @@ Keep sentences to 8-12 words for mobile comprehension"
                                 placeholder="Lead with natural, effortless messaging
 Use approved Jones Road language
 Social proof should feel natural"
+                                disabled={!isAdmin}
                               />
                             </div>
                             <div>
                               <Label className="text-sm font-medium text-gray-900">Direct Response Guidelines (one per line)</Label>
                               <Textarea 
                                 value={editingConfig?.copyFrameworks?.brandDrBalance?.directResponse?.join('\n') || ''}
-                                onChange={(e) => setEditingConfig({
+                                onChange={(e) => isAdmin && setEditingConfig({
                                   ...editingConfig,
                                   copyFrameworks: {
                                     ...editingConfig.copyFrameworks,
@@ -1390,6 +1458,7 @@ Social proof should feel natural"
                                 placeholder="Focus on specific benefits and outcomes
 Include stronger calls to action
 Use urgency/scarcity framework when appropriate"
+                                disabled={!isAdmin}
                               />
                             </div>
                           </div>
@@ -1410,7 +1479,7 @@ Use urgency/scarcity framework when appropriate"
                             <p className="text-xs text-gray-600 mb-2">This tells Claude what role to play and what guidelines to follow</p>
                             <Textarea 
                               value={editingConfig?.systemPrompts?.adCopyGeneration || ''}
-                              onChange={(e) => setEditingConfig({
+                              onChange={(e) => isAdmin && setEditingConfig({
                                 ...editingConfig,
                                 systemPrompts: {
                                   ...editingConfig.systemPrompts,
@@ -1420,6 +1489,7 @@ Use urgency/scarcity framework when appropriate"
                               className="mt-1"
                               rows={15}
                               placeholder="You are an expert Meta ad copywriter specializing in Jones Road Beauty..."
+                              disabled={!isAdmin}
                             />
                           </div>
                           
@@ -1428,7 +1498,7 @@ Use urgency/scarcity framework when appropriate"
                             <p className="text-xs text-gray-600 mb-2">This template defines the specific task and format for each request</p>
                             <Textarea 
                               value={editingConfig?.userPromptTemplates?.adCopy || ''}
-                              onChange={(e) => setEditingConfig({
+                              onChange={(e) => isAdmin && setEditingConfig({
                                 ...editingConfig,
                                 userPromptTemplates: {
                                   ...editingConfig.userPromptTemplates,
@@ -1441,6 +1511,7 @@ Use urgency/scarcity framework when appropriate"
 
 TRANSCRIPTION/CONTENT:
 {transcription}..."
+                              disabled={!isAdmin}
                             />
                           </div>
                         </div>
@@ -1453,7 +1524,7 @@ TRANSCRIPTION/CONTENT:
                               <Label className="text-sm font-medium text-gray-900">Model</Label>
                               <Input 
                                 value={editingConfig?.modelParameters?.model || ''}
-                                onChange={(e) => setEditingConfig({
+                                onChange={(e) => isAdmin && setEditingConfig({
                                   ...editingConfig,
                                   modelParameters: {
                                     ...editingConfig.modelParameters,
@@ -1461,6 +1532,7 @@ TRANSCRIPTION/CONTENT:
                                   }
                                 })}
                                 className="mt-1"
+                                disabled={!isAdmin}
                               />
                             </div>
                             <div>
@@ -1468,7 +1540,7 @@ TRANSCRIPTION/CONTENT:
                               <Input 
                                 type="number"
                                 value={editingConfig?.modelParameters?.maxTokens || ''}
-                                onChange={(e) => setEditingConfig({
+                                onChange={(e) => isAdmin && setEditingConfig({
                                   ...editingConfig,
                                   modelParameters: {
                                     ...editingConfig.modelParameters,
@@ -1476,6 +1548,7 @@ TRANSCRIPTION/CONTENT:
                                   }
                                 })}
                                 className="mt-1"
+                                disabled={!isAdmin}
                               />
                             </div>
                           </div>
