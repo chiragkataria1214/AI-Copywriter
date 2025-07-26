@@ -605,15 +605,7 @@ export default function MetaAdGenerator() {
                                   <Badge variant="secondary" className="bg-green-100 text-green-700">
                                     {getWordCount(headline)} words
                                   </Badge>
-                                  <div className="flex items-center space-x-1">
-                                    {[1,2,3,4,5].map((star) => (
-                                      <Star 
-                                        key={star} 
-                                        size={12} 
-                                        className={`${star <= 4 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
-                                      />
-                                    ))}
-                                  </div>
+
                                 </div>
                               </div>
                               <Button 
@@ -669,15 +661,7 @@ export default function MetaAdGenerator() {
                               Brand-First
                             </Badge>
                           </div>
-                          <div className="flex items-center space-x-1">
-                            {[1,2,3,4,5].map((star) => (
-                              <Star 
-                                key={star} 
-                                size={12} 
-                                className={`${star <= 4 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
-                              />
-                            ))}
-                          </div>
+
                         </div>
                       </div>
                     ) : (
