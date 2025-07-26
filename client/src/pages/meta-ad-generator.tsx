@@ -23,7 +23,7 @@ export default function MetaAdGenerator() {
   const [landingPageUrl, setLandingPageUrl] = useState('');
   
   // Ad Copy States
-  const [generatedHeadlines, setGeneratedHeadlines] = useState<string[]>([]);
+  const [generatedHeadlines, setGeneratedHeadlines] = useState<Array<{ framework: string; copy: string }>>([]);
   const [generatedPrimaryText, setGeneratedPrimaryText] = useState('');
   
   // Landing Page States
@@ -201,7 +201,15 @@ export default function MetaAdGenerator() {
       primaryText = `What The Foundation is unlike any foundation you've ever tried. Not heavy, cakey, or dry. WTF is light and moisturizing, and barely noticeable so every day can be a great skin day. Perfect for busy ${selectedPersona?.label?.toLowerCase() || 'individuals'} who want to look effortlessly put-together without the time-consuming routine.`;
     }
 
-    setGeneratedHeadlines(headlineTemplates.slice(0, 5));
+    // Convert to new format with frameworks
+    const headlinesWithFrameworks = headlineTemplates.slice(0, 5).map((copy, index) => {
+      const frameworks = ["BENEFIT DRIVEN", "SOCIAL PROOF", "VALUE PROPS", "PROBLEM FOCUSED", "OFFER DRIVEN"];
+      return {
+        framework: frameworks[index] || "GENERAL",
+        copy
+      };
+    });
+    setGeneratedHeadlines(headlinesWithFrameworks);
     setGeneratedPrimaryText(primaryText);
   };
 
@@ -606,7 +614,7 @@ export default function MetaAdGenerator() {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => copyToClipboard(generatedHeadlines.join('\n'), 'headlines')}
+                        onClick={() => copyToClipboard(generatedHeadlines.map(h => h.copy).join('\n'), 'headlines')}
                         disabled={generatedHeadlines.length === 0}
                       >
                         {copiedHeadlines ? <Check size={16} /> : <Copy size={16} />}
@@ -620,19 +628,21 @@ export default function MetaAdGenerator() {
                           <div key={index} className="group relative border border-gray-200 rounded-lg p-4 hover:border-jones-primary transition-colors">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
-                                <p className="font-medium text-gray-900">{headline}</p>
+                                <p className="font-medium text-gray-900">{headline.copy}</p>
                                 <div className="flex items-center space-x-4 mt-2">
-                                  <Badge variant="secondary" className="bg-green-100 text-green-700">
-                                    {getWordCount(headline)} words
+                                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                    {headline.framework}
                                   </Badge>
-
+                                  <Badge variant="secondary" className="bg-green-100 text-green-700">
+                                    {getWordCount(headline.copy)} words
+                                  </Badge>
                                 </div>
                               </div>
                               <Button 
                                 variant="ghost" 
                                 size="sm"
                                 className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => copyToClipboard(headline, 'headline')}
+                                onClick={() => copyToClipboard(headline.copy, 'headline')}
                               >
                                 <Copy size={16} />
                               </Button>
@@ -763,7 +773,7 @@ export default function MetaAdGenerator() {
                         {generatedHeadlines.length > 0 && (
                           <div className="p-3 bg-gray-50 border-t">
                             <div className="font-semibold text-sm text-gray-900 mb-1 leading-tight">
-                              {generatedHeadlines[0]}
+                              {generatedHeadlines[0]?.copy || 'Your Next Beauty Game-Changer'}
                             </div>
                             <div className="text-xs text-gray-600 mb-3 uppercase tracking-wide">
                               JONESROADBEAUTY.COM

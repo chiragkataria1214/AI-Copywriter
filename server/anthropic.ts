@@ -139,17 +139,34 @@ REQUIREMENTS:
 - Benefits over features
 - Subtle urgency without being pushy
 
-Please format your response as:
-1. [framework type]: [headline]
-2. [framework type]: [headline]  
-3. [framework type]: [headline]
-4. [framework type]: [headline]
-5. [framework type]: [headline]
+Please format your response as JSON with this exact structure:
+{
+  "headlines": [
+    {
+      "framework": "BENEFIT DRIVEN",
+      "copy": "Your Amazing Headlines"
+    },
+    {
+      "framework": "SOCIAL PROOF",
+      "copy": "Clean headline copy"
+    },
+    {
+      "framework": "VALUE PROPS", 
+      "copy": "Pure headline text"
+    },
+    {
+      "framework": "PROBLEM FOCUSED",
+      "copy": "Problem solving copy"
+    },
+    {
+      "framework": "OFFER DRIVEN",
+      "copy": "Offer headline text"
+    }
+  ],
+  "primaryText": "Your primary text using one of the framework templates"
+}
 
-Note: Include urgency/scarcity framework only when the content suggests limited availability, time-sensitive offers, or seasonal relevance. Otherwise, use the other 5 frameworks.
-
-PRIMARY TEXT:
-[primary text using one of the framework templates]`;
+Note: Include urgency/scarcity framework only when the content suggests limited availability, time-sensitive offers, or seasonal relevance. Otherwise, use the other 5 frameworks. Always return exactly 5 headlines.`;
 
   try {
     const response = await anthropic.messages.create({
@@ -161,59 +178,58 @@ PRIMARY TEXT:
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
     
-    // Response parsing successful
-    
-    // Simple robust parsing approach
-    const headlines: string[] = [];
-    let primaryText = '';
-    
-    // Split into lines and clean them safely
-    const lines = content.split('\n').map(line => line ? line.trim() : '').filter(line => line.length > 0);
-    
-    // Look for numbered items (1., 2., etc) or bullet points
-    for (const line of lines) {
-      if (!line || typeof line !== 'string') continue;
-      // Try to extract numbered headlines
-      const numberedMatch = line.match(/^(\d+)\.?\s*(.+)$/);
-      if (numberedMatch && headlines.length < 5) {
-        let headline = numberedMatch[2];
-        // Clean formatting
-        headline = headline.replace(/^\*\*(.+)\*\*$/, '$1').replace(/^"(.+)"$/, '$1').trim();
-        if (headline.length > 0) {
-          headlines.push(headline);
-        }
-        continue;
-      }
+    // Parse JSON response
+    let parsedResponse;
+    try {
+      // Extract JSON from response - handle potential markdown wrapping
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      const jsonString = jsonMatch ? jsonMatch[0] : content;
+      parsedResponse = JSON.parse(jsonString);
+    } catch (error) {
+      console.error('Failed to parse JSON response:', error);
+      console.log('Raw response:', content);
       
-      // Look for primary text after collecting headlines
-      if (headlines.length >= 3 && !primaryText) {
-        // Skip lines that look like section headers but capture the actual content
-        if (line.match(/^(primary text|primary):/i)) {
-          // Skip the header line
-          continue;
-        } else if (!line.match(/^(\*|word count|brand\/dr|persona)/i) && line.length > 15) {
-          primaryText = line.replace(/^\*\*(.+)\*\*$/, '$1').replace(/^"(.+)"$/, '$1').trim();
-        }
-      }
+      // Fallback to template approach
+      const drPercent = 100 - brandPercent;
+      
+      const headlines = drPercent > 75 ? [
+        { framework: "BENEFIT DRIVEN", copy: "Transform Your Routine Today" },
+        { framework: "SOCIAL PROOF", copy: "Join Thousands of Users" },
+        { framework: "OFFER DRIVEN", copy: "Limited Time Offer" },
+        { framework: "PROBLEM FOCUSED", copy: "Get Results Fast" },
+        { framework: "VALUE PROPS", copy: "Revolutionary Formula" }
+      ] : [
+        { framework: "BENEFIT DRIVEN", copy: "Your Skin But Better" },
+        { framework: "VALUE PROPS", copy: "Effortless Beauty Found" },
+        { framework: "PROBLEM FOCUSED", copy: "Natural Glow Simplified" },
+        { framework: "SOCIAL PROOF", copy: "One Step Beauty" },
+        { framework: "OFFER DRIVEN", copy: "Barely There Perfect" }
+      ];
+      
+      return {
+        headlines,
+        primaryText: "What The Foundation is unlike any foundation you've ever tried. Not heavy, cakey, or dry. Perfect for busy individuals who want effortless beauty.",
+        rawResponse: content
+      };
     }
     
-    // Fallback: if no numbered format, try bullet points or quotes
-    if (headlines.length === 0) {
-      for (const line of lines) {
-        // Try bullet points or dashes
-        const bulletMatch = line.match(/^[-*•]\s*(.+)$/);
-        if (bulletMatch && headlines.length < 5) {
-          let headline = bulletMatch[1];
-          headline = headline.replace(/^\*\*(.+)\*\*$/, '$1').replace(/^"(.+)"$/, '$1').trim();
-          if (headline.length > 0) {
-            headlines.push(headline);
-          }
-        }
-      }
+    // Validate parsed response structure
+    if (!parsedResponse.headlines || !Array.isArray(parsedResponse.headlines) || 
+        !parsedResponse.primaryText || parsedResponse.headlines.length === 0) {
+      console.error('Invalid response structure:', parsedResponse);
+      throw new Error('Invalid response structure from AI');
     }
+    
+    // Clean and validate headlines
+    const headlines = parsedResponse.headlines.slice(0, 5).map((item: any) => ({
+      framework: item.framework || 'GENERAL',
+      copy: (item.copy || '').replace(/^\*\*(.+)\*\*$/, '$1').replace(/^"(.+)"$/, '$1').trim()
+    })).filter((item: any) => item.copy.length > 0);
+    
+    const primaryText = parsedResponse.primaryText.replace(/^\*\*(.+)\*\*$/, '$1').replace(/^"(.+)"$/, '$1').trim();
     
     return {
-      headlines: headlines.slice(0, 5),
+      headlines,
       primaryText,
       rawResponse: content
     };
