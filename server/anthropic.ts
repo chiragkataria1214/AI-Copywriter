@@ -68,9 +68,10 @@ BRAND-FIRST APPROACH (when brand % > 50):
 - Social proof should feel natural and brand-aligned
 
 DIRECT RESPONSE APPROACH (when DR % > 50):
-- Use urgency and scarcity carefully - still maintain brand voice
 - Focus on specific benefits and outcomes
-- Include stronger calls to action`;
+- Include stronger calls to action
+- Use urgency/scarcity framework when strategically appropriate (limited stock, seasonal launches, exclusive access)
+- Maintain brand voice even with urgency - avoid aggressive or pushy language`;
 
   const userPrompt = `Generate Meta ad copy based on this content:
 
@@ -78,13 +79,14 @@ TRANSCRIPTION/CONTENT:
 ${transcription}
 
 COPYWRITING FRAMEWORK REQUIREMENTS:
-Generate exactly 5 headlines using these specific frameworks (one headline per framework):
+Generate exactly 5 headlines using these specific frameworks (select the 5 most appropriate):
 
 1. BENEFIT DRIVEN: Lead with the primary benefit/transformation the product delivers
 2. SOCIAL PROOF DRIVEN: Incorporate trust signals, reviews, or popularity metrics  
 3. OFFER DRIVEN: Focus on a specific promotion, deal, or exclusive access
 4. VALUE PROPS: Highlight unique product attributes or competitive advantages
 5. PROBLEM FOCUSED: Address a specific pain point your audience faces
+6. URGENCY/SCARCITY: Create time-sensitive or limited-availability motivation (use only when it makes strategic sense and aligns with the content provided)
 
 FRAMEWORK PRINCIPLES:
 - Lead with a hook: Start with concise, memorable phrase that distills core promise
@@ -108,11 +110,13 @@ REQUIREMENTS:
 - Subtle urgency without being pushy
 
 Please format your response as:
-1. [benefit-driven headline]
-2. [social proof-driven headline]  
-3. [offer-driven headline]
-4. [value props headline]
-5. [problem-focused headline]
+1. [framework type]: [headline]
+2. [framework type]: [headline]  
+3. [framework type]: [headline]
+4. [framework type]: [headline]
+5. [framework type]: [headline]
+
+Note: Include urgency/scarcity framework only when the content suggests limited availability, time-sensitive offers, or seasonal relevance. Otherwise, use the other 5 frameworks.
 
 PRIMARY TEXT:
 [primary text using one of the framework templates]`;
