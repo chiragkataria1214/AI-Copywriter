@@ -26,6 +26,11 @@ export default function MetaAdGenerator() {
   const [generatedHeadlines, setGeneratedHeadlines] = useState<Array<{ framework: string; copy: string }>>([]);
   const [generatedPrimaryText, setGeneratedPrimaryText] = useState('');
   
+  // Feedback states for analytics
+  const [currentCopyId, setCurrentCopyId] = useState<string | null>(null);
+  const [copyRating, setCopyRating] = useState<string | null>(null);
+  const [feedbackText, setFeedbackText] = useState('');
+  
   // Debug States
   const [debugInfo, setDebugInfo] = useState<{
     systemPrompt: string;
@@ -385,6 +390,10 @@ export default function MetaAdGenerator() {
     onSuccess: (data) => {
       setGeneratedHeadlines(data.headlines || []);
       setGeneratedPrimaryText(data.primaryText || '');
+      setCurrentCopyId(data.copyId || null); // Store copy ID for feedback
+      // Reset feedback state for new generation
+      setCopyRating(null);
+      setFeedbackText('');
       toast({
         title: "Ad Copy Generated Successfully",
         description: "Your ad copy has been generated using Claude AI.",
@@ -398,6 +407,30 @@ export default function MetaAdGenerator() {
         variant: "destructive"
       });
     }
+  });
+
+  // Submit feedback mutation for analytics
+  const submitFeedbackMutation = useMutation({
+    mutationFn: async (data: { copyId: string; rating: string; feedback?: string }) => {
+      return await apiRequest('/api/copy-feedback', {
+        method: 'POST',
+        body: data
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Thank you!",
+        description: "Your feedback helps improve the AI copywriter.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error submitting feedback:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit feedback. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const generateLandingCopyMutation = useMutation({
@@ -804,6 +837,86 @@ export default function MetaAdGenerator() {
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Feedback Section for Analytics */}
+                {currentCopyId && (generatedHeadlines.length > 0 || generatedPrimaryText) && (
+                  <Card className="border-2" style={{ borderColor: '#004182' }}>
+                    <CardContent className="p-6">
+                      <div className="text-center space-y-4">
+                        <h3 className="text-lg font-semibold" style={{ color: '#004182' }}>
+                          Rate This Copy
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Your feedback helps improve the AI copywriter for everyone
+                        </p>
+                        
+                        <div className="flex justify-center space-x-3 mb-4">
+                          <Button
+                            variant={copyRating === 'excellent' ? 'default' : 'outline'}
+                            size="sm"
+                            className={copyRating === 'excellent' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
+                            onClick={() => setCopyRating('excellent')}
+                          >
+                            <ThumbsUp size={16} className="mr-1" />
+                            Excellent
+                          </Button>
+                          <Button
+                            variant={copyRating === 'good' ? 'default' : 'outline'}
+                            size="sm"
+                            className={copyRating === 'good' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+                            onClick={() => setCopyRating('good')}
+                          >
+                            <Star size={16} className="mr-1" />
+                            Good
+                          </Button>
+                          <Button
+                            variant={copyRating === 'poor' ? 'default' : 'outline'}
+                            size="sm"
+                            className={copyRating === 'poor' ? 'bg-red-600 hover:bg-red-700 text-white' : ''}
+                            onClick={() => setCopyRating('poor')}
+                          >
+                            <ThumbsDown size={16} className="mr-1" />
+                            Poor
+                          </Button>
+                        </div>
+
+                        {copyRating && (
+                          <div className="space-y-3">
+                            <Textarea
+                              placeholder="Optional: Share specific feedback to help improve the AI..."
+                              value={feedbackText}
+                              onChange={(e) => setFeedbackText(e.target.value)}
+                              className="min-h-20"
+                            />
+                            <Button
+                              onClick={() => {
+                                if (currentCopyId && copyRating) {
+                                  submitFeedbackMutation.mutate({
+                                    copyId: currentCopyId,
+                                    rating: copyRating,
+                                    feedback: feedbackText || undefined
+                                  });
+                                }
+                              }}
+                              className="w-full text-white"
+                              style={{ backgroundColor: '#004182' }}
+                              disabled={submitFeedbackMutation.isPending}
+                            >
+                              {submitFeedbackMutation.isPending ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                  Submitting...
+                                </>
+                              ) : (
+                                'Submit Feedback'
+                              )}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Ad Preview Section */}
                 {(generatedHeadlines.length > 0 || generatedPrimaryText) && (

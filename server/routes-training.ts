@@ -5,6 +5,24 @@ import path from 'path';
 
 const TRAINING_CONFIG_PATH = path.join(process.cwd(), 'shared', 'training-config.ts');
 
+// Export function to get training config for use in other routes
+export async function getTrainingConfig(): Promise<TrainingConfig> {
+  return {
+    ...defaultTrainingConfig,
+    brandGuidelines: {
+      ...defaultTrainingConfig.brandGuidelines,
+      enabledBrandVoice: defaultTrainingConfig.brandGuidelines.enabledBrandVoice || 
+        new Array(defaultTrainingConfig.brandGuidelines.brandVoice.length).fill(true),
+      enabledKeyTerminology: defaultTrainingConfig.brandGuidelines.enabledKeyTerminology || 
+        new Array(defaultTrainingConfig.brandGuidelines.keyTerminology.length).fill(true),
+      enabledApprovedLanguage: defaultTrainingConfig.brandGuidelines.enabledApprovedLanguage || 
+        new Array(defaultTrainingConfig.brandGuidelines.approvedLanguage.length).fill(true),
+      enabledAvoidedLanguage: defaultTrainingConfig.brandGuidelines.enabledAvoidedLanguage || 
+        new Array(defaultTrainingConfig.brandGuidelines.avoidedLanguage.length).fill(true),
+    }
+  };
+}
+
 // Routes for managing training configuration
 export function registerTrainingRoutes(app: Express) {
   // Get current training configuration
