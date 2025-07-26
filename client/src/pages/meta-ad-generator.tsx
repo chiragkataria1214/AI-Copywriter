@@ -1166,7 +1166,7 @@ export default function MetaAdGenerator() {
                             <Label className="text-sm font-medium text-gray-900 mb-3 block">Core Positioning</Label>
                             <Textarea 
                               value={editingConfig?.brandGuidelines?.corePositioning || ''}
-                              onChange={(e) => isAdmin && setEditingConfig({
+                              onChange={(e) => setEditingConfig({
                                 ...editingConfig,
                                 brandGuidelines: {
                                   ...editingConfig.brandGuidelines,
@@ -1176,7 +1176,6 @@ export default function MetaAdGenerator() {
                               className="mt-1 text-gray-900 font-medium"
                               rows={3}
                               placeholder="Your Skin But Better - natural, effortless enhancement..."
-                              disabled={!isAdmin}
                             />
                           </div>
                           
@@ -1231,7 +1230,6 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={rule}
                                     onChange={(e) => {
-                                      if (!isAdmin) return;
                                       const rules = [...(editingConfig.brandGuidelines.brandVoice || [])];
                                       rules[index] = e.target.value;
                                       setEditingConfig({
@@ -1244,33 +1242,30 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium ${editingConfig?.brandGuidelines?.enabledBrandVoice?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter brand voice rule..."
-                                    disabled={!isAdmin}
                                   />
                                 </div>
                               ))}
-                              {isAdmin && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    const rules = [...(editingConfig?.brandGuidelines?.brandVoice || [])];
-                                    const enabled = [...(editingConfig?.brandGuidelines?.enabledBrandVoice || [])];
-                                    rules.push('');
-                                    enabled.push(true);
-                                    setEditingConfig({
-                                      ...editingConfig,
-                                      brandGuidelines: {
-                                        ...editingConfig.brandGuidelines,
-                                        brandVoice: rules,
-                                        enabledBrandVoice: enabled
-                                      }
-                                    });
-                                  }}
-                                  className="w-full border-dashed mt-2"
-                                >
-                                  + Add brand voice rule
-                                </Button>
-                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const rules = [...(editingConfig?.brandGuidelines?.brandVoice || [])];
+                                  const enabled = [...(editingConfig?.brandGuidelines?.enabledBrandVoice || [])];
+                                  rules.push('');
+                                  enabled.push(true);
+                                  setEditingConfig({
+                                    ...editingConfig,
+                                    brandGuidelines: {
+                                      ...editingConfig.brandGuidelines,
+                                      brandVoice: rules,
+                                      enabledBrandVoice: enabled
+                                    }
+                                  });
+                                }}
+                                className="w-full border-dashed mt-2"
+                              >
+                                + Add brand voice rule
+                              </Button>
                             </div>
                           </div>
                           
