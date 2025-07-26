@@ -1143,7 +1143,6 @@ export default function MetaAdGenerator() {
                             value={adminPassword}
                             onChange={(e) => setAdminPassword(e.target.value)}
                             className="w-full sm:w-32"
-                            size="sm"
                           />
                           <Button 
                             onClick={authenticateAdmin}
@@ -1628,7 +1627,6 @@ export default function MetaAdGenerator() {
                                           });
                                         }}
                                         className="mt-1"
-                                        size="sm"
                                         placeholder="BENEFIT DRIVEN"
                                         disabled={!isAdmin}
                                       />
@@ -1650,7 +1648,6 @@ export default function MetaAdGenerator() {
                                           });
                                         }}
                                         className="mt-1"
-                                        size="sm"
                                         placeholder="[Primary Benefit] + [Outcome]"
                                         disabled={!isAdmin}
                                       />

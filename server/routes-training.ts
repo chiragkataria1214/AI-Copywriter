@@ -10,7 +10,22 @@ export function registerTrainingRoutes(app: Express) {
   // Get current training configuration
   app.get('/api/training-config', async (req, res) => {
     try {
-      res.json(defaultTrainingConfig);
+      // Ensure enabled arrays are initialized
+      const configWithToggles = {
+        ...defaultTrainingConfig,
+        brandGuidelines: {
+          ...defaultTrainingConfig.brandGuidelines,
+          enabledBrandVoice: defaultTrainingConfig.brandGuidelines.enabledBrandVoice || 
+            new Array(defaultTrainingConfig.brandGuidelines.brandVoice.length).fill(true),
+          enabledKeyTerminology: defaultTrainingConfig.brandGuidelines.enabledKeyTerminology || 
+            new Array(defaultTrainingConfig.brandGuidelines.keyTerminology.length).fill(true),
+          enabledApprovedLanguage: defaultTrainingConfig.brandGuidelines.enabledApprovedLanguage || 
+            new Array(defaultTrainingConfig.brandGuidelines.approvedLanguage.length).fill(true),
+          enabledAvoidedLanguage: defaultTrainingConfig.brandGuidelines.enabledAvoidedLanguage || 
+            new Array(defaultTrainingConfig.brandGuidelines.avoidedLanguage.length).fill(true),
+        }
+      };
+      res.json(configWithToggles);
     } catch (error) {
       console.error("Error fetching training config:", error);
       res.status(500).json({ message: "Failed to fetch training configuration" });
@@ -46,6 +61,11 @@ export interface TrainingConfig {
     keyTerminology: string[];
     approvedLanguage: string[];
     avoidedLanguage: string[];
+    // Toggle states for individual items
+    enabledBrandVoice?: boolean[];
+    enabledKeyTerminology?: boolean[];
+    enabledApprovedLanguage?: boolean[];
+    enabledAvoidedLanguage?: boolean[];
   };
   copyFrameworks: {
     headlineFrameworks: Array<{

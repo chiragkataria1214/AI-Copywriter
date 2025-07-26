@@ -8,6 +8,11 @@ export interface TrainingConfig {
     keyTerminology: string[];
     approvedLanguage: string[];
     avoidedLanguage: string[];
+    // Toggle states for individual items
+    enabledBrandVoice?: boolean[];
+    enabledKeyTerminology?: boolean[];
+    enabledApprovedLanguage?: boolean[];
+    enabledAvoidedLanguage?: boolean[];
   };
   copyFrameworks: {
     headlineFrameworks: Array<{
