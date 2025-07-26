@@ -1213,27 +1213,53 @@ export default function MetaAdGenerator() {
                           
                           <div>
                             <Label className="text-sm font-medium text-gray-900 mb-3 block">Brand Voice Rules</Label>
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                               {(editingConfig?.brandGuidelines?.brandVoice || ['', '', '']).map((rule: string, index: number) => (
-                                <div key={index} className="flex items-center space-x-3">
-                                  <Switch 
-                                    checked={editingConfig?.brandGuidelines?.enabledBrandVoice?.[index] !== false}
-                                    onCheckedChange={(checked) => {
-                                      if (!isAdmin) return;
-                                      const enabled = [...(editingConfig?.brandGuidelines?.enabledBrandVoice || [])];
-                                      enabled[index] = checked;
-                                      setEditingConfig({
-                                        ...editingConfig,
-                                        brandGuidelines: {
-                                          ...editingConfig.brandGuidelines,
-                                          enabledBrandVoice: enabled
-                                        }
-                                      });
-                                    }}
-                                    disabled={!isAdmin}
-                                    className="flex-shrink-0"
-                                  />
-                                  <span className="text-blue-500 text-sm font-bold flex-shrink-0">•</span>
+                                <div key={index} className="space-y-2">
+                                  <div className="flex items-center space-x-3">
+                                    <Switch 
+                                      checked={editingConfig?.brandGuidelines?.enabledBrandVoice?.[index] !== false}
+                                      onCheckedChange={(checked) => {
+                                        if (!isAdmin) return;
+                                        const enabled = [...(editingConfig?.brandGuidelines?.enabledBrandVoice || [])];
+                                        enabled[index] = checked;
+                                        setEditingConfig({
+                                          ...editingConfig,
+                                          brandGuidelines: {
+                                            ...editingConfig.brandGuidelines,
+                                            enabledBrandVoice: enabled
+                                          }
+                                        });
+                                      }}
+                                      disabled={!isAdmin}
+                                      className="flex-shrink-0"
+                                    />
+                                    <span className="text-blue-500 text-sm font-bold flex-shrink-0">•</span>
+                                    <span className="text-xs text-gray-600 flex-shrink-0">Rule {index + 1}</span>
+                                    {isAdmin && (editingConfig?.brandGuidelines?.brandVoice?.length > 3) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-red-500 hover:text-red-700 flex-shrink-0 ml-auto"
+                                        onClick={() => {
+                                          const rules = [...(editingConfig.brandGuidelines.brandVoice || [])];
+                                          const enabled = [...(editingConfig.brandGuidelines.enabledBrandVoice || [])];
+                                          rules.splice(index, 1);
+                                          enabled.splice(index, 1);
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            brandGuidelines: {
+                                              ...editingConfig.brandGuidelines,
+                                              brandVoice: rules,
+                                              enabledBrandVoice: enabled
+                                            }
+                                          });
+                                        }}
+                                      >
+                                        ×
+                                      </Button>
+                                    )}
+                                  </div>
                                   <Input
                                     value={rule}
                                     onChange={(e) => {
@@ -1248,33 +1274,10 @@ export default function MetaAdGenerator() {
                                         }
                                       });
                                     }}
-                                    className={`flex-1 ${editingConfig?.brandGuidelines?.enabledBrandVoice?.[index] === false ? 'opacity-50' : ''}`}
+                                    className={`w-full ml-0 ${editingConfig?.brandGuidelines?.enabledBrandVoice?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter brand voice rule..."
                                     disabled={!isAdmin}
                                   />
-                                  {isAdmin && (editingConfig?.brandGuidelines?.brandVoice?.length > 3) && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-red-500 hover:text-red-700 flex-shrink-0"
-                                      onClick={() => {
-                                        const rules = [...(editingConfig.brandGuidelines.brandVoice || [])];
-                                        const enabled = [...(editingConfig.brandGuidelines.enabledBrandVoice || [])];
-                                        rules.splice(index, 1);
-                                        enabled.splice(index, 1);
-                                        setEditingConfig({
-                                          ...editingConfig,
-                                          brandGuidelines: {
-                                            ...editingConfig.brandGuidelines,
-                                            brandVoice: rules,
-                                            enabledBrandVoice: enabled
-                                          }
-                                        });
-                                      }}
-                                    >
-                                      ×
-                                    </Button>
-                                  )}
                                 </div>
                               ))}
                               {isAdmin && (
@@ -1305,27 +1308,53 @@ export default function MetaAdGenerator() {
                           
                           <div>
                             <Label className="text-sm font-medium text-gray-900 mb-3 block">Key Terms & Phrases</Label>
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                               {(editingConfig?.brandGuidelines?.keyTerminology || ['', '', '']).map((term: string, index: number) => (
-                                <div key={index} className="flex items-center space-x-3">
-                                  <Switch 
-                                    checked={editingConfig?.brandGuidelines?.enabledKeyTerminology?.[index] !== false}
-                                    onCheckedChange={(checked) => {
-                                      if (!isAdmin) return;
-                                      const enabled = [...(editingConfig?.brandGuidelines?.enabledKeyTerminology || [])];
-                                      enabled[index] = checked;
-                                      setEditingConfig({
-                                        ...editingConfig,
-                                        brandGuidelines: {
-                                          ...editingConfig.brandGuidelines,
-                                          enabledKeyTerminology: enabled
-                                        }
-                                      });
-                                    }}
-                                    disabled={!isAdmin}
-                                    className="flex-shrink-0"
-                                  />
-                                  <span className="text-gray-400 text-sm font-bold flex-shrink-0">•</span>
+                                <div key={index} className="space-y-2">
+                                  <div className="flex items-center space-x-3">
+                                    <Switch 
+                                      checked={editingConfig?.brandGuidelines?.enabledKeyTerminology?.[index] !== false}
+                                      onCheckedChange={(checked) => {
+                                        if (!isAdmin) return;
+                                        const enabled = [...(editingConfig?.brandGuidelines?.enabledKeyTerminology || [])];
+                                        enabled[index] = checked;
+                                        setEditingConfig({
+                                          ...editingConfig,
+                                          brandGuidelines: {
+                                            ...editingConfig.brandGuidelines,
+                                            enabledKeyTerminology: enabled
+                                          }
+                                        });
+                                      }}
+                                      disabled={!isAdmin}
+                                      className="flex-shrink-0"
+                                    />
+                                    <span className="text-gray-400 text-sm font-bold flex-shrink-0">•</span>
+                                    <span className="text-xs text-gray-600 flex-shrink-0">Term {index + 1}</span>
+                                    {isAdmin && (editingConfig?.brandGuidelines?.keyTerminology?.length > 3) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-red-500 hover:text-red-700 flex-shrink-0 ml-auto"
+                                        onClick={() => {
+                                          const terms = [...(editingConfig.brandGuidelines.keyTerminology || [])];
+                                          const enabled = [...(editingConfig.brandGuidelines.enabledKeyTerminology || [])];
+                                          terms.splice(index, 1);
+                                          enabled.splice(index, 1);
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            brandGuidelines: {
+                                              ...editingConfig.brandGuidelines,
+                                              keyTerminology: terms,
+                                              enabledKeyTerminology: enabled
+                                            }
+                                          });
+                                        }}
+                                      >
+                                        ×
+                                      </Button>
+                                    )}
+                                  </div>
                                   <Input
                                     value={term}
                                     onChange={(e) => {
@@ -1340,33 +1369,10 @@ export default function MetaAdGenerator() {
                                         }
                                       });
                                     }}
-                                    className={`flex-1 ${editingConfig?.brandGuidelines?.enabledKeyTerminology?.[index] === false ? 'opacity-50' : ''}`}
+                                    className={`w-full ml-0 ${editingConfig?.brandGuidelines?.enabledKeyTerminology?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter key term or phrase..."
                                     disabled={!isAdmin}
                                   />
-                                  {isAdmin && (editingConfig?.brandGuidelines?.keyTerminology?.length > 3) && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-red-500 hover:text-red-700 flex-shrink-0"
-                                      onClick={() => {
-                                        const terms = [...(editingConfig.brandGuidelines.keyTerminology || [])];
-                                        const enabled = [...(editingConfig.brandGuidelines.enabledKeyTerminology || [])];
-                                        terms.splice(index, 1);
-                                        enabled.splice(index, 1);
-                                        setEditingConfig({
-                                          ...editingConfig,
-                                          brandGuidelines: {
-                                            ...editingConfig.brandGuidelines,
-                                            keyTerminology: terms,
-                                            enabledKeyTerminology: enabled
-                                          }
-                                        });
-                                      }}
-                                    >
-                                      ×
-                                    </Button>
-                                  )}
                                 </div>
                               ))}
                               {isAdmin && (
@@ -1402,27 +1408,53 @@ export default function MetaAdGenerator() {
                                 Approved Language
                               </span>
                             </Label>
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                               {(editingConfig?.brandGuidelines?.approvedLanguage || ['', '', '']).map((phrase: string, index: number) => (
-                                <div key={index} className="flex items-center space-x-3">
-                                  <Switch 
-                                    checked={editingConfig?.brandGuidelines?.enabledApprovedLanguage?.[index] !== false}
-                                    onCheckedChange={(checked) => {
-                                      if (!isAdmin) return;
-                                      const enabled = [...(editingConfig?.brandGuidelines?.enabledApprovedLanguage || [])];
-                                      enabled[index] = checked;
-                                      setEditingConfig({
-                                        ...editingConfig,
-                                        brandGuidelines: {
-                                          ...editingConfig.brandGuidelines,
-                                          enabledApprovedLanguage: enabled
-                                        }
-                                      });
-                                    }}
-                                    disabled={!isAdmin}
-                                    className="flex-shrink-0"
-                                  />
-                                  <span className="text-green-500 text-sm font-bold flex-shrink-0">✓</span>
+                                <div key={index} className="space-y-2">
+                                  <div className="flex items-center space-x-3">
+                                    <Switch 
+                                      checked={editingConfig?.brandGuidelines?.enabledApprovedLanguage?.[index] !== false}
+                                      onCheckedChange={(checked) => {
+                                        if (!isAdmin) return;
+                                        const enabled = [...(editingConfig?.brandGuidelines?.enabledApprovedLanguage || [])];
+                                        enabled[index] = checked;
+                                        setEditingConfig({
+                                          ...editingConfig,
+                                          brandGuidelines: {
+                                            ...editingConfig.brandGuidelines,
+                                            enabledApprovedLanguage: enabled
+                                          }
+                                        });
+                                      }}
+                                      disabled={!isAdmin}
+                                      className="flex-shrink-0"
+                                    />
+                                    <span className="text-green-500 text-sm font-bold flex-shrink-0">✓</span>
+                                    <span className="text-xs text-gray-600 flex-shrink-0">Approved {index + 1}</span>
+                                    {isAdmin && (editingConfig?.brandGuidelines?.approvedLanguage?.length > 3) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-red-500 hover:text-red-700 flex-shrink-0 ml-auto"
+                                        onClick={() => {
+                                          const phrases = [...(editingConfig.brandGuidelines.approvedLanguage || [])];
+                                          const enabled = [...(editingConfig.brandGuidelines.enabledApprovedLanguage || [])];
+                                          phrases.splice(index, 1);
+                                          enabled.splice(index, 1);
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            brandGuidelines: {
+                                              ...editingConfig.brandGuidelines,
+                                              approvedLanguage: phrases,
+                                              enabledApprovedLanguage: enabled
+                                            }
+                                          });
+                                        }}
+                                      >
+                                        ×
+                                      </Button>
+                                    )}
+                                  </div>
                                   <Input
                                     value={phrase}
                                     onChange={(e) => {
@@ -1437,33 +1469,10 @@ export default function MetaAdGenerator() {
                                         }
                                       });
                                     }}
-                                    className={`flex-1 border-green-200 focus:border-green-400 ${editingConfig?.brandGuidelines?.enabledApprovedLanguage?.[index] === false ? 'opacity-50' : ''}`}
+                                    className={`w-full ml-0 border-green-200 focus:border-green-400 ${editingConfig?.brandGuidelines?.enabledApprovedLanguage?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter approved phrase..."
                                     disabled={!isAdmin}
                                   />
-                                  {isAdmin && (editingConfig?.brandGuidelines?.approvedLanguage?.length > 3) && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-red-500 hover:text-red-700 flex-shrink-0"
-                                      onClick={() => {
-                                        const phrases = [...(editingConfig.brandGuidelines.approvedLanguage || [])];
-                                        const enabled = [...(editingConfig.brandGuidelines.enabledApprovedLanguage || [])];
-                                        phrases.splice(index, 1);
-                                        enabled.splice(index, 1);
-                                        setEditingConfig({
-                                          ...editingConfig,
-                                          brandGuidelines: {
-                                            ...editingConfig.brandGuidelines,
-                                            approvedLanguage: phrases,
-                                            enabledApprovedLanguage: enabled
-                                          }
-                                        });
-                                      }}
-                                    >
-                                      ×
-                                    </Button>
-                                  )}
                                 </div>
                               ))}
                               {isAdmin && (
@@ -1499,27 +1508,53 @@ export default function MetaAdGenerator() {
                                 Avoided Language
                               </span>
                             </Label>
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                               {(editingConfig?.brandGuidelines?.avoidedLanguage || ['', '', '']).map((phrase: string, index: number) => (
-                                <div key={index} className="flex items-center space-x-3">
-                                  <Switch 
-                                    checked={editingConfig?.brandGuidelines?.enabledAvoidedLanguage?.[index] !== false}
-                                    onCheckedChange={(checked) => {
-                                      if (!isAdmin) return;
-                                      const enabled = [...(editingConfig?.brandGuidelines?.enabledAvoidedLanguage || [])];
-                                      enabled[index] = checked;
-                                      setEditingConfig({
-                                        ...editingConfig,
-                                        brandGuidelines: {
-                                          ...editingConfig.brandGuidelines,
-                                          enabledAvoidedLanguage: enabled
-                                        }
-                                      });
-                                    }}
-                                    disabled={!isAdmin}
-                                    className="flex-shrink-0"
-                                  />
-                                  <span className="text-red-500 text-sm font-bold flex-shrink-0">✗</span>
+                                <div key={index} className="space-y-2">
+                                  <div className="flex items-center space-x-3">
+                                    <Switch 
+                                      checked={editingConfig?.brandGuidelines?.enabledAvoidedLanguage?.[index] !== false}
+                                      onCheckedChange={(checked) => {
+                                        if (!isAdmin) return;
+                                        const enabled = [...(editingConfig?.brandGuidelines?.enabledAvoidedLanguage || [])];
+                                        enabled[index] = checked;
+                                        setEditingConfig({
+                                          ...editingConfig,
+                                          brandGuidelines: {
+                                            ...editingConfig.brandGuidelines,
+                                            enabledAvoidedLanguage: enabled
+                                          }
+                                        });
+                                      }}
+                                      disabled={!isAdmin}
+                                      className="flex-shrink-0"
+                                    />
+                                    <span className="text-red-500 text-sm font-bold flex-shrink-0">✗</span>
+                                    <span className="text-xs text-gray-600 flex-shrink-0">Avoid {index + 1}</span>
+                                    {isAdmin && (editingConfig?.brandGuidelines?.avoidedLanguage?.length > 3) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-red-500 hover:text-red-700 flex-shrink-0 ml-auto"
+                                        onClick={() => {
+                                          const phrases = [...(editingConfig.brandGuidelines.avoidedLanguage || [])];
+                                          const enabled = [...(editingConfig.brandGuidelines.enabledAvoidedLanguage || [])];
+                                          phrases.splice(index, 1);
+                                          enabled.splice(index, 1);
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            brandGuidelines: {
+                                              ...editingConfig.brandGuidelines,
+                                              avoidedLanguage: phrases,
+                                              enabledAvoidedLanguage: enabled
+                                            }
+                                          });
+                                        }}
+                                      >
+                                        ×
+                                      </Button>
+                                    )}
+                                  </div>
                                   <Input
                                     value={phrase}
                                     onChange={(e) => {
@@ -1534,33 +1569,10 @@ export default function MetaAdGenerator() {
                                         }
                                       });
                                     }}
-                                    className={`flex-1 border-red-200 focus:border-red-400 ${editingConfig?.brandGuidelines?.enabledAvoidedLanguage?.[index] === false ? 'opacity-50' : ''}`}
+                                    className={`w-full ml-0 border-red-200 focus:border-red-400 ${editingConfig?.brandGuidelines?.enabledAvoidedLanguage?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter phrase to avoid..."
                                     disabled={!isAdmin}
                                   />
-                                  {isAdmin && (editingConfig?.brandGuidelines?.avoidedLanguage?.length > 3) && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-red-500 hover:text-red-700 flex-shrink-0"
-                                      onClick={() => {
-                                        const phrases = [...(editingConfig.brandGuidelines.avoidedLanguage || [])];
-                                        const enabled = [...(editingConfig.brandGuidelines.enabledAvoidedLanguage || [])];
-                                        phrases.splice(index, 1);
-                                        enabled.splice(index, 1);
-                                        setEditingConfig({
-                                          ...editingConfig,
-                                          brandGuidelines: {
-                                            ...editingConfig.brandGuidelines,
-                                            avoidedLanguage: phrases,
-                                            enabledAvoidedLanguage: enabled
-                                          }
-                                        });
-                                      }}
-                                    >
-                                      ×
-                                    </Button>
-                                  )}
                                 </div>
                               ))}
                               {isAdmin && (
