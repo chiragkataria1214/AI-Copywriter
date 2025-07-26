@@ -484,72 +484,73 @@ export default function MetaAdGenerator() {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-jones-primary rounded-lg flex items-center justify-center">
-                <Palette className="text-white" size={20} />
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-jones-primary rounded-lg flex items-center justify-center">
+                <Palette className="text-white" size={16} />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">Jones Road Beauty</h1>
-                <p className="text-sm text-gray-500">AI Copywriter</p>
+                <h1 className="text-lg sm:text-xl font-semibold text-gray-900">Jones Road Beauty</h1>
+                <p className="text-xs sm:text-sm text-gray-500">AI Copywriter</p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2 px-3 py-1 rounded-full bg-green-100">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="hidden sm:flex items-center space-x-2 px-3 py-1 rounded-full bg-green-100">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span className="text-sm font-medium text-green-700">Connected</span>
               </div>
-              <div className="w-8 h-8 bg-jones-secondary rounded-full flex items-center justify-center">
-                <Users className="text-jones-primary" size={16} />
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-jones-secondary rounded-full flex items-center justify-center">
+                <Users className="text-jones-primary" size={14} />
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
-            <TabsTrigger value="ads" className="flex items-center space-x-2">
+          <TabsList className="grid w-full grid-cols-3 mb-6 sm:mb-8">
+            <TabsTrigger value="ads" className="flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-2 py-2 sm:py-3">
               <Sparkles size={16} />
-              <span>Ad Copy Generation</span>
+              <span className="text-xs sm:text-sm">Ad Copy</span>
             </TabsTrigger>
-            <TabsTrigger value="landing" className="flex items-center space-x-2">
+            <TabsTrigger value="landing" className="flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-2 py-2 sm:py-3">
               <FileText size={16} />
-              <span>Landing Page Copy</span>
+              <span className="text-xs sm:text-sm">Landing Page</span>
             </TabsTrigger>
-            <TabsTrigger value="debug" className="flex items-center space-x-2">
+            <TabsTrigger value="debug" className="flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-2 py-2 sm:py-3">
               <Target size={16} />
-              <span>Prompt Debug</span>
+              <span className="text-xs sm:text-sm">Debug</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="ads">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
               {/* Input Section */}
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Content Input Section */}
                 <Card>
-                  <CardContent className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Video className="text-jones-primary mr-3" size={20} />
+                  <CardContent className="p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Video className="text-jones-primary mr-2 sm:mr-3" size={18} />
                       Content Input
                     </h3>
                     
                     <div className="space-y-4">
                       <Textarea 
-                        rows={8}
-                        className="w-full resize-none"
+                        rows={6}
+                        className="w-full resize-none text-sm"
                         placeholder="Paste your video transcription here or upload a file..."
                         value={transcription}
                         onChange={(e) => setTranscription(e.target.value)}
                       />
                       
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                         <div className="flex items-center space-x-2">
-                          <Label htmlFor="file-upload" className="cursor-pointer flex items-center space-x-2 px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors">
-                            <Upload size={16} />
-                            <span>Upload Transcription</span>
+                          <Label htmlFor="file-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
+                            <Upload size={14} />
+                            <span className="hidden sm:inline">Upload Transcription</span>
+                            <span className="sm:hidden">Upload</span>
                           </Label>
                           <Input 
                             id="file-upload" 
@@ -568,9 +569,9 @@ export default function MetaAdGenerator() {
 
                 {/* Persona Selection */}
                 <Card>
-                  <CardContent className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Users className="text-jones-primary mr-3" size={20} />
+                  <CardContent className="p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Users className="text-jones-primary mr-2 sm:mr-3" size={18} />
                       Target Persona
                     </h3>
                     
@@ -695,13 +696,13 @@ export default function MetaAdGenerator() {
               </div>
 
               {/* Results Section */}
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Generated Headlines */}
                 <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                        <FileText className="text-jones-primary mr-3" size={20} />
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex flex-col space-y-3 mb-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
+                        <FileText className="text-jones-primary mr-2 sm:mr-3" size={18} />
                         Generated Headlines
                       </h3>
                       <Button 
@@ -709,6 +710,7 @@ export default function MetaAdGenerator() {
                         size="sm"
                         onClick={() => copyToClipboard(generatedHeadlines.map(h => h.copy).join('\n'), 'headlines')}
                         disabled={generatedHeadlines.length === 0}
+                        className="w-full sm:w-auto"
                       >
                         {copiedHeadlines ? <Check size={16} /> : <Copy size={16} />}
                         <span className="ml-1">{copiedHeadlines ? 'Copied' : 'Copy All'}</span>
@@ -718,15 +720,15 @@ export default function MetaAdGenerator() {
                     {generatedHeadlines.length > 0 ? (
                       <div className="space-y-3">
                         {generatedHeadlines.map((headline, index) => (
-                          <div key={index} className="group relative border border-gray-200 rounded-lg p-4 hover:border-jones-primary transition-colors">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <p className="font-medium text-gray-900">{headline.copy}</p>
-                                <div className="flex items-center space-x-4 mt-2">
-                                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                          <div key={index} className="group relative border border-gray-200 rounded-lg p-3 sm:p-4 hover:border-jones-primary transition-colors">
+                            <div className="flex flex-col space-y-2 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
+                              <div className="flex-1 pr-0 sm:pr-2">
+                                <p className="font-medium text-gray-900 text-sm sm:text-base leading-relaxed">{headline.copy}</p>
+                                <div className="flex flex-wrap items-center gap-2 mt-2">
+                                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
                                     {headline.framework}
                                   </Badge>
-                                  <Badge variant="secondary" className="bg-green-100 text-green-700">
+                                  <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">
                                     {getWordCount(headline.copy)} words
                                   </Badge>
                                 </div>
@@ -734,10 +736,10 @@ export default function MetaAdGenerator() {
                               <Button 
                                 variant="ghost" 
                                 size="sm"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity self-start"
                                 onClick={() => copyToClipboard(headline.copy, 'headline')}
                               >
-                                <Copy size={16} />
+                                <Copy size={14} />
                               </Button>
                             </div>
                           </div>
@@ -754,10 +756,10 @@ export default function MetaAdGenerator() {
 
                 {/* Generated Primary Text */}
                 <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                        <FileText className="text-jones-primary mr-3" size={20} />
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex flex-col space-y-3 mb-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
+                        <FileText className="text-jones-primary mr-2 sm:mr-3" size={18} />
                         Primary Text
                       </h3>
                       <Button 
@@ -765,6 +767,7 @@ export default function MetaAdGenerator() {
                         size="sm"
                         onClick={() => copyToClipboard(generatedPrimaryText, 'primary')}
                         disabled={!generatedPrimaryText}
+                        className="w-full sm:w-auto"
                       >
                         {copiedPrimaryText ? <Check size={16} /> : <Copy size={16} />}
                         <span className="ml-1">{copiedPrimaryText ? 'Copied' : 'Copy'}</span>
@@ -772,19 +775,18 @@ export default function MetaAdGenerator() {
                     </div>
                     
                     {generatedPrimaryText ? (
-                      <div className="border border-gray-200 rounded-lg p-4">
-                        <p className="text-gray-900 leading-relaxed">{generatedPrimaryText}</p>
+                      <div className="border border-gray-200 rounded-lg p-3 sm:p-4">
+                        <p className="text-gray-900 leading-relaxed text-sm sm:text-base">{generatedPrimaryText}</p>
                         
-                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-                          <div className="flex items-center space-x-4">
-                            <Badge variant="secondary" style={{ backgroundColor: '#f0f4ff', color: '#004182' }}>
+                        <div className="flex flex-col space-y-2 mt-4 pt-4 border-t border-gray-200 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="secondary" style={{ backgroundColor: '#f0f4ff', color: '#004182' }} className="text-xs">
                               {getWordCount(generatedPrimaryText)} words
                             </Badge>
-                            <Badge variant="secondary" className="bg-green-100 text-green-700">
+                            <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">
                               Brand-First
                             </Badge>
                           </div>
-
                         </div>
                       </div>
                     ) : (
@@ -799,28 +801,28 @@ export default function MetaAdGenerator() {
                 {/* Ad Preview Section */}
                 {(generatedHeadlines.length > 0 || generatedPrimaryText) && (
                   <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                          <Globe className="text-jones-primary mr-3" size={20} />
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex flex-col space-y-3 mb-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
+                          <Globe className="text-jones-primary mr-2 sm:mr-3" size={18} />
                           Ad Preview
                         </h3>
-                        <Badge variant="secondary" style={{ backgroundColor: '#f0f4ff', color: '#004182' }}>
+                        <Badge variant="secondary" style={{ backgroundColor: '#f0f4ff', color: '#004182' }} className="text-xs">
                           Facebook Feed Ad
                         </Badge>
                       </div>
                       
                       {/* Mobile Facebook Feed Ad Format */}
-                      <div className="max-w-sm mx-auto bg-white shadow-sm border-0 overflow-hidden" style={{ width: '375px' }}>
+                      <div className="max-w-xs sm:max-w-sm mx-auto bg-white shadow-sm border-0 overflow-hidden" style={{ maxWidth: '375px', width: '100%' }}>
                         {/* Mobile Page Header */}
-                        <div className="flex items-center px-4 py-3 bg-white">
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #004182 0%, #003366 100%)' }}>
-                            <span className="text-white font-bold text-sm">JR</span>
+                        <div className="flex items-center px-3 sm:px-4 py-3 bg-white">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #004182 0%, #003366 100%)' }}>
+                            <span className="text-white font-bold text-xs sm:text-sm">JR</span>
                           </div>
-                          <div className="ml-3 flex-1">
-                            <div className="font-medium text-[15px] text-gray-900 flex items-center">
+                          <div className="ml-2 sm:ml-3 flex-1">
+                            <div className="font-medium text-sm sm:text-[15px] text-gray-900 flex items-center">
                               Jones Road Beauty
-                              <svg className="w-3.5 h-3.5 ml-1.5" style={{ color: '#1877f2' }} fill="currentColor" viewBox="0 0 20 20">
+                              <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 ml-1 sm:ml-1.5" style={{ color: '#1877f2' }} fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                               </svg>
                             </div>
@@ -910,18 +912,18 @@ export default function MetaAdGenerator() {
           </TabsContent>
 
           <TabsContent value="landing">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
               {/* Input Section */}
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Landing Page Type Selection */}
                 <Card>
-                  <CardContent className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <FileText className="text-jones-primary mr-3" size={20} />
+                  <CardContent className="p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <FileText className="text-jones-primary mr-2 sm:mr-3" size={18} />
                       Landing Page Type
                     </h3>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className={`relative border-2 rounded-lg p-4 cursor-pointer transition-colors ${
                         landingPageType === 'listicle' 
                           ? 'border-jones-primary bg-jones-light' 
@@ -961,14 +963,14 @@ export default function MetaAdGenerator() {
 
                 {/* Content Source */}
                 <Card>
-                  <CardContent className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Globe className="text-jones-primary mr-3" size={20} />
+                  <CardContent className="p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Globe className="text-jones-primary mr-2 sm:mr-3" size={18} />
                       Content Source
                     </h3>
                     
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex flex-col space-y-3 p-4 bg-gray-50 rounded-lg sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                         <div>
                           <Label className="text-sm font-medium text-gray-700">Use Generated Ads Content</Label>
                           <p className="text-xs text-gray-500">Use the ad copy generated in the previous tab</p>
@@ -982,8 +984,8 @@ export default function MetaAdGenerator() {
                         </Label>
                         <Textarea 
                           id="productBrief" 
-                          rows={6}
-                          className="w-full resize-none"
+                          rows={5}
+                          className="w-full resize-none text-sm"
                           placeholder="Describe your product, its benefits, target audience, and key selling points..."
                           value={productBrief}
                           onChange={(e) => setProductBrief(e.target.value)}
@@ -1014,13 +1016,13 @@ export default function MetaAdGenerator() {
               </div>
 
               {/* Results Section */}
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Generated Landing Page Copy */}
                 <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                        <FileText className="text-jones-primary mr-3" size={20} />
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex flex-col space-y-3 mb-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
+                        <FileText className="text-jones-primary mr-2 sm:mr-3" size={18} />
                         Generated Landing Page
                       </h3>
                       <Button 
@@ -1028,6 +1030,7 @@ export default function MetaAdGenerator() {
                         size="sm"
                         onClick={() => copyToClipboard(JSON.stringify(generatedLandingCopy, null, 2), 'landing')}
                         disabled={!generatedLandingCopy.headline}
+                        className="w-full sm:w-auto"
                       >
                         {copiedLandingCopy ? <Check size={16} /> : <Copy size={16} />}
                         <span className="ml-1">{copiedLandingCopy ? 'Copied' : 'Copy All'}</span>
@@ -1035,10 +1038,10 @@ export default function MetaAdGenerator() {
                     </div>
                     
                     {generatedLandingCopy.headline ? (
-                      <div className="space-y-6">
-                        <div className="border-l-4 border-jones-primary pl-4">
-                          <h4 className="font-semibold text-gray-900 mb-2">Headline</h4>
-                          <p className="text-xl font-bold text-gray-900">{generatedLandingCopy.headline}</p>
+                      <div className="space-y-4 sm:space-y-6">
+                        <div className="border-l-4 border-jones-primary pl-3 sm:pl-4">
+                          <h4 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Headline</h4>
+                          <p className="text-lg sm:text-xl font-bold text-gray-900">{generatedLandingCopy.headline}</p>
                         </div>
                         
                         <div className="border-l-4 border-gray-300 pl-4">
@@ -1117,34 +1120,36 @@ export default function MetaAdGenerator() {
               {/* Training Configuration Section */}
               <Card>
                 <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-col space-y-4 mb-4 md:flex-row md:items-center md:justify-between md:space-y-0">
                     <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                       <Settings className="text-jones-primary mr-3" size={20} />
                       AI Training Configuration
                     </h3>
-                    <div className="flex space-x-2">
+                    <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
                       <Button 
                         onClick={() => loadTrainingConfigMutation.mutate()}
                         disabled={loadTrainingConfigMutation.isPending}
                         variant="outline"
                         size="sm"
+                        className="w-full sm:w-auto"
                       >
                         {loadTrainingConfigMutation.isPending ? "Loading..." : "Load Config"}
                       </Button>
                       {!isAdmin && editingConfig && (
-                        <div className="flex items-center space-x-2">
+                        <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-2">
                           <Input 
                             type="password"
                             placeholder="Admin password"
                             value={adminPassword}
                             onChange={(e) => setAdminPassword(e.target.value)}
-                            className="w-32"
+                            className="w-full sm:w-32"
                             size="sm"
                           />
                           <Button 
                             onClick={authenticateAdmin}
                             variant="outline"
                             size="sm"
+                            className="w-full sm:w-auto"
                           >
                             Unlock
                           </Button>
@@ -1155,6 +1160,7 @@ export default function MetaAdGenerator() {
                           onClick={() => saveTrainingConfigMutation.mutate(editingConfig)}
                           disabled={saveTrainingConfigMutation.isPending}
                           size="sm"
+                          className="w-full sm:w-auto"
                         >
                           {saveTrainingConfigMutation.isPending ? "Saving..." : "Save Changes"}
                         </Button>
@@ -1178,11 +1184,11 @@ export default function MetaAdGenerator() {
 
                   {trainingConfig ? (
                     <Tabs defaultValue="brand-guidelines" className="w-full">
-                      <TabsList className="grid w-full grid-cols-4">
-                        <TabsTrigger value="brand-guidelines">Brand Guidelines</TabsTrigger>
-                        <TabsTrigger value="frameworks">Copy Frameworks</TabsTrigger>
-                        <TabsTrigger value="prompts">System Prompts</TabsTrigger>
-                        <TabsTrigger value="model">Model Settings</TabsTrigger>
+                      <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1">
+                        <TabsTrigger value="brand-guidelines" className="text-xs sm:text-sm">Brand Guidelines</TabsTrigger>
+                        <TabsTrigger value="frameworks" className="text-xs sm:text-sm">Copy Frameworks</TabsTrigger>
+                        <TabsTrigger value="prompts" className="text-xs sm:text-sm">System Prompts</TabsTrigger>
+                        <TabsTrigger value="model" className="text-xs sm:text-sm">Model Settings</TabsTrigger>
                       </TabsList>
 
                       <TabsContent value="brand-guidelines" className="mt-4">
@@ -1296,7 +1302,7 @@ aggressive claims"
                             <div className="mt-2 space-y-3">
                               {editingConfig?.copyFrameworks?.headlineFrameworks?.map((framework: any, index: number) => (
                                 <div key={index} className="border rounded-lg p-3">
-                                  <div className="grid grid-cols-2 gap-3">
+                                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     <div>
                                       <Label className="text-xs text-gray-600">Framework Name</Label>
                                       <Input 
@@ -1416,7 +1422,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                             />
                           </div>
 
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                             <div>
                               <Label className="text-sm font-medium text-gray-900">Brand-First Guidelines (one per line)</Label>
                               <Textarea 
@@ -1519,7 +1525,7 @@ TRANSCRIPTION/CONTENT:
 
                       <TabsContent value="model" className="mt-4">
                         <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
                               <Label className="text-sm font-medium text-gray-900">Model</Label>
                               <Input 
