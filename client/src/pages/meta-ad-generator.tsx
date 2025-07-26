@@ -691,6 +691,108 @@ export default function MetaAdGenerator() {
                   </CardContent>
                 </Card>
 
+                {/* Ad Preview Section */}
+                {(generatedHeadlines.length > 0 || generatedPrimaryText) && (
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                          <Globe className="text-jones-primary mr-3" size={20} />
+                          Ad Preview
+                        </h3>
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                          Facebook/Meta Format
+                        </Badge>
+                      </div>
+                      
+                      <div className="border rounded-lg bg-white shadow-sm max-w-lg mx-auto">
+                        {/* Page Header */}
+                        <div className="flex items-center p-3 border-b bg-gray-50">
+                          <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-orange-400 rounded-full flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">JR</span>
+                          </div>
+                          <div className="ml-3 flex-1">
+                            <div className="font-semibold text-sm text-gray-900">Jones Road Beauty</div>
+                            <div className="text-xs text-gray-500 flex items-center">
+                              <span>Sponsored</span>
+                              <span className="mx-1">•</span>
+                              <Globe size={12} />
+                            </div>
+                          </div>
+                          <div className="text-gray-400">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
+                            </svg>
+                          </div>
+                        </div>
+
+                        {/* Primary Text */}
+                        {generatedPrimaryText && (
+                          <div className="p-3">
+                            <p className="text-sm text-gray-900 leading-relaxed">
+                              {generatedPrimaryText}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Mock Image Placeholder */}
+                        <div className="bg-gradient-to-br from-pink-100 to-orange-100 aspect-video flex items-center justify-center border-y">
+                          <div className="text-center text-gray-500">
+                            <Video size={32} className="mx-auto mb-2 opacity-50" />
+                            <p className="text-xs">Your product image/video</p>
+                          </div>
+                        </div>
+
+                        {/* Headlines Section */}
+                        {generatedHeadlines.length > 0 && (
+                          <div className="p-3 bg-gray-50">
+                            <div className="font-semibold text-sm text-gray-900 mb-2">
+                              {generatedHeadlines[0]}
+                            </div>
+                            <div className="text-xs text-gray-600 mb-3">
+                              jonesroadbeauty.com
+                            </div>
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-1 h-7 rounded"
+                              >
+                                Shop Now
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="text-xs px-4 py-1 h-7 rounded border-gray-300"
+                              >
+                                Learn More
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Engagement Section */}
+                        <div className="px-3 py-2 border-t bg-white">
+                          <div className="flex items-center justify-between text-xs text-gray-500">
+                            <div className="flex items-center space-x-4">
+                              <span className="flex items-center">
+                                <ThumbsUp size={12} className="mr-1" />
+                                Like
+                              </span>
+                              <span>Comment</span>
+                              <span>Share</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 text-center">
+                        <p className="text-xs text-gray-500">
+                          Preview shows how your ad will appear on Facebook and Instagram feeds
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
               </div>
             </div>
