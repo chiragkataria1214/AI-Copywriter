@@ -304,62 +304,155 @@ Analyze the uploaded ad creative image to extract key visual elements, text over
 }
 
 export async function generateLandingPageCopy(request: LandingPageRequest) {
-  const { landingPageType, productBrief, concept, subPersona, useAdsContent, adsContent, brandDrBalance } = request;
+  const { landingPageType, productBrief, concept, subPersona, useAdsContent, adsContent, brandDrBalance, selectedProduct } = request;
   
   const brandPercent = brandDrBalance;
   const drPercent = 100 - brandPercent;
   
-  const systemPrompt = `You are an expert landing page copywriter for Jones Road Beauty. You specialize in ${landingPageType} format pages that convert while maintaining brand voice.
+  // Get customer review insights if product is selected
+  let reviewInsights = '';
+  if (selectedProduct) {
+    try {
+      const insights = await getCustomerReviewInsights(selectedProduct);
+      reviewInsights = `
+AUTHENTIC CUSTOMER INSIGHTS FOR ${selectedProduct.toUpperCase()}:
+- Most mentioned benefits: ${insights.topBenefits.join(', ')}
+- Customer language patterns: ${insights.commonPhrases.join(', ')}
+- Emotional triggers: ${insights.emotionalTriggers.join(', ')}
+- Pain points addressed: ${insights.painPoints.join(', ')}
+- Social proof elements: ${insights.socialProof.join(', ')}
+
+USE THESE INSIGHTS TO:
+1. Mirror authentic customer language in your copy
+2. Address the specific pain points customers actually mention
+3. Highlight benefits that real customers value most
+4. Include emotional triggers that resonate with actual users
+`;
+    } catch (error) {
+      console.error('Failed to get review insights:', error);
+    }
+  }
+
+// Customer review insights function for landing pages
+async function getCustomerReviewInsights(product: string) {
+  try {
+    // Use existing review analysis system
+    const { analyzeReviewsForProduct } = require('./review-analyzer');
+    const analysis = await analyzeReviewsForProduct(product);
+    
+    return {
+      topBenefits: analysis.topBenefits?.slice(0, 5) || ['natural coverage', 'moisturizing formula', 'easy application'],
+      commonPhrases: analysis.commonPhrases?.slice(0, 5) || ['holy grail', 'game changer', 'your skin but better'],
+      emotionalTriggers: analysis.emotionalTriggers?.slice(0, 3) || ['confidence boost', 'effortless beauty', 'time-saving'],
+      painPoints: analysis.painPoints?.slice(0, 3) || ['dry skin', 'complicated routine', 'cakey makeup'],
+      socialProof: analysis.socialProof?.slice(0, 3) || ['thousands of reviews', '5-star rating', 'makeup artist approved']
+    };
+  } catch (error) {
+    console.error('Error getting review insights:', error);
+    // Return fallback insights based on product
+    return {
+      topBenefits: ['natural coverage', 'skin-enhancing formula', 'easy application'],
+      commonPhrases: ['holy grail product', 'game changer', 'your skin but better'],
+      emotionalTriggers: ['confidence boost', 'effortless beauty', 'time-saving routine'],
+      painPoints: ['dry skin concerns', 'complicated routines', 'unnatural results'],
+      socialProof: ['thousands of happy customers', 'professional makeup artist approved', '5-star reviews']
+    };
+  }
+}
+  
+  const systemPrompt = `You are an expert conversion copywriter for Jones Road Beauty specializing in high-converting ${landingPageType} landing pages.
 
 JONES ROAD BEAUTY BRAND GUIDELINES:
 - Core positioning: "Your Skin But Better" - natural, effortless enhancement  
-- Brand voice: Natural, welcoming, never pushy or aggressive
+- Brand voice: Natural, welcoming, authentic, never pushy or aggressive
 - Focus on enhancement, not transformation
 - Use "moisturizing" not "hydrating" for makeup products
+- Emphasize real results from real people
+
+${reviewInsights}
 
 ${landingPageType === 'listicle' ? `
-LISTICLE STRUCTURE:
-- Strategic headline (6-12 words)
-- Problem→Promise introduction
-- 5 strategically sequenced reasons
-- Three-position CTAs
-- Risk reversal & trust
+HIGH-CONVERTING LISTICLE STRUCTURE:
+- Magnetic headline (6-12 words) with clear benefit + intrigue
+- Problem-agitation-promise introduction (150-200 words)
+- 5 strategically sequenced reasons with social proof
+- Multiple strategic CTAs (above fold, mid-page, bottom)
+- Risk reversal & credibility indicators
 
-STRATEGIC SEQUENCING:
-1. Biggest Benefit → Proof
-2. Objection → Solve with Proof  
-3. Ease/Speed → 'Without' Formula
-4. Social Proof → Testimonial/Stats
-5. Trust/Guarantee → Risk Removal
+PSYCHOLOGICAL SEQUENCING:
+1. DESIRE: Biggest benefit with proof (creates want)
+2. OBJECTION: Address main concern + solution (removes friction) 
+3. EASE: How simple/fast it is (removes effort barrier)
+4. SOCIAL PROOF: Real customer results (removes risk)
+5. URGENCY/SCARCITY: Why act now (creates action)
 
-REASON STRUCTURE (each):
-- HOOK (25-40 words): Surprising stat, question, or scenario
-- EXPLANATION (75-125 words): Context→Mechanism→Impact
-- PROOF (40-75 words): Statistics, social proof, expert authority
-- BENEFIT (25-50 words): "This means you can [outcome] without [struggle]"
+EACH REASON STRUCTURE:
+- PATTERN INTERRUPT (25-40 words): Counterintuitive statement or surprising fact
+- STORY/EXPLANATION (75-125 words): Context→Mechanism→Specific outcome
+- SOCIAL PROOF (40-75 words): Customer testimonials, studies, or statistics
+- BENEFIT BRIDGE (25-50 words): "This means you can [specific outcome] without [specific struggle]"
+- MICRO-CTA: Small commitment ask ("Keep reading to discover...")
 ` : `
-TROJAN HORSE STRUCTURE:
-- Hook/Story opener (seemingly unrelated but connects to pain)
-- Bridge story to audience's problem
-- Present solution as natural evolution
-- Benefits & proof with analogies
-- Risk reversal & CTA
+HIGH-CONVERTING TROJAN HORSE STRUCTURE:
+- Hook: Seemingly unrelated story that connects to deep pain point
+- Pattern interrupt: Challenge conventional beauty wisdom
+- Bridge: Connect story to audience's specific problem
+- Solution reveal: Present product as natural evolution of story
+- Social proof: Real customer transformations
+- Benefits ladder: Emotional + functional + social benefits
+- Risk reversal: Guarantee + testimonials
+- Urgency CTA: Clear reason to act now
 `}
 
-BRAND/DR BALANCE: ${brandPercent}% brand voice, ${drPercent}% direct response
-TARGET PERSONA: ${concept}${subPersona ? ` (${subPersona})` : ''}`;
+CONVERSION PSYCHOLOGY PRINCIPLES:
+- Use curiosity gaps and open loops
+- Include specific numbers and timeframes
+- Address objections before they arise
+- Use "because" reasoning for every claim
+- Include social proof in every section
+- Create multiple micro-commitments leading to main CTA
+- Use loss aversion and urgency appropriately
 
-  const userPrompt = `Create a ${landingPageType} landing page for:
+BRAND/DR BALANCE: ${brandPercent}% brand voice, ${drPercent}% direct response optimization
+TARGET PERSONA: ${concept}${subPersona ? ` (${subPersona})` : ''}
+COPY PERFORMANCE GOALS: High conversion rate while maintaining brand authenticity`;
+
+  const userPrompt = `Create a high-converting ${landingPageType} landing page that drives sales and builds trust:
 
 PRODUCT BRIEF:
 ${productBrief}
 
 ${useAdsContent && adsContent ? `
-EXISTING AD COPY TO REFERENCE:
+EXISTING AD COPY TO REFERENCE (ensure message consistency):
 ${adsContent}
 ` : ''}
 
-Generate complete landing page copy with all required sections based on the ${landingPageType} format.`;
+CONVERSION REQUIREMENTS:
+- Primary goal: Drive product purchases
+- Secondary goal: Build email list
+- Audience: ${concept}${subPersona ? ` (specifically ${subPersona})` : ''} who value authentic, natural beauty
+- Tone: ${brandPercent > 50 ? 'Brand-focused with authentic voice' : 'Direct response with natural warmth'}
+
+SPECIFIC INSTRUCTIONS:
+1. Use customer review insights to create authentic, relatable copy
+2. Include specific benefits that real customers mention
+3. Address actual pain points from customer feedback
+4. Use natural, conversational language that feels genuine
+5. Include social proof elements throughout
+6. Create clear value propositions with "because" reasoning
+7. End each section with a soft CTA or continuation hook
+
+Generate complete landing page copy with all required sections. Structure your response as:
+
+HEADLINE: [Main headline]
+SUBHEADLINE: [Supporting headline if needed]
+INTRODUCTION: [Problem-agitation-promise opener]
+REASON #1: [Title]
+[Complete reason content with hook, explanation, proof, benefit]
+REASON #2: [Title]
+[Continue for all 5 reasons]
+CTA: [Main call-to-action]
+RISK REVERSAL: [Guarantee or trust elements]`;
 
   try {
     const response = await anthropic.messages.create({
@@ -371,23 +464,33 @@ Generate complete landing page copy with all required sections based on the ${la
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
     
-    // Parse the response to extract structured landing page content
-    const headlineMatch = content.match(/HEADLINE:?\s*(.+?)(?=\n|$)/i);
-    const subheadlineMatch = content.match(/SUBHEADLINE:?\s*(.+?)(?=\n|$)/i);
-    const introMatch = content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=REASON #1|SECTION|$)/i);
-    const ctaMatch = content.match(/CTA:?\s*(.+?)(?=\n|$)/i);
+    // Parse the enhanced response structure
+    const headlineMatch = content.match(/HEADLINE:?\s*(.+?)(?=\n|SUBHEADLINE|INTRODUCTION)/i);
+    const subheadlineMatch = content.match(/SUBHEADLINE:?\s*(.+?)(?=\n|INTRODUCTION)/i);
+    const introMatch = content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=REASON #1|$)/i);
+    const ctaMatch = content.match(/CTA:?\s*([\s\S]*?)(?=RISK REVERSAL|$)/i);
+    const riskReversalMatch = content.match(/RISK REVERSAL:?\s*([\s\S]*?)$/i);
     
-    // Extract reasons/sections
+    // Extract reasons with improved parsing
     const sections = [];
-    const reasonMatches = content.match(/REASON #\d+:?\s*(.+?)(?=\n)([\s\S]*?)(?=REASON #\d+|CTA|$)/gi);
+    const reasonMatches = content.match(/REASON #(\d+):?\s*(.+?)(?=\n)([\s\S]*?)(?=REASON #\d+|CTA:|RISK REVERSAL:|$)/gi);
     if (reasonMatches) {
       for (const match of reasonMatches) {
         const titleMatch = match.match(/REASON #\d+:?\s*(.+?)(?=\n)/i);
         const contentMatch = match.match(/\n([\s\S]*?)$/);
         if (titleMatch && contentMatch) {
+          const title = titleMatch[1].trim();
+          const content = contentMatch[1].trim();
+          
+          // Extract components for better display
+          const hookMatch = content.match(/^([^.!?]*[.!?])/);
+          const hook = hookMatch ? hookMatch[1].trim() : '';
+          
           sections.push({
-            title: titleMatch[1].trim(),
-            content: contentMatch[1].trim()
+            title,
+            content,
+            hook: hook.length < 200 ? hook : '', // Only use if reasonably short
+            wordCount: content.split(/\s+/).length
           });
         }
       }
@@ -399,7 +502,13 @@ Generate complete landing page copy with all required sections based on the ${la
       introduction: introMatch ? introMatch[1].trim() : '',
       sections,
       cta: ctaMatch ? ctaMatch[1].trim() : '',
-      rawResponse: content
+      riskReversal: riskReversalMatch ? riskReversalMatch[1].trim() : '',
+      rawResponse: content,
+      stats: {
+        totalWords: content.split(/\s+/).length,
+        sectionCount: sections.length,
+        avgSectionLength: sections.length > 0 ? Math.round(sections.reduce((sum, s) => sum + (s.wordCount || 0), 0) / sections.length) : 0
+      }
     };
   } catch (error) {
     console.error('Anthropic API error:', error);

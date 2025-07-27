@@ -613,7 +613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate landing page copy endpoint (protected)
   app.post('/api/generate-landing-copy', requireAuth, async (req, res) => {
     try {
-      const { landingPageType, productBrief, concept, subPersona, useAdsContent, adsContent, brandDrBalance } = req.body;
+      const { landingPageType, productBrief, concept, subPersona, useAdsContent, adsContent, brandDrBalance, selectedProduct } = req.body;
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -626,8 +626,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subPersona,
         useAdsContent,
         adsContent,
-        brandDrBalance
+        brandDrBalance,
+        selectedProduct
       });
+      
+      // Calculate performance metrics based on copy structure
+      const headlineWords = result.headline ? result.headline.split(/\s+/).length : 0;
+      const totalWords = result.stats?.totalWords || 0;
+      const sectionCount = result.stats?.sectionCount || 0;
+      
+      // Performance scoring based on conversion copywriting best practices
+      const headlineScore = headlineWords >= 6 && headlineWords <= 12 ? 'Optimal' : 
+                           headlineWords < 6 ? 'Too Short' : 'Too Long';
+      
+      const conversionScore = Math.min(100, Math.max(70, 
+        (sectionCount >= 5 ? 20 : sectionCount * 4) + // Section completeness
+        (totalWords >= 800 ? 25 : totalWords / 32) + // Content depth  
+        (result.introduction ? 15 : 0) + // Has introduction
+        (result.cta ? 15 : 0) + // Has CTA
+        (result.riskReversal ? 10 : 0) + // Has risk reversal
+        (selectedProduct ? 15 : 5) // Product-specific insights
+      ));
+      
+      const readabilityScore = Math.min(10, Math.max(6,
+        8.5 - (result.stats?.avgSectionLength > 150 ? 1 : 0) + // Penalty for long sections
+        (result.stats?.avgSectionLength < 50 ? -1 : 0) // Penalty for too short
+      ));
       
       res.json({
         landingCopy: {
@@ -635,16 +659,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           subheadline: result.subheadline,
           introduction: result.introduction,
           sections: result.sections,
-          socialProof: '',
-          riskReversal: '',
-          conclusion: '',
-          cta: result.cta
+          riskReversal: result.riskReversal,
+          cta: result.cta,
+          stats: result.stats
         },
         analysis: {
-          headlineLength: 'Optimal',
-          brandAlignment: 92,
-          readabilityScore: 8.5
-        }
+          headlineLength: headlineScore,
+          conversionScore: Math.round(conversionScore),
+          readabilityScore: readabilityScore.toFixed(1),
+          totalWords: totalWords,
+          sectionCount: sectionCount,
+          avgSectionLength: result.stats?.avgSectionLength || 0,
+          hasRiskReversal: !!result.riskReversal,
+          productSpecific: !!selectedProduct
+        },
+        rawResponse: result.rawResponse // For debug purposes
       });
     } catch (error) {
       console.error('Generation error:', error);

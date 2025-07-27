@@ -118,6 +118,17 @@ export default function MetaAdGenerator() {
     conclusion: '',
     cta: ''
   });
+
+  const [landingPageAnalysis, setLandingPageAnalysis] = useState<{
+    headlineLength: string;
+    conversionScore: number;
+    readabilityScore: string;
+    totalWords: number;
+    sectionCount: number;
+    avgSectionLength: number;
+    hasRiskReversal: boolean;
+    productSpecific: boolean;
+  } | null>(null);
   
   // Remove individual isLoading since we'll use mutation loading states
   const [copiedHeadlines, setCopiedHeadlines] = useState(false);
@@ -581,7 +592,8 @@ export default function MetaAdGenerator() {
           subPersona,
           useAdsContent: useAdsForLanding,
           adsContent,
-          brandDrBalance: brandDrBalance[0]
+          brandDrBalance: brandDrBalance[0],
+          selectedProduct
         }
       });
     },
@@ -596,9 +608,10 @@ export default function MetaAdGenerator() {
         conclusion: '',
         cta: ''
       });
+      setLandingPageAnalysis(data.analysis || null);
       toast({
         title: "Landing Page Copy Generated Successfully",
-        description: "Your landing page copy has been generated using Claude AI.",
+        description: `Generated ${data.analysis?.sectionCount || 0} sections with ${data.analysis?.conversionScore || 0}/100 conversion score.`,
       });
     },
     onError: (error) => {
@@ -1768,20 +1781,75 @@ export default function MetaAdGenerator() {
                         
                         {generatedLandingCopy.sections.length > 0 && (
                           <div className="space-y-4">
-                            <h4 className="font-semibold text-gray-900">Strategic Reasons</h4>
+                            <h4 className="font-semibold text-gray-900 flex items-center">
+                              Strategic Reasons 
+                              <Badge variant="secondary" className="ml-2 text-xs">
+                                {generatedLandingCopy.sections.length}/5
+                              </Badge>
+                            </h4>
                             
-                            {generatedLandingCopy.sections.slice(0, 2).map((section, index) => (
-                              <div key={index} className="bg-gray-50 rounded-lg p-4">
-                                <h5 className="font-medium text-gray-900 mb-2">{section.title}</h5>
-                                <p className="text-sm text-gray-700">{section.content}</p>
+                            {generatedLandingCopy.sections.map((section, index) => (
+                              <div key={index} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors group">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded">
+                                        #{index + 1}
+                                      </span>
+                                      <h5 className="font-medium text-gray-900">{section.title}</h5>
+                                    </div>
+                                    <div className="text-sm text-gray-700 leading-relaxed">
+                                      {section.content}
+                                    </div>
+                                    <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100">
+                                      <Badge variant="outline" className="text-xs">
+                                        {(section as any)?.wordCount || section.content.split(/\s+/).length} words
+                                      </Badge>
+                                      {(section as any)?.hook && (
+                                        <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-200 text-yellow-800">
+                                          Hook ✓
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+                                    onClick={() => {
+                                      setSelectedItemForRevision({ type: 'landingCopy', field: `section-${index}` });
+                                      setShowRevisionPanel(true);
+                                    }}
+                                    title="Suggest improvements"
+                                  >
+                                    <Target size={14} />
+                                  </Button>
+                                </div>
                               </div>
                             ))}
-                            
-                            {generatedLandingCopy.sections.length > 2 && (
-                              <div className="text-center py-2">
-                                <span className="text-sm text-gray-500">+ {generatedLandingCopy.sections.length - 2} more reasons</span>
+                          </div>
+                        )}
+                        
+                        {generatedLandingCopy.riskReversal && (
+                          <div className="border-l-4 border-orange-500 pl-4 group">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-gray-900 mb-2">Risk Reversal</h4>
+                                <p className="text-gray-700">{generatedLandingCopy.riskReversal}</p>
                               </div>
-                            )}
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+                                onClick={() => {
+                                  setSelectedItemForRevision({ type: 'landingCopy', field: 'riskReversal' });
+                                  setShowRevisionPanel(true);
+                                }}
+                                title="Suggest improvements"
+                              >
+                                <Target size={14} />
+                              </Button>
+                            </div>
                           </div>
                         )}
                         
@@ -1815,31 +1883,91 @@ export default function MetaAdGenerator() {
                   </CardContent>
                 </Card>
 
-                {/* Copy Performance */}
+                {/* Enhanced Copy Performance Analysis */}
                 <Card>
                   <CardContent className="p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                       <Zap className="text-jones-primary mr-3" size={20} />
-                      Copy Analysis
+                      Performance Analysis
                     </h3>
                     
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                        <span className="text-sm text-gray-700">Headline Length</span>
-                        <span className="text-sm font-medium text-green-700">
-                          {generatedLandingCopy.headline ? `${getWordCount(generatedLandingCopy.headline)} words (Optimal)` : 'Not generated'}
-                        </span>
+                      {/* Conversion Score - Primary Metric */}
+                      <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border border-green-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-800">Conversion Score</span>
+                          <span className="text-lg font-bold text-green-700">
+                            {landingPageAnalysis?.conversionScore || 'N/A'}/100
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-green-600 h-2 rounded-full transition-all duration-500" 
+                            style={{ width: `${landingPageAnalysis?.conversionScore || 0}%` }}
+                          ></div>
+                        </div>
                       </div>
                       
-                      <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: '#f0f4ff' }}>
-                        <span className="text-sm text-gray-700">Brand Alignment</span>
-                        <span className="text-sm font-medium" style={{ color: '#004182' }}>92%</span>
+                      {/* Content Metrics */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                          <span className="text-xs text-gray-700">Headline</span>
+                          <span className="text-xs font-medium text-blue-700">
+                            {landingPageAnalysis?.headlineLength || 'Not generated'}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                          <span className="text-xs text-gray-700">Readability</span>
+                          <span className="text-xs font-medium text-blue-700">
+                            {landingPageAnalysis?.readabilityScore || 'N/A'}/10
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <span className="text-xs text-gray-700">Total Words</span>
+                          <span className="text-xs font-medium text-gray-700">
+                            {landingPageAnalysis?.totalWords || 0}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <span className="text-xs text-gray-700">Sections</span>
+                          <span className="text-xs font-medium text-gray-700">
+                            {landingPageAnalysis?.sectionCount || 0}/5
+                          </span>
+                        </div>
                       </div>
                       
-                      <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: '#f0f4ff' }}>
-                        <span className="text-sm text-gray-700">Readability Score</span>
-                        <span className="text-sm font-medium" style={{ color: '#004182' }}>8.5/10</span>
+                      {/* Feature Indicators */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className={`flex items-center justify-between p-2 rounded-lg ${landingPageAnalysis?.hasRiskReversal ? 'bg-green-50' : 'bg-red-50'}`}>
+                          <span className="text-xs text-gray-700">Risk Reversal</span>
+                          <span className={`text-xs font-medium ${landingPageAnalysis?.hasRiskReversal ? 'text-green-700' : 'text-red-700'}`}>
+                            {landingPageAnalysis?.hasRiskReversal ? '✓' : '✗'}
+                          </span>
+                        </div>
+                        
+                        <div className={`flex items-center justify-between p-2 rounded-lg ${landingPageAnalysis?.productSpecific ? 'bg-green-50' : 'bg-yellow-50'}`}>
+                          <span className="text-xs text-gray-700">Product Focus</span>
+                          <span className={`text-xs font-medium ${landingPageAnalysis?.productSpecific ? 'text-green-700' : 'text-yellow-700'}`}>
+                            {landingPageAnalysis?.productSpecific ? '✓ Specific' : '⚠ Generic'}
+                          </span>
+                        </div>
                       </div>
+                      
+                      {/* Performance Tips */}
+                      {landingPageAnalysis?.conversionScore && landingPageAnalysis.conversionScore < 85 && (
+                        <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
+                          <div className="text-xs font-medium text-yellow-800 mb-1">Optimization Tips:</div>
+                          <div className="text-xs text-yellow-700 space-y-1">
+                            {!landingPageAnalysis.hasRiskReversal && <div>• Add risk reversal/guarantee</div>}
+                            {!landingPageAnalysis.productSpecific && <div>• Select specific product for insights</div>}
+                            {landingPageAnalysis.sectionCount < 5 && <div>• Include all 5 strategic reasons</div>}
+                            {landingPageAnalysis.totalWords < 800 && <div>• Expand content depth</div>}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
