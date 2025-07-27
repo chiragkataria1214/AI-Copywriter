@@ -733,17 +733,6 @@ export default function MetaAdGenerator() {
                       )}
                       
                       <div>
-                        <Label htmlFor="targetAudience" className="block text-sm font-medium text-gray-700 mb-2">Custom Target Audience</Label>
-                        <Input 
-                          type="text" 
-                          id="targetAudience"
-                          placeholder=""
-                          value={targetAudience}
-                          onChange={(e) => setTargetAudience(e.target.value)}
-                        />
-                      </div>
-
-                      <div>
                         <Label htmlFor="landingPageUrl" className="block text-sm font-medium text-gray-700 mb-2">
                           Landing Page URL <span className="text-xs text-gray-500">(Optional)</span>
                         </Label>
