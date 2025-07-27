@@ -1330,8 +1330,9 @@ export default function MetaAdGenerator() {
 
                   {trainingConfig ? (
                     <Tabs defaultValue="brand-guidelines" className="w-full">
-                      <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1">
+                      <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1">
                         <TabsTrigger value="brand-guidelines" className="text-xs sm:text-sm">Brand Guidelines</TabsTrigger>
+                        <TabsTrigger value="personas" className="text-xs sm:text-sm">Personas</TabsTrigger>
                         <TabsTrigger value="frameworks" className="text-xs sm:text-sm">Copy Frameworks</TabsTrigger>
                         <TabsTrigger value="prompts" className="text-xs sm:text-sm">System Prompts</TabsTrigger>
                         <TabsTrigger value="model" className="text-xs sm:text-sm">Model Settings</TabsTrigger>
@@ -1741,6 +1742,213 @@ export default function MetaAdGenerator() {
                                 </Button>
                               )}
                             </div>
+                          </div>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="personas" className="mt-4">
+                        <div className="space-y-6">
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <p className="text-sm text-green-800 font-medium">Persona Training Data</p>
+                            <p className="text-sm text-green-700 mt-1">
+                              Configure the target personas and their core pillars that Claude AI uses to generate personalized copy.
+                            </p>
+                          </div>
+                          
+                          <div className="space-y-8">
+                            {editingConfig?.personaPillars && Object.entries(editingConfig.personaPillars).map(([personaName, personaData]: [string, any]) => (
+                              <div key={personaName} className="border border-gray-200 rounded-lg p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                  <h4 className="text-lg font-semibold text-gray-900 capitalize">
+                                    {personaName.replace(/([A-Z])/g, ' $1').trim()}
+                                  </h4>
+                                  <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                    {personaData.pillars?.length || 0} Pillars
+                                  </Badge>
+                                </div>
+                                
+                                <div className="space-y-4">
+                                  <div>
+                                    <Label className="text-sm font-medium text-gray-900 mb-3 block">
+                                      <span className="inline-flex items-center">
+                                        <span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+                                        Core Pillars - Key Pain Points & Motivations
+                                      </span>
+                                    </Label>
+                                    <p className="text-xs text-gray-600 mb-3">
+                                      These pillars define what matters most to this persona. Claude uses these to create targeted, relevant copy.
+                                    </p>
+                                    
+                                    <div className="space-y-3">
+                                      {(personaData.pillars || ['']).map((pillar: string, index: number) => (
+                                        <div key={index} className="space-y-2">
+                                          <div className="flex items-center space-x-3">
+                                            <Switch 
+                                              checked={personaData.enabledPillars?.[index] !== false}
+                                              onCheckedChange={(checked) => {
+                                                const enabled = [...(personaData.enabledPillars || [])];
+                                                enabled[index] = checked;
+                                                setEditingConfig({
+                                                  ...editingConfig,
+                                                  personaPillars: {
+                                                    ...editingConfig.personaPillars,
+                                                    [personaName]: {
+                                                      ...personaData,
+                                                      enabledPillars: enabled
+                                                    }
+                                                  }
+                                                });
+                                              }}
+                                              className="flex-shrink-0"
+                                            />
+                                            <span className="text-green-500 text-sm font-bold flex-shrink-0">•</span>
+                                            <span className="text-xs text-gray-600 flex-shrink-0">Pillar {index + 1}</span>
+                                            {user?.role === 'admin' && (personaData.pillars?.length > 1) && (
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-red-500 hover:text-red-700 flex-shrink-0 ml-auto"
+                                                onClick={() => {
+                                                  const pillars = [...(personaData.pillars || [])];
+                                                  const enabled = [...(personaData.enabledPillars || [])];
+                                                  pillars.splice(index, 1);
+                                                  enabled.splice(index, 1);
+                                                  setEditingConfig({
+                                                    ...editingConfig,
+                                                    personaPillars: {
+                                                      ...editingConfig.personaPillars,
+                                                      [personaName]: {
+                                                        ...personaData,
+                                                        pillars,
+                                                        enabledPillars: enabled
+                                                      }
+                                                    }
+                                                  });
+                                                }}
+                                              >
+                                                ×
+                                              </Button>
+                                            )}
+                                          </div>
+                                          <Input
+                                            value={pillar}
+                                            onChange={(e) => {
+                                              if (user?.role !== 'admin') return;
+                                              const pillars = [...(personaData.pillars || [])];
+                                              pillars[index] = e.target.value;
+                                              setEditingConfig({
+                                                ...editingConfig,
+                                                personaPillars: {
+                                                  ...editingConfig.personaPillars,
+                                                  [personaName]: {
+                                                    ...personaData,
+                                                    pillars
+                                                  }
+                                                }
+                                              });
+                                            }}
+                                            className={`w-full ml-0 text-gray-900 font-medium border-green-200 focus:border-green-400 ${personaData.enabledPillars?.[index] === false ? 'opacity-50' : ''}`}
+                                            placeholder="Enter core pillar (e.g., lack of time, versatility, clean ingredients)"
+                                            disabled={user?.role !== 'admin'}
+                                          />
+                                        </div>
+                                      ))}
+                                      {user?.role === 'admin' && (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            const pillars = [...(personaData.pillars || [])];
+                                            const enabled = [...(personaData.enabledPillars || [])];
+                                            pillars.push('');
+                                            enabled.push(true);
+                                            setEditingConfig({
+                                              ...editingConfig,
+                                              personaPillars: {
+                                                ...editingConfig.personaPillars,
+                                                [personaName]: {
+                                                  ...personaData,
+                                                  pillars,
+                                                  enabledPillars: enabled
+                                                }
+                                              }
+                                            });
+                                          }}
+                                          className="w-full border-dashed border-green-300 text-green-600 hover:bg-green-50 mt-2"
+                                        >
+                                          + Add pillar for {personaName.replace(/([A-Z])/g, ' $1').trim()}
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                                    <p className="text-xs text-gray-600 font-medium mb-2">How Claude Uses This Data:</p>
+                                    <ul className="text-xs text-gray-600 space-y-1">
+                                      <li>• Generates headlines addressing these specific pain points</li>
+                                      <li>• Creates primary text that resonates with core motivations</li>
+                                      <li>• Adapts messaging tone based on persona priorities</li>
+                                      <li>• Suggests product benefits aligned with pillar concerns</li>
+                                    </ul>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            
+                            {user?.role === 'admin' && (
+                              <div className="border-2 border-dashed border-green-300 rounded-lg p-6 text-center">
+                                <h4 className="text-sm font-medium text-green-700 mb-2">Add New Persona</h4>
+                                <p className="text-xs text-gray-600 mb-4">Create a new target persona with custom pillars</p>
+                                <div className="flex items-center space-x-2">
+                                  <Input 
+                                    placeholder="Persona name (e.g., beautyEnthusiast)"
+                                    className="flex-1 border-green-300"
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        const personaName = (e.target as HTMLInputElement).value.trim();
+                                        if (personaName && !editingConfig?.personaPillars?.[personaName]) {
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            personaPillars: {
+                                              ...editingConfig.personaPillars,
+                                              [personaName]: {
+                                                pillars: [''],
+                                                enabledPillars: [true]
+                                              }
+                                            }
+                                          });
+                                          (e.target as HTMLInputElement).value = '';
+                                        }
+                                      }
+                                    }}
+                                  />
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="border-green-300 text-green-600 hover:bg-green-50"
+                                    onClick={(e) => {
+                                      const input = (e.target as HTMLElement).previousElementSibling as HTMLInputElement;
+                                      const personaName = input?.value.trim();
+                                      if (personaName && !editingConfig?.personaPillars?.[personaName]) {
+                                        setEditingConfig({
+                                          ...editingConfig,
+                                          personaPillars: {
+                                            ...editingConfig.personaPillars,
+                                            [personaName]: {
+                                              pillars: [''],
+                                              enabledPillars: [true]
+                                            }
+                                          }
+                                        });
+                                        input.value = '';
+                                      }
+                                    }}
+                                  >
+                                    Add Persona
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </TabsContent>
