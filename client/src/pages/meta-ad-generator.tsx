@@ -1170,8 +1170,22 @@ export default function MetaAdGenerator() {
                     </div>
                     
                     {generatedPrimaryText ? (
-                      <div className="border border-gray-200 rounded-lg p-3 sm:p-4">
-                        <p className="text-gray-900 leading-relaxed text-sm sm:text-base">{generatedPrimaryText}</p>
+                      <div className="border border-gray-200 rounded-lg p-3 sm:p-4 group">
+                        <div className="flex items-start justify-between">
+                          <p className="text-gray-900 leading-relaxed text-sm sm:text-base flex-1">{generatedPrimaryText}</p>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 mt-0"
+                            onClick={() => {
+                              setSelectedItemForRevision({ type: 'primaryText' });
+                              setShowRevisionPanel(true);
+                            }}
+                            title="Suggest improvements"
+                          >
+                            <Target size={14} />
+                          </Button>
+                        </div>
                         
                         <div className="flex flex-col space-y-2 mt-4 pt-4 border-t border-gray-200 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                           <div className="flex flex-wrap items-center gap-2">
