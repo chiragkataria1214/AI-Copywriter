@@ -2445,7 +2445,13 @@ Keep sentences to 8-12 words for mobile comprehension"
                                     />
                                   </div>
                                   {user?.role === 'admin' && (
-                                    <Button className="w-full bg-green-600 hover:bg-green-700">
+                                    <Button 
+                                      className="w-full bg-green-600 hover:bg-green-700"
+                                      onClick={() => {
+                                        // TODO: Implement import functionality
+                                        console.log('Import reviews clicked');
+                                      }}
+                                    >
                                       Import & Analyze Reviews
                                     </Button>
                                   )}
@@ -2492,7 +2498,14 @@ Keep sentences to 8-12 words for mobile comprehension"
                                   <p className="text-xs text-gray-500 mt-1">Generate insights to see how reviews will train the AI</p>
                                 </div>
                                 {user?.role === 'admin' && (
-                                  <Button variant="outline" className="w-full mt-3" disabled>
+                                  <Button 
+                                    variant="outline" 
+                                    className="w-full mt-3" 
+                                    onClick={() => {
+                                      // TODO: Implement insights generation
+                                      console.log('Generate insights clicked');
+                                    }}
+                                  >
                                     Generate Training Insights
                                   </Button>
                                 )}

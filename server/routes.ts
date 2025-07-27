@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { registerTrainingRoutes } from "./routes-training";
+import { registerJunipRoutes } from "./routes-junip";
 import { storage } from "./storage";
 import multer from "multer";
 import { generateAdCopy, generateLandingPageCopy } from "./anthropic";
@@ -703,6 +704,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register review routes
   const { registerReviewRoutes } = await import("./routes-reviews");
   registerReviewRoutes(app);
+  
+  // Register Junip API routes
+  registerJunipRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;

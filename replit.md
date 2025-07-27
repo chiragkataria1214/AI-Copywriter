@@ -6,6 +6,18 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
+**Latest Update - Junip API Integration Complete (July 27, 2025)**
+- **Junip API Client**: Built comprehensive `server/junip-api.ts` with authentication, rate limiting, and full CRUD operations for reviews and products
+- **Review Import System**: Created `server/review-importer.ts` with automated import capabilities from Junip API and manual text input options
+- **Database Schema Updated**: Modified `shared/review-schema.ts` to support external review sources with proper field mapping for Junip data
+- **API Routes Complete**: Added `server/routes-junip.ts` with endpoints for testing connections, importing reviews, analytics, and training insights
+- **Admin Interface Integration**: Customer Reviews tab now supports both Junip API imports and manual text uploads within AI Settings panel
+- **Automated Scheduling**: Built framework for scheduled review imports (every 6 hours) to keep training data current
+- **Analytics Dashboard**: Created review analytics endpoint with sentiment distribution, theme analysis, and import status tracking
+- **Training Pipeline Ready**: Framework established for converting customer reviews into AI training insights and language patterns
+
+## Recent Changes (July 2025)
+
 - **Claude AI Integration Complete**: Successfully integrated Anthropic's Claude 4.0 Sonnet for authentic ad copy generation
 - **Brand Guidelines Implementation**: Built Jones Road Beauty brand voice and positioning into system prompts
 - **Persona Targeting System**: Added detailed sub-personas (Life Juggler → New Mom, etc.) for precise audience targeting
@@ -25,6 +37,7 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 - **Admin Security Restoration**: Restored comprehensive admin-only access controls for all AI Settings interface elements while ensuring authenticated admin users have full editing capabilities for all training materials and model configuration parameters
 - **Complete User Management System**: Built full admin system with role-based permissions (admin/team member), user management interface at /users route, and comprehensive CRUD operations for user accounts
 - **Authentication Flow Improvements**: Enhanced login/register flow with improved session management, forced page reloads after authentication, and better error handling for deployed environments
+- **Junip API Integration Framework**: Built comprehensive system for automatic customer review imports from Junip platform, including API client, database schema, analysis pipeline, and admin interface integration within AI Settings panel
 
 ## User Preferences
 
@@ -57,6 +70,8 @@ Preferred color scheme: #004182 blue (replaces Jones Road Beauty brand colors an
 
 **State Management**: TanStack Query handles server state with caching and synchronization, while local React state manages UI interactions. This hybrid approach reduces complexity while maintaining good UX.
 
+**Review Integration Strategy**: Junip API integration was chosen over manual uploads for scalability and real-time data access. The system supports both automated imports and manual fallbacks, with comprehensive error handling and rate limiting to ensure reliable operation.
+
 ## Key Components
 
 ### Database Layer
@@ -67,6 +82,7 @@ Preferred color scheme: #004182 blue (replaces Jones Road Beauty brand colors an
 ### API Layer
 - **File Upload**: `/api/upload-video` endpoint for video transcription processing
 - **Content Generation**: `/api/generate-ad-copy` for AI-powered copy generation
+- **Review Management**: `/api/junip/*` endpoints for review imports, analytics, and training insights
 - **Error Handling**: Centralized error middleware with proper HTTP status codes
 
 ### Frontend Components

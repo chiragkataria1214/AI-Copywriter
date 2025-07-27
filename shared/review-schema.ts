@@ -20,8 +20,10 @@ export const reviews = pgTable("reviews", {
   reviewerName: varchar("reviewer_name"),
   reviewerAge: varchar("reviewer_age"), // e.g., "30s", "40s", "50+"
   skinType: varchar("skin_type"), // e.g., "dry", "oily", "combination", "sensitive"
-  verified: boolean("verified").default(false),
-  reviewSource: varchar("review_source").notNull(), // "website", "amazon", "sephora", etc.
+
+  source: varchar("source").notNull(), // "website", "amazon", "sephora", etc.
+  verifiedPurchase: boolean("verified_purchase").default(false),
+  helpfulCount: integer("helpful_count").default(0),
   reviewDate: timestamp("review_date"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -32,10 +34,10 @@ export const reviewAnalysis = pgTable("review_analysis", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   reviewId: varchar("review_id").references(() => reviews.id),
   sentiment: varchar("sentiment"), // "positive", "negative", "neutral"
-  keyThemes: jsonb("key_themes").$type<string[]>(), // ["quick application", "natural look", etc.]
-  customerLanguage: jsonb("customer_language").$type<string[]>(), // actual phrases customers use
-  painPoints: jsonb("pain_points").$type<string[]>(), // problems mentioned
-  benefits: jsonb("benefits").$type<string[]>(), // benefits mentioned
+  keyThemes: text("key_themes"), // comma-separated themes
+  customerLanguage: text("customer_language"), // comma-separated phrases
+  painPoints: text("pain_points"), // comma-separated pain points
+  benefits: text("benefits"), // comma-separated benefits
   momSpecific: boolean("mom_specific").default(false), // if review mentions mom/parenting context
   personas: jsonb("personas").$type<string[]>(), // which personas this review fits
   ageGroup: varchar("age_group"), // inferred from review content
