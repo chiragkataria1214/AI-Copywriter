@@ -12,6 +12,7 @@ import AdminSetup from "@/pages/admin-setup";
 import NotFound from "@/pages/not-found";
 import BypassPage from "@/pages/bypass";
 import DemoGenerator from "@/pages/demo-generator";
+import ReviewAnalytics from "@/pages/review-analytics";
 
 
 function AuthenticatedRouter() {
@@ -19,10 +20,11 @@ function AuthenticatedRouter() {
   const [location] = useLocation();
 
   // Check if we're on a bypass route - allow direct access
-  if (location.startsWith('/demo') || location.startsWith('/bypass')) {
+  if (location.startsWith('/demo') || location.startsWith('/bypass') || location.startsWith('/analytics')) {
     return (
       <Switch>
         <Route path="/demo" component={DemoGenerator} />
+        <Route path="/analytics" component={ReviewAnalytics} />
         <Route path="/bypass" component={BypassPage} />
         <Route component={DemoGenerator} />
       </Switch>
