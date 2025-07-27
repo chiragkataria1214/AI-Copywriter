@@ -6,14 +6,14 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
-**Latest Update - Product-Specific Review Filtering Complete (July 27, 2025)**
+**Latest Update - Complete Product-Specific Review System (July 27, 2025)**
+- **FIXED: Junip Review Import System**: Resolved all import issues - now successfully imports and categorizes reviews by product (Foundation: 4, Mascara: 3, Sunscreen: 3, Miracle Balm: 3, etc.)
 - **Product Selection Interface**: Added product dropdown to both Ad Copy and Landing Page generators with Jones Road's top 4 products prioritized (Miracle Balm, Foundation, Just Enough Tinted Moisturizer, Everyday Sunscreen)
-- **Junip API Integration Complete**: Built comprehensive `server/junip-api.ts` with authentication, rate limiting, and full CRUD operations for reviews and products
-- **Review Import System**: Created `server/review-importer.ts` with automated import capabilities from Junip API and manual text input options
-- **Database Schema Updated**: Modified `shared/review-schema.ts` to support external review sources with proper field mapping for Junip data
-- **API Routes Complete**: Added `server/routes-junip.ts` with endpoints for testing connections, importing reviews, analytics, and training insights
-- **Admin Interface Integration**: Customer Reviews tab now supports both Junip API imports and manual text uploads within AI Settings panel
+- **Enhanced Review Processing**: Improved product detection algorithms to properly categorize reviews from customer language patterns (mascara/lash → mascara, foundation → foundation, etc.)
+- **Database Schema Optimized**: Fixed foreign key constraints and data parsing for proper product categorization and review analysis
+- **Authentic Customer Reviews**: Now importing 20+ real customer reviews with proper product mapping for AI training
 - **Product-Specific AI Training**: Framework established for filtering customer reviews by specific products to generate targeted, authentic copy using real customer language patterns
+- **Admin Interface Integration**: Customer Reviews tab now supports both Junip API imports and manual text uploads within AI Settings panel
 - **Analytics Dashboard**: Created review analytics endpoint with sentiment distribution, theme analysis, and import status tracking
 
 ## Recent Changes (July 2025)

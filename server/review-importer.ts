@@ -198,30 +198,26 @@ export async function importFromText(textContent: string, source: string = 'manu
 
     for (const line of lines) {
       try {
-        // Try to parse as JSON first
         let reviewData;
+        
+        // Try to parse as JSON first
         if (line.trim().startsWith('{')) {
           const parsed = JSON.parse(line);
           reviewData = {
-            externalId: parsed.id || `manual-${Date.now()}-${Math.random()}`,
-            source: source as any,
             rating: parsed.rating || 5,
-            title: parsed.title || null,
-            content: parsed.content || parsed.review || line,
+            productName: parsed.product || extractProductFromReview(parsed.content || line),
+            reviewText: parsed.content || parsed.review || line,
             reviewerName: parsed.reviewer || 'Anonymous',
-            reviewerEmail: null,
+            source: source,
+            reviewDate: new Date(),
             verifiedPurchase: false,
-            productName: parsed.product || null,
-            productSku: null,
             helpfulCount: 0,
-            createdAt: new Date(),
-            updatedAt: new Date(),
           };
         } else {
           // Treat as plain text review
           reviewData = {
             rating: 5, // Default rating
-            productName: 'Unknown Product',
+            productName: extractProductFromReview(line.trim()),
             reviewText: line.trim(),
             reviewerName: 'Anonymous',
             source: source,
@@ -297,4 +293,21 @@ export function scheduleJunipImports() {
   }, 6 * 60 * 60 * 1000); // 6 hours
 
   console.log('Scheduled Junip imports every 6 hours');
+}
+
+// Helper function to extract product from review text
+function extractProductFromReview(reviewText: string): string {
+  const text = reviewText.toLowerCase();
+  
+  // Check for product mentions in various formats
+  if (text.includes('product: the mascara') || text.includes('mascara') || text.includes('lash')) return 'mascara';
+  if (text.includes('product: what the foundation') || text.includes('foundation') || text.includes('what the foundation')) return 'foundation';
+  if (text.includes('product: everyday sunscreen') || text.includes('sunscreen') || text.includes('spf') || text.includes('everyday sunscreen')) return 'sunscreen';
+  if (text.includes('product: miracle balm') || text.includes('miracle balm') || text.includes('balm')) return 'miracle balm';
+  if (text.includes('product: lip & cheek stick') || text.includes('lip stick') || text.includes('lip & cheek') || text.includes('cheek stick')) return 'lip stick';
+  if (text.includes('product: just enough tinted moisturizer') || text.includes('tinted moisturizer') || text.includes('just enough')) return 'tinted moisturizer';
+  if (text.includes('product: the face pencil') || text.includes('face pencil') || text.includes('pencil')) return 'face pencil';
+  if (text.includes('product: the hero kit') || text.includes('hero kit') || text.includes('kit')) return 'hero kit';
+  
+  return 'Unknown Product';
 }
