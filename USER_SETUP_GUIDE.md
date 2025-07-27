@@ -5,7 +5,7 @@
 ### Quick Start (Option 1: Demo Login)
 1. Go to the login page
 2. Click "Quick Demo Login" button
-3. This uses: `test@jonesroad.com` / `password123`
+3. This uses: `test@jonesroadbeauty.com` / `password123`
 4. You'll have team member access to test the app
 
 ### Creating Your Own Account (Option 2: Register)
@@ -27,8 +27,8 @@
 
 ### Current Test Accounts
 - `cody@jonesroadbeauty.com` (admin) - Original admin account
-- `test@jonesroad.com` (team member) - Demo account  
-- `sarah@jonesroad.com` (team member) - Test account
+- `test@jonesroadbeauty.com` (team member) - Demo account  
+- `sarah@jonesroadbeauty.com` (team member) - Test account
 
 ## Authentication Status: ✅ READY
 

@@ -47,9 +47,9 @@ export default function Login() {
 
   // Quick demo login for testing
   const handleDemoLogin = () => {
-    setUsername('test@jonesroad.com');
+    setUsername('test@jonesroadbeauty.com');
     setPassword('password123');
-    loginMutation.mutate({ username: 'test@jonesroad.com', password: 'password123' });
+    loginMutation.mutate({ username: 'test@jonesroadbeauty.com', password: 'password123' });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
