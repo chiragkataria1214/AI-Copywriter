@@ -576,12 +576,21 @@ RISK REVERSAL: [Guarantee or trust elements]`;
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
     
-    // Parse the enhanced response structure
-    const headlineMatch = content.match(/HEADLINE:?\s*(.+?)(?=\n|SUBHEADLINE|INTRODUCTION)/i);
-    const subheadlineMatch = content.match(/SUBHEADLINE:?\s*(.+?)(?=\n|INTRODUCTION)/i);
-    const introMatch = content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=REASON #1|$)/i);
+    // Debug logging to see what we received
+    console.log('AI Response for landing page:', content.substring(0, 500) + '...');
+    
+    // Parse the enhanced response structure with more flexible matching
+    const headlineMatch = content.match(/HEADLINE:?\s*(.+?)(?=\n|SUBHEADLINE|INTRODUCTION|$)/is);
+    const subheadlineMatch = content.match(/SUBHEADLINE:?\s*(.+?)(?=\n|INTRODUCTION|REASON|$)/is);
+    const introMatch = content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=REASON #?1|$)/i);
     const ctaMatch = content.match(/CTA:?\s*([\s\S]*?)(?=RISK REVERSAL|$)/i);
     const riskReversalMatch = content.match(/RISK REVERSAL:?\s*([\s\S]*?)$/i);
+    
+    console.log('Parsing results:', {
+      headline: headlineMatch ? headlineMatch[1] : 'NOT FOUND',
+      hasReasons: content.includes('REASON'),
+      contentStart: content.substring(0, 100)
+    });
     
     // Extract reasons with improved parsing
     const sections = [];
