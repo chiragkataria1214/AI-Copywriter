@@ -1090,11 +1090,11 @@ export default function MetaAdGenerator() {
                             <div className="flex flex-col space-y-2 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
                               <div className="flex-1 pr-0 sm:pr-2">
                                 <p className="font-medium text-gray-900 text-sm sm:text-base leading-relaxed">{headline.copy}</p>
-                                <div className="flex flex-wrap items-center gap-2 mt-2">
-                                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                                <div className="flex flex-wrap items-center gap-2 mt-3">
+                                  <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-300 text-sm font-medium px-2.5 py-1">
                                     {headline.framework}
                                   </Badge>
-                                  <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">
+                                  <Badge variant="secondary" className="bg-green-50 text-green-700 border border-green-200 text-sm px-2.5 py-1">
                                     {getWordCount(headline.copy)} words
                                   </Badge>
                                 </div>
@@ -1189,10 +1189,10 @@ export default function MetaAdGenerator() {
                         
                         <div className="flex flex-col space-y-2 mt-4 pt-4 border-t border-gray-200 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <Badge variant="secondary" style={{ backgroundColor: '#f0f4ff', color: '#004182' }} className="text-xs">
+                            <Badge variant="secondary" style={{ backgroundColor: '#f0f4ff', color: '#004182' }} className="text-sm font-medium px-2.5 py-1 border border-blue-200">
                               {getWordCount(generatedPrimaryText)} words
                             </Badge>
-                            <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">
+                            <Badge variant="secondary" className="bg-green-50 text-green-700 border border-green-200 text-sm font-medium px-2.5 py-1">
                               Brand-First
                             </Badge>
                           </div>
@@ -1301,20 +1301,23 @@ export default function MetaAdGenerator() {
                             <div className="flex items-center space-x-2">
                               <Label className="text-sm text-gray-600">Headline:</Label>
                               <Select value={selectedHeadlineIndex.toString()} onValueChange={(value) => setSelectedHeadlineIndex(parseInt(value))}>
-                                <SelectTrigger className="w-40">
+                                <SelectTrigger className="w-48">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {generatedHeadlines.map((headline, index) => (
                                     <SelectItem key={index} value={index.toString()}>
-                                      {headline.framework} - {headline.copy.substring(0, 30)}...
+                                      <div className="flex flex-col py-1">
+                                        <span className="font-medium text-sm">{headline.framework}</span>
+                                        <span className="text-xs text-gray-500 truncate">{headline.copy.substring(0, 35)}...</span>
+                                      </div>
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
                             </div>
                           )}
-                          <Badge variant="secondary" style={{ backgroundColor: '#f0f4ff', color: '#004182' }} className="text-xs">
+                          <Badge variant="secondary" style={{ backgroundColor: '#f0f4ff', color: '#004182' }} className="text-sm font-medium px-3 py-1.5 border border-blue-200">
                             Facebook Feed Ad
                           </Badge>
                         </div>
