@@ -2841,15 +2841,15 @@ Keep sentences to 8-12 words for mobile comprehension"
                           </div>
 
                           {/* Listicle Framework Section */}
-                          <div className="border border-purple-200 rounded-lg p-6 bg-purple-50">
+                          <div className="border border-gray-200 rounded-lg p-6 bg-gray-50">
                             <div className="flex items-center mb-4">
-                              <span className="w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
+                              <span className="w-3 h-3 bg-gray-600 rounded-full mr-2"></span>
                               <Label className="text-sm font-medium text-gray-900">Listicle Framework (Based on Real Examples)</Label>
                             </div>
                             
                             <div className="space-y-4">
                               <div>
-                                <Label className="text-xs font-medium text-purple-700 mb-2 block">Content Structure Sequence</Label>
+                                <Label className="text-xs font-medium text-gray-900 mb-2 block">Content Structure Sequence</Label>
                                 <Textarea 
                                   value={editingConfig?.copyFrameworks?.listicleFramework?.contentSequence?.join('\n') || ''}
                                   onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
@@ -2862,7 +2862,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                                       }
                                     }
                                   })}
-                                  className="mt-1 border-purple-200 focus:border-purple-400"
+                                  className="mt-1 text-gray-900 border-gray-300 focus:border-gray-500"
                                   rows={6}
                                   placeholder="1. IMMEDIATE PROBLEM SOLVER - addresses main pain point
 2. UNIQUE ADVANTAGE - what makes this different
@@ -2875,7 +2875,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                               </div>
 
                               <div>
-                                <Label className="text-xs font-medium text-purple-700 mb-2 block">Each Reason Structure Format</Label>
+                                <Label className="text-xs font-medium text-gray-900 mb-2 block">Each Reason Structure Format</Label>
                                 <Textarea 
                                   value={editingConfig?.copyFrameworks?.listicleFramework?.reasonStructure?.join('\n') || ''}
                                   onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
@@ -2888,7 +2888,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                                       }
                                     }
                                   })}
-                                  className="mt-1 border-purple-200 focus:border-purple-400"
+                                  className="mt-1 text-gray-900 border-gray-300 focus:border-gray-500"
                                   rows={5}
                                   placeholder="- CLEAR BENEFIT STATEMENT (10-20 words): Direct, specific value
 - BRIEF EXPLANATION (30-60 words): Why this matters, how it works
@@ -2900,7 +2900,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                               </div>
 
                               <div>
-                                <Label className="text-xs font-medium text-purple-700 mb-2 block">Optimization Rules</Label>
+                                <Label className="text-xs font-medium text-gray-900 mb-2 block">Optimization Rules</Label>
                                 <Textarea 
                                   value={editingConfig?.copyFrameworks?.listicleFramework?.optimizationRules?.join('\n') || ''}
                                   onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
@@ -2913,7 +2913,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                                       }
                                     }
                                   })}
-                                  className="mt-1 border-purple-200 focus:border-purple-400"
+                                  className="mt-1 text-gray-900 border-gray-300 focus:border-gray-500"
                                   rows={5}
                                   placeholder="Maximum 100 words per reason section (concise and scannable)
 Lead with benefits, support with facts - not the other way around
@@ -2925,7 +2925,7 @@ Each reason should stand alone and deliver immediate value"
                               </div>
 
                               <div>
-                                <Label className="text-xs font-medium text-purple-700 mb-2 block">Real Example Patterns to Emulate</Label>
+                                <Label className="text-xs font-medium text-gray-900 mb-2 block">Real Example Patterns to Emulate</Label>
                                 <Textarea 
                                   value={editingConfig?.copyFrameworks?.listicleFramework?.realExamples?.join('\n') || ''}
                                   onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
@@ -2938,7 +2938,7 @@ Each reason should stand alone and deliver immediate value"
                                       }
                                     }
                                   })}
-                                  className="mt-1 border-purple-200 focus:border-purple-400"
+                                  className="mt-1 text-gray-900 border-gray-300 focus:border-gray-500"
                                   rows={4}
                                   placeholder="Grüns: 'Better Poops (Seriously)' - direct, honest, conversational
 Loop: 'Blocks Out The Loudest Tools - 24dB Reduction' - specific benefit + proof
