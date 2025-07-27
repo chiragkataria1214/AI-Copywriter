@@ -83,42 +83,67 @@ export const defaultTrainingConfig: TrainingConfig = {
       {
         name: "BENEFIT DRIVEN",
         description: "Lead with the primary benefit/transformation the product delivers",
-        template: "[Primary Benefit] + [Outcome]",
-        examples: ["Natural Glow Simplified", "Effortless Beauty Found", "Your Skin But Better"]
+        template: "[Primary Benefit] + [Specific Outcome] + [Qualifier]",
+        examples: [
+          "Finally, A Foundation That Actually Looks Like Your Skin",
+          "The No-Makeup Makeup Look Everyone's Been Searching For",
+          "Get That Effortless Glow Without Any of the Work"
+        ]
       },
       {
         name: "SOCIAL PROOF",
         description: "Incorporate trust signals, reviews, or popularity metrics",
-        template: "[Number/Authority] + [Approval] + [Product]",
-        examples: ["Loved by 50,000+ Women", "Artist-Approved Formula", "5-Star Foundation"]
+        template: "[Specific Number/Authority] + [Approval] + [Product Result]",
+        examples: [
+          "50,000+ Women Say This Foundation Changed Everything",
+          "The Makeup Artist-Approved Secret for Perfect Skin",
+          "Why Beauty Editors Call This The Holy Grail Foundation"
+        ]
       },
       {
         name: "OFFER DRIVEN", 
         description: "Focus on a specific promotion, deal, or exclusive access",
-        template: "[Offer Type] + [Value] + [Urgency]",
-        examples: ["Limited Edition Drop", "Exclusive Early Access", "Bundle & Save 30%"]
+        template: "[Specific Offer] + [Value Statement] + [Action Hook]",
+        examples: [
+          "Limited Edition Shade Now Available - Don't Miss Out",
+          "Get 30% Off Your First Order Plus Free Shipping Today",
+          "Exclusive Early Access For Our Newest Beauty Innovation"
+        ]
       },
       {
         name: "VALUE PROPS",
         description: "Highlight unique product attributes or competitive advantages", 
-        template: "[Unique Feature] + [Benefit]",
-        examples: ["Universal Shade Technology", "12-Hour Comfortable Wear", "Cruelty-Free Formula"]
+        template: "[Unique Feature] + [Specific Benefit] + [Differentiation]",
+        examples: [
+          "The Only Foundation With Universal Shade Technology That Works",
+          "12-Hour Comfortable Wear Without Any Touch-Ups Needed",
+          "Cruelty-Free Formula That Actually Improves Your Skin Over Time"
+        ]
       },
       {
         name: "PROBLEM FOCUSED",
         description: "Address a specific pain point your audience faces",
-        template: "No More [Problem] + [Solution]",
-        examples: ["No More Cakey Foundation", "Skip the 10-Step Routine", "End Foundation Oxidation"]
+        template: "Stop [Specific Problem] + [Complete Solution]",
+        examples: [
+          "Stop Settling for Cakey Foundation That Looks Like Makeup",
+          "Why Spend Hours on Makeup When This Does It All",
+          "End the Search for Foundation That Won't Oxidize or Fade"
+        ]
       },
       {
         name: "URGENCY/SCARCITY",
         description: "Create time-sensitive or limited-availability motivation",
-        template: "[Limited Factor] + [Action Required]",
-        examples: ["Back in Stock Alert", "Limited Quantities Left", "Today Only Special"]
+        template: "[Specific Urgency] + [Clear Action] + [Benefit]",
+        examples: [
+          "Back in Stock Alert: Your Favorite Shade Returns Today",
+          "Only 48 Hours Left to Get This Exclusive Bundle Deal",
+          "Last Chance: Free Gift With Purchase Ends Tonight"
+        ]
       }
     ],
     primaryTextRules: [
-      "Headlines: Maximum 5 words, must fit in 1 line on mobile",
+      "Headlines: 8-15 words for stronger impact, up to 125 characters on Facebook",
+      "Create complete thoughts and compelling statements, not just short phrases",
       "Primary text: 15-25 words optimal for Meta ads",
       "Keep sentences to 8-12 words for mobile comprehension",
       "Front-load differentiators (cruelty-free, talc-free, SPF) early",
@@ -154,7 +179,8 @@ JONES ROAD BEAUTY BRAND GUIDELINES:
 - Avoid superlatives and exaggerated claims
 
 COPY REQUIREMENTS:
-- Headlines: Maximum 5 words, must fit in 1 line on mobile
+- Headlines: 8-15 words for maximum impact (up to 125 characters on Facebook)
+- Create complete, compelling thoughts rather than short phrases
 - Primary text: 15-25 words optimal
 - Brand/DR Balance: {brandPercent}% brand voice, {drPercent}% direct response
 - Target audience: {targetAudience}
@@ -194,10 +220,12 @@ Generate exactly 5 headlines using these specific frameworks (select the 5 most 
 6. URGENCY/SCARCITY: Create time-sensitive or limited-availability motivation
 
 FRAMEWORK PRINCIPLES:
-- Lead with a hook: Start with concise, memorable phrase that distills core promise
+- Create complete compelling statements, not just short phrases
+- Each headline should be 8-15 words for maximum impact
+- Lead with a hook: Start with compelling promise that drives action
 - Use sensory or outcome-oriented language
-- Keep sentences to 8-12 words for mobile comprehension
 - Front-load differentiators early
+- Examples: "Finally, A Foundation That Actually Looks Like Your Skin" vs "Natural Foundation"
 
 FORMAT YOUR RESPONSE AS JSON:
 {
