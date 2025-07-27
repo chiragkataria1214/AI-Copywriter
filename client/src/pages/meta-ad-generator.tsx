@@ -1641,10 +1641,18 @@ export default function MetaAdGenerator() {
                     <div className="space-y-4">
                       <div className="flex flex-col space-y-3 p-4 bg-gray-50 rounded-lg sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                         <div>
-                          <Label className="text-sm font-medium text-gray-700">Use Generated Ads Content</Label>
+                          <Label className="text-sm font-medium text-gray-700">
+                            Use Generated Ads Content {useAdsForLanding ? '(ON)' : '(OFF)'}
+                          </Label>
                           <p className="text-xs text-gray-500">Use the ad copy generated in the previous tab</p>
                         </div>
-                        <Switch checked={useAdsForLanding} onCheckedChange={setUseAdsForLanding} />
+                        <Switch 
+                          checked={useAdsForLanding} 
+                          onCheckedChange={(checked) => {
+                            console.log('Toggle clicked, new value:', checked);
+                            setUseAdsForLanding(checked);
+                          }} 
+                        />
                       </div>
                       
                       <div>
