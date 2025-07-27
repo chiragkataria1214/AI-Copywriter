@@ -23,6 +23,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   adminCreateUser(userData: z.infer<typeof adminCreateUserSchema>): Promise<User>;
   updateUser(id: string, userData: z.infer<typeof updateUserSchema>): Promise<User>;
+  updateUserPassword(id: string, hashedPassword: string): Promise<User>;
   deleteUser(id: string): Promise<void>;
   makeUserAdmin(username: string): Promise<User>;
   
@@ -93,6 +94,18 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date(),
       })
       .where(eq(users.username, username))
+      .returning();
+    return user;
+  }
+
+  async updateUserPassword(id: string, hashedPassword: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ 
+        password: hashedPassword,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
       .returning();
     return user;
   }

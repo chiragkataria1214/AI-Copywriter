@@ -8,6 +8,7 @@ import MetaAdGenerator from "@/pages/meta-ad-generator";
 import UserManagement from "@/pages/user-management";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import AdminSetup from "@/pages/admin-setup";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRouter() {
@@ -42,6 +43,7 @@ function AuthenticatedRouter() {
     <Switch>
       <Route path="/register" component={Register} />
       <Route path="/login" component={Login} />
+      <Route path="/admin-setup" component={AdminSetup} />
       <Route component={Login} /> {/* Default to login for any other route */}
     </Switch>
   );

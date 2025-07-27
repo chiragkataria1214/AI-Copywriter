@@ -109,15 +109,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, password } = insertUserSchema.parse(req.body);
       
+      console.log('Login attempt for username:', username);
+      
       // Find user
       const user = await storage.getUserByUsername(username);
       if (!user) {
+        console.log('User not found:', username);
         return res.status(401).json({ message: 'Invalid credentials' });
       }
       
+      console.log('User found, checking password...');
+      
       // Check password
       const validPassword = await bcrypt.compare(password, user.password);
+      console.log('Password valid:', validPassword);
+      
       if (!validPassword) {
+        console.log('Invalid password for user:', username);
         return res.status(401).json({ message: 'Invalid credentials' });
       }
       
@@ -154,6 +162,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ message: 'Logout successful' });
     });
+  });
+
+  // Password reset endpoint
+  app.post('/api/reset-password', async (req, res) => {
+    try {
+      const { username, newPassword } = req.body;
+      
+      if (!username || !newPassword) {
+        return res.status(400).json({ message: 'Username and new password required' });
+      }
+      
+      // Find user
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      // Update password
+      await storage.updateUserPassword(user.id, hashedPassword);
+      
+      console.log('Password reset successful for user:', username);
+      res.json({ message: 'Password reset successful' });
+    } catch (error) {
+      console.error('Password reset error:', error);
+      res.status(500).json({ message: 'Password reset failed' });
+    }
   });
 
   app.get('/api/me', requireAuth, async (req, res) => {
