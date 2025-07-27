@@ -583,6 +583,14 @@ export default function MetaAdGenerator() {
 
   const generateLandingCopyMutation = useMutation({
     mutationFn: async () => {
+      // When using ads content, include the selected headline and primary text
+      const selectedHeadline = generatedHeadlines[selectedHeadlineIndex];
+      const chosenAdsContent = useAdsForLanding && selectedHeadline ? {
+        headline: selectedHeadline.copy,
+        framework: selectedHeadline.framework,
+        primaryText: generatedPrimaryText
+      } : adsContent;
+
       return await apiRequest('/api/generate-landing-copy', {
         method: 'POST',
         body: {
@@ -591,7 +599,7 @@ export default function MetaAdGenerator() {
           concept,
           subPersona,
           useAdsContent: useAdsForLanding,
-          adsContent,
+          adsContent: chosenAdsContent,
           brandDrBalance: brandDrBalance[0],
           selectedProduct
         }
@@ -1654,6 +1662,47 @@ export default function MetaAdGenerator() {
                           }} 
                         />
                       </div>
+                      
+                      {useAdsForLanding && generatedHeadlines.length > 0 && (
+                        <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                          <Label className="text-sm font-medium text-gray-700">
+                            Select Your Chosen Ad Copy (for training alignment)
+                          </Label>
+                          <p className="text-xs text-gray-500 mb-3">
+                            Choose which headline and primary text you're using so the landing page aligns with your ad approach
+                          </p>
+                          
+                          <div className="space-y-3">
+                            <div>
+                              <Label className="text-xs font-medium text-gray-600 mb-2 block">Chosen Headline</Label>
+                              <Select value={selectedHeadlineIndex.toString()} onValueChange={(value) => setSelectedHeadlineIndex(parseInt(value))}>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {generatedHeadlines.map((headline, index) => (
+                                    <SelectItem key={index} value={index.toString()}>
+                                      <div className="flex flex-col py-1">
+                                        <span className="font-medium text-sm">{headline.framework}</span>
+                                        <span className="text-xs text-gray-500">{headline.copy}</span>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            {generatedPrimaryText && (
+                              <div>
+                                <Label className="text-xs font-medium text-gray-600 mb-2 block">Primary Text Preview</Label>
+                                <div className="p-3 bg-white rounded border text-sm text-gray-700">
+                                  {generatedPrimaryText}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       
                       <div>
                         <Label className="text-sm font-medium text-gray-700 mb-2 block">
