@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Sparkles, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -27,7 +28,11 @@ export default function Login() {
         title: "Welcome back!",
         description: "You've successfully logged in.",
       });
-      setLocation('/');
+      // Force refresh of auth query and redirect
+      queryClient.invalidateQueries({ queryKey: ['/api/me'] });
+      setTimeout(() => {
+        window.location.href = '/'; // Force full page reload to ensure auth state updates
+      }, 500);
     },
     onError: (error) => {
       console.error('Login error:', error);

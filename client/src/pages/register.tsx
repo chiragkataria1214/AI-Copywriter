@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Sparkles, Eye, EyeOff, Check, X } from 'lucide-react';
 
 export default function Register() {
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -39,7 +40,11 @@ export default function Register() {
         title: "Account Created!",
         description: "Welcome to AI Copywriter. You're now logged in.",
       });
-      setLocation('/');
+      // Force refresh of auth query and redirect
+      queryClient.invalidateQueries({ queryKey: ['/api/me'] });
+      setTimeout(() => {
+        window.location.href = '/'; // Force full page reload to ensure auth state updates
+      }, 500);
     },
     onError: (error) => {
       console.error('Registration error:', error);

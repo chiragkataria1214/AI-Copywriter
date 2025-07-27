@@ -10,7 +10,9 @@ export function useAuth() {
   const { data: user, isLoading, error } = useQuery({
     queryKey: ['/api/me'],
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Don't cache auth state
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 
   // Logout mutation
