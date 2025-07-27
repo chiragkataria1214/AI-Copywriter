@@ -4,16 +4,27 @@ import {
   type InsertGeneratedCopy,
   type GeneratedCopy,
   users,
-  generatedCopy
+  generatedCopy,
+  adminCreateUserSchema,
+  updateUserSchema
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, count, avg, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
+import bcrypt from "bcrypt";
+import { z } from "zod";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  
+  // Admin user management operations
+  getAllUsers(): Promise<User[]>;
+  adminCreateUser(userData: z.infer<typeof adminCreateUserSchema>): Promise<User>;
+  updateUser(id: string, userData: z.infer<typeof updateUserSchema>): Promise<User>;
+  deleteUser(id: string): Promise<void>;
+  makeUserAdmin(username: string): Promise<User>;
   
   // Generated copy operations
   saveGeneratedCopy(data: InsertGeneratedCopy): Promise<GeneratedCopy>;
@@ -37,6 +48,51 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .insert(users)
       .values(insertUser)
+      .returning();
+    return user;
+  }
+
+  // Admin user management methods
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async adminCreateUser(userData: z.infer<typeof adminCreateUserSchema>): Promise<User> {
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...userData,
+        password: hashedPassword,
+      })
+      .returning();
+    return user;
+  }
+
+  async updateUser(id: string, userData: z.infer<typeof updateUserSchema>): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        ...userData,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  }
+
+  async makeUserAdmin(username: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        role: "admin",
+        updatedAt: new Date(),
+      })
+      .where(eq(users.username, username))
       .returning();
     return user;
   }

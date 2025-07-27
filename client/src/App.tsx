@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import MetaAdGenerator from "@/pages/meta-ad-generator";
+import UserManagement from "@/pages/user-management";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
 import NotFound from "@/pages/not-found";
@@ -41,6 +42,7 @@ function AuthenticatedRouter() {
     return (
       <Switch>
         <Route path="/" component={MetaAdGenerator} />
+        <Route path="/users" component={UserManagement} />
         <Route component={NotFound} />
       </Switch>
     );

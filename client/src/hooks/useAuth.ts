@@ -36,6 +36,19 @@ export function useAuth() {
     },
   });
 
+  // Setup admin mutation
+  const setupAdminMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/setup-admin', {
+        method: 'POST',
+      });
+    },
+    onSuccess: () => {
+      // Refresh user data to get updated role
+      queryClient.invalidateQueries({ queryKey: ['/api/me'] });
+    },
+  });
+
   const logout = () => {
     logoutMutation.mutate();
   };
@@ -43,14 +56,15 @@ export function useAuth() {
   const isAuthenticated = !!user && !error;
   const isUnauthenticated = error && (error?.message?.includes('401') || error?.message?.includes('Authentication required'));
 
-
-
   return {
     user,
     isLoading,
     isAuthenticated,
     isUnauthenticated,
+    isAdmin: user?.role === 'admin',
     logout,
     isLoggingOut: logoutMutation.isPending,
+    setupAdmin: () => setupAdminMutation.mutate(),
+    isSettingUpAdmin: setupAdminMutation.isPending,
   };
 }

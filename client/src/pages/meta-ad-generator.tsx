@@ -17,7 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 export default function MetaAdGenerator() {
   const [activeTab, setActiveTab] = useState('ads');
-  const { user, logout, isLoggingOut } = useAuth();
+  const { user, logout, isLoggingOut, setupAdmin, isSettingUpAdmin } = useAuth();
   const [transcription, setTranscription] = useState('');
   const [concept, setConcept] = useState('lifeJuggler');
   const [subPersona, setSubPersona] = useState('newMom');
@@ -45,7 +45,7 @@ export default function MetaAdGenerator() {
   const [trainingConfig, setTrainingConfig] = useState<any>(null);
   const [editingConfig, setEditingConfig] = useState<any>(null);
   const [configLoading, setConfigLoading] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(true); // Set to true for admin access
+  // Admin state managed through useAuth hook
   const [adminPassword, setAdminPassword] = useState('');
   
   // Auto-load training config when debug tab is accessed
@@ -545,7 +545,34 @@ export default function MetaAdGenerator() {
                 <User size={14} />
                 <span className="hidden sm:inline">Welcome, {user?.username}</span>
                 <span className="sm:hidden">{user?.username}</span>
+                {user?.role === 'admin' && (
+                  <Badge variant="default" className="ml-2">Admin</Badge>
+                )}
               </div>
+              {user?.role !== 'admin' && (
+                <Button 
+                  variant="secondary" 
+                  size="sm"
+                  onClick={setupAdmin}
+                  disabled={isSettingUpAdmin}
+                  className="flex items-center space-x-1 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
+                >
+                  <Settings size={12} />
+                  {isSettingUpAdmin ? 'Setting up...' : 'Become Admin'}
+                </Button>
+              )}
+              {user?.role === 'admin' && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.location.href = '/users'}
+                  className="flex items-center space-x-1 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
+                >
+                  <Users size={12} />
+                  <span className="hidden sm:inline">Manage Users</span>
+                  <span className="sm:hidden">Users</span>
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -1304,7 +1331,7 @@ export default function MetaAdGenerator() {
                             <Label className="text-sm font-medium text-gray-900 mb-3 block">Core Positioning</Label>
                             <Textarea 
                               value={editingConfig?.brandGuidelines?.corePositioning || ''}
-                              onChange={(e) => isAdmin && setEditingConfig({
+                              onChange={(e) => user?.role === 'admin' && setEditingConfig({
                                 ...editingConfig,
                                 brandGuidelines: {
                                   ...editingConfig.brandGuidelines,
@@ -1314,7 +1341,7 @@ export default function MetaAdGenerator() {
                               className="mt-1 text-gray-900 font-medium"
                               rows={3}
                               placeholder="Your Skin But Better - natural, effortless enhancement..."
-                              disabled={!isAdmin}
+                              disabled={!user?.role === 'admin'}
                             />
                           </div>
                           
@@ -1342,7 +1369,7 @@ export default function MetaAdGenerator() {
                                     />
                                     <span className="text-blue-500 text-sm font-bold flex-shrink-0">•</span>
                                     <span className="text-xs text-gray-600 flex-shrink-0">Rule {index + 1}</span>
-                                    {isAdmin && (editingConfig?.brandGuidelines?.brandVoice?.length > 3) && (
+                                    {user?.role === 'admin' && (editingConfig?.brandGuidelines?.brandVoice?.length > 3) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1369,7 +1396,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={rule}
                                     onChange={(e) => {
-                                      if (!isAdmin) return;
+                                      if (!user?.role === 'admin') return;
                                       const rules = [...(editingConfig.brandGuidelines.brandVoice || [])];
                                       rules[index] = e.target.value;
                                       setEditingConfig({
@@ -1382,11 +1409,11 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium ${editingConfig?.brandGuidelines?.enabledBrandVoice?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter brand voice rule..."
-                                    disabled={!isAdmin}
+                                    disabled={!user?.role === 'admin'}
                                   />
                                 </div>
                               ))}
-                              {isAdmin && (
+                              {user?.role === 'admin' && (
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -1436,7 +1463,7 @@ export default function MetaAdGenerator() {
                                     />
                                     <span className="text-gray-400 text-sm font-bold flex-shrink-0">•</span>
                                     <span className="text-xs text-gray-600 flex-shrink-0">Term {index + 1}</span>
-                                    {isAdmin && (editingConfig?.brandGuidelines?.keyTerminology?.length > 3) && (
+                                    {user?.role === 'admin' && (editingConfig?.brandGuidelines?.keyTerminology?.length > 3) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1463,7 +1490,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={term}
                                     onChange={(e) => {
-                                      if (!isAdmin) return;
+                                      if (!user?.role === 'admin') return;
                                       const terms = [...(editingConfig.brandGuidelines.keyTerminology || [])];
                                       terms[index] = e.target.value;
                                       setEditingConfig({
@@ -1476,11 +1503,11 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium ${editingConfig?.brandGuidelines?.enabledKeyTerminology?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter key term or phrase..."
-                                    disabled={!isAdmin}
+                                    disabled={!user?.role === 'admin'}
                                   />
                                 </div>
                               ))}
-                              {isAdmin && (
+                              {user?.role === 'admin' && (
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -1535,7 +1562,7 @@ export default function MetaAdGenerator() {
                                     />
                                     <span className="text-green-500 text-sm font-bold flex-shrink-0">✓</span>
                                     <span className="text-xs text-gray-600 flex-shrink-0">Approved {index + 1}</span>
-                                    {isAdmin && (editingConfig?.brandGuidelines?.approvedLanguage?.length > 3) && (
+                                    {user?.role === 'admin' && (editingConfig?.brandGuidelines?.approvedLanguage?.length > 3) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1562,7 +1589,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={phrase}
                                     onChange={(e) => {
-                                      if (!isAdmin) return;
+                                      if (!user?.role === 'admin') return;
                                       const phrases = [...(editingConfig.brandGuidelines.approvedLanguage || [])];
                                       phrases[index] = e.target.value;
                                       setEditingConfig({
@@ -1575,11 +1602,11 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium border-green-200 focus:border-green-400 ${editingConfig?.brandGuidelines?.enabledApprovedLanguage?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter approved phrase..."
-                                    disabled={!isAdmin}
+                                    disabled={!user?.role === 'admin'}
                                   />
                                 </div>
                               ))}
-                              {isAdmin && (
+                              {user?.role === 'admin' && (
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -1634,7 +1661,7 @@ export default function MetaAdGenerator() {
                                     />
                                     <span className="text-red-500 text-sm font-bold flex-shrink-0">✗</span>
                                     <span className="text-xs text-gray-600 flex-shrink-0">Avoid {index + 1}</span>
-                                    {isAdmin && (editingConfig?.brandGuidelines?.avoidedLanguage?.length > 3) && (
+                                    {user?.role === 'admin' && (editingConfig?.brandGuidelines?.avoidedLanguage?.length > 3) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1661,7 +1688,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={phrase}
                                     onChange={(e) => {
-                                      if (!isAdmin) return;
+                                      if (!user?.role === 'admin') return;
                                       const phrases = [...(editingConfig.brandGuidelines.avoidedLanguage || [])];
                                       phrases[index] = e.target.value;
                                       setEditingConfig({
@@ -1674,11 +1701,11 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium border-red-200 focus:border-red-400 ${editingConfig?.brandGuidelines?.enabledAvoidedLanguage?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter phrase to avoid..."
-                                    disabled={!isAdmin}
+                                    disabled={!user?.role === 'admin'}
                                   />
                                 </div>
                               ))}
-                              {isAdmin && (
+                              {user?.role === 'admin' && (
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -1719,7 +1746,7 @@ export default function MetaAdGenerator() {
                                       <Input 
                                         value={framework.name}
                                         onChange={(e) => {
-                                          if (!isAdmin) return;
+                                          if (!user?.role === 'admin') return;
                                           const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                           updated[index] = { ...updated[index], name: e.target.value };
                                           setEditingConfig({
@@ -1732,7 +1759,7 @@ export default function MetaAdGenerator() {
                                         }}
                                         className="mt-1"
                                         placeholder="BENEFIT DRIVEN"
-                                        disabled={!isAdmin}
+                                        disabled={!user?.role === 'admin'}
                                       />
                                     </div>
                                     <div>
@@ -1740,7 +1767,7 @@ export default function MetaAdGenerator() {
                                       <Input 
                                         value={framework.template}
                                         onChange={(e) => {
-                                          if (!isAdmin) return;
+                                          if (!user?.role === 'admin') return;
                                           const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                           updated[index] = { ...updated[index], template: e.target.value };
                                           setEditingConfig({
@@ -1753,7 +1780,7 @@ export default function MetaAdGenerator() {
                                         }}
                                         className="mt-1"
                                         placeholder="[Primary Benefit] + [Outcome]"
-                                        disabled={!isAdmin}
+                                        disabled={!user?.role === 'admin'}
                                       />
                                     </div>
                                   </div>
@@ -1762,7 +1789,7 @@ export default function MetaAdGenerator() {
                                     <Textarea 
                                       value={framework.description}
                                       onChange={(e) => {
-                                        if (!isAdmin) return;
+                                        if (!user?.role === 'admin') return;
                                         const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                         updated[index] = { ...updated[index], description: e.target.value };
                                         setEditingConfig({
@@ -1776,7 +1803,7 @@ export default function MetaAdGenerator() {
                                       className="mt-1"
                                       rows={2}
                                       placeholder="Lead with the primary benefit/transformation the product delivers"
-                                      disabled={!isAdmin}
+                                      disabled={!user?.role === 'admin'}
                                     />
                                   </div>
                                   <div className="mt-2">
@@ -1784,7 +1811,7 @@ export default function MetaAdGenerator() {
                                     <Textarea 
                                       value={framework.examples?.join('\n') || ''}
                                       onChange={(e) => {
-                                        if (!isAdmin) return;
+                                        if (!user?.role === 'admin') return;
                                         const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                         updated[index] = { 
                                           ...updated[index], 
@@ -1803,7 +1830,7 @@ export default function MetaAdGenerator() {
                                       placeholder="Natural Glow Simplified
 Effortless Beauty Found
 Your Skin But Better"
-                                      disabled={!isAdmin}
+                                      disabled={!user?.role === 'admin'}
                                     />
                                   </div>
                                 </div>
@@ -1815,7 +1842,7 @@ Your Skin But Better"
                             <Label className="text-sm font-medium text-gray-900">Copy Writing Rules (one per line)</Label>
                             <Textarea 
                               value={editingConfig?.copyFrameworks?.primaryTextRules?.join('\n') || ''}
-                              onChange={(e) => isAdmin && setEditingConfig({
+                              onChange={(e) => user?.role === 'admin' && setEditingConfig({
                                 ...editingConfig,
                                 copyFrameworks: {
                                   ...editingConfig.copyFrameworks,
@@ -1827,7 +1854,7 @@ Your Skin But Better"
                               placeholder="Headlines: Maximum 5 words, must fit in 1 line on mobile
 Primary text: 15-25 words optimal for Meta ads
 Keep sentences to 8-12 words for mobile comprehension"
-                              disabled={!isAdmin}
+                              disabled={!user?.role === 'admin'}
                             />
                           </div>
 
@@ -1846,7 +1873,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                                     <Input
                                       value={guideline}
                                       onChange={(e) => {
-                                        if (!isAdmin) return;
+                                        if (!user?.role === 'admin') return;
                                         const guidelines = [...(editingConfig.copyFrameworks.brandDrBalance.brandFirst || [])];
                                         guidelines[index] = e.target.value;
                                         setEditingConfig({
@@ -1862,9 +1889,9 @@ Keep sentences to 8-12 words for mobile comprehension"
                                       }}
                                       className="flex-1 border-blue-200 focus:border-blue-400"
                                       placeholder="Enter brand-first guideline..."
-                                      disabled={!isAdmin}
+                                      disabled={!user?.role === 'admin'}
                                     />
-                                    {isAdmin && (editingConfig?.copyFrameworks?.brandDrBalance?.brandFirst?.length > 1) && (
+                                    {user?.role === 'admin' && (editingConfig?.copyFrameworks?.brandDrBalance?.brandFirst?.length > 1) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1889,7 +1916,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                                     )}
                                   </div>
                                 ))}
-                                {isAdmin && (
+                                {user?.role === 'admin' && (
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -1928,7 +1955,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                                     <Input
                                       value={guideline}
                                       onChange={(e) => {
-                                        if (!isAdmin) return;
+                                        if (!user?.role === 'admin') return;
                                         const guidelines = [...(editingConfig.copyFrameworks.brandDrBalance.directResponse || [])];
                                         guidelines[index] = e.target.value;
                                         setEditingConfig({
@@ -1944,9 +1971,9 @@ Keep sentences to 8-12 words for mobile comprehension"
                                       }}
                                       className="flex-1 border-orange-200 focus:border-orange-400"
                                       placeholder="Enter direct response guideline..."
-                                      disabled={!isAdmin}
+                                      disabled={!user?.role === 'admin'}
                                     />
-                                    {isAdmin && (editingConfig?.copyFrameworks?.brandDrBalance?.directResponse?.length > 1) && (
+                                    {user?.role === 'admin' && (editingConfig?.copyFrameworks?.brandDrBalance?.directResponse?.length > 1) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1971,7 +1998,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                                     )}
                                   </div>
                                 ))}
-                                {isAdmin && (
+                                {user?.role === 'admin' && (
                                   <Button
                                     variant="outline"
                                     size="sm"

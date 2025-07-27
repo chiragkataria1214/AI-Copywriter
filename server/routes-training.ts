@@ -24,9 +24,9 @@ export async function getTrainingConfig(): Promise<TrainingConfig> {
 }
 
 // Routes for managing training configuration
-export function registerTrainingRoutes(app: Express) {
+export function registerTrainingRoutes(app: Express, requireAdmin: any) {
   // Get current training configuration
-  app.get('/api/training-config', async (req, res) => {
+  app.get('/api/training-config', requireAdmin, async (req, res) => {
     try {
       // Ensure enabled arrays are initialized
       const configWithToggles = {
@@ -51,7 +51,7 @@ export function registerTrainingRoutes(app: Express) {
   });
 
   // Update training configuration
-  app.post('/api/training-config', async (req, res) => {
+  app.post('/api/training-config', requireAdmin, async (req, res) => {
     try {
       const { adminPassword, ...updatedConfig } = req.body;
       

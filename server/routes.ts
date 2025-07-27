@@ -10,7 +10,7 @@ import bcrypt from "bcrypt";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
-import { insertUserSchema } from "@shared/schema";
+import { insertUserSchema, adminCreateUserSchema, updateUserSchema } from "@shared/schema";
 
 const upload = multer({ dest: 'uploads/' });
 
@@ -20,6 +20,25 @@ const requireAuth = (req: any, res: any, next: any) => {
     next();
   } else {
     res.status(401).json({ message: 'Authentication required' });
+  }
+};
+
+// Admin middleware
+const requireAdmin = async (req: any, res: any, next: any) => {
+  if (!req.session?.userId) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+  
+  try {
+    const user = await storage.getUser(req.session.userId);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('Admin check error:', error);
+    res.status(500).json({ message: 'Authorization check failed' });
   }
 };
 
@@ -126,10 +145,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
-      res.json({ id: user.id, username: user.username });
+      res.json({ id: user.id, username: user.username, role: user.role });
     } catch (error) {
       console.error('Get user error:', error);
       res.status(500).json({ message: 'Failed to get user' });
+    }
+  });
+
+  // One-time admin setup endpoint (for making first user admin)
+  app.post('/api/setup-admin', requireAuth, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Make this user admin
+      const adminUser = await storage.makeUserAdmin(user.username);
+      res.json({ message: 'Admin privileges granted', user: { id: adminUser.id, username: adminUser.username, role: adminUser.role } });
+    } catch (error) {
+      console.error('Setup admin error:', error);
+      res.status(500).json({ message: 'Failed to setup admin' });
+    }
+  });
+
+  // Admin user management routes
+  app.get('/api/admin/users', requireAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      // Don't send password hashes to frontend
+      const safeUsers = users.map(user => ({
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      }));
+      res.json(safeUsers);
+    } catch (error) {
+      console.error('Get users error:', error);
+      res.status(500).json({ message: 'Failed to fetch users' });
+    }
+  });
+
+  app.post('/api/admin/users', requireAdmin, async (req, res) => {
+    try {
+      const userData = adminCreateUserSchema.parse(req.body);
+      
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(userData.username);
+      if (existingUser) {
+        return res.status(400).json({ message: 'Username already exists' });
+      }
+      
+      const user = await storage.adminCreateUser(userData);
+      res.json({
+        message: 'User created successfully',
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          createdAt: user.createdAt
+        }
+      });
+    } catch (error) {
+      console.error('Create user error:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid input', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to create user' });
+    }
+  });
+
+  app.put('/api/admin/users/:id', requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userData = updateUserSchema.parse(req.body);
+      
+      // Check if username is taken by another user
+      if (userData.username) {
+        const existingUser = await storage.getUserByUsername(userData.username);
+        if (existingUser && existingUser.id !== id) {
+          return res.status(400).json({ message: 'Username already exists' });
+        }
+      }
+      
+      const user = await storage.updateUser(id, userData);
+      res.json({
+        message: 'User updated successfully',
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          updatedAt: user.updatedAt
+        }
+      });
+    } catch (error) {
+      console.error('Update user error:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid input', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to update user' });
+    }
+  });
+
+  app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const currentUserId = (req.session as any).userId;
+      
+      // Prevent admin from deleting themselves
+      if (id === currentUserId) {
+        return res.status(400).json({ message: 'Cannot delete your own account' });
+      }
+      
+      await storage.deleteUser(id);
+      res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+      console.error('Delete user error:', error);
+      res.status(500).json({ message: 'Failed to delete user' });
     }
   });
 
@@ -300,7 +435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Training configuration routes
-  registerTrainingRoutes(app);
+  registerTrainingRoutes(app, requireAdmin);
 
   const httpServer = createServer(app);
   return httpServer;
