@@ -973,6 +973,18 @@ export default function MetaAdGenerator() {
                               <div className="flex items-center space-x-2">
                                 <input 
                                   type="radio" 
+                                  id="combined" 
+                                  name="voiceMethod" 
+                                  value="combined"
+                                  checked={voiceAnalysisMethod === 'combined'}
+                                  onChange={(e) => setVoiceAnalysisMethod(e.target.value)}
+                                  className="w-4 h-4 text-blue-600"
+                                />
+                                <Label htmlFor="combined" className="text-sm">Combined Analysis (Recommended)</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <input 
+                                  type="radio" 
                                   id="video-only" 
                                   name="voiceMethod" 
                                   value="video"
@@ -993,18 +1005,6 @@ export default function MetaAdGenerator() {
                                   className="w-4 h-4 text-blue-600"
                                 />
                                 <Label htmlFor="social-only" className="text-sm">Instagram Content Analysis</Label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <input 
-                                  type="radio" 
-                                  id="combined" 
-                                  name="voiceMethod" 
-                                  value="combined"
-                                  checked={voiceAnalysisMethod === 'combined'}
-                                  onChange={(e) => setVoiceAnalysisMethod(e.target.value)}
-                                  className="w-4 h-4 text-blue-600"
-                                />
-                                <Label htmlFor="combined" className="text-sm">Combined Analysis (Recommended)</Label>
                               </div>
                             </div>
                             <p className="text-xs text-gray-500 mt-2">
