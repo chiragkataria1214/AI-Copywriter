@@ -935,7 +935,7 @@ export default function MetaAdGenerator() {
                   <CardContent className="p-4 sm:p-6">
                     <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
                       <Users className="text-jones-primary mr-2 sm:mr-3" size={18} />
-                      Influencer Partnership Mode
+                      Partnership Ads
                     </h3>
                     
                     <div className="space-y-4">
