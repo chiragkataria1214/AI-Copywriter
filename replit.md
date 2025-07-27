@@ -6,15 +6,15 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
-**Latest Update - Junip API Integration Complete (July 27, 2025)**
-- **Junip API Client**: Built comprehensive `server/junip-api.ts` with authentication, rate limiting, and full CRUD operations for reviews and products
+**Latest Update - Product-Specific Review Filtering Complete (July 27, 2025)**
+- **Product Selection Interface**: Added product dropdown to both Ad Copy and Landing Page generators with Jones Road's top 4 products prioritized (Miracle Balm, Foundation, Just Enough Tinted Moisturizer, Everyday Sunscreen)
+- **Junip API Integration Complete**: Built comprehensive `server/junip-api.ts` with authentication, rate limiting, and full CRUD operations for reviews and products
 - **Review Import System**: Created `server/review-importer.ts` with automated import capabilities from Junip API and manual text input options
 - **Database Schema Updated**: Modified `shared/review-schema.ts` to support external review sources with proper field mapping for Junip data
 - **API Routes Complete**: Added `server/routes-junip.ts` with endpoints for testing connections, importing reviews, analytics, and training insights
 - **Admin Interface Integration**: Customer Reviews tab now supports both Junip API imports and manual text uploads within AI Settings panel
-- **Automated Scheduling**: Built framework for scheduled review imports (every 6 hours) to keep training data current
+- **Product-Specific AI Training**: Framework established for filtering customer reviews by specific products to generate targeted, authentic copy using real customer language patterns
 - **Analytics Dashboard**: Created review analytics endpoint with sentiment distribution, theme analysis, and import status tracking
-- **Training Pipeline Ready**: Framework established for converting customer reviews into AI training insights and language patterns
 
 ## Recent Changes (July 2025)
 

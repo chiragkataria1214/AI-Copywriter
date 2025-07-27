@@ -891,12 +891,12 @@ export default function MetaAdGenerator() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All products</SelectItem>
-                            <SelectItem value="mascara">The Mascara</SelectItem>
-                            <SelectItem value="foundation">What The Foundation</SelectItem>
-                            <SelectItem value="sunscreen">Everyday Sunscreen</SelectItem>
                             <SelectItem value="miracle balm">Miracle Balm</SelectItem>
-                            <SelectItem value="lip stick">Lip & Cheek Stick</SelectItem>
+                            <SelectItem value="foundation">What The Foundation</SelectItem>
                             <SelectItem value="tinted moisturizer">Just Enough Tinted Moisturizer</SelectItem>
+                            <SelectItem value="sunscreen">Everyday Sunscreen</SelectItem>
+                            <SelectItem value="mascara">The Mascara</SelectItem>
+                            <SelectItem value="lip stick">Lip & Cheek Stick</SelectItem>
                             <SelectItem value="face pencil">The Face Pencil</SelectItem>
                             <SelectItem value="hero kit">The Hero Kit</SelectItem>
                           </SelectContent>
@@ -1313,6 +1313,33 @@ export default function MetaAdGenerator() {
                         <Switch checked={useAdsForLanding} onCheckedChange={setUseAdsForLanding} />
                       </div>
                       
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                          Select Product (filters customer reviews for training)
+                        </Label>
+                        <Select value={selectedProduct || "all"} onValueChange={(value) => setSelectedProduct(value === "all" ? "" : value)}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="All products (no filtering)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All products</SelectItem>
+                            <SelectItem value="miracle balm">Miracle Balm</SelectItem>
+                            <SelectItem value="foundation">What The Foundation</SelectItem>
+                            <SelectItem value="tinted moisturizer">Just Enough Tinted Moisturizer</SelectItem>
+                            <SelectItem value="sunscreen">Everyday Sunscreen</SelectItem>
+                            <SelectItem value="mascara">The Mascara</SelectItem>
+                            <SelectItem value="lip stick">Lip & Cheek Stick</SelectItem>
+                            <SelectItem value="face pencil">The Face Pencil</SelectItem>
+                            <SelectItem value="hero kit">The Hero Kit</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {selectedProduct && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            Landing page content will use customer reviews specific to {selectedProduct}
+                          </p>
+                        )}
+                      </div>
+
                       <div>
                         <Label htmlFor="productBrief" className="block text-sm font-medium text-gray-700 mb-2">
                           Product Brief
