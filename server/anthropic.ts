@@ -32,6 +32,7 @@ export interface AdCopyRequest {
   useJonesBrandGuide: boolean;
   airLink?: string;
   uploadedImage?: string;
+  selectedProduct?: string;
 }
 
 export interface LandingPageRequest {
@@ -45,7 +46,7 @@ export interface LandingPageRequest {
 }
 
 export async function generateAdCopy(request: AdCopyRequest, trainingConfig: TrainingConfig = defaultTrainingConfig) {
-  const { transcription, customBrief, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage } = request;
+  const { transcription, customBrief, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProduct } = request;
   
   const brandPercent = brandDrBalance;
   const drPercent = 100 - brandPercent;
@@ -228,9 +229,25 @@ Analyze the uploaded ad creative image to extract key visual elements, text over
         { framework: "OFFER DRIVEN", copy: "Barely There Perfect" }
       ]);
       
+      // Get product name from request
+      const getProductName = (product: string) => {
+        switch(product) {
+          case 'foundation': return 'What The Foundation';
+          case 'mascara': return 'What The Mascara';
+          case 'sunscreen': return 'What The SPF';
+          case 'miracle balm': return 'Miracle Balm';
+          case 'lip stick': return 'Lip & Cheek Stick';
+          case 'face pencil': return 'The Face Pencil';
+          case 'hero kit': return 'The Hero Kit';
+          default: return 'What The Foundation';
+        }
+      };
+      
+      const productName = getProductName(request.selectedProduct || 'foundation');
+      
       const momPrimaryText = isMomPersona ? 
-        "What The Foundation is perfect for busy moms who need beauty that works as hard as they do. Quick application, all-day wear, no touch-ups needed between soccer practice and school pickup." :
-        "What The Foundation is unlike any foundation you've ever tried. Not heavy, cakey, or dry. Perfect for busy individuals who want effortless beauty.";
+        `${productName} is perfect for busy moms who need beauty that works as hard as they do. Quick application, all-day wear, no touch-ups needed between soccer practice and school pickup.` :
+        `${productName} is unlike any foundation you've ever tried. Not heavy, cakey, or dry. Perfect for busy individuals who want effortless beauty.`;
       
       return {
         headlines,

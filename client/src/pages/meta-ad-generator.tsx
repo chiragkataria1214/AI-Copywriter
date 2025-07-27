@@ -1198,18 +1198,44 @@ export default function MetaAdGenerator() {
 
                         {/* Mobile Product Image */}
                         <div className="aspect-square flex items-center justify-center relative bg-white">
-                          <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%)' }}>
-                            <div className="absolute top-8 left-8 w-12 h-12 rounded-full blur-lg opacity-30" style={{ backgroundColor: '#004182' }}></div>
-                            <div className="absolute bottom-12 right-12 w-20 h-20 rounded-full blur-lg opacity-20" style={{ backgroundColor: '#1a5a9e' }}></div>
-                          </div>
-                          <div className="relative text-center z-10">
-                            <div className="w-28 h-28 bg-white rounded-full shadow-lg flex items-center justify-center mb-3 mx-auto border border-gray-100">
-                              <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #004182 0%, #003366 100%)' }}>
-                                <span className="text-white font-bold text-base">WTF</span>
+                          {uploadedImage ? (
+                            // Show uploaded image
+                            <img 
+                              src={uploadedImage} 
+                              alt="Uploaded ad creative" 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            // Show default product image
+                            <>
+                              <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%)' }}>
+                                <div className="absolute top-8 left-8 w-12 h-12 rounded-full blur-lg opacity-30" style={{ backgroundColor: '#004182' }}></div>
+                                <div className="absolute bottom-12 right-12 w-20 h-20 rounded-full blur-lg opacity-20" style={{ backgroundColor: '#1a5a9e' }}></div>
                               </div>
-                            </div>
-                            <div className="text-gray-500 text-xs font-medium">What The Foundation</div>
-                          </div>
+                              <div className="relative text-center z-10">
+                                <div className="w-28 h-28 bg-white rounded-full shadow-lg flex items-center justify-center mb-3 mx-auto border border-gray-100">
+                                  <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #004182 0%, #003366 100%)' }}>
+                                    <span className="text-white font-bold text-base">
+                                      {selectedProduct === 'foundation' ? 'WTF' : 
+                                       selectedProduct === 'mascara' ? 'WTM' :
+                                       selectedProduct === 'sunscreen' ? 'SPF' :
+                                       selectedProduct === 'miracle balm' ? 'MB' : 'JR'}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-gray-500 text-xs font-medium">
+                                  {selectedProduct === 'foundation' ? 'What The Foundation' : 
+                                   selectedProduct === 'mascara' ? 'What The Mascara' :
+                                   selectedProduct === 'sunscreen' ? 'What The SPF' :
+                                   selectedProduct === 'miracle balm' ? 'Miracle Balm' :
+                                   selectedProduct === 'lip stick' ? 'Lip & Cheek Stick' :
+                                   selectedProduct === 'face pencil' ? 'The Face Pencil' :
+                                   selectedProduct === 'hero kit' ? 'The Hero Kit' : 
+                                   'Jones Road Beauty'}
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </div>
 
                         {/* Mobile Link Preview Section */}
