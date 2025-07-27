@@ -1013,9 +1013,10 @@ export default function MetaAdGenerator() {
                           </div>
                           
                           <div>
-                            <Label className="block text-sm font-medium text-gray-700 mb-2">
-                              Brand Guidelines Adherence
-                            </Label>
+                            <div className="flex items-center justify-between mb-2">
+                              <Label className="text-sm font-medium text-gray-700">Brand Guidelines Adherence</Label>
+                              <span className="text-sm text-gray-500">{influencerBrandBalance[0]}% Brand Guidelines</span>
+                            </div>
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-sm text-gray-600">Influencer Voice</span>
                               <span className="text-sm text-gray-600">Brand Guidelines</span>
