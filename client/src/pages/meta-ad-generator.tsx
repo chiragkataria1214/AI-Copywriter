@@ -1609,7 +1609,6 @@ export default function MetaAdGenerator() {
                           }`}></div>
                         </div>
                         <h4 className="font-semibold text-gray-900">Listicle</h4>
-                        <p className="text-sm text-gray-600 mt-1">List-based content with numbered reasons and benefits</p>
                       </div>
                       
                       <div className={`relative border-2 rounded-lg p-4 cursor-pointer transition-colors ${
@@ -1626,7 +1625,6 @@ export default function MetaAdGenerator() {
                           }`}></div>
                         </div>
                         <h4 className="font-semibold text-gray-900">Trojan Horse</h4>
-                        <p className="text-sm text-gray-600 mt-1">Story-driven approach that connects to product benefits</p>
                       </div>
                     </div>
                   </CardContent>
