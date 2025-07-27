@@ -934,10 +934,13 @@ export default function MetaAdGenerator() {
                 <Card>
                   <CardContent className="p-4 sm:p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
-                        <Users className="text-jones-primary mr-2 sm:mr-3" size={18} />
-                        Partnership Ads
-                      </h3>
+                      <div>
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
+                          <Users className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                          Partnership Ads
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-1">Generate copy in the influencer's authentic voice while respecting brand guidelines</p>
+                      </div>
                       <Switch checked={enableInfluencerMode} onCheckedChange={setEnableInfluencerMode} />
                     </div>
                     
