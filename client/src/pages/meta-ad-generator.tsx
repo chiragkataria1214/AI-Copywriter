@@ -933,19 +933,15 @@ export default function MetaAdGenerator() {
                 {/* Influencer Voice Modeling */}
                 <Card>
                   <CardContent className="p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Users className="text-jones-primary mr-2 sm:mr-3" size={18} />
-                      Partnership Ads
-                    </h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
+                        <Users className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                        Partnership Ads
+                      </h3>
+                      <Switch checked={enableInfluencerMode} onCheckedChange={setEnableInfluencerMode} />
+                    </div>
                     
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label className="text-sm font-medium text-gray-700">Enable Influencer Voice Modeling</Label>
-                          <p className="text-xs text-gray-500">Generate copy in the influencer's authentic voice while respecting brand guidelines</p>
-                        </div>
-                        <Switch checked={enableInfluencerMode} onCheckedChange={setEnableInfluencerMode} />
-                      </div>
                       
                       {enableInfluencerMode && (
                         <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
