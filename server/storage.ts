@@ -3,8 +3,10 @@ import {
   type InsertUser, 
   type InsertGeneratedCopy,
   type GeneratedCopy,
+  type PasswordResetToken,
   users,
   generatedCopy,
+  passwordResetTokens,
   adminCreateUserSchema,
   updateUserSchema
 } from "@shared/schema";
@@ -32,6 +34,10 @@ export interface IStorage {
   updateCopyFeedback(id: string, rating: string, feedback?: string): Promise<void>;
   getCopyHistory(userId: string, limit?: number): Promise<GeneratedCopy[]>;
   getCopyAnalytics(): Promise<any>;
+  
+  // Password reset operations
+  createPasswordResetToken(userId: string): Promise<string>;
+  usePasswordResetToken(token: string): Promise<string | null>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -160,6 +166,42 @@ export class DatabaseStorage implements IStorage {
       ratingDistribution: ratingStats,
       averageGenerationTime: avgGenerationTime[0]?.avgTime || 0
     };
+  }
+
+  // Password reset token methods
+  async createPasswordResetToken(userId: string): Promise<string> {
+    const token = randomUUID();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes from now
+    
+    await db.insert(passwordResetTokens).values({
+      userId,
+      token,
+      expiresAt
+    });
+    
+    return token;
+  }
+
+  async usePasswordResetToken(token: string): Promise<string | null> {
+    // Find valid token
+    const [resetToken] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(and(
+        eq(passwordResetTokens.token, token),
+        sql`${passwordResetTokens.expiresAt} > NOW()`
+      ));
+
+    if (!resetToken) {
+      return null;
+    }
+
+    // Delete the used token
+    await db
+      .delete(passwordResetTokens)
+      .where(eq(passwordResetTokens.token, token));
+
+    return resetToken.userId;
   }
 }
 

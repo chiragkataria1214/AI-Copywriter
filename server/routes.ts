@@ -44,21 +44,53 @@ const requireAdmin = async (req: any, res: any, next: any) => {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configure session middleware with database storage
+  console.log('Setting up session middleware...');
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('SESSION_SECRET exists:', !!process.env.SESSION_SECRET);
+  
   const pgStore = connectPg(session);
+  
+  // Test database connection for sessions
+  try {
+    const testQuery = await pool.query('SELECT 1');
+    console.log('Database connection for sessions: OK');
+  } catch (error) {
+    console.error('Database connection for sessions failed:', error);
+  }
+  
   app.use(session({
     store: new pgStore({
       pool: pool,
       tableName: 'sessions',
+      createTableIfMissing: false, // Table should already exist
     }),
-    secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
+    secret: process.env.SESSION_SECRET || 'fallback-dev-secret-change-me',
     resave: false,
     saveUninitialized: false,
+    name: 'jrb.sid',
     cookie: {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'lax',
     }
   }));
+  
+  console.log('Session middleware configured');
+
+  // Session debug endpoint
+  app.get('/api/session-debug', (req, res) => {
+    console.log('Session debug - Session ID:', req.sessionID);
+    console.log('Session debug - Session data:', req.session);
+    console.log('Session debug - Headers:', req.headers);
+    res.json({
+      sessionId: req.sessionID,
+      session: req.session,
+      hasSession: !!req.session,
+      userId: (req.session as any)?.userId,
+      nodeEnv: process.env.NODE_ENV
+    });
+  });
 
   // Authentication routes
   app.post('/api/register', async (req, res) => {
