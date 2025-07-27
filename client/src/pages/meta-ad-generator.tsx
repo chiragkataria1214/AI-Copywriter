@@ -907,8 +907,8 @@ export default function MetaAdGenerator() {
                             <SelectItem value="miracle balm">Miracle Balm</SelectItem>
                             <SelectItem value="foundation">What The Foundation</SelectItem>
                             <SelectItem value="tinted moisturizer">Just Enough Tinted Moisturizer</SelectItem>
-                            <SelectItem value="sunscreen">Everyday Sunscreen</SelectItem>
-                            <SelectItem value="mascara">The Mascara</SelectItem>
+                            <SelectItem value="sunscreen">What The SPF</SelectItem>
+                            <SelectItem value="mascara">What The Mascara</SelectItem>
                             <SelectItem value="lip stick">Lip & Cheek Stick</SelectItem>
                             <SelectItem value="face pencil">The Face Pencil</SelectItem>
                             <SelectItem value="hero kit">The Hero Kit</SelectItem>
@@ -1339,8 +1339,8 @@ export default function MetaAdGenerator() {
                             <SelectItem value="miracle balm">Miracle Balm</SelectItem>
                             <SelectItem value="foundation">What The Foundation</SelectItem>
                             <SelectItem value="tinted moisturizer">Just Enough Tinted Moisturizer</SelectItem>
-                            <SelectItem value="sunscreen">Everyday Sunscreen</SelectItem>
-                            <SelectItem value="mascara">The Mascara</SelectItem>
+                            <SelectItem value="sunscreen">What The SPF</SelectItem>
+                            <SelectItem value="mascara">What The Mascara</SelectItem>
                             <SelectItem value="lip stick">Lip & Cheek Stick</SelectItem>
                             <SelectItem value="face pencil">The Face Pencil</SelectItem>
                             <SelectItem value="hero kit">The Hero Kit</SelectItem>
@@ -2582,9 +2582,9 @@ Keep sentences to 8-12 words for mobile comprehension"
                               ) : (
                                 <div className="space-y-4">
                                   {[
-                                    { product: 'Mascara', count: reviewStats.byProduct?.mascara || 0, color: 'bg-blue-500' },
-                                    { product: 'Foundation', count: reviewStats.byProduct?.foundation || 0, color: 'bg-purple-500' },
-                                    { product: 'Sunscreen', count: reviewStats.byProduct?.sunscreen || 0, color: 'bg-yellow-500' },
+                                    { product: 'What The Mascara', count: reviewStats.byProduct?.mascara || 0, color: 'bg-blue-500' },
+                                    { product: 'What The Foundation', count: reviewStats.byProduct?.foundation || 0, color: 'bg-purple-500' },
+                                    { product: 'What The SPF', count: reviewStats.byProduct?.sunscreen || 0, color: 'bg-yellow-500' },
                                     { product: 'Miracle Balm', count: reviewStats.byProduct?.['miracle balm'] || 0, color: 'bg-green-500' }
                                   ].map(({ product, count, color }) => {
                                     const percentage = reviewStats.totalReviews > 0 ? Math.round((count / reviewStats.totalReviews) * 100) : 0;
@@ -2639,9 +2639,9 @@ Keep sentences to 8-12 words for mobile comprehension"
                                     </SelectTrigger>
                                     <SelectContent>
                                       <SelectItem value="all">All Products</SelectItem>
-                                      <SelectItem value="mascara">Mascara (5,659 reviews)</SelectItem>
-                                      <SelectItem value="foundation">Foundation (5,654 reviews)</SelectItem>
-                                      <SelectItem value="sunscreen">Sunscreen (4,933 reviews)</SelectItem>
+                                      <SelectItem value="mascara">What The Mascara (5,659 reviews)</SelectItem>
+                                      <SelectItem value="foundation">What The Foundation (5,654 reviews)</SelectItem>
+                                      <SelectItem value="sunscreen">What The SPF (4,933 reviews)</SelectItem>
                                       <SelectItem value="miracle-balm">Miracle Balm (4,923 reviews)</SelectItem>
                                     </SelectContent>
                                   </Select>
