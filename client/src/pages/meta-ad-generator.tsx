@@ -2840,6 +2840,116 @@ Keep sentences to 8-12 words for mobile comprehension"
                             />
                           </div>
 
+                          {/* Listicle Framework Section */}
+                          <div className="border border-purple-200 rounded-lg p-6 bg-purple-50">
+                            <div className="flex items-center mb-4">
+                              <span className="w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
+                              <Label className="text-sm font-medium text-gray-900">Listicle Framework (Based on Real Examples)</Label>
+                            </div>
+                            
+                            <div className="space-y-4">
+                              <div>
+                                <Label className="text-xs font-medium text-purple-700 mb-2 block">Content Structure Sequence</Label>
+                                <Textarea 
+                                  value={editingConfig?.copyFrameworks?.listicleFramework?.contentSequence?.join('\n') || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    copyFrameworks: {
+                                      ...editingConfig.copyFrameworks,
+                                      listicleFramework: {
+                                        ...editingConfig.copyFrameworks?.listicleFramework,
+                                        contentSequence: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                      }
+                                    }
+                                  })}
+                                  className="mt-1 border-purple-200 focus:border-purple-400"
+                                  rows={6}
+                                  placeholder="1. IMMEDIATE PROBLEM SOLVER - addresses main pain point
+2. UNIQUE ADVANTAGE - what makes this different
+3. EASE OF USE - how simple/convenient it is
+4. DEEPER BENEFIT - secondary value that matters
+5. SOCIAL PROOF - real results from real people
+6. NATURAL CONCLUSION - why this makes sense now"
+                                  disabled={!effectiveUser?.role === 'admin'}
+                                />
+                              </div>
+
+                              <div>
+                                <Label className="text-xs font-medium text-purple-700 mb-2 block">Each Reason Structure Format</Label>
+                                <Textarea 
+                                  value={editingConfig?.copyFrameworks?.listicleFramework?.reasonStructure?.join('\n') || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    copyFrameworks: {
+                                      ...editingConfig.copyFrameworks,
+                                      listicleFramework: {
+                                        ...editingConfig.copyFrameworks?.listicleFramework,
+                                        reasonStructure: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                      }
+                                    }
+                                  })}
+                                  className="mt-1 border-purple-200 focus:border-purple-400"
+                                  rows={5}
+                                  placeholder="- CLEAR BENEFIT STATEMENT (10-20 words): Direct, specific value
+- BRIEF EXPLANATION (30-60 words): Why this matters, how it works
+- SPECIFIC DETAILS (20-40 words): Numbers, features, proof points
+- NATURAL BENEFIT BRIDGE (15-25 words): What this means practically
+- OPTIONAL SOCIAL PROOF: Real customer quote if natural"
+                                  disabled={!effectiveUser?.role === 'admin'}
+                                />
+                              </div>
+
+                              <div>
+                                <Label className="text-xs font-medium text-purple-700 mb-2 block">Optimization Rules</Label>
+                                <Textarea 
+                                  value={editingConfig?.copyFrameworks?.listicleFramework?.optimizationRules?.join('\n') || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    copyFrameworks: {
+                                      ...editingConfig.copyFrameworks,
+                                      listicleFramework: {
+                                        ...editingConfig.copyFrameworks?.listicleFramework,
+                                        optimizationRules: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                      }
+                                    }
+                                  })}
+                                  className="mt-1 border-purple-200 focus:border-purple-400"
+                                  rows={5}
+                                  placeholder="Maximum 100 words per reason section (concise and scannable)
+Lead with benefits, support with facts - not the other way around
+Use specific details and numbers when possible (like '24dB reduction')
+Keep language clear and direct - avoid flowery marketing speak
+Each reason should stand alone and deliver immediate value"
+                                  disabled={!effectiveUser?.role === 'admin'}
+                                />
+                              </div>
+
+                              <div>
+                                <Label className="text-xs font-medium text-purple-700 mb-2 block">Real Example Patterns to Emulate</Label>
+                                <Textarea 
+                                  value={editingConfig?.copyFrameworks?.listicleFramework?.realExamples?.join('\n') || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    copyFrameworks: {
+                                      ...editingConfig.copyFrameworks,
+                                      listicleFramework: {
+                                        ...editingConfig.copyFrameworks?.listicleFramework,
+                                        realExamples: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                      }
+                                    }
+                                  })}
+                                  className="mt-1 border-purple-200 focus:border-purple-400"
+                                  rows={4}
+                                  placeholder="Grüns: 'Better Poops (Seriously)' - direct, honest, conversational
+Loop: 'Blocks Out The Loudest Tools - 24dB Reduction' - specific benefit + proof
+Create: 'They're made with Creapure®, the highest-quality...' - quality focus
+Tone: Educational but approachable, like explaining to a friend who asked"
+                                  disabled={!effectiveUser?.role === 'admin'}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
                           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                             <div>
                               <Label className="text-sm font-medium text-gray-900 mb-3 block">
