@@ -1440,10 +1440,11 @@ export default function MetaAdGenerator() {
 
                   {trainingConfig ? (
                     <Tabs defaultValue="brand-guidelines" className="w-full">
-                      <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1">
+                      <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 gap-1">
                         <TabsTrigger value="brand-guidelines" className="text-xs sm:text-sm">Brand Guidelines</TabsTrigger>
                         <TabsTrigger value="personas" className="text-xs sm:text-sm">Personas</TabsTrigger>
                         <TabsTrigger value="frameworks" className="text-xs sm:text-sm">Copy Frameworks</TabsTrigger>
+                        <TabsTrigger value="reviews" className="text-xs sm:text-sm">Customer Reviews</TabsTrigger>
                         <TabsTrigger value="prompts" className="text-xs sm:text-sm">System Prompts</TabsTrigger>
                         <TabsTrigger value="model" className="text-xs sm:text-sm">Model Settings</TabsTrigger>
                       </TabsList>
@@ -2400,6 +2401,128 @@ Keep sentences to 8-12 words for mobile comprehension"
                                   </Button>
                                 )}
                               </div>
+                            </div>
+                          </div>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="reviews" className="mt-4">
+                        <div className="space-y-6">
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <p className="text-sm text-green-800 font-medium">Customer Review Training</p>
+                            <p className="text-sm text-green-700 mt-1">
+                              Import and analyze customer reviews to train the AI on authentic customer language patterns, pain points, and benefits.
+                            </p>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                            <div className="space-y-4">
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">
+                                  <span className="inline-flex items-center">
+                                    <span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+                                    Import Reviews
+                                  </span>
+                                </Label>
+                                <p className="text-xs text-gray-600 mb-3">Upload customer reviews from any platform (Sephora, Amazon, website, social media)</p>
+                                <div className="space-y-3">
+                                  <div>
+                                    <Label className="text-xs text-gray-600">CSV/JSON File Upload</Label>
+                                    <Input 
+                                      type="file"
+                                      accept=".csv,.json,.txt"
+                                      className="mt-1"
+                                      disabled={!user?.role === 'admin'}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs text-gray-600">Or paste reviews directly</Label>
+                                    <Textarea 
+                                      placeholder="Paste customer reviews here..."
+                                      className="mt-1"
+                                      rows={4}
+                                      disabled={!user?.role === 'admin'}
+                                    />
+                                  </div>
+                                  {user?.role === 'admin' && (
+                                    <Button className="w-full bg-green-600 hover:bg-green-700">
+                                      Import & Analyze Reviews
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">
+                                  <span className="inline-flex items-center">
+                                    <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+                                    Review Analytics
+                                  </span>
+                                </Label>
+                                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                                  <p className="text-sm text-gray-600">No reviews imported yet</p>
+                                  <p className="text-xs text-gray-500 mt-1">Import reviews to see customer insights</p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-4">
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">
+                                  <span className="inline-flex items-center">
+                                    <span className="w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
+                                    Customer Language Patterns
+                                  </span>
+                                </Label>
+                                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                                  <p className="text-sm text-gray-600">No language patterns generated</p>
+                                  <p className="text-xs text-gray-500 mt-1">Analyze reviews to extract authentic customer phrases</p>
+                                </div>
+                              </div>
+
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">
+                                  <span className="inline-flex items-center">
+                                    <span className="w-3 h-3 bg-orange-500 rounded-full mr-2"></span>
+                                    Training Insights
+                                  </span>
+                                </Label>
+                                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                                  <p className="text-sm text-gray-600">No training insights available</p>
+                                  <p className="text-xs text-gray-500 mt-1">Generate insights to see how reviews will train the AI</p>
+                                </div>
+                                {user?.role === 'admin' && (
+                                  <Button variant="outline" className="w-full mt-3" disabled>
+                                    Generate Training Insights
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label className="text-sm font-medium text-gray-900 mb-3 block">
+                              <span className="inline-flex items-center">
+                                <span className="w-3 h-3 bg-indigo-500 rounded-full mr-2"></span>
+                                Review Data Sources
+                              </span>
+                            </Label>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                              {[
+                                'Sephora Reviews',
+                                'Amazon Reviews', 
+                                'Website Reviews',
+                                'Email Feedback',
+                                'Social Media',
+                                'Survey Responses',
+                                'Customer Service',
+                                'Product Q&A'
+                              ].map((source) => (
+                                <div key={source} className="bg-gray-50 rounded-lg p-3 text-center">
+                                  <p className="text-xs text-gray-600 font-medium">{source}</p>
+                                  <p className="text-xs text-gray-500 mt-1">0 reviews</p>
+                                </div>
+                              ))}
                             </div>
                           </div>
                         </div>
