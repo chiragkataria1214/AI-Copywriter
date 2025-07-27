@@ -309,6 +309,9 @@ export async function generateLandingPageCopy(request: LandingPageRequest) {
   const brandPercent = brandDrBalance;
   const drPercent = 100 - brandPercent;
   
+  // Get training configuration
+  const config = await getTrainingConfig();
+  
   // Get customer review insights if product is selected
   let reviewInsights = '';
   if (selectedProduct) {
@@ -336,9 +339,25 @@ USE THESE INSIGHTS TO:
 // Customer review insights function for landing pages
 async function getCustomerReviewInsights(product: string) {
   try {
-    // Use existing review analysis system - dynamic import for ES modules
-    const reviewAnalyzer = await import('./review-analyzer');
-    const analysis = await reviewAnalyzer.analyzeReviewsForProduct(product);
+    // Use existing review analysis system - we'll call a simple query instead
+    const { db } = await import('./db');
+    const { reviews } = await import('../shared/schema');
+    const { eq, ilike } = await import('drizzle-orm');
+    
+    // Get reviews for the specific product
+    const productReviews = await db.select().from(reviews)
+      .where(ilike(reviews.productCategory, `%${product}%`))
+      .limit(100);
+    
+    // Extract common phrases and benefits from reviews
+    const allText = productReviews.map(r => r.content).join(' ').toLowerCase();
+    const analysis = {
+      topBenefits: extractBenefits(allText),
+      commonPhrases: extractPhrases(allText),
+      emotionalTriggers: extractEmotions(allText),
+      painPoints: extractPainPoints(allText),
+      socialProof: extractSocialProof(productReviews)
+    };
     
     return {
       topBenefits: analysis.topBenefits?.slice(0, 5) || ['natural coverage', 'moisturizing formula', 'easy application'],
@@ -347,6 +366,8 @@ async function getCustomerReviewInsights(product: string) {
       painPoints: analysis.painPoints?.slice(0, 3) || ['dry skin', 'complicated routine', 'cakey makeup'],
       socialProof: analysis.socialProof?.slice(0, 3) || ['thousands of reviews', '5-star rating', 'makeup artist approved']
     };
+    
+    return analysis;
   } catch (error) {
     console.error('Error getting review insights:', error);
     // Return fallback insights based on product
@@ -358,6 +379,45 @@ async function getCustomerReviewInsights(product: string) {
       socialProof: ['thousands of happy customers', 'professional makeup artist approved', '5-star reviews']
     };
   }
+}
+
+// Helper functions for extracting insights from reviews
+function extractBenefits(text: string): string[] {
+  const benefitPatterns = [
+    'natural', 'coverage', 'moisturizing', 'easy', 'smooth', 'glowing', 'perfect', 'lightweight',
+    'long-lasting', 'buildable', 'flawless', 'effortless', 'comfortable', 'breathable'
+  ];
+  return benefitPatterns.filter(pattern => text.includes(pattern)).slice(0, 5);
+}
+
+function extractPhrases(text: string): string[] {
+  const commonPhrases = [
+    'holy grail', 'game changer', 'your skin but better', 'love this', 'amazing product',
+    'perfect for', 'so good', 'highly recommend', 'obsessed with', 'favorite product'
+  ];
+  return commonPhrases.filter(phrase => text.includes(phrase)).slice(0, 5);
+}
+
+function extractEmotions(text: string): string[] {
+  const emotions = [
+    'confidence', 'love', 'comfortable', 'happy', 'beautiful', 'natural', 'effortless'
+  ];
+  return emotions.filter(emotion => text.includes(emotion)).slice(0, 3);
+}
+
+function extractPainPoints(text: string): string[] {
+  const painPoints = [
+    'dry skin', 'complicated', 'heavy', 'cakey', 'unnatural', 'difficult', 'time consuming'
+  ];
+  return painPoints.filter(point => text.includes(point)).slice(0, 3);
+}
+
+function extractSocialProof(reviews: any[]): string[] {
+  const proof = [];
+  if (reviews.length > 100) proof.push('hundreds of reviews');
+  if (reviews.length > 10) proof.push('verified customers');
+  proof.push('real user testimonials');
+  return proof.slice(0, 3);
 }
   
   const systemPrompt = `You are an expert conversion copywriter for Jones Road Beauty specializing in high-converting ${landingPageType} landing pages.
