@@ -2445,38 +2445,63 @@ Keep sentences to 8-12 words for mobile comprehension"
                                     />
                                   </div>
                                   {user?.role === 'admin' && (
-                                    <Button 
-                                      className="w-full bg-green-600 hover:bg-green-700"
-                                      onClick={async () => {
-                                        try {
-                                          const reviewText = (document.querySelector('textarea[placeholder*="reviews"]') as HTMLTextAreaElement)?.value;
-                                          if (!reviewText?.trim()) {
-                                            alert('Please paste some reviews in the text area above first');
-                                            return;
+                                    <div className="space-y-2">
+                                      <Button 
+                                        className="w-full bg-blue-600 hover:bg-blue-700"
+                                        onClick={async () => {
+                                          try {
+                                            const response = await fetch('/api/junip/import-page', {
+                                              method: 'POST',
+                                              headers: { 'Content-Type': 'application/json' }
+                                            });
+                                            
+                                            const result = await response.json();
+                                            if (result.success) {
+                                              alert(`Success! Imported ${result.imported} real customer reviews from your Junip page and analyzed them for AI training!`);
+                                            } else {
+                                              alert('Import failed: ' + result.message);
+                                            }
+                                          } catch (error) {
+                                            alert('Import error: ' + error.message);
                                           }
-                                          
-                                          const response = await fetch('/api/reviews/import-text', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ 
-                                              content: reviewText,
-                                              source: 'junip-manual'
-                                            })
-                                          });
-                                          
-                                          const result = await response.json();
-                                          if (result.success) {
-                                            alert(`Successfully imported ${result.imported} reviews and analyzed them for AI training!`);
-                                          } else {
-                                            alert('Import failed: ' + result.message);
+                                        }}
+                                      >
+                                        Import Reviews from Junip Page
+                                      </Button>
+                                      <Button 
+                                        variant="outline"
+                                        className="w-full"
+                                        onClick={async () => {
+                                          try {
+                                            const reviewText = (document.querySelector('textarea[placeholder*="reviews"]') as HTMLTextAreaElement)?.value;
+                                            if (!reviewText?.trim()) {
+                                              alert('Please paste some reviews in the text area above first');
+                                              return;
+                                            }
+                                            
+                                            const response = await fetch('/api/reviews/import-text', {
+                                              method: 'POST',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({ 
+                                                content: reviewText,
+                                                source: 'junip-manual'
+                                              })
+                                            });
+                                            
+                                            const result = await response.json();
+                                            if (result.success) {
+                                              alert(`Successfully imported ${result.imported} reviews and analyzed them for AI training!`);
+                                            } else {
+                                              alert('Import failed: ' + result.message);
+                                            }
+                                          } catch (error) {
+                                            alert('Import error: ' + error.message);
                                           }
-                                        } catch (error) {
-                                          alert('Import error: ' + error.message);
-                                        }
-                                      }}
-                                    >
-                                      Import & Analyze Reviews
-                                    </Button>
+                                        }}
+                                      >
+                                        Import from Text Above
+                                      </Button>
+                                    </div>
                                   )}
                                 </div>
                               </div>

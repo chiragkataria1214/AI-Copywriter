@@ -57,6 +57,37 @@ export function registerJunipRoutes(app: Express) {
   });
 
   /**
+   * One-time import from Junip public page
+   */
+  app.post('/api/junip/import-page', async (req, res) => {
+    try {
+      const { importJunipReviewsFromPage } = await import('./junip-scraper');
+      
+      console.log('Starting one-time import from Junip page...');
+      const result = await importJunipReviewsFromPage();
+      
+      if (result.success) {
+        res.json({
+          ...result,
+          message: `Successfully imported ${result.imported} reviews from your Junip page!`
+        });
+      } else {
+        res.status(400).json(result);
+      }
+      
+    } catch (error) {
+      console.error('Error importing from Junip page:', error);
+      res.status(500).json({
+        success: false,
+        imported: 0,
+        skipped: 0,
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+        message: 'Failed to import reviews from Junip page',
+      });
+    }
+  });
+
+  /**
    * Import reviews from Junip API
    */
   app.post('/api/junip/import', async (req, res) => {
