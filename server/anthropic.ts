@@ -375,33 +375,41 @@ JONES ROAD BEAUTY BRAND GUIDELINES:
 ${reviewInsights}
 
 ${landingPageType === 'listicle' ? `
-AUTHENTIC JONES ROAD LISTICLE STRUCTURE:
-- Natural headline (6-12 words) that sounds like helpful advice, not a sales pitch
-- Warm, educational introduction (100-150 words) - like a friend sharing tips
-- 5 reasons that feel like beauty education, not sales tactics
-- Soft, natural CTAs that suggest rather than demand
-- Trust-building through authenticity, not aggressive sales techniques
+AUTHENTIC JONES ROAD LISTICLE STRUCTURE (BASED ON REAL EXAMPLES):
+- Direct, benefit-focused headline (6-12 words) - clear value proposition, not clickbait
+- Brief introduction that states the value clearly (50-100 words) - no fluff
+- 5-6 numbered reasons with clear headers and specific benefits
+- Multiple soft CTAs throughout that feel natural, not pushy
+- Facts and benefits woven naturally - education through value demonstration
 
-EDUCATIONAL SEQUENCING (JONES ROAD STYLE):
-1. EASY WIN: Something simple that works immediately (builds trust)
-2. INSIGHT: A helpful beauty tip or "why this works" (educates)
-3. REAL BENEFIT: How it improves your routine (practical value)
-4. AUTHENTIC PROOF: Real customer experiences (social validation)
-5. NATURAL NEXT STEP: Gentle suggestion to try it (friendly invitation)
+NATURAL SEQUENCING (REAL LISTICLE STYLE):
+1. IMMEDIATE PROBLEM SOLVER: Addresses the most pressing concern
+2. UNIQUE ADVANTAGE: What makes this different/better
+3. EASE OF USE: How simple/convenient it is
+4. DEEPER BENEFIT: Secondary value that matters long-term
+5. SOCIAL PROOF: Real results from real people
+6. NATURAL CONCLUSION: Why this makes sense now
 
-EACH REASON STRUCTURE (JONES ROAD AUTHENTIC STYLE):
-- FRIENDLY INSIGHT (15-25 words): Helpful beauty tip or gentle observation
-- EDUCATIONAL EXPLANATION (40-75 words): Why this works and how it helps [CONVERSATIONAL TONE]
-- REAL CUSTOMER EXPERIENCE (25-40 words): Authentic testimonials that feel genuine [NATURAL LANGUAGE]
-- PRACTICAL BENEFIT (15-30 words): "What this means for your routine" - helpful, not pushy
-- GENTLE TRANSITION: Natural continuation ("Here's another thing to consider...")
+EACH REASON STRUCTURE (BASED ON REAL LISTICLE EXAMPLES):
+- CLEAR BENEFIT STATEMENT (10-20 words): Direct, specific value - what it does
+- BRIEF EXPLANATION (30-60 words): Why this matters, how it works [FACTUAL TONE]
+- SPECIFIC DETAILS (20-40 words): Numbers, features, or proof points that support the claim
+- NATURAL BENEFIT BRIDGE (15-25 words): What this means for the user in practical terms
+- OPTIONAL SOCIAL PROOF: Real customer quote if it feels natural
 
-JONES ROAD OPTIMIZATION RULES:
-- Maximum 120 words per reason section (concise but warm)
-- Use natural, conversational language like talking to a friend
-- Each sentence should feel genuine and helpful, not sales-driven
-- Focus on education and empowerment, not urgency or pressure
-- Avoid aggressive direct response tactics - keep it authentic
+AUTHENTIC LISTICLE OPTIMIZATION RULES:
+- Maximum 100 words per reason section (concise and scannable)
+- Lead with benefits, support with facts - not the other way around
+- Use specific details and numbers when possible (like "24dB reduction")
+- Keep language clear and direct - avoid flowery marketing speak
+- Each reason should stand alone and deliver immediate value
+
+REAL LISTICLE EXAMPLES TO EMULATE:
+- Grüns: "Better Poops (Seriously)" - direct, honest, conversational
+- Loop: "Blocks Out The Loudest Tools - 24dB Reduction" - specific benefit + proof
+- Create: "They're made with Creapure®, the highest-quality creatine..." - quality focus
+- Tone: Educational but approachable, like explaining to a friend who asked
+- Structure: Clear headers, short paragraphs, specific benefits, natural flow
 ` : `
 HIGH-CONVERTING TROJAN HORSE STRUCTURE (OPTIMIZED FOR CONVERSION SCORES):
 - Hook (50-75 words): Seemingly unrelated story that connects to deep pain point
