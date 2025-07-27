@@ -236,7 +236,17 @@ COPY REQUIREMENTS:
 - Persona: {concept}{subPersona}
 
 PERSONA-SPECIFIC MESSAGING:
-When creating headlines, focus on the core pillars for the selected persona. For Moms, prioritize: lack of time, versatility, clean ingredients, confidence/compliments. Headlines should address specific pain points and benefits relevant to that persona.
+When creating headlines, focus on the core pillars for the selected persona. 
+
+FOR ALL MOM PERSONAS (Mom, New Mom, Soccer Mom, Working Mom, Stay-at-Home Mom):
+- ALWAYS include mom-specific language in headlines and primary text
+- Use mom-related scenarios: "school pickup", "busy mornings", "between feedings", "soccer practice", "playdate ready" 
+- Reference mom challenges: time constraints, kids' schedules, quick touch-ups, long-lasting wear
+- Mom-focused benefits: "5-minute face", "all-day wear", "no touch-ups needed", "quick and easy"
+- Examples: "The 5-Minute Face Every Busy Mom Needs" or "Finally, Foundation That Survives School Pickup"
+- Prioritize: lack of time, versatility, clean ingredients, confidence/compliments
+
+For other personas, focus on their specific pillars without mom-related terminology.
 
 BRAND-FIRST APPROACH (when brand % > 50):
 - Lead with natural, effortless messaging
@@ -279,7 +289,10 @@ FRAMEWORK PRINCIPLES:
 - Front-load differentiators early
 - Examples: "Finally, A Foundation That Actually Looks Like Your Skin" vs "Natural Foundation"
 - Focus on BENEFITS not features: "Skincare and Makeup in One Effortless Step" vs "Skincare Meets Makeup"
-- Make headlines persona-specific: For Moms - "5-Minute Face That Lasts Through Soccer Practice"
+- Make headlines persona-specific and include relevant lifestyle language:
+  * Mom personas: "5-Minute Face That Lasts Through Soccer Practice", "Between Feedings and Meetings Beauty", "School Pickup Ready in Minutes"
+  * Professional: "Boardroom to Happy Hour Confidence", "9-to-5 Flawless Coverage"
+  * Beauty Enthusiast: "Makeup Artist Approved Results", "Breakthrough Beauty Innovation"
 
 FORMAT YOUR RESPONSE AS JSON:
 {

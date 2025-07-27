@@ -84,6 +84,20 @@ FUNNEL ALIGNMENT REQUIREMENT:
 Ensure the ad copy creates a seamless transition from ad to landing page. The messaging should be congruent - if the landing page emphasizes certain benefits or uses specific language, mirror that in the ad copy to create expectation alignment and reduce bounce rate.
 ` : '';
 
+  // Detect mom personas and add mom-specific targeting
+  const isMomPersona = concept.toLowerCase().includes('mom') || 
+                      (subPersona && subPersona.toLowerCase().includes('mom'));
+  
+  const momTargetingSection = isMomPersona ? `
+
+MOM PERSONA DETECTED - MANDATORY MOM-SPECIFIC TARGETING:
+- MUST include mom-related language in ALL headlines and primary text
+- Use mom scenarios: "school pickup", "busy mornings", "between feedings", "soccer practice", "playdate ready"
+- Reference mom challenges: time constraints, kids' schedules, quick touch-ups, long-lasting wear
+- Mom-focused benefits: "5-minute face", "all-day wear", "no touch-ups needed", "quick and easy"
+- EXAMPLES: "The 5-Minute Face Every Busy Mom Needs", "Finally, Foundation That Survives School Pickup", "Between Feedings Beauty Routine"
+- This is CRITICAL - headlines must sound like they're speaking directly to moms about mom-specific situations` : '';
+
   // Add custom brief section if provided
   const customBriefSection = customBrief && customBrief.trim() ? `
 
@@ -94,7 +108,7 @@ PRIORITY INSTRUCTION: Incorporate the specific instructions above into the ad co
 
   const userPrompt = trainingConfig.userPromptTemplates.adCopy
     .replace('{transcription}', transcription)
-    .replace('{landingPageContext}', landingPageContext) + customBriefSection;
+    .replace('{landingPageContext}', landingPageContext) + momTargetingSection + customBriefSection;
 
   try {
     const response = await anthropic.messages.create({
@@ -120,7 +134,16 @@ PRIORITY INSTRUCTION: Incorporate the specific instructions above into the ad co
       // Fallback to template approach
       const drPercent = 100 - brandPercent;
       
-      const headlines = drPercent > 75 ? [
+      // Mom-specific fallback headlines
+      const momHeadlines = isMomPersona ? [
+        { framework: "BENEFIT DRIVEN", copy: "The 5-Minute Face Every Busy Mom Needs" },
+        { framework: "SOCIAL PROOF", copy: "Thousands of Moms Love This Foundation" },
+        { framework: "PROBLEM FOCUSED", copy: "Finally, Foundation That Survives School Pickup" },
+        { framework: "VALUE PROPS", copy: "All-Day Wear for Non-Stop Moms" },
+        { framework: "OFFER DRIVEN", copy: "Mom-Approved Beauty in Minutes" }
+      ] : null;
+      
+      const headlines = momHeadlines || (drPercent > 75 ? [
         { framework: "BENEFIT DRIVEN", copy: "Transform Your Routine Today" },
         { framework: "SOCIAL PROOF", copy: "Join Thousands of Users" },
         { framework: "OFFER DRIVEN", copy: "Limited Time Offer" },
@@ -132,17 +155,22 @@ PRIORITY INSTRUCTION: Incorporate the specific instructions above into the ad co
         { framework: "PROBLEM FOCUSED", copy: "Natural Glow Simplified" },
         { framework: "SOCIAL PROOF", copy: "One Step Beauty" },
         { framework: "OFFER DRIVEN", copy: "Barely There Perfect" }
-      ];
+      ]);
+      
+      const momPrimaryText = isMomPersona ? 
+        "What The Foundation is perfect for busy moms who need beauty that works as hard as they do. Quick application, all-day wear, no touch-ups needed between soccer practice and school pickup." :
+        "What The Foundation is unlike any foundation you've ever tried. Not heavy, cakey, or dry. Perfect for busy individuals who want effortless beauty.";
       
       return {
         headlines,
-        primaryText: "What The Foundation is unlike any foundation you've ever tried. Not heavy, cakey, or dry. Perfect for busy individuals who want effortless beauty.",
+        primaryText: momPrimaryText,
         debugInfo: {
           systemPrompt,
           userPrompt,
           rawResponse: content,
           modelUsed: trainingConfig.modelParameters.model,
-          fallbackUsed: true
+          fallbackUsed: true,
+          isMomPersona
         }
       };
     }
