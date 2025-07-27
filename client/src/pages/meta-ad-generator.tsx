@@ -1759,15 +1759,73 @@ export default function MetaAdGenerator() {
                             {editingConfig?.personaPillars && Object.entries(editingConfig.personaPillars).map(([personaName, personaData]: [string, any]) => (
                               <div key={personaName} className="border border-gray-200 rounded-lg p-6">
                                 <div className="flex items-center justify-between mb-4">
-                                  <h4 className="text-lg font-semibold text-gray-900 capitalize">
-                                    {personaName.replace(/([A-Z])/g, ' $1').trim()}
-                                  </h4>
-                                  <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                  <div className="flex-1">
+                                    <h4 className="text-lg font-semibold text-gray-900 capitalize">
+                                      {personaName.replace(/([A-Z])/g, ' $1').trim()}
+                                    </h4>
+                                    {personaData.description && (
+                                      <p className="text-sm text-gray-600 mt-1 max-w-2xl">
+                                        {personaData.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <Badge variant="secondary" className="bg-green-100 text-green-800 flex-shrink-0">
                                     {personaData.pillars?.length || 0} Pillars
                                   </Badge>
                                 </div>
                                 
                                 <div className="space-y-4">
+                                  {!personaData.description && user?.role === 'admin' && (
+                                    <div className="mb-4">
+                                      <Label className="text-sm font-medium text-gray-900 mb-2 block">
+                                        Persona Description
+                                      </Label>
+                                      <Textarea
+                                        value=""
+                                        onChange={(e) => {
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            personaPillars: {
+                                              ...editingConfig.personaPillars,
+                                              [personaName]: {
+                                                ...personaData,
+                                                description: e.target.value
+                                              }
+                                            }
+                                          });
+                                        }}
+                                        className="text-gray-900 border-green-200 focus:border-green-400"
+                                        rows={2}
+                                        placeholder="Enter persona description (e.g., Busy individuals balancing work, family, and personal life...)"
+                                      />
+                                    </div>
+                                  )}
+                                  
+                                  {personaData.description && user?.role === 'admin' && (
+                                    <div className="mb-4">
+                                      <Label className="text-sm font-medium text-gray-900 mb-2 block">
+                                        Persona Description
+                                      </Label>
+                                      <Textarea
+                                        value={personaData.description}
+                                        onChange={(e) => {
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            personaPillars: {
+                                              ...editingConfig.personaPillars,
+                                              [personaName]: {
+                                                ...personaData,
+                                                description: e.target.value
+                                              }
+                                            }
+                                          });
+                                        }}
+                                        className="text-gray-900 border-green-200 focus:border-green-400"
+                                        rows={2}
+                                      />
+                                    </div>
+                                  )}
+                                  
                                   <div>
                                     <Label className="text-sm font-medium text-gray-900 mb-3 block">
                                       <span className="inline-flex items-center">

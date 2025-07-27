@@ -16,6 +16,7 @@ export interface TrainingConfig {
   };
   personaPillars: {
     [personaName: string]: {
+      description?: string;
       pillars: string[];
       enabledPillars?: boolean[];
     };
