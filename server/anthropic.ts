@@ -519,7 +519,12 @@ CONVERSION PSYCHOLOGY PRINCIPLES:
 
 BRAND/DR BALANCE: ${brandPercent}% brand voice, ${drPercent}% direct response optimization
 TARGET PERSONA: ${concept}${subPersona ? ` (${subPersona})` : ''}
-COPY PERFORMANCE GOALS: High conversion rate while maintaining brand authenticity`;
+COPY PERFORMANCE GOALS: High conversion rate while maintaining brand authenticity
+
+OUTPUT FORMATTING RULES:
+- DO NOT use markdown formatting (**, *, _) in your output
+- Use plain text only for all content
+- Keep formatting clean and simple for web display`;
 
   const userPrompt = `Create a high-converting ${landingPageType} landing page that drives sales and builds trust:
 
@@ -586,8 +591,8 @@ RISK REVERSAL: [Guarantee or trust elements]`;
         const titleMatch = match.match(/REASON #\d+:?\s*(.+?)(?=\n)/i);
         const contentMatch = match.match(/\n([\s\S]*?)$/);
         if (titleMatch && contentMatch) {
-          const title = titleMatch[1].trim();
-          const content = contentMatch[1].trim();
+          const title = titleMatch[1].trim().replace(/\*\*/g, ''); // Remove markdown formatting
+          const content = contentMatch[1].trim().replace(/\*\*/g, ''); // Remove markdown formatting
           
           // Extract components for better display
           const hookMatch = content.match(/^([^.!?]*[.!?])/);
@@ -604,12 +609,12 @@ RISK REVERSAL: [Guarantee or trust elements]`;
     }
     
     return {
-      headline: headlineMatch ? headlineMatch[1].trim() : '',
-      subheadline: subheadlineMatch ? subheadlineMatch[1].trim() : '',
-      introduction: introMatch ? introMatch[1].trim() : '',
+      headline: headlineMatch ? headlineMatch[1].trim().replace(/\*\*/g, '') : '',
+      subheadline: subheadlineMatch ? subheadlineMatch[1].trim().replace(/\*\*/g, '') : '',
+      introduction: introMatch ? introMatch[1].trim().replace(/\*\*/g, '') : '',
       sections,
-      cta: ctaMatch ? ctaMatch[1].trim() : '',
-      riskReversal: riskReversalMatch ? riskReversalMatch[1].trim() : '',
+      cta: ctaMatch ? ctaMatch[1].trim().replace(/\*\*/g, '') : '',
+      riskReversal: riskReversalMatch ? riskReversalMatch[1].trim().replace(/\*\*/g, '') : '',
       rawResponse: content,
       stats: {
         totalWords: content.split(/\s+/).length,
