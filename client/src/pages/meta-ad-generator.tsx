@@ -39,6 +39,7 @@ export default function MetaAdGenerator() {
   // Ad Copy States
   const [generatedHeadlines, setGeneratedHeadlines] = useState<Array<{ framework: string; copy: string }>>([]);
   const [generatedPrimaryText, setGeneratedPrimaryText] = useState('');
+  const [selectedHeadlineIndex, setSelectedHeadlineIndex] = useState<number>(0);
   
   // Feedback states for analytics
   const [currentCopyId, setCurrentCopyId] = useState<string | null>(null);
@@ -252,6 +253,7 @@ export default function MetaAdGenerator() {
     });
     setGeneratedHeadlines(headlinesWithFrameworks);
     setGeneratedPrimaryText(primaryText);
+    setSelectedHeadlineIndex(0); // Reset to first headline when new ones are generated
   };
 
   const generateTemplateLandingPage = () => {
@@ -405,6 +407,7 @@ export default function MetaAdGenerator() {
       setGeneratedHeadlines(data.headlines || []);
       setGeneratedPrimaryText(data.primaryText || '');
       setCurrentCopyId(data.copyId || null); // Store copy ID for feedback
+      setSelectedHeadlineIndex(0); // Reset to first headline when new ones are generated
       // Reset feedback state for new generation
       setCopyRating(null);
       setFeedbackText('');
@@ -991,9 +994,28 @@ export default function MetaAdGenerator() {
                           <Globe className="text-jones-primary mr-2 sm:mr-3" size={18} />
                           Ad Preview
                         </h3>
-                        <Badge variant="secondary" style={{ backgroundColor: '#f0f4ff', color: '#004182' }} className="text-xs">
-                          Facebook Feed Ad
-                        </Badge>
+                        <div className="flex items-center space-x-3">
+                          {generatedHeadlines.length > 1 && (
+                            <div className="flex items-center space-x-2">
+                              <Label className="text-sm text-gray-600">Headline:</Label>
+                              <Select value={selectedHeadlineIndex.toString()} onValueChange={(value) => setSelectedHeadlineIndex(parseInt(value))}>
+                                <SelectTrigger className="w-40">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {generatedHeadlines.map((headline, index) => (
+                                    <SelectItem key={index} value={index.toString()}>
+                                      {headline.framework} - {headline.copy.substring(0, 30)}...
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                          <Badge variant="secondary" style={{ backgroundColor: '#f0f4ff', color: '#004182' }} className="text-xs">
+                            Facebook Feed Ad
+                          </Badge>
+                        </div>
                       </div>
                       
                       {/* Mobile Facebook Feed Ad Format */}
@@ -1055,7 +1077,7 @@ export default function MetaAdGenerator() {
                               JONESROADBEAUTY.COM
                             </div>
                             <div className="font-medium text-[15px] text-gray-900 mb-3 leading-tight">
-                              {generatedHeadlines[0]?.copy || 'Your Next Beauty Game-Changer'}
+                              {generatedHeadlines[selectedHeadlineIndex]?.copy || 'Your Next Beauty Game-Changer'}
                             </div>
                             <Button 
                               size="sm" 
