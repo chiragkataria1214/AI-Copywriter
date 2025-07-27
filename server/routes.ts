@@ -651,6 +651,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Content revision endpoint (protected)
+  app.post('/api/revise-content', requireAuth, async (req, res) => {
+    try {
+      const revisionSchema = z.object({
+        originalContent: z.string(),
+        revisionInstructions: z.string(),
+        contentType: z.enum(['headline', 'primaryText', 'landingCopy']),
+        context: z.object({
+          transcription: z.string().optional(),
+          customBrief: z.string().optional(),
+          concept: z.string().optional(),
+          subPersona: z.string().optional(),
+          targetAudience: z.string().optional(),
+          brandDrBalance: z.number().optional(),
+          selectedProduct: z.string().optional(),
+          field: z.string().optional()
+        }).optional()
+      });
+
+      const { originalContent, revisionInstructions, contentType, context } = revisionSchema.parse(req.body);
+      
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(400).json({ message: 'Anthropic API key not configured' });
+      }
+
+      // Import and use revision function from anthropic module
+      const { reviseContent } = await import('./anthropic');
+      
+      const revisedContent = await reviseContent({
+        originalContent,
+        revisionInstructions,
+        contentType,
+        context
+      });
+      
+      res.json({
+        revisedContent,
+        original: originalContent,
+        instructions: revisionInstructions
+      });
+    } catch (error) {
+      console.error('Revision error:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid revision request', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to revise content' });
+    }
+  });
+
   // Feedback endpoints for analytics (protected)
   app.post('/api/copy-feedback', requireAuth, async (req, res) => {
     try {

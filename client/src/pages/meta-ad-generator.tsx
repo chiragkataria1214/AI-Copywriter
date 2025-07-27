@@ -50,6 +50,15 @@ export default function MetaAdGenerator() {
   const [copyRating, setCopyRating] = useState<string | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
   
+  // Revision states
+  const [showRevisionPanel, setShowRevisionPanel] = useState(false);
+  const [revisionInstructions, setRevisionInstructions] = useState('');
+  const [selectedItemForRevision, setSelectedItemForRevision] = useState<{
+    type: 'headline' | 'primaryText' | 'landingCopy';
+    index?: number;
+    field?: string;
+  } | null>(null);
+  
   // Debug States
   const [debugInfo, setDebugInfo] = useState<{
     systemPrompt: string;
@@ -457,6 +466,75 @@ export default function MetaAdGenerator() {
       toast({
         title: "Generation Failed",
         description: "Failed to generate ad copy. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Revision mutation for copy improvements
+  const reviseContentMutation = useMutation({
+    mutationFn: async ({ instructions, type, index, field }: {
+      instructions: string;
+      type: 'headline' | 'primaryText' | 'landingCopy';
+      index?: number;
+      field?: string;
+    }) => {
+      const payload = {
+        originalContent: type === 'headline' ? generatedHeadlines[index || 0].copy :
+                        type === 'primaryText' ? generatedPrimaryText :
+                        type === 'landingCopy' && field ? (generatedLandingCopy as any)[field] : '',
+        revisionInstructions: instructions,
+        contentType: type,
+        context: {
+          transcription,
+          customBrief,
+          concept,
+          subPersona,
+          targetAudience,
+          brandDrBalance: brandDrBalance[0],
+          selectedProduct,
+          field: field || undefined
+        }
+      };
+      
+      return await apiRequest('/api/revise-content', {
+        method: 'POST',
+        body: payload
+      });
+    },
+    onSuccess: (data) => {
+      // Update the appropriate content with revised version
+      if (selectedItemForRevision) {
+        const { type, index, field } = selectedItemForRevision;
+        
+        if (type === 'headline' && index !== undefined) {
+          const newHeadlines = [...generatedHeadlines];
+          newHeadlines[index] = { ...newHeadlines[index], copy: data.revisedContent };
+          setGeneratedHeadlines(newHeadlines);
+        } else if (type === 'primaryText') {
+          setGeneratedPrimaryText(data.revisedContent);
+        } else if (type === 'landingCopy' && field) {
+          setGeneratedLandingCopy(prev => ({
+            ...prev,
+            [field]: data.revisedContent
+          }));
+        }
+      }
+      
+      // Close revision panel
+      setShowRevisionPanel(false);
+      setRevisionInstructions('');
+      setSelectedItemForRevision(null);
+      
+      toast({
+        title: "Content Revised Successfully",
+        description: "Your content has been improved based on your feedback.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Revision Failed",
+        description: "Failed to revise content. Please try again.",
         variant: "destructive"
       });
     }
@@ -1021,14 +1099,28 @@ export default function MetaAdGenerator() {
                                   </Badge>
                                 </div>
                               </div>
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity self-start"
-                                onClick={() => copyToClipboard(headline.copy, 'headline')}
-                              >
-                                <Copy size={14} />
-                              </Button>
+                              <div className="flex items-center space-x-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                                  onClick={() => {
+                                    setSelectedItemForRevision({ type: 'headline', index });
+                                    setShowRevisionPanel(true);
+                                  }}
+                                  title="Suggest improvements"
+                                >
+                                  <Target size={14} />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                                  onClick={() => copyToClipboard(headline.copy, 'headline')}
+                                >
+                                  <Copy size={14} />
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -1050,16 +1142,31 @@ export default function MetaAdGenerator() {
                         <FileText className="text-jones-primary mr-2 sm:mr-3" size={18} />
                         Primary Text
                       </h3>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => copyToClipboard(generatedPrimaryText, 'primary')}
-                        disabled={!generatedPrimaryText}
-                        className="w-full sm:w-auto"
-                      >
-                        {copiedPrimaryText ? <Check size={16} /> : <Copy size={16} />}
-                        <span className="ml-1">{copiedPrimaryText ? 'Copied' : 'Copy'}</span>
-                      </Button>
+                      <div className="flex items-center space-x-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedItemForRevision({ type: 'primaryText' });
+                            setShowRevisionPanel(true);
+                          }}
+                          disabled={!generatedPrimaryText}
+                          className="w-full sm:w-auto"
+                        >
+                          <Target size={16} />
+                          <span className="ml-1">Improve</span>
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => copyToClipboard(generatedPrimaryText, 'primary')}
+                          disabled={!generatedPrimaryText}
+                          className="w-full sm:w-auto"
+                        >
+                          {copiedPrimaryText ? <Check size={16} /> : <Copy size={16} />}
+                          <span className="ml-1">{copiedPrimaryText ? 'Copied' : 'Copy'}</span>
+                        </Button>
+                      </div>
                     </div>
                     
                     {generatedPrimaryText ? (
@@ -1482,14 +1589,46 @@ export default function MetaAdGenerator() {
                     
                     {generatedLandingCopy.headline ? (
                       <div className="space-y-4 sm:space-y-6">
-                        <div className="border-l-4 border-jones-primary pl-3 sm:pl-4">
-                          <h4 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Headline</h4>
-                          <p className="text-lg sm:text-xl font-bold text-gray-900">{generatedLandingCopy.headline}</p>
+                        <div className="border-l-4 border-jones-primary pl-3 sm:pl-4 group">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Headline</h4>
+                              <p className="text-lg sm:text-xl font-bold text-gray-900">{generatedLandingCopy.headline}</p>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+                              onClick={() => {
+                                setSelectedItemForRevision({ type: 'landingCopy', field: 'headline' });
+                                setShowRevisionPanel(true);
+                              }}
+                              title="Suggest improvements"
+                            >
+                              <Target size={14} />
+                            </Button>
+                          </div>
                         </div>
                         
-                        <div className="border-l-4 border-gray-300 pl-4">
-                          <h4 className="font-semibold text-gray-900 mb-2">Introduction</h4>
-                          <p className="text-gray-700">{generatedLandingCopy.introduction}</p>
+                        <div className="border-l-4 border-gray-300 pl-4 group">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-900 mb-2">Introduction</h4>
+                              <p className="text-gray-700">{generatedLandingCopy.introduction}</p>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+                              onClick={() => {
+                                setSelectedItemForRevision({ type: 'landingCopy', field: 'introduction' });
+                                setShowRevisionPanel(true);
+                              }}
+                              title="Suggest improvements"
+                            >
+                              <Target size={14} />
+                            </Button>
+                          </div>
                         </div>
                         
                         {generatedLandingCopy.sections.length > 0 && (
@@ -1511,9 +1650,25 @@ export default function MetaAdGenerator() {
                           </div>
                         )}
                         
-                        <div className="border-l-4 border-green-500 pl-4">
-                          <h4 className="font-semibold text-gray-900 mb-2">Call-to-Action</h4>
-                          <p className="text-lg font-medium text-green-700">{generatedLandingCopy.cta}</p>
+                        <div className="border-l-4 border-green-500 pl-4 group">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-900 mb-2">Call-to-Action</h4>
+                              <p className="text-lg font-medium text-green-700">{generatedLandingCopy.cta}</p>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+                              onClick={() => {
+                                setSelectedItemForRevision({ type: 'landingCopy', field: 'cta' });
+                                setShowRevisionPanel(true);
+                              }}
+                              title="Suggest improvements"
+                            >
+                              <Target size={14} />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ) : (
@@ -3090,6 +3245,78 @@ TRANSCRIPTION/CONTENT:
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Revision Panel */}
+      {showRevisionPanel && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <Target className="text-jones-primary mr-3" size={20} />
+                Suggest Improvements
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Describe how you'd like to improve this copy. Be specific about what needs to change.
+              </p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-900 mb-2 block">
+                  What should be improved?
+                </Label>
+                <Textarea
+                  value={revisionInstructions}
+                  onChange={(e) => setRevisionInstructions(e.target.value)}
+                  placeholder="e.g., Make it more urgent, add more social proof, use simpler language, emphasize benefits over features..."
+                  rows={4}
+                  className="w-full"
+                />
+              </div>
+              
+              <div className="flex items-center justify-between pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowRevisionPanel(false);
+                    setRevisionInstructions('');
+                    setSelectedItemForRevision(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (selectedItemForRevision && revisionInstructions.trim()) {
+                      reviseContentMutation.mutate({
+                        instructions: revisionInstructions,
+                        type: selectedItemForRevision.type,
+                        index: selectedItemForRevision.index,
+                        field: selectedItemForRevision.field
+                      });
+                    }
+                  }}
+                  disabled={!revisionInstructions.trim() || reviseContentMutation.isPending}
+                  style={{ backgroundColor: '#004182' }}
+                  className="text-white hover:opacity-90"
+                >
+                  {reviseContentMutation.isPending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Improving...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2" size={16} />
+                      Apply Improvements
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

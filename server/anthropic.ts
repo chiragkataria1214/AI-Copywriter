@@ -291,14 +291,15 @@ Analyze the uploaded ad creative image to extract key visual elements, text over
     };
   } catch (error) {
     console.error('Anthropic API error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error details:', {
-      message: error.message,
+      message: errorMessage,
       hasImageContent,
       imageLength: base64Image?.length || 0,
       airLink,
       uploadedImageLength: uploadedImage?.length || 0
     });
-    throw new Error(`Failed to generate ad copy: ${error.message}`);
+    throw new Error(`Failed to generate ad copy: ${errorMessage}`);
   }
 }
 
@@ -403,5 +404,86 @@ Generate complete landing page copy with all required sections based on the ${la
   } catch (error) {
     console.error('Anthropic API error:', error);
     throw new Error('Failed to generate landing page copy');
+  }
+}
+
+export interface RevisionRequest {
+  originalContent: string;
+  revisionInstructions: string;
+  contentType: 'headline' | 'primaryText' | 'landingCopy';
+  context?: {
+    transcription?: string;
+    customBrief?: string;
+    concept?: string;
+    subPersona?: string;
+    targetAudience?: string;
+    brandDrBalance?: number;
+    selectedProduct?: string;
+    field?: string;
+  };
+}
+
+export async function reviseContent(request: RevisionRequest): Promise<string> {
+  const { originalContent, revisionInstructions, contentType, context } = request;
+  
+  const systemPrompt = `You are an expert copywriter specializing in improving content for Jones Road Beauty. 
+
+JONES ROAD BEAUTY BRAND GUIDELINES:
+- Core positioning: "Your Skin But Better" - natural, effortless enhancement
+- Brand voice: Natural, welcoming, never pushy or aggressive
+- Focus on enhancement, not transformation
+- Use "moisturizing" not "hydrating" for makeup products
+- Authentic customer language patterns from real reviews
+
+Your task is to revise ${contentType} copy based on specific improvement instructions while maintaining the Jones Road Beauty brand voice and style.
+
+REVISION PRINCIPLES:
+- Keep the core message and structure intact
+- Apply the requested improvements precisely
+- Maintain natural, conversational tone
+- Ensure copy aligns with Jones Road's "effortless beauty" positioning
+- Use authentic language patterns that feel genuine
+
+Return ONLY the revised content without explanations or formatting.`;
+
+  const userPrompt = `ORIGINAL CONTENT:
+"${originalContent}"
+
+IMPROVEMENT INSTRUCTIONS:
+${revisionInstructions}
+
+CONTENT TYPE: ${contentType}
+${context?.field ? `SPECIFIC FIELD: ${context.field}` : ''}
+
+${context ? `
+CONTEXT:
+- Target Audience: ${context.concept}${context.subPersona ? ` (${context.subPersona})` : ''}
+- Product: ${context.selectedProduct || 'General Jones Road Beauty'}
+- Brand/DR Balance: ${context.brandDrBalance || 50}% brand voice
+${context.customBrief ? `- Custom Brief: ${context.customBrief}` : ''}
+` : ''}
+
+Please revise the content applying the improvement instructions while maintaining Jones Road Beauty's brand voice and the original intent.`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      system: systemPrompt,
+      max_tokens: 1024,
+      messages: [{ role: 'user', content: userPrompt }],
+    });
+
+    const content = response.content[0].type === 'text' ? response.content[0].text : '';
+    
+    // Clean up the response - remove quotes and extra formatting
+    const revisedContent = content
+      .replace(/^["'](.+)["']$/s, '$1') // Remove surrounding quotes
+      .replace(/^\*\*(.+)\*\*$/s, '$1') // Remove bold formatting
+      .trim();
+    
+    return revisedContent;
+  } catch (error) {
+    console.error('Content revision error:', error);
+    throw new Error('Failed to revise content');
   }
 }
