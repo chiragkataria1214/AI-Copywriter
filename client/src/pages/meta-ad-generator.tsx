@@ -98,7 +98,7 @@ export default function MetaAdGenerator() {
   const [landingPageType, setLandingPageType] = useState('listicle');
   const [useAdsForLanding, setUseAdsForLanding] = useState(false);
   const [adsContent, setAdsContent] = useState('');
-  const [productBrief, setProductBrief] = useState('Jones Road Beauty\'s What The Foundation is a revolutionary foundation that melts into your skin for a natural, "your skin but better" finish. Unlike traditional foundations that sit on top like a mask, WTF contains skin-nourishing oils that moisturize while providing buildable coverage. Perfect for busy women who want effortless beauty without the time-consuming routine. Available in universal shades that adapt to your skin tone.');
+  const [productBrief, setProductBrief] = useState('');
   const [generatedLandingCopy, setGeneratedLandingCopy] = useState<{
     headline: string;
     subheadline: string;
