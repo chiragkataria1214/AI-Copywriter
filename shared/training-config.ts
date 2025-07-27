@@ -14,6 +14,12 @@ export interface TrainingConfig {
     enabledApprovedLanguage?: boolean[];
     enabledAvoidedLanguage?: boolean[];
   };
+  personaPillars: {
+    [personaName: string]: {
+      pillars: string[];
+      enabledPillars?: boolean[];
+    };
+  };
   copyFrameworks: {
     headlineFrameworks: Array<{
       name: string;
@@ -78,6 +84,48 @@ export const defaultTrainingConfig: TrainingConfig = {
       "pushy language"
     ]
   },
+  personaPillars: {
+    "Mom": {
+      pillars: [
+        "Lack of time - Quick, efficient beauty routines",
+        "Versatility - Products that work for multiple looks/occasions", 
+        "Clean ingredients - Safe, gentle formulas for sensitive skin",
+        "Compliments/confidence - Looking put-together effortlessly",
+        "Practical application - Easy to apply, mistake-proof",
+        "Long-lasting wear - No touch-ups needed during busy days"
+      ]
+    },
+    "Professional Woman": {
+      pillars: [
+        "Time efficiency - Fast morning routine",
+        "All-day wear - Looks fresh from morning to evening",
+        "Professional appearance - Polished, appropriate look",
+        "Confidence boost - Feeling put-together and capable",
+        "Travel-friendly - Easy to touch up or reapply",
+        "Versatile coverage - Day to night transition"
+      ]
+    },
+    "Beauty Enthusiast": {
+      pillars: [
+        "Ingredient quality - Clean, premium formulations",
+        "Innovative features - Cutting-edge beauty technology",
+        "Shade range - Inclusive, diverse color options",
+        "Application technique - Professional-level results",
+        "Brand reputation - Trusted by makeup artists",
+        "Skincare benefits - Makeup that improves skin over time"
+      ]
+    },
+    "Minimalist": {
+      pillars: [
+        "Multi-purpose products - One product, multiple benefits",
+        "Effortless application - Natural, easy-to-achieve looks",
+        "Clean formulation - Simple, effective ingredients",
+        "Sustainable packaging - Eco-conscious choices",
+        "Timeless appeal - Classic, never-goes-out-of-style",
+        "Low maintenance - Set it and forget it beauty"
+      ]
+    }
+  },
   copyFrameworks: {
     headlineFrameworks: [
       {
@@ -86,8 +134,8 @@ export const defaultTrainingConfig: TrainingConfig = {
         template: "[Primary Benefit] + [Specific Outcome] + [Qualifier]",
         examples: [
           "Finally, A Foundation That Actually Looks Like Your Skin",
-          "The No-Makeup Makeup Look Everyone's Been Searching For",
-          "Get That Effortless Glow Without Any of the Work"
+          "The 5-Minute Face That Lasts Through Your Entire Day",
+          "Skincare and Makeup in One Effortless Step"
         ]
       },
       {
@@ -125,9 +173,9 @@ export const defaultTrainingConfig: TrainingConfig = {
         description: "Address a specific pain point your audience faces",
         template: "Stop [Specific Problem] + [Complete Solution]",
         examples: [
-          "Stop Settling for Cakey Foundation That Looks Like Makeup",
-          "Why Spend Hours on Makeup When This Does It All",
-          "End the Search for Foundation That Won't Oxidize or Fade"
+          "No More Foundation Lines That Show Every Wrinkle",
+          "Stop Wasting Time on Makeup That Doesn't Last",
+          "End the Search for Foundation That Actually Matches Your Skin"
         ]
       },
       {
@@ -186,6 +234,9 @@ COPY REQUIREMENTS:
 - Target audience: {targetAudience}
 - Persona: {concept}{subPersona}
 
+PERSONA-SPECIFIC MESSAGING:
+When creating headlines, focus on the core pillars for the selected persona. For Moms, prioritize: lack of time, versatility, clean ingredients, confidence/compliments. Headlines should address specific pain points and benefits relevant to that persona.
+
 BRAND-FIRST APPROACH (when brand % > 50):
 - Lead with natural, effortless messaging
 - Use approved language: "skin-nourishing oils", "subtle radiance", "creamy", "glow", "effortless", "natural", "barely there"
@@ -226,6 +277,8 @@ FRAMEWORK PRINCIPLES:
 - Use sensory or outcome-oriented language
 - Front-load differentiators early
 - Examples: "Finally, A Foundation That Actually Looks Like Your Skin" vs "Natural Foundation"
+- Focus on BENEFITS not features: "Skincare and Makeup in One Effortless Step" vs "Skincare Meets Makeup"
+- Make headlines persona-specific: For Moms - "5-Minute Face That Lasts Through Soccer Practice"
 
 FORMAT YOUR RESPONSE AS JSON:
 {
