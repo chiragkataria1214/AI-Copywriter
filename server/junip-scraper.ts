@@ -54,15 +54,14 @@ export async function importJunipReviewsFromPage() {
     }
   ];
 
-  // Convert to text format for import
+  // Convert to proper format for import
   const reviewText = reviews.map(review => 
-    `Rating: ${review.rating}/5
-Product: ${review.product}
-Reviewer: ${review.reviewer}
-Review: ${review.content}
+    `${review.content}
 
----`
-  ).join('\n');
+Product: ${review.product}
+Rating: ${review.rating}/5
+Reviewer: ${review.reviewer}`
+  ).join('\n\n---\n\n');
 
   console.log('Importing Jones Road reviews from Junip page...');
   const result = await importFromText(reviewText, 'junip-page');
