@@ -68,7 +68,7 @@ export function useAuth() {
     isLoading,
     isAuthenticated,
     isUnauthenticated,
-    isAdmin: user?.role === 'admin',
+    isAdmin: (user as any)?.role === 'admin',
     logout,
     isLoggingOut: logoutMutation.isPending,
     setupAdmin: () => setupAdminMutation.mutate(),
