@@ -40,11 +40,10 @@ export default function Register() {
         title: "Account Created!",
         description: "Welcome to AI Copywriter. You're now logged in.",
       });
-      // Force refresh of auth query and redirect
-      queryClient.invalidateQueries({ queryKey: ['/api/me'] });
-      setTimeout(() => {
-        window.location.href = '/'; // Force full page reload to ensure auth state updates
-      }, 500);
+      // Clear all queries and force refresh
+      queryClient.clear();
+      // Force full page reload to ensure auth state updates properly
+      window.location.reload();
     },
     onError: (error) => {
       console.error('Registration error:', error);

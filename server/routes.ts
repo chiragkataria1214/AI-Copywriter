@@ -83,9 +83,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set session
       (req.session as any).userId = user.id;
       
-      res.json({ 
-        message: 'User registered successfully',
-        user: { id: user.id, username: user.username }
+      // Ensure session is saved before responding
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ message: 'Session save failed' });
+        }
+        
+        console.log('Registration successful for user:', user.username, 'Session ID:', req.sessionID);
+        res.json({ 
+          message: 'User registered successfully',
+          user: { id: user.id, username: user.username, role: user.role }
+        });
       });
     } catch (error) {
       console.error('Registration error:', error);
@@ -115,9 +124,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set session
       (req.session as any).userId = user.id;
       
-      res.json({ 
-        message: 'Login successful',
-        user: { id: user.id, username: user.username }
+      // Ensure session is saved before responding
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ message: 'Session save failed' });
+        }
+        
+        console.log('Login successful for user:', user.username, 'Session ID:', req.sessionID);
+        res.json({ 
+          message: 'Login successful',
+          user: { id: user.id, username: user.username, role: user.role }
+        });
       });
     } catch (error) {
       console.error('Login error:', error);
@@ -141,10 +159,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/me', requireAuth, async (req, res) => {
     try {
       const userId = (req.session as any).userId;
+      console.log('Getting user for session:', req.sessionID, 'userId:', userId);
+      
       const user = await storage.getUser(userId);
       if (!user) {
+        console.log('User not found for ID:', userId);
         return res.status(404).json({ message: 'User not found' });
       }
+      
+      console.log('Returning user:', user.username, 'role:', user.role);
       res.json({ id: user.id, username: user.username, role: user.role });
     } catch (error) {
       console.error('Get user error:', error);

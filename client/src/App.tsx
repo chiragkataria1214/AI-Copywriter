@@ -11,7 +11,7 @@ import Register from "@/pages/register";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRouter() {
-  const { isLoading, isAuthenticated, isUnauthenticated } = useAuth();
+  const { user, isLoading, isAuthenticated, isUnauthenticated } = useAuth();
   const [location] = useLocation();
 
   // Show loading spinner while checking authentication
@@ -26,19 +26,8 @@ function AuthenticatedRouter() {
     );
   }
 
-  // If not authenticated, show login/register pages only
-  if (isUnauthenticated) {
-    return (
-      <Switch>
-        <Route path="/register" component={Register} />
-        <Route path="/login" component={Login} />
-        <Route component={Login} /> {/* Default to login for any other route */}
-      </Switch>
-    );
-  }
-
-  // If authenticated, show main app
-  if (isAuthenticated) {
+  // If we have a user object, show the main app
+  if (user && isAuthenticated) {
     return (
       <Switch>
         <Route path="/" component={MetaAdGenerator} />
@@ -48,8 +37,14 @@ function AuthenticatedRouter() {
     );
   }
 
-  // Fallback - shouldn't reach here, but show login just in case
-  return <Login />;
+  // If not authenticated or no user, show login/register pages
+  return (
+    <Switch>
+      <Route path="/register" component={Register} />
+      <Route path="/login" component={Login} />
+      <Route component={Login} /> {/* Default to login for any other route */}
+    </Switch>
+  );
 }
 
 function App() {

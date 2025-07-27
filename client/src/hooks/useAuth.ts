@@ -9,10 +9,17 @@ export function useAuth() {
   // Get current user
   const { data: user, isLoading, error } = useQuery({
     queryKey: ['/api/me'],
-    retry: false,
+    retry: (failureCount, error: any) => {
+      // Don't retry if it's an auth error
+      if (error?.message?.includes('401') || error?.message?.includes('Authentication required')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
     staleTime: 0, // Don't cache auth state
     refetchOnWindowFocus: true,
     refetchOnMount: true,
+    refetchInterval: false,
   });
 
   // Logout mutation

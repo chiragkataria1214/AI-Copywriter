@@ -28,11 +28,12 @@ export default function Login() {
         title: "Welcome back!",
         description: "You've successfully logged in.",
       });
-      // Force refresh of auth query and redirect
-      queryClient.invalidateQueries({ queryKey: ['/api/me'] });
+      // Clear all queries and force refresh
+      queryClient.clear();
+      // Small delay then force reload to ensure session is saved
       setTimeout(() => {
-        window.location.href = '/'; // Force full page reload to ensure auth state updates
-      }, 500);
+        window.location.reload();
+      }, 200);
     },
     onError: (error) => {
       console.error('Login error:', error);
