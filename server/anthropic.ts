@@ -445,7 +445,7 @@ ${reviewInsights}
 ${landingPageType === 'listicle' ? `
 AUTHENTIC JONES ROAD LISTICLE STRUCTURE (BASED ON REAL EXAMPLES):
 - Direct, benefit-focused headline (6-12 words) - clear value proposition, not clickbait
-- Brief introduction that states the value clearly (50-100 words) - no fluff
+- Brief introduction that states the value clearly (30-50 words) - no fluff, get straight to the point
 - 5-6 numbered reasons with clear headers and specific benefits
 - Multiple soft CTAs throughout that feel natural, not pushy
 - Facts and benefits woven naturally - education through value demonstration
@@ -459,21 +459,20 @@ NATURAL SEQUENCING (REAL LISTICLE STYLE):
 6. NATURAL CONCLUSION: Why this makes sense now
 
 EACH REASON STRUCTURE (BASED ON REAL LISTICLE EXAMPLES):
-- CLEAR BENEFIT STATEMENT (10-20 words): Direct, specific value - what it does
-- BRIEF EXPLANATION (20-35 words): Why this matters, how it works [FACTUAL TONE]
-- SPECIFIC DETAILS (15-25 words): Numbers, features, or proof points that support the claim
-- NATURAL BENEFIT BRIDGE (10-15 words): What this means for the user in practical terms
+- CLEAR BENEFIT STATEMENT (8-12 words): Direct, specific value - what it does
+- BRIEF EXPLANATION (15-25 words): Why this matters, how it works [FACTUAL TONE]
+- SPECIFIC DETAILS (10-15 words): Numbers, features, or proof points that support the claim
 - SOCIAL PROOF (ALTERNATE BETWEEN THESE TWO OPTIONS):
-  * CUSTOMER REVIEW (15-25 words): Short, relevant quote that supports THIS specific benefit
-  * BRAND COPY (15-25 words): Educational statement that reinforces the benefit naturally
+  * CUSTOMER REVIEW (12-20 words): Short, relevant quote that supports THIS specific benefit
+  * BRAND COPY (12-20 words): Educational statement that reinforces the benefit naturally
 
 AUTHENTIC LISTICLE OPTIMIZATION RULES:
-- Maximum 80 words per reason section (concise and scannable)
+- Maximum 50 words per reason section (extremely concise and scannable)
 - Lead with benefits, support with facts - not the other way around
 - Use specific details and numbers when possible (like "24dB reduction")
 - Keep language clear and direct - avoid flowery marketing speak
 - Each reason should stand alone and deliver immediate value
-- Break up long paragraphs into 2-3 short sentences maximum
+- Maximum 2 sentences per paragraph - break up longer content
 - Use bullet points or short phrases for better readability
 - REVIEW RELEVANCE: When using customer reviews, select quotes that directly support the specific benefit of that section
 - VARIETY: Alternate between customer reviews and brand copy for social proof - don't use only reviews
@@ -552,7 +551,7 @@ SPECIFIC INSTRUCTIONS:
 7. End each section with a soft CTA or continuation hook
 8. KEEP PARAGRAPHS SHORT (2-3 sentences maximum)
 9. Use bullet points or short phrases for better readability
-10. Maximum 80 words per reason section - be concise and scannable
+10. Maximum 50 words per reason section - be extremely concise and scannable like real listicles
 
 Generate complete landing page copy with all required sections. Structure your response as:
 
