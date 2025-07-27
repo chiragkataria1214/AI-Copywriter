@@ -43,6 +43,7 @@ export interface LandingPageRequest {
   useAdsContent: boolean;
   adsContent?: string;
   brandDrBalance: number;
+  selectedProduct?: string;
 }
 
 export async function generateAdCopy(request: AdCopyRequest, trainingConfig: TrainingConfig = defaultTrainingConfig) {
@@ -310,7 +311,14 @@ export async function generateLandingPageCopy(request: LandingPageRequest) {
   const drPercent = 100 - brandPercent;
   
   // Get training configuration
-  const config = await getTrainingConfig();
+  let config = null;
+  try {
+    const { getTrainingConfig } = await import('./routes-training');
+    config = await getTrainingConfig();
+  } catch (error) {
+    console.log('Using default training config for landing pages');
+    config = null;
+  }
   
   // Get customer review insights if product is selected
   let reviewInsights = '';
@@ -341,16 +349,16 @@ async function getCustomerReviewInsights(product: string) {
   try {
     // Use existing review analysis system - we'll call a simple query instead
     const { db } = await import('./db');
-    const { reviews } = await import('../shared/schema');
+    const { reviews } = await import('../shared/review-schema');
     const { eq, ilike } = await import('drizzle-orm');
     
     // Get reviews for the specific product
     const productReviews = await db.select().from(reviews)
-      .where(ilike(reviews.productCategory, `%${product}%`))
+      .where(ilike(reviews.productName, `%${product}%`))
       .limit(100);
     
     // Extract common phrases and benefits from reviews
-    const allText = productReviews.map(r => r.content).join(' ').toLowerCase();
+    const allText = productReviews.map(r => r.reviewText).join(' ').toLowerCase();
     const analysis = {
       topBenefits: extractBenefits(allText),
       commonPhrases: extractPhrases(allText),
@@ -442,10 +450,6 @@ AUTHENTIC JONES ROAD LISTICLE STRUCTURE (BASED ON REAL EXAMPLES):
 - Multiple soft CTAs throughout that feel natural, not pushy
 - Facts and benefits woven naturally - education through value demonstration
 
-${config?.copyFrameworks?.listicleFramework?.contentSequence ? `
-CONTENT SEQUENCE (FROM AI SETTINGS):
-${config.copyFrameworks.listicleFramework.contentSequence.map((item: string, index: number) => `${index + 1}. ${item}`).join('\n')}
-` : `
 NATURAL SEQUENCING (REAL LISTICLE STYLE):
 1. IMMEDIATE PROBLEM SOLVER: Addresses the most pressing concern
 2. UNIQUE ADVANTAGE: What makes this different/better
@@ -453,24 +457,14 @@ NATURAL SEQUENCING (REAL LISTICLE STYLE):
 4. DEEPER BENEFIT: Secondary value that matters long-term
 5. SOCIAL PROOF: Real results from real people
 6. NATURAL CONCLUSION: Why this makes sense now
-`}
 
-${config?.copyFrameworks?.listicleFramework?.reasonStructure ? `
-REASON STRUCTURE (FROM AI SETTINGS):
-${config.copyFrameworks.listicleFramework.reasonStructure.join('\n')}
-` : `
 EACH REASON STRUCTURE (BASED ON REAL LISTICLE EXAMPLES):
 - CLEAR BENEFIT STATEMENT (10-20 words): Direct, specific value - what it does
 - BRIEF EXPLANATION (20-35 words): Why this matters, how it works [FACTUAL TONE]
 - SPECIFIC DETAILS (15-25 words): Numbers, features, or proof points that support the claim
 - NATURAL BENEFIT BRIDGE (10-15 words): What this means for the user in practical terms
 - OPTIONAL SOCIAL PROOF: Real customer quote if it feels natural
-`}
 
-${config?.copyFrameworks?.listicleFramework?.optimizationRules ? `
-OPTIMIZATION RULES (FROM AI SETTINGS):
-${config.copyFrameworks.listicleFramework.optimizationRules.join('\n')}
-` : `
 AUTHENTIC LISTICLE OPTIMIZATION RULES:
 - Maximum 80 words per reason section (concise and scannable)
 - Lead with benefits, support with facts - not the other way around
@@ -479,20 +473,15 @@ AUTHENTIC LISTICLE OPTIMIZATION RULES:
 - Each reason should stand alone and deliver immediate value
 - Break up long paragraphs into 2-3 short sentences maximum
 - Use bullet points or short phrases for better readability
-`}
+` : ''}
 
-${config?.copyFrameworks?.listicleFramework?.realExamples ? `
-REAL EXAMPLES TO EMULATE (FROM AI SETTINGS):
-${config.copyFrameworks.listicleFramework.realExamples.join('\n')}
-` : `
 REAL LISTICLE EXAMPLES TO EMULATE:
 - Grüns: "Better Poops (Seriously)" - direct, honest, conversational
 - Loop: "Blocks Out The Loudest Tools - 24dB Reduction" - specific benefit + proof
 - Create: "They're made with Creapure®, the highest-quality creatine..." - quality focus
 - Tone: Educational but approachable, like explaining to a friend who asked
 - Structure: Clear headers, short paragraphs, specific benefits, natural flow
-`}
-` : `
+
 HIGH-CONVERTING TROJAN HORSE STRUCTURE (OPTIMIZED FOR CONVERSION SCORES):
 - Hook (50-75 words): Seemingly unrelated story that connects to deep pain point
 - Pattern interrupt (25-40 words): Challenge conventional beauty wisdom
@@ -508,7 +497,6 @@ CONVERSION OPTIMIZATION FOR TROJAN HORSE:
 - Break long paragraphs into 2-3 sentence blocks
 - Use specific numbers and timeframes for credibility
 - Each section should have ONE clear takeaway
-`}
 
 CONVERSION PSYCHOLOGY PRINCIPLES:
 - Use curiosity gaps and open loops
