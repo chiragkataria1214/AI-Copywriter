@@ -898,31 +898,25 @@ export default function MetaAdGenerator() {
                         <Label className="text-sm font-medium text-gray-700 mb-3 block">
                           Quick Select - Top Products
                         </Label>
-                        <div className="grid grid-cols-2 gap-2 mb-4">
+                        <div className="flex flex-wrap gap-2 mb-4">
                           {[
-                            { value: 'miracle balm', label: 'Miracle Balm', icon: 'MB' },
-                            { value: 'foundation', label: 'What The Foundation', icon: 'WTF' },
-                            { value: 'tinted moisturizer', label: 'Just Enough', icon: 'JE' },
-                            { value: 'hero kit', label: 'The Hero Kit', icon: 'HK' }
+                            { value: 'miracle balm', label: 'Miracle Balm' },
+                            { value: 'foundation', label: 'What The Foundation' },
+                            { value: 'tinted moisturizer', label: 'Just Enough' },
+                            { value: 'hero kit', label: 'The Hero Kit' }
                           ].map((product) => (
                             <Button
                               key={product.value}
                               variant={selectedProduct === product.value ? "default" : "outline"}
-                              className={`h-auto p-3 flex flex-col items-center text-center ${
+                              size="sm"
+                              className={`text-xs px-3 py-1 h-8 ${
                                 selectedProduct === product.value 
                                   ? 'bg-[#004182] text-white border-[#004182]' 
                                   : 'hover:bg-gray-50'
                               }`}
                               onClick={() => setSelectedProduct(product.value)}
                             >
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-1 ${
-                                selectedProduct === product.value 
-                                  ? 'bg-white text-[#004182]' 
-                                  : 'bg-[#004182] text-white'
-                              }`}>
-                                {product.icon}
-                              </div>
-                              <span className="text-xs leading-tight">{product.label}</span>
+                              {product.label}
                             </Button>
                           ))}
                         </div>
