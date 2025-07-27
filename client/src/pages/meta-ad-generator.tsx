@@ -38,6 +38,7 @@ export default function MetaAdGenerator() {
   const [subPersona, setSubPersona] = useState('newMom');
   const [targetAudience, setTargetAudience] = useState('');
   const [landingPageUrl, setLandingPageUrl] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState('');
   
   // Ad Copy States
   const [generatedHeadlines, setGeneratedHeadlines] = useState<Array<{ framework: string; copy: string }>>([]);
@@ -404,7 +405,8 @@ export default function MetaAdGenerator() {
         brandDrBalance: brandDrBalance[0],
         useJonesBrandGuide,
         airLink,
-        uploadedImage
+        uploadedImage,
+        selectedProduct
       };
       
       const result = await apiRequest('/api/generate-ad-copy', {
@@ -865,6 +867,45 @@ export default function MetaAdGenerator() {
                           <span>Balanced</span>
                           <span>All Brand</span>
                         </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Product Selection */}
+                <Card>
+                  <CardContent className="p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Sparkles className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                      Product Focus
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                          Select Product (filters customer reviews for training)
+                        </Label>
+                        <Select value={selectedProduct || "all"} onValueChange={(value) => setSelectedProduct(value === "all" ? "" : value)}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="All products (no filtering)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All products</SelectItem>
+                            <SelectItem value="mascara">The Mascara</SelectItem>
+                            <SelectItem value="foundation">What The Foundation</SelectItem>
+                            <SelectItem value="sunscreen">Everyday Sunscreen</SelectItem>
+                            <SelectItem value="miracle balm">Miracle Balm</SelectItem>
+                            <SelectItem value="lip stick">Lip & Cheek Stick</SelectItem>
+                            <SelectItem value="tinted moisturizer">Just Enough Tinted Moisturizer</SelectItem>
+                            <SelectItem value="face pencil">The Face Pencil</SelectItem>
+                            <SelectItem value="hero kit">The Hero Kit</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {selectedProduct && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            AI will use customer reviews specific to {selectedProduct} for authentic language patterns
+                          </p>
+                        )}
                       </div>
                     </div>
                   </CardContent>

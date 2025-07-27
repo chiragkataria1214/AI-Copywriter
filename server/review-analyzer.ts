@@ -159,7 +159,15 @@ Generate actionable insights for AI copywriting training.`;
 
       const content = response.content[0];
       if (content.type === 'text') {
-        const insights = JSON.parse(content.text);
+        // Clean the response to extract just the JSON
+        let jsonText = content.text;
+        if (jsonText.includes('```json')) {
+          jsonText = jsonText.substring(jsonText.indexOf('```json') + 7);
+          jsonText = jsonText.substring(0, jsonText.indexOf('```'));
+        }
+        jsonText = jsonText.trim();
+        
+        const insights = JSON.parse(jsonText);
         
         // Insert insights into database
         for (const insight of insights) {
