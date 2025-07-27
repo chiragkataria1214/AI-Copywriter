@@ -1638,6 +1638,86 @@ export default function MetaAdGenerator() {
                   </CardContent>
                 </Card>
 
+                {/* Target Audience Selection */}
+                <Card>
+                  <CardContent className="p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Users className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                      Target Audience
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Concept (Primary Persona)</Label>
+                        <Select value={concept} onValueChange={setConcept}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(personas).map(([key, persona]) => (
+                              <SelectItem key={key} value={key}>
+                                <div className="flex flex-col py-1">
+                                  <span className="font-medium">{persona.label}</span>
+                                  <span className="text-xs text-gray-500">{persona.description}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Sub-persona selection for Life Juggler */}
+                      {concept === 'lifeJuggler' && (
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700 mb-2 block">Sub-Persona (Specific Target)</Label>
+                          <Select value={subPersona} onValueChange={setSubPersona}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(personas.lifeJuggler.subPersonas).map(([key, subPersona]) => (
+                                <SelectItem key={key} value={key}>
+                                  <div className="flex flex-col py-1">
+                                    <span className="font-medium">{(subPersona as any).label}</span>
+                                    <span className="text-xs text-gray-500">{(subPersona as any).description}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {/* Brand/DR Balance Slider */}
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 mb-3 block">
+                          Brand vs Direct Response Balance
+                        </Label>
+                        <div className="space-y-3">
+                          <Slider
+                            value={brandDrBalance}
+                            onValueChange={setBrandDrBalance}
+                            max={100}
+                            step={5}
+                            className="w-full"
+                          />
+                          <div className="flex justify-between text-xs text-gray-600">
+                            <span>Brand Focus ({brandDrBalance[0]}%)</span>
+                            <span>Direct Response ({100 - brandDrBalance[0]}%)</span>
+                          </div>
+                          <div className="text-xs text-gray-500 text-center">
+                            {brandDrBalance[0] > 75 ? 'Very brand-focused, minimal sales pressure' :
+                             brandDrBalance[0] > 50 ? 'Brand-leaning with subtle selling' :
+                             brandDrBalance[0] === 50 ? 'Balanced brand and performance approach' :
+                             brandDrBalance[0] > 25 ? 'Performance-focused with brand elements' :
+                             'High-pressure direct response approach'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Content Source */}
                 <Card>
                   <CardContent className="p-4 sm:p-6">

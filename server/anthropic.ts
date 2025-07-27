@@ -401,9 +401,9 @@ ${config.copyFrameworks.listicleFramework.reasonStructure.join('\n')}
 ` : `
 EACH REASON STRUCTURE (BASED ON REAL LISTICLE EXAMPLES):
 - CLEAR BENEFIT STATEMENT (10-20 words): Direct, specific value - what it does
-- BRIEF EXPLANATION (30-60 words): Why this matters, how it works [FACTUAL TONE]
-- SPECIFIC DETAILS (20-40 words): Numbers, features, or proof points that support the claim
-- NATURAL BENEFIT BRIDGE (15-25 words): What this means for the user in practical terms
+- BRIEF EXPLANATION (20-35 words): Why this matters, how it works [FACTUAL TONE]
+- SPECIFIC DETAILS (15-25 words): Numbers, features, or proof points that support the claim
+- NATURAL BENEFIT BRIDGE (10-15 words): What this means for the user in practical terms
 - OPTIONAL SOCIAL PROOF: Real customer quote if it feels natural
 `}
 
@@ -412,11 +412,13 @@ OPTIMIZATION RULES (FROM AI SETTINGS):
 ${config.copyFrameworks.listicleFramework.optimizationRules.join('\n')}
 ` : `
 AUTHENTIC LISTICLE OPTIMIZATION RULES:
-- Maximum 100 words per reason section (concise and scannable)
+- Maximum 80 words per reason section (concise and scannable)
 - Lead with benefits, support with facts - not the other way around
 - Use specific details and numbers when possible (like "24dB reduction")
 - Keep language clear and direct - avoid flowery marketing speak
 - Each reason should stand alone and deliver immediate value
+- Break up long paragraphs into 2-3 short sentences maximum
+- Use bullet points or short phrases for better readability
 `}
 
 ${config?.copyFrameworks?.listicleFramework?.realExamples ? `
@@ -485,6 +487,9 @@ SPECIFIC INSTRUCTIONS:
 5. Include social proof elements throughout
 6. Create clear value propositions with "because" reasoning
 7. End each section with a soft CTA or continuation hook
+8. KEEP PARAGRAPHS SHORT (2-3 sentences maximum)
+9. Use bullet points or short phrases for better readability
+10. Maximum 80 words per reason section - be concise and scannable
 
 Generate complete landing page copy with all required sections. Structure your response as:
 
