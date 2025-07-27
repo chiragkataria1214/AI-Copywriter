@@ -1939,16 +1939,6 @@ export default function MetaAdGenerator() {
                                       )}
                                     </div>
                                   </div>
-                                  
-                                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                                    <p className="text-xs text-gray-600 font-medium mb-2">How Claude Uses This Data:</p>
-                                    <ul className="text-xs text-gray-600 space-y-1">
-                                      <li>• Generates headlines addressing these specific pain points</li>
-                                      <li>• Creates primary text that resonates with core motivations</li>
-                                      <li>• Adapts messaging tone based on persona priorities</li>
-                                      <li>• Suggests product benefits aligned with pillar concerns</li>
-                                    </ul>
-                                  </div>
                                 </div>
                               </div>
                             ))}
