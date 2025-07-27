@@ -364,40 +364,44 @@ async function getCustomerReviewInsights(product: string) {
 
 JONES ROAD BEAUTY BRAND GUIDELINES:
 - Core positioning: "Your Skin But Better" - natural, effortless enhancement  
-- Brand voice: Natural, welcoming, authentic, never pushy or aggressive
-- Focus on enhancement, not transformation
+- Brand voice: Natural, welcoming, authentic, conversational, never pushy or salesy
+- Tone: Educational and helpful, like a friend sharing beauty tips
+- Focus on enhancement and ease, not transformation or perfection
 - Use "moisturizing" not "hydrating" for makeup products
-- Emphasize real results from real people
+- Avoid aggressive direct response language, sales pressure, or urgency tactics
+- Sound like Bobbi Brown sharing makeup philosophy, not a sales funnel
+- Emphasize real, achievable results and natural beauty
 
 ${reviewInsights}
 
 ${landingPageType === 'listicle' ? `
-HIGH-CONVERTING LISTICLE STRUCTURE:
-- Magnetic headline (6-12 words) with clear benefit + intrigue
-- Problem-agitation-promise introduction (150-200 words)
-- 5 strategically sequenced reasons with social proof
-- Multiple strategic CTAs (above fold, mid-page, bottom)
-- Risk reversal & credibility indicators
+AUTHENTIC JONES ROAD LISTICLE STRUCTURE:
+- Natural headline (6-12 words) that sounds like helpful advice, not a sales pitch
+- Warm, educational introduction (100-150 words) - like a friend sharing tips
+- 5 reasons that feel like beauty education, not sales tactics
+- Soft, natural CTAs that suggest rather than demand
+- Trust-building through authenticity, not aggressive sales techniques
 
-PSYCHOLOGICAL SEQUENCING:
-1. DESIRE: Biggest benefit with proof (creates want)
-2. OBJECTION: Address main concern + solution (removes friction) 
-3. EASE: How simple/fast it is (removes effort barrier)
-4. SOCIAL PROOF: Real customer results (removes risk)
-5. URGENCY/SCARCITY: Why act now (creates action)
+EDUCATIONAL SEQUENCING (JONES ROAD STYLE):
+1. EASY WIN: Something simple that works immediately (builds trust)
+2. INSIGHT: A helpful beauty tip or "why this works" (educates)
+3. REAL BENEFIT: How it improves your routine (practical value)
+4. AUTHENTIC PROOF: Real customer experiences (social validation)
+5. NATURAL NEXT STEP: Gentle suggestion to try it (friendly invitation)
 
-EACH REASON STRUCTURE (OPTIMIZED FOR HIGH CONVERSION SCORES):
-- PATTERN INTERRUPT (15-25 words): Counterintuitive statement or surprising fact
-- STORY/EXPLANATION (40-75 words): Context→Mechanism→Specific outcome [KEEP CONCISE]
-- SOCIAL PROOF (25-40 words): Customer testimonials, studies, or statistics [SHORT & PUNCHY]
-- BENEFIT BRIDGE (15-30 words): "This means you can [specific outcome] without [specific struggle]"
-- MICRO-CTA: Small commitment ask ("Keep reading to discover...")
+EACH REASON STRUCTURE (JONES ROAD AUTHENTIC STYLE):
+- FRIENDLY INSIGHT (15-25 words): Helpful beauty tip or gentle observation
+- EDUCATIONAL EXPLANATION (40-75 words): Why this works and how it helps [CONVERSATIONAL TONE]
+- REAL CUSTOMER EXPERIENCE (25-40 words): Authentic testimonials that feel genuine [NATURAL LANGUAGE]
+- PRACTICAL BENEFIT (15-30 words): "What this means for your routine" - helpful, not pushy
+- GENTLE TRANSITION: Natural continuation ("Here's another thing to consider...")
 
-CONVERSION OPTIMIZATION RULES:
-- Maximum 150 words per reason section (target 100-120 words)
-- Use bullet points and short paragraphs for mobile readability
-- Each sentence should be 20 words or less for maximum impact
-- Focus on ONE clear benefit per reason to avoid confusion
+JONES ROAD OPTIMIZATION RULES:
+- Maximum 120 words per reason section (concise but warm)
+- Use natural, conversational language like talking to a friend
+- Each sentence should feel genuine and helpful, not sales-driven
+- Focus on education and empowerment, not urgency or pressure
+- Avoid aggressive direct response tactics - keep it authentic
 ` : `
 HIGH-CONVERTING TROJAN HORSE STRUCTURE (OPTIMIZED FOR CONVERSION SCORES):
 - Hook (50-75 words): Seemingly unrelated story that connects to deep pain point
