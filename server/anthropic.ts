@@ -200,6 +200,7 @@ Analyze the uploaded ad creative image to extract key visual elements, text over
     } catch (error) {
       console.error('Failed to parse JSON response:', error);
       console.log('Raw response:', content);
+      console.log('Request details - hasImageContent:', hasImageContent, 'imageLength:', base64Image?.length || 0);
       
       // Fallback to template approach
       const drPercent = 100 - brandPercent;
@@ -272,7 +273,14 @@ Analyze the uploaded ad creative image to extract key visual elements, text over
     };
   } catch (error) {
     console.error('Anthropic API error:', error);
-    throw new Error('Failed to generate ad copy');
+    console.error('Error details:', {
+      message: error.message,
+      hasImageContent,
+      imageLength: base64Image?.length || 0,
+      airLink,
+      uploadedImageLength: uploadedImage?.length || 0
+    });
+    throw new Error(`Failed to generate ad copy: ${error.message}`);
   }
 }
 
