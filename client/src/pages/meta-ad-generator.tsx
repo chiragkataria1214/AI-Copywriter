@@ -1638,81 +1638,189 @@ export default function MetaAdGenerator() {
                   </CardContent>
                 </Card>
 
-                {/* Target Audience Selection */}
+                {/* Persona Selection */}
                 <Card>
                   <CardContent className="p-4 sm:p-6">
                     <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
                       <Users className="text-jones-primary mr-2 sm:mr-3" size={18} />
-                      Target Audience
+                      Target Persona
                     </h3>
                     
                     <div className="space-y-4">
                       <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Concept (Primary Persona)</Label>
+                        <Label htmlFor="concept" className="block text-sm font-medium text-gray-700 mb-2">Primary Persona</Label>
                         <Select value={concept} onValueChange={setConcept}>
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             {Object.entries(personas).map(([key, persona]) => (
-                              <SelectItem key={key} value={key}>
-                                <div className="flex flex-col py-1">
-                                  <span className="font-medium">{persona.label}</span>
-                                  <span className="text-xs text-gray-500">{persona.description}</span>
-                                </div>
-                              </SelectItem>
+                              <SelectItem key={key} value={key}>{persona.label}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
-
-                      {/* Sub-persona selection for Life Juggler */}
-                      {concept === 'lifeJuggler' && (
+                      
+                      {personas[concept as keyof typeof personas]?.subPersonas && Object.keys(personas[concept as keyof typeof personas].subPersonas).length > 0 && (
                         <div>
-                          <Label className="text-sm font-medium text-gray-700 mb-2 block">Sub-Persona (Specific Target)</Label>
+                          <Label htmlFor="subPersona" className="block text-sm font-medium text-gray-700 mb-2">Sub-Persona</Label>
                           <Select value={subPersona} onValueChange={setSubPersona}>
-                            <SelectTrigger className="w-full">
+                            <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {Object.entries(personas.lifeJuggler.subPersonas).map(([key, subPersona]) => (
-                                <SelectItem key={key} value={key}>
-                                  <div className="flex flex-col py-1">
-                                    <span className="font-medium">{(subPersona as any).label}</span>
-                                    <span className="text-xs text-gray-500">{(subPersona as any).description}</span>
-                                  </div>
-                                </SelectItem>
+                              {Object.entries(personas[concept as keyof typeof personas].subPersonas).map(([key, subPersona]) => (
+                                <SelectItem key={key} value={key}>{(subPersona as any).label}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
                       )}
+                    </div>
+                  </CardContent>
+                </Card>
 
-                      {/* Brand/DR Balance Slider */}
+                {/* Brand Guidelines */}
+                <Card>
+                  <CardContent className="p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Settings className="text-jones-primary mr-3" size={20} />
+                      Settings
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">Use Jones Brand Guide</Label>
+                          <p className="text-xs text-gray-500">Apply Jones Road Beauty brand voice and guidelines</p>
+                        </div>
+                        <Switch checked={useJonesBrandGuide} onCheckedChange={setUseJonesBrandGuide} />
+                      </div>
+                      
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-sm font-medium text-gray-700">Brand/DR Balance</Label>
+                          <span className="text-sm text-gray-500">{getBrandDrLabel()}</span>
+                        </div>
+                        <Slider
+                          value={brandDrBalance}
+                          onValueChange={setBrandDrBalance}
+                          max={100}
+                          step={1}
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>All DR</span>
+                          <span>Balanced</span>
+                          <span>All Brand</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Product Selection */}
+                <Card>
+                  <CardContent className="p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Sparkles className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                      Product Focus
+                    </h3>
+                    
+                    <div className="space-y-4">
                       <div>
                         <Label className="text-sm font-medium text-gray-700 mb-3 block">
-                          Brand vs Direct Response Balance
+                          Quick Select - Top Products
                         </Label>
-                        <div className="space-y-3">
-                          <Slider
-                            value={brandDrBalance}
-                            onValueChange={setBrandDrBalance}
-                            max={100}
-                            step={5}
-                            className="w-full"
-                          />
-                          <div className="flex justify-between text-xs text-gray-600">
-                            <span>Brand Focus ({brandDrBalance[0]}%)</span>
-                            <span>Direct Response ({100 - brandDrBalance[0]}%)</span>
-                          </div>
-                          <div className="text-xs text-gray-500 text-center">
-                            {brandDrBalance[0] > 75 ? 'Very brand-focused, minimal sales pressure' :
-                             brandDrBalance[0] > 50 ? 'Brand-leaning with subtle selling' :
-                             brandDrBalance[0] === 50 ? 'Balanced brand and performance approach' :
-                             brandDrBalance[0] > 25 ? 'Performance-focused with brand elements' :
-                             'High-pressure direct response approach'}
-                          </div>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {[
+                            { value: 'miracle balm', label: 'Miracle Balm' },
+                            { value: 'foundation', label: 'What The Foundation' },
+                            { value: 'tinted moisturizer', label: 'Just Enough' },
+                            { value: 'hero kit', label: 'The Hero Kit' }
+                          ].map((product) => (
+                            <Button
+                              key={product.value}
+                              variant={selectedProduct === product.value ? "default" : "outline"}
+                              size="sm"
+                              className={`text-xs px-3 py-1 h-8 ${
+                                selectedProduct === product.value 
+                                  ? 'bg-[#004182] text-white border-[#004182]' 
+                                  : 'hover:bg-gray-50'
+                              }`}
+                              onClick={() => setSelectedProduct(product.value)}
+                            >
+                              {product.label}
+                            </Button>
+                          ))}
                         </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">
+                            Or choose from all products
+                          </Label>
+                          <Select value={selectedProduct || "all"} onValueChange={(value) => setSelectedProduct(value === "all" ? "" : value)}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="All products (no filtering)" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All products</SelectItem>
+                              <SelectItem value="miracle balm">Miracle Balm</SelectItem>
+                              <SelectItem value="foundation">What The Foundation</SelectItem>
+                              <SelectItem value="tinted moisturizer">Just Enough Tinted Moisturizer</SelectItem>
+                              <SelectItem value="hero kit">The Hero Kit</SelectItem>
+                              <SelectItem value="sunscreen">Everyday Sunscreen</SelectItem>
+                              <SelectItem value="mascara">What The Mascara</SelectItem>
+                              <SelectItem value="lip stick">Lip & Cheek Stick</SelectItem>
+                              <SelectItem value="face pencil">The Face Pencil</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {selectedProduct && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            AI will use customer reviews specific to {
+                              selectedProduct === 'miracle balm' ? 'Miracle Balm' :
+                              selectedProduct === 'foundation' ? 'What The Foundation' :
+                              selectedProduct === 'tinted moisturizer' ? 'Just Enough Tinted Moisturizer' :
+                              selectedProduct === 'hero kit' ? 'The Hero Kit' :
+                              selectedProduct === 'sunscreen' ? 'Everyday Sunscreen' :
+                              selectedProduct === 'mascara' ? 'What The Mascara' :
+                              selectedProduct === 'lip stick' ? 'Lip & Cheek Stick' :
+                              selectedProduct === 'face pencil' ? 'The Face Pencil' :
+                              selectedProduct
+                            } for authentic language patterns
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Product Brief */}
+                <Card>
+                  <CardContent className="p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <FileText className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                      Product Brief
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="productBrief" className="block text-sm font-medium text-gray-700 mb-2">
+                          Product Details
+                        </Label>
+                        <Textarea 
+                          id="productBrief" 
+                          rows={5}
+                          className="w-full resize-none text-sm"
+                          placeholder="Describe your product, its benefits, target audience, and key selling points..."
+                          value={productBrief}
+                          onChange={(e) => setProductBrief(e.target.value)}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Include product features, benefits, target audience, and unique selling points for better landing page copy
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -1783,47 +1891,6 @@ export default function MetaAdGenerator() {
                           </div>
                         </div>
                       )}
-                      
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                          Select Product (filters customer reviews for training)
-                        </Label>
-                        <Select value={selectedProduct || "all"} onValueChange={(value) => setSelectedProduct(value === "all" ? "" : value)}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="All products (no filtering)" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All products</SelectItem>
-                            <SelectItem value="miracle balm">Miracle Balm</SelectItem>
-                            <SelectItem value="foundation">What The Foundation</SelectItem>
-                            <SelectItem value="tinted moisturizer">Just Enough Tinted Moisturizer</SelectItem>
-                            <SelectItem value="sunscreen">What The SPF</SelectItem>
-                            <SelectItem value="mascara">What The Mascara</SelectItem>
-                            <SelectItem value="lip stick">Lip & Cheek Stick</SelectItem>
-                            <SelectItem value="face pencil">The Face Pencil</SelectItem>
-                            <SelectItem value="hero kit">The Hero Kit</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {selectedProduct && (
-                          <p className="text-xs text-gray-500 mt-2">
-                            Landing page content will use customer reviews specific to {selectedProduct}
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <Label htmlFor="productBrief" className="block text-sm font-medium text-gray-700 mb-2">
-                          Product Brief
-                        </Label>
-                        <Textarea 
-                          id="productBrief" 
-                          rows={5}
-                          className="w-full resize-none text-sm"
-                          placeholder="Describe your product, its benefits, target audience, and key selling points..."
-                          value={productBrief}
-                          onChange={(e) => setProductBrief(e.target.value)}
-                        />
-                      </div>
                     </div>
                   </CardContent>
                 </Card>
