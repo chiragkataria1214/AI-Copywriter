@@ -15,6 +15,30 @@ export default function ReviewTraining() {
   const [bulkReviews, setBulkReviews] = useState('');
   const [reviewFormat, setReviewFormat] = useState<'csv' | 'json' | 'text'>('text');
 
+  // Import from Junip page mutation
+  const importJunipMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/junip/import-page', {
+        method: 'POST'
+      });
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Junip Import Complete!",
+        description: `Successfully imported ${data.imported} authentic reviews from Jones Road's Junip page`,
+      });
+      // Refetch stats and reviews
+      window.location.reload();
+    },
+    onError: (error) => {
+      toast({
+        title: "Junip Import Failed",
+        description: error instanceof Error ? error.message : "Failed to import from Junip",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Import reviews mutation
   const importReviewsMutation = useMutation({
     mutationFn: async (data: { reviews: string; format: string }) => {
@@ -70,6 +94,18 @@ export default function ReviewTraining() {
   // Get training insights
   const { data: insights, isLoading: insightsLoading } = useQuery({
     queryKey: ['/api/reviews/insights'],
+    retry: false,
+  });
+
+  // Get actual reviews for viewing
+  const { data: reviews, isLoading: reviewsLoading } = useQuery({
+    queryKey: ['/api/reviews'],
+    retry: false,
+  });
+
+  // Get Junip analytics
+  const { data: junipAnalytics, isLoading: analyticsLoading } = useQuery({
+    queryKey: ['/api/junip/analytics'],
     retry: false,
   });
 
@@ -130,12 +166,118 @@ export default function ReviewTraining() {
       </div>
 
       <div className="max-w-6xl mx-auto p-6">
-        <Tabs defaultValue="import" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="reviews" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="reviews">View Reviews</TabsTrigger>
             <TabsTrigger value="import">Import Reviews</TabsTrigger>
             <TabsTrigger value="insights">Training Insights</TabsTrigger>
-            <TabsTrigger value="stats">Analytics</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
+
+          {/* View Reviews Tab */}
+          <TabsContent value="reviews" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Reviews Overview */}
+              <Card className="lg:col-span-1">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Database className="w-5 h-5 mr-2" />
+                    Reviews Overview
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {statsLoading ? (
+                    <div className="text-center py-4">Loading stats...</div>
+                  ) : hasValidStats ? (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Total Reviews</span>
+                        <Badge variant="secondary">{reviewStats.totalReviews}</Badge>
+                      </div>
+                      {reviewStats.byProduct && Object.entries(reviewStats.byProduct).map(([product, count]) => (
+                        <div key={product} className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600 capitalize">{product}</span>
+                          <Badge variant="outline">{count}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-gray-500 mb-4">No reviews imported yet</p>
+                      <Button 
+                        onClick={() => importJunipMutation.mutate()}
+                        disabled={importJunipMutation.isPending}
+                        className="bg-[#004182] hover:bg-[#003366]"
+                      >
+                        {importJunipMutation.isPending ? 'Importing...' : 'Import Reviews from Junip'}
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Recent Reviews */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="flex items-center">
+                      <FileText className="w-5 h-5 mr-2" />
+                      Recent Reviews
+                    </span>
+                    <Button 
+                      size="sm"
+                      onClick={() => importJunipMutation.mutate()}
+                      disabled={importJunipMutation.isPending}
+                      className="bg-[#004182] hover:bg-[#003366]"
+                    >
+                      {importJunipMutation.isPending ? 'Importing...' : 'Import from Junip'}
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {reviewsLoading ? (
+                    <div className="text-center py-8">Loading reviews...</div>
+                  ) : reviews && Array.isArray(reviews) && reviews.length > 0 ? (
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {reviews.slice(0, 10).map((review: any, index: number) => (
+                        <div key={index} className="border rounded-lg p-4 bg-gray-50">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              <Badge variant="outline" className="text-xs">
+                                {review.product_name || review.productName || 'Unknown Product'}
+                              </Badge>
+                              <div className="flex">
+                                {[...Array(review.rating || 5)].map((_, i) => (
+                                  <span key={i} className="text-yellow-400">★</span>
+                                ))}
+                              </div>
+                            </div>
+                            <span className="text-xs text-gray-500">
+                              {review.reviewer_name || review.reviewerName || 'Anonymous'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-700 line-clamp-3">
+                            {review.review_text || review.reviewText || review.content}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500 mb-4">No reviews found</p>
+                      <Button 
+                        onClick={() => importJunipMutation.mutate()}
+                        disabled={importJunipMutation.isPending}
+                        className="bg-[#004182] hover:bg-[#003366]"
+                      >
+                        {importJunipMutation.isPending ? 'Importing...' : 'Import Reviews from Junip'}
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
           {/* Import Tab */}
           <TabsContent value="import" className="space-y-6">
@@ -289,7 +431,7 @@ Format examples:
           </TabsContent>
 
           {/* Analytics Tab */}
-          <TabsContent value="stats" className="space-y-6">
+          <TabsContent value="analytics" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card>
                 <CardHeader>

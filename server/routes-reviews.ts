@@ -14,6 +14,56 @@ const requireAuth = (req: any, res: any, next: any) => {
 
 export function registerReviewRoutes(app: Express) {
   
+  // Get reviews for viewing (with pagination)
+  app.get('/api/reviews', async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+      
+      const reviewsList = await db.select()
+        .from(reviews)
+        .orderBy(desc(reviews.createdAt))
+        .limit(limit)
+        .offset(offset);
+      
+      res.json(reviewsList);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      res.status(500).json({ message: 'Failed to fetch reviews' });
+    }
+  });
+
+  // Get review statistics
+  app.get('/api/reviews/stats', async (req, res) => {
+    try {
+      // Get total count
+      const [totalResult] = await db.select({ count: count() }).from(reviews);
+      
+      // Get count by product
+      const productCounts = await db
+        .select({
+          product_name: reviews.productName,
+          count: count()
+        })
+        .from(reviews)
+        .groupBy(reviews.productName)
+        .orderBy(desc(count()));
+      
+      const byProduct = {};
+      productCounts.forEach((row: any) => {
+        byProduct[row.product_name] = row.count;
+      });
+      
+      res.json({
+        totalReviews: totalResult?.count || 0,
+        byProduct
+      });
+    } catch (error) {
+      console.error('Review stats error:', error);
+      res.status(500).json({ message: 'Failed to fetch review statistics' });
+    }
+  });
+
   // Import bulk reviews
   app.post('/api/reviews/import', requireAuth, async (req, res) => {
     try {
