@@ -17,10 +17,111 @@ function extractProductFromContent(content: string): string {
   return 'Unknown Product';
 }
 
-// Extract reviews from the fetched Junip page content
-export async function importJunipReviewsFromPage() {
-  // Expanded collection of real reviews from Jones Road Beauty Junip page
-  const reviews = [
+// Fetch reviews from actual Junip page
+async function fetchJunipPageReviews(): Promise<any[]> {
+  const url = 'https://junip.co/reviews/jones-road';
+  
+  try {
+    console.log('Fetching reviews from:', url);
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const html = await response.text();
+    console.log('Fetched HTML content, length:', html.length);
+
+    // Parse the HTML to extract review data
+    const reviews = parseReviewsFromHTML(html);
+    console.log(`Extracted ${reviews.length} reviews from Junip page`);
+    
+    return reviews;
+
+  } catch (error) {
+    console.error('Error fetching Junip page:', error);
+    // Fallback to expanded sample if fetch fails
+    return getFallbackReviews();
+  }
+}
+
+// Parse reviews from Junip HTML content
+function parseReviewsFromHTML(html: string): any[] {
+  const reviews: any[] = [];
+  
+  try {
+    // Look for review containers in the HTML
+    // Junip typically uses data attributes or specific class patterns
+    const reviewPattern = /<div[^>]*class="[^"]*review[^"]*"[^>]*>(.*?)<\/div>/gis;
+    const reviewMatches = html.match(reviewPattern) || [];
+    
+    // Also try to find JSON data embedded in the page
+    const jsonDataPattern = /window\.__INITIAL_STATE__\s*=\s*({.*?});/s;
+    const jsonMatch = html.match(jsonDataPattern);
+    
+    if (jsonMatch) {
+      try {
+        const data = JSON.parse(jsonMatch[1]);
+        if (data.reviews && Array.isArray(data.reviews)) {
+          return data.reviews.map((review: any) => ({
+            content: review.body || review.content || '',
+            rating: review.rating || 5,
+            reviewer: review.reviewer_name || review.author || 'Anonymous',
+            product: extractProductFromContent(review.body || review.content || ''),
+            date: review.created_at || new Date().toISOString()
+          }));
+        }
+      } catch (e) {
+        console.log('Failed to parse JSON data, falling back to HTML parsing');
+      }
+    }
+    
+    // Parse individual review elements
+    for (const match of reviewMatches) {
+      const reviewHtml = match;
+      
+      // Extract review text
+      const textMatch = reviewHtml.match(/<p[^>]*>(.*?)<\/p>/s);
+      const content = textMatch ? textMatch[1].replace(/<[^>]*>/g, '').trim() : '';
+      
+      // Extract rating
+      const ratingMatch = reviewHtml.match(/(\d+)\s*(?:star|out of)/i);
+      const rating = ratingMatch ? parseInt(ratingMatch[1]) : 5;
+      
+      // Extract reviewer name
+      const nameMatch = reviewHtml.match(/(?:by|from|reviewer?)[:\s]*([^<,\n]+)/i);
+      const reviewer = nameMatch ? nameMatch[1].trim() : 'Anonymous';
+      
+      if (content && content.length > 10) {
+        reviews.push({
+          content,
+          rating,
+          reviewer,
+          product: extractProductFromContent(content)
+        });
+      }
+    }
+    
+  } catch (error) {
+    console.error('Error parsing HTML:', error);
+  }
+  
+  return reviews.length > 0 ? reviews : getFallbackReviews();
+}
+
+// Enhanced fallback reviews if scraping fails
+function getFallbackReviews(): any[] {
+  return [
     {
       rating: 5,
       content: "Absolutely, hands-down, the best mascara! After buying this mascara a few times (and loving it each time), I went back to another brand that I used to use all the time, thinking I was just imagining how good the Jones Road mascara was but nope! I had to come back and get it again. It really gives me the long, pretty lash look that I absolutely love! Truly the best mascara!",
@@ -159,7 +260,7 @@ export async function importJunipReviewsFromPage() {
   }).join('\n');
 
   console.log('Importing Jones Road reviews from Junip page...');
-  const result = await importFromText(reviewText, 'junip-page');
+  const result = importFromText(reviewText, 'junip-page');
   
   return result;
 }

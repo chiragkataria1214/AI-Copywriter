@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { z } from 'zod';
 import { importFromJunip, importFromText, type ImportResult } from './review-importer';
 import { createJunipClient } from './junip-api';
+import { importJunipReviewsFromPage } from './junip-web-scraper';
 import { db } from './db';
 import { reviews, reviewAnalysis, trainingInsights } from '@shared/review-schema';
 import { sql, desc, eq, count } from 'drizzle-orm';
@@ -61,7 +62,8 @@ export function registerJunipRoutes(app: Express) {
    */
   app.post('/api/junip/import-page', async (req, res) => {
     try {
-      const { importJunipReviewsFromPage } = await import('./junip-scraper');
+      // Import and run comprehensive web scraper for thousands of reviews
+      const { importJunipReviewsFromPage } = await import('./comprehensive-junip-scraper');
       
       console.log('Starting one-time import from Junip page...');
       const result = await importJunipReviewsFromPage();
