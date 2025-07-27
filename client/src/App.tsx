@@ -9,6 +9,7 @@ import UserManagement from "@/pages/user-management";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
 import AdminSetup from "@/pages/admin-setup";
+import ReviewTraining from "@/pages/review-training";
 import NotFound from "@/pages/not-found";
 import BypassPage from "@/pages/bypass";
 import DemoGenerator from "@/pages/demo-generator";
@@ -48,8 +49,10 @@ function AuthenticatedRouter() {
     return (
       <Switch>
         <Route path="/" component={MetaAdGenerator} />
+        <Route path="/training" component={ReviewTraining} />
+        <Route path="/analytics" component={ReviewAnalytics} />
+        <Route path="/admin" component={AdminSetup} />
         <Route path="/users" component={UserManagement} />
-
         <Route component={NotFound} />
       </Switch>
     );
