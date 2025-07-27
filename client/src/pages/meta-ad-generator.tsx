@@ -125,6 +125,12 @@ export default function MetaAdGenerator() {
   const [copiedLandingCopy, setCopiedLandingCopy] = useState(false);
   const [useJonesBrandGuide, setUseJonesBrandGuide] = useState(true);
   const [brandDrBalance, setBrandDrBalance] = useState([50]);
+  
+  // Influencer Mode States
+  const [enableInfluencerMode, setEnableInfluencerMode] = useState(false);
+  const [influencerHandle, setInfluencerHandle] = useState('');
+  const [voiceAnalysisMethod, setVoiceAnalysisMethod] = useState('combined');
+  const [influencerBrandBalance, setInfluencerBrandBalance] = useState([50]);
 
   // Define personas
   const personas = {
@@ -920,6 +926,118 @@ export default function MetaAdGenerator() {
                           Provide your existing landing page URL to ensure ad copy aligns with your landing page messaging
                         </p>
                       </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Influencer Voice Modeling */}
+                <Card>
+                  <CardContent className="p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Users className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                      Influencer Partnership Mode
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">Enable Influencer Voice Modeling</Label>
+                          <p className="text-xs text-gray-500">Generate copy in the influencer's authentic voice while respecting brand guidelines</p>
+                        </div>
+                        <Switch checked={enableInfluencerMode} onCheckedChange={setEnableInfluencerMode} />
+                      </div>
+                      
+                      {enableInfluencerMode && (
+                        <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div>
+                            <Label htmlFor="influencerHandle" className="block text-sm font-medium text-gray-700 mb-2">
+                              Instagram Handle <span className="text-xs text-gray-500">(Optional but recommended)</span>
+                            </Label>
+                            <Input 
+                              type="text" 
+                              id="influencerHandle"
+                              placeholder="@username (without @)"
+                              value={influencerHandle}
+                              onChange={(e) => setInfluencerHandle(e.target.value.replace('@', ''))}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              We'll analyze their recent posts to understand their voice, vocabulary, and engagement style
+                            </p>
+                          </div>
+                          
+                          <div>
+                            <Label className="block text-sm font-medium text-gray-700 mb-2">
+                              Voice Analysis Method
+                            </Label>
+                            <div className="space-y-2">
+                              <div className="flex items-center space-x-2">
+                                <input 
+                                  type="radio" 
+                                  id="video-only" 
+                                  name="voiceMethod" 
+                                  value="video"
+                                  checked={voiceAnalysisMethod === 'video'}
+                                  onChange={(e) => setVoiceAnalysisMethod(e.target.value)}
+                                  className="w-4 h-4 text-blue-600"
+                                />
+                                <Label htmlFor="video-only" className="text-sm">Video Transcription Only</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <input 
+                                  type="radio" 
+                                  id="social-only" 
+                                  name="voiceMethod" 
+                                  value="social"
+                                  checked={voiceAnalysisMethod === 'social'}
+                                  onChange={(e) => setVoiceAnalysisMethod(e.target.value)}
+                                  className="w-4 h-4 text-blue-600"
+                                />
+                                <Label htmlFor="social-only" className="text-sm">Instagram Content Analysis</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <input 
+                                  type="radio" 
+                                  id="combined" 
+                                  name="voiceMethod" 
+                                  value="combined"
+                                  checked={voiceAnalysisMethod === 'combined'}
+                                  onChange={(e) => setVoiceAnalysisMethod(e.target.value)}
+                                  className="w-4 h-4 text-blue-600"
+                                />
+                                <Label htmlFor="combined" className="text-sm">Combined Analysis (Recommended)</Label>
+                              </div>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">
+                              Combined analysis provides the most authentic voice modeling by analyzing both speech patterns and written content
+                            </p>
+                          </div>
+                          
+                          <div>
+                            <Label className="block text-sm font-medium text-gray-700 mb-2">
+                              Brand Guidelines Adherence
+                            </Label>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm text-gray-600">Influencer Voice</span>
+                              <span className="text-sm text-gray-600">Brand Guidelines</span>
+                            </div>
+                            <Slider
+                              value={influencerBrandBalance}
+                              onValueChange={setInfluencerBrandBalance}
+                              max={100}
+                              step={1}
+                              className="w-full"
+                            />
+                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                              <span>100% Authentic Voice</span>
+                              <span>Balanced</span>
+                              <span>Brand Guidelines Priority</span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">
+                              Controls how strictly we maintain brand voice vs. authentic influencer voice
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

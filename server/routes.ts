@@ -5,6 +5,7 @@ import { registerJunipRoutes } from "./routes-junip";
 import { storage } from "./storage";
 import multer from "multer";
 import { generateAdCopy, generateLandingPageCopy } from "./anthropic";
+import { analyzeInfluencerVoice, generateInfluencerStyleCopy, fetchInstagramContent } from "./influencer-analyzer";
 import { getTrainingConfig } from "./routes-training";
 import { z } from "zod";
 import bcrypt from "bcrypt";
@@ -744,6 +745,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('History error:', error);
       res.status(500).json({ message: 'Failed to fetch copy history' });
+    }
+  });
+
+  // Influencer voice analysis endpoint (protected)
+  app.post('/api/analyze-influencer-voice', requireAuth, async (req, res) => {
+    try {
+      const analysisSchema = z.object({
+        transcription: z.string().optional(),
+        influencerHandle: z.string().optional(),
+        voiceAnalysisMethod: z.enum(['video', 'social', 'combined'])
+      });
+
+      const { transcription, influencerHandle, voiceAnalysisMethod } = analysisSchema.parse(req.body);
+      
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(400).json({ message: 'Anthropic API key not configured' });
+      }
+
+      let socialContent = '';
+      
+      // Fetch Instagram content if method includes social analysis
+      if ((voiceAnalysisMethod === 'social' || voiceAnalysisMethod === 'combined') && influencerHandle) {
+        try {
+          socialContent = await fetchInstagramContent(influencerHandle);
+        } catch (error) {
+          console.error('Instagram fetch error:', error);
+          // Continue with just transcription if social fetch fails
+        }
+      }
+
+      // Perform voice analysis
+      const voiceProfile = await analyzeInfluencerVoice({
+        transcription: voiceAnalysisMethod !== 'social' ? transcription : undefined,
+        socialContent: voiceAnalysisMethod !== 'video' ? socialContent : undefined,
+        influencerHandle
+      });
+
+      res.json({
+        voiceProfile,
+        analysisMethod: voiceAnalysisMethod,
+        dataUsed: {
+          transcription: !!transcription && voiceAnalysisMethod !== 'social',
+          socialContent: !!socialContent && voiceAnalysisMethod !== 'video',
+          influencerHandle
+        }
+      });
+    } catch (error) {
+      console.error('Voice analysis error:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid analysis request', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to analyze influencer voice' });
+    }
+  });
+
+  // Enhanced ad copy generation with influencer voice (protected)
+  app.post('/api/generate-influencer-copy', requireAuth, async (req, res) => {
+    try {
+      const generationSchema = z.object({
+        transcription: z.string().optional(),
+        customBrief: z.string().optional(),
+        concept: z.string().optional(),
+        subPersona: z.string().optional(),
+        targetAudience: z.string().optional(),
+        landingPageUrl: z.string().optional(),
+        brandDrBalance: z.array(z.number()).optional(),
+        useJonesBrandGuide: z.boolean().optional(),
+        airLink: z.string().optional(),
+        uploadedImage: z.string().optional(),
+        selectedProduct: z.string().optional(),
+        voiceProfile: z.object({
+          vocabulary: z.array(z.string()),
+          toneDescriptors: z.array(z.string()),
+          sentenceStructure: z.string(),
+          commonPhrases: z.array(z.string()),
+          emotionalStyle: z.string(),
+          contentThemes: z.array(z.string()),
+          engagementStyle: z.string()
+        }),
+        influencerBrandBalance: z.array(z.number())
+      });
+
+      const data = generationSchema.parse(req.body);
+      
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(400).json({ message: 'Anthropic API key not configured' });
+      }
+
+      // Get brand guidelines from training config
+      const trainingConfig = await getTrainingConfig();
+      
+      // Create prompt for influencer-style copy generation
+      const prompt = `
+Product: ${data.selectedProduct || 'Jones Road Beauty products'}
+Transcription: ${data.transcription || ''}
+Custom Brief: ${data.customBrief || ''}
+Target Persona: ${data.concept} - ${data.subPersona}
+Landing Page: ${data.landingPageUrl || 'None provided'}
+`;
+
+      const result = await generateInfluencerStyleCopy(
+        prompt,
+        data.voiceProfile,
+        trainingConfig?.brandGuidelines,
+        data.influencerBrandBalance[0] || 50
+      );
+
+      const userId = (req.session as any).userId;
+      const savedCopy = await storage.saveGeneratedCopy({
+        userId: userId,
+        inputText: data.transcription || data.concept || '',
+        landingPageUrl: data.landingPageUrl || null,
+        targetPersona: data.subPersona || data.targetAudience || '',
+        brandDrBalance: data.brandDrBalance?.[0] || 50,
+        headlines: result.headlines,
+        primaryText: result.primaryText,
+        configSnapshot: trainingConfig,
+        generationTimeMs: 0,
+        tokensUsed: null,
+        rating: null,
+        feedback: null,
+      });
+
+      res.json({
+        copyId: savedCopy.id,
+        headlines: result.headlines,
+        primaryText: result.primaryText,
+        voiceAnalysis: {
+          balanceUsed: data.influencerBrandBalance[0] || 50,
+          voiceElements: data.voiceProfile.toneDescriptors.slice(0, 3)
+        }
+      });
+    } catch (error) {
+      console.error('Influencer copy generation error:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid generation request', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to generate influencer copy' });
     }
   });
 
