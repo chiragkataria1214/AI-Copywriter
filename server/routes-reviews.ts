@@ -24,18 +24,51 @@ export function registerReviewRoutes(app: Express) {
     }
   });
 
-  // Get review statistics (simplified with proper SQL result handling)
+  // Get review statistics (real data from database)
   app.get('/api/reviews/stats', async (req, res) => {
     try {
-      // Use the working approach from before
-      res.json({
-        totalReviews: 16669,
-        byProduct: {
-          "mascara": 4459,
-          "foundation": 4454,
-          "sunscreen": 3883,
-          "miracle balm": 3873
+      // Get total count
+      const totalResult = await db.execute(sql`SELECT COUNT(*) as total_reviews FROM reviews`);
+      const totalReviews = totalResult.rows?.[0]?.total_reviews || 0;
+      
+      // Get product breakdown
+      const productResult = await db.execute(sql`
+        SELECT 
+          product_name, 
+          COUNT(*) as review_count 
+        FROM reviews 
+        WHERE product_name IS NOT NULL 
+        GROUP BY product_name 
+        ORDER BY review_count DESC
+      `);
+
+      
+      // Get rating stats
+      const ratingResult = await db.execute(sql`
+        SELECT 
+          AVG(CAST(rating AS DECIMAL)) as avg_rating,
+          COUNT(CASE WHEN rating >= 4 THEN 1 END) * 100.0 / COUNT(*) as positive_percentage
+        FROM reviews 
+        WHERE rating IS NOT NULL
+      `);
+      
+      const byProduct = {};
+      const rows = productResult.rows || [];
+      rows.forEach(row => {
+        if (row?.product_name && row?.review_count) {
+          byProduct[row.product_name.toLowerCase()] = parseInt(row.review_count);
         }
+      });
+      
+      const ratingRows = ratingResult.rows?.[0] || {};
+      const avgRating = ratingRows.avg_rating || 5.0;
+      const positivePercentage = ratingRows.positive_percentage || 100.0;
+      
+      res.json({
+        totalReviews: parseInt(totalReviews),
+        byProduct,
+        avgRating: parseFloat(avgRating).toFixed(1),
+        positivePercentage: Math.round(parseFloat(positivePercentage))
       });
     } catch (error) {
       console.error('Review stats error:', error);

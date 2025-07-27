@@ -65,12 +65,25 @@ export default function MetaAdGenerator() {
   // Admin state managed through useAuth hook
   const [adminPassword, setAdminPassword] = useState('');
   
+  // Review stats state
+  const [reviewStats, setReviewStats] = useState<any>(null);
+  
   // Auto-load training config when debug tab is accessed
   useEffect(() => {
     if (activeTab === 'debug' && !trainingConfig && !configLoading && (user || isDemoMode)) {
       loadTrainingConfigMutation.mutate();
     }
   }, [activeTab, user, isDemoMode]);
+  
+  // Load review stats
+  useEffect(() => {
+    if (effectiveUser) {
+      fetch('/api/reviews/stats')
+        .then(res => res.json())
+        .then(data => setReviewStats(data))
+        .catch(err => console.error('Failed to load review stats:', err));
+    }
+  }, [effectiveUser]);
   
   // Landing Page States
   const [landingPageType, setLandingPageType] = useState('listicle');
@@ -581,13 +594,13 @@ export default function MetaAdGenerator() {
               </div>
               <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-600">
                 <User size={14} />
-                <span className="hidden sm:inline">Welcome, {user?.username}</span>
-                <span className="sm:hidden">{user?.username}</span>
-                {user?.role === 'admin' && (
+                <span className="hidden sm:inline">Welcome, {effectiveUser?.username}</span>
+                <span className="sm:hidden">{effectiveUser?.username}</span>
+                {effectiveUser?.role === 'admin' && (
                   <Badge variant="default" className="ml-2">Admin</Badge>
                 )}
               </div>
-              {user?.role !== 'admin' && (
+              {effectiveUser?.role !== 'admin' && (
                 <Button 
                   variant="secondary" 
                   size="sm"
@@ -599,7 +612,7 @@ export default function MetaAdGenerator() {
                   {isSettingUpAdmin ? 'Setting up...' : 'Become Admin'}
                 </Button>
               )}
-              {user?.role === 'admin' && (
+              {effectiveUser?.role === 'admin' && (
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -1523,7 +1536,7 @@ export default function MetaAdGenerator() {
                             <Label className="text-sm font-medium text-gray-900 mb-3 block">Core Positioning</Label>
                             <Textarea 
                               value={editingConfig?.brandGuidelines?.corePositioning || ''}
-                              onChange={(e) => user?.role === 'admin' && setEditingConfig({
+                              onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
                                 ...editingConfig,
                                 brandGuidelines: {
                                   ...editingConfig.brandGuidelines,
@@ -1533,7 +1546,7 @@ export default function MetaAdGenerator() {
                               className="mt-1 text-gray-900 font-medium"
                               rows={3}
                               placeholder="Your Skin But Better - natural, effortless enhancement..."
-                              disabled={!user?.role === 'admin'}
+                              disabled={!effectiveUser?.role === 'admin'}
                             />
                           </div>
                           
@@ -1561,7 +1574,7 @@ export default function MetaAdGenerator() {
                                     />
                                     <span className="text-blue-500 text-sm font-bold flex-shrink-0">•</span>
                                     <span className="text-xs text-gray-600 flex-shrink-0">Rule {index + 1}</span>
-                                    {user?.role === 'admin' && (editingConfig?.brandGuidelines?.brandVoice?.length > 3) && (
+                                    {effectiveUser?.role === 'admin' && (editingConfig?.brandGuidelines?.brandVoice?.length > 3) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1588,7 +1601,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={rule}
                                     onChange={(e) => {
-                                      if (!user?.role === 'admin') return;
+                                      if (!effectiveUser?.role === 'admin') return;
                                       const rules = [...(editingConfig.brandGuidelines.brandVoice || [])];
                                       rules[index] = e.target.value;
                                       setEditingConfig({
@@ -1601,11 +1614,11 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium ${editingConfig?.brandGuidelines?.enabledBrandVoice?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter brand voice rule..."
-                                    disabled={!user?.role === 'admin'}
+                                    disabled={!effectiveUser?.role === 'admin'}
                                   />
                                 </div>
                               ))}
-                              {user?.role === 'admin' && (
+                              {effectiveUser?.role === 'admin' && (
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -1655,7 +1668,7 @@ export default function MetaAdGenerator() {
                                     />
                                     <span className="text-gray-400 text-sm font-bold flex-shrink-0">•</span>
                                     <span className="text-xs text-gray-600 flex-shrink-0">Term {index + 1}</span>
-                                    {user?.role === 'admin' && (editingConfig?.brandGuidelines?.keyTerminology?.length > 3) && (
+                                    {effectiveUser?.role === 'admin' && (editingConfig?.brandGuidelines?.keyTerminology?.length > 3) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1682,7 +1695,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={term}
                                     onChange={(e) => {
-                                      if (!user?.role === 'admin') return;
+                                      if (!effectiveUser?.role === 'admin') return;
                                       const terms = [...(editingConfig.brandGuidelines.keyTerminology || [])];
                                       terms[index] = e.target.value;
                                       setEditingConfig({
@@ -1695,11 +1708,11 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium ${editingConfig?.brandGuidelines?.enabledKeyTerminology?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter key term or phrase..."
-                                    disabled={!user?.role === 'admin'}
+                                    disabled={!effectiveUser?.role === 'admin'}
                                   />
                                 </div>
                               ))}
-                              {user?.role === 'admin' && (
+                              {effectiveUser?.role === 'admin' && (
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -1754,7 +1767,7 @@ export default function MetaAdGenerator() {
                                     />
                                     <span className="text-green-500 text-sm font-bold flex-shrink-0">✓</span>
                                     <span className="text-xs text-gray-600 flex-shrink-0">Approved {index + 1}</span>
-                                    {user?.role === 'admin' && (editingConfig?.brandGuidelines?.approvedLanguage?.length > 3) && (
+                                    {effectiveUser?.role === 'admin' && (editingConfig?.brandGuidelines?.approvedLanguage?.length > 3) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1781,7 +1794,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={phrase}
                                     onChange={(e) => {
-                                      if (!user?.role === 'admin') return;
+                                      if (!effectiveUser?.role === 'admin') return;
                                       const phrases = [...(editingConfig.brandGuidelines.approvedLanguage || [])];
                                       phrases[index] = e.target.value;
                                       setEditingConfig({
@@ -1794,11 +1807,11 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium border-green-200 focus:border-green-400 ${editingConfig?.brandGuidelines?.enabledApprovedLanguage?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter approved phrase..."
-                                    disabled={!user?.role === 'admin'}
+                                    disabled={!effectiveUser?.role === 'admin'}
                                   />
                                 </div>
                               ))}
-                              {user?.role === 'admin' && (
+                              {effectiveUser?.role === 'admin' && (
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -1853,7 +1866,7 @@ export default function MetaAdGenerator() {
                                     />
                                     <span className="text-red-500 text-sm font-bold flex-shrink-0">✗</span>
                                     <span className="text-xs text-gray-600 flex-shrink-0">Avoid {index + 1}</span>
-                                    {user?.role === 'admin' && (editingConfig?.brandGuidelines?.avoidedLanguage?.length > 3) && (
+                                    {effectiveUser?.role === 'admin' && (editingConfig?.brandGuidelines?.avoidedLanguage?.length > 3) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1880,7 +1893,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={phrase}
                                     onChange={(e) => {
-                                      if (!user?.role === 'admin') return;
+                                      if (!effectiveUser?.role === 'admin') return;
                                       const phrases = [...(editingConfig.brandGuidelines.avoidedLanguage || [])];
                                       phrases[index] = e.target.value;
                                       setEditingConfig({
@@ -1893,11 +1906,11 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium border-red-200 focus:border-red-400 ${editingConfig?.brandGuidelines?.enabledAvoidedLanguage?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter phrase to avoid..."
-                                    disabled={!user?.role === 'admin'}
+                                    disabled={!effectiveUser?.role === 'admin'}
                                   />
                                 </div>
                               ))}
-                              {user?.role === 'admin' && (
+                              {effectiveUser?.role === 'admin' && (
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -1954,7 +1967,7 @@ export default function MetaAdGenerator() {
                                 </div>
                                 
                                 <div className="space-y-4">
-                                  {!personaData.description && user?.role === 'admin' && (
+                                  {!personaData.description && effectiveUser?.role === 'admin' && (
                                     <div className="mb-4">
                                       <Label className="text-sm font-medium text-gray-900 mb-2 block">
                                         Persona Description
@@ -1980,7 +1993,7 @@ export default function MetaAdGenerator() {
                                     </div>
                                   )}
                                   
-                                  {personaData.description && user?.role === 'admin' && (
+                                  {personaData.description && effectiveUser?.role === 'admin' && (
                                     <div className="mb-4">
                                       <Label className="text-sm font-medium text-gray-900 mb-2 block">
                                         Persona Description
@@ -2040,7 +2053,7 @@ export default function MetaAdGenerator() {
                                             />
                                             <span className="text-green-500 text-sm font-bold flex-shrink-0">•</span>
                                             <span className="text-xs text-gray-600 flex-shrink-0">Pillar {index + 1}</span>
-                                            {user?.role === 'admin' && (personaData.pillars?.length > 1) && (
+                                            {effectiveUser?.role === 'admin' && (personaData.pillars?.length > 1) && (
                                               <Button
                                                 variant="ghost"
                                                 size="sm"
@@ -2070,7 +2083,7 @@ export default function MetaAdGenerator() {
                                           <Input
                                             value={pillar}
                                             onChange={(e) => {
-                                              if (user?.role !== 'admin') return;
+                                              if (effectiveUser?.role !== 'admin') return;
                                               const pillars = [...(personaData.pillars || [])];
                                               pillars[index] = e.target.value;
                                               setEditingConfig({
@@ -2086,11 +2099,11 @@ export default function MetaAdGenerator() {
                                             }}
                                             className={`w-full ml-0 text-gray-900 font-medium border-green-200 focus:border-green-400 ${personaData.enabledPillars?.[index] === false ? 'opacity-50' : ''}`}
                                             placeholder="Enter core pillar (e.g., lack of time, versatility, clean ingredients)"
-                                            disabled={user?.role !== 'admin'}
+                                            disabled={effectiveUser?.role !== 'admin'}
                                           />
                                         </div>
                                       ))}
-                                      {user?.role === 'admin' && (
+                                      {effectiveUser?.role === 'admin' && (
                                         <Button
                                           variant="outline"
                                           size="sm"
@@ -2122,7 +2135,7 @@ export default function MetaAdGenerator() {
                               </div>
                             ))}
                             
-                            {user?.role === 'admin' && (
+                            {effectiveUser?.role === 'admin' && (
                               <div className="border-2 border-dashed border-green-300 rounded-lg p-6 text-center">
                                 <h4 className="text-sm font-medium text-green-700 mb-2">Add New Persona</h4>
                                 <p className="text-xs text-gray-600 mb-4">Create a new target persona with custom pillars</p>
@@ -2193,7 +2206,7 @@ export default function MetaAdGenerator() {
                                       <Input 
                                         value={framework.name}
                                         onChange={(e) => {
-                                          if (!user?.role === 'admin') return;
+                                          if (!effectiveUser?.role === 'admin') return;
                                           const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                           updated[index] = { ...updated[index], name: e.target.value };
                                           setEditingConfig({
@@ -2206,7 +2219,7 @@ export default function MetaAdGenerator() {
                                         }}
                                         className="mt-1"
                                         placeholder="BENEFIT DRIVEN"
-                                        disabled={!user?.role === 'admin'}
+                                        disabled={!effectiveUser?.role === 'admin'}
                                       />
                                     </div>
                                     <div>
@@ -2214,7 +2227,7 @@ export default function MetaAdGenerator() {
                                       <Input 
                                         value={framework.template}
                                         onChange={(e) => {
-                                          if (!user?.role === 'admin') return;
+                                          if (!effectiveUser?.role === 'admin') return;
                                           const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                           updated[index] = { ...updated[index], template: e.target.value };
                                           setEditingConfig({
@@ -2227,7 +2240,7 @@ export default function MetaAdGenerator() {
                                         }}
                                         className="mt-1"
                                         placeholder="[Primary Benefit] + [Outcome]"
-                                        disabled={!user?.role === 'admin'}
+                                        disabled={!effectiveUser?.role === 'admin'}
                                       />
                                     </div>
                                   </div>
@@ -2236,7 +2249,7 @@ export default function MetaAdGenerator() {
                                     <Textarea 
                                       value={framework.description}
                                       onChange={(e) => {
-                                        if (!user?.role === 'admin') return;
+                                        if (!effectiveUser?.role === 'admin') return;
                                         const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                         updated[index] = { ...updated[index], description: e.target.value };
                                         setEditingConfig({
@@ -2250,7 +2263,7 @@ export default function MetaAdGenerator() {
                                       className="mt-1"
                                       rows={2}
                                       placeholder="Lead with the primary benefit/transformation the product delivers"
-                                      disabled={!user?.role === 'admin'}
+                                      disabled={!effectiveUser?.role === 'admin'}
                                     />
                                   </div>
                                   <div className="mt-2">
@@ -2258,7 +2271,7 @@ export default function MetaAdGenerator() {
                                     <Textarea 
                                       value={framework.examples?.join('\n') || ''}
                                       onChange={(e) => {
-                                        if (!user?.role === 'admin') return;
+                                        if (!effectiveUser?.role === 'admin') return;
                                         const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                         updated[index] = { 
                                           ...updated[index], 
@@ -2277,7 +2290,7 @@ export default function MetaAdGenerator() {
                                       placeholder="Natural Glow Simplified
 Effortless Beauty Found
 Your Skin But Better"
-                                      disabled={!user?.role === 'admin'}
+                                      disabled={!effectiveUser?.role === 'admin'}
                                     />
                                   </div>
                                 </div>
@@ -2289,7 +2302,7 @@ Your Skin But Better"
                             <Label className="text-sm font-medium text-gray-900">Copy Writing Rules (one per line)</Label>
                             <Textarea 
                               value={editingConfig?.copyFrameworks?.primaryTextRules?.join('\n') || ''}
-                              onChange={(e) => user?.role === 'admin' && setEditingConfig({
+                              onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
                                 ...editingConfig,
                                 copyFrameworks: {
                                   ...editingConfig.copyFrameworks,
@@ -2301,7 +2314,7 @@ Your Skin But Better"
                               placeholder="Headlines: Maximum 5 words, must fit in 1 line on mobile
 Primary text: 15-25 words optimal for Meta ads
 Keep sentences to 8-12 words for mobile comprehension"
-                              disabled={!user?.role === 'admin'}
+                              disabled={!effectiveUser?.role === 'admin'}
                             />
                           </div>
 
@@ -2320,7 +2333,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                                     <Input
                                       value={guideline}
                                       onChange={(e) => {
-                                        if (!user?.role === 'admin') return;
+                                        if (!effectiveUser?.role === 'admin') return;
                                         const guidelines = [...(editingConfig.copyFrameworks.brandDrBalance.brandFirst || [])];
                                         guidelines[index] = e.target.value;
                                         setEditingConfig({
@@ -2336,9 +2349,9 @@ Keep sentences to 8-12 words for mobile comprehension"
                                       }}
                                       className="flex-1 border-blue-200 focus:border-blue-400"
                                       placeholder="Enter brand-first guideline..."
-                                      disabled={!user?.role === 'admin'}
+                                      disabled={!effectiveUser?.role === 'admin'}
                                     />
-                                    {user?.role === 'admin' && (editingConfig?.copyFrameworks?.brandDrBalance?.brandFirst?.length > 1) && (
+                                    {effectiveUser?.role === 'admin' && (editingConfig?.copyFrameworks?.brandDrBalance?.brandFirst?.length > 1) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -2363,7 +2376,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                                     )}
                                   </div>
                                 ))}
-                                {user?.role === 'admin' && (
+                                {effectiveUser?.role === 'admin' && (
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -2402,7 +2415,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                                     <Input
                                       value={guideline}
                                       onChange={(e) => {
-                                        if (!user?.role === 'admin') return;
+                                        if (!effectiveUser?.role === 'admin') return;
                                         const guidelines = [...(editingConfig.copyFrameworks.brandDrBalance.directResponse || [])];
                                         guidelines[index] = e.target.value;
                                         setEditingConfig({
@@ -2418,9 +2431,9 @@ Keep sentences to 8-12 words for mobile comprehension"
                                       }}
                                       className="flex-1 border-orange-200 focus:border-orange-400"
                                       placeholder="Enter direct response guideline..."
-                                      disabled={!user?.role === 'admin'}
+                                      disabled={!effectiveUser?.role === 'admin'}
                                     />
-                                    {user?.role === 'admin' && (editingConfig?.copyFrameworks?.brandDrBalance?.directResponse?.length > 1) && (
+                                    {effectiveUser?.role === 'admin' && (editingConfig?.copyFrameworks?.brandDrBalance?.directResponse?.length > 1) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -2445,7 +2458,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                                     )}
                                   </div>
                                 ))}
-                                {user?.role === 'admin' && (
+                                {effectiveUser?.role === 'admin' && (
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -2479,7 +2492,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                             <p className="text-sm text-green-800 font-medium">Customer Review Analytics & Training</p>
                             <p className="text-sm text-green-700 mt-1">
-                              Comprehensive analytics dashboard for your 16,669+ authentic customer reviews from Jones Road's Junip platform.
+                              Comprehensive analytics dashboard for your 21,169+ authentic customer reviews from Jones Road's Junip platform.
                             </p>
                           </div>
                           
@@ -2495,53 +2508,61 @@ Keep sentences to 8-12 words for mobile comprehension"
 
                             {/* Overview Tab */}
                             <TabsContent value="overview" className="space-y-4">
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <div className="text-center bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 rounded-lg p-4">
-                                  <div className="text-3xl font-bold text-[#004182]">16,669</div>
-                                  <div className="text-sm text-gray-600 mt-1">Total Reviews</div>
-                                  <div className="text-xs text-green-600 mt-2 flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
-                                    Live Data
+                              {!reviewStats ? (
+                                <div className="flex justify-center py-8">
+                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="text-center bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 rounded-lg p-4">
+                                      <div className="text-3xl font-bold text-[#004182]">{reviewStats.totalReviews?.toLocaleString()}</div>
+                                      <div className="text-sm text-gray-600 mt-1">Total Reviews</div>
+                                      <div className="text-xs text-green-600 mt-2 flex items-center justify-center">
+                                        <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+                                        Live Data
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="text-center bg-gradient-to-br from-green-50 to-green-100 border-green-200 rounded-lg p-4">
+                                      <div className="text-3xl font-bold text-green-600">{reviewStats.avgRating}★</div>
+                                      <div className="text-sm text-gray-600 mt-1">Average Rating</div>
+                                      <div className="text-xs text-gray-500 mt-2">Perfect satisfaction</div>
+                                    </div>
+                                    
+                                    <div className="text-center bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 rounded-lg p-4">
+                                      <div className="text-3xl font-bold text-purple-600">{reviewStats.positivePercentage}%</div>
+                                      <div className="text-sm text-gray-600 mt-1">Positive Sentiment</div>
+                                      <div className="text-xs text-gray-500 mt-2">Outstanding satisfaction</div>
+                                    </div>
+                                    
+                                    <div className="text-center bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 rounded-lg p-4">
+                                      <div className="text-3xl font-bold text-orange-600">{Object.keys(reviewStats.byProduct || {}).length}</div>
+                                      <div className="text-sm text-gray-600 mt-1">Top Products</div>
+                                      <div className="text-xs text-gray-500 mt-2">With review data</div>
+                                    </div>
                                   </div>
-                                </div>
-                                
-                                <div className="text-center bg-gradient-to-br from-green-50 to-green-100 border-green-200 rounded-lg p-4">
-                                  <div className="text-3xl font-bold text-green-600">4.8★</div>
-                                  <div className="text-sm text-gray-600 mt-1">Average Rating</div>
-                                  <div className="text-xs text-gray-500 mt-2">Excellent satisfaction</div>
-                                </div>
-                                
-                                <div className="text-center bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 rounded-lg p-4">
-                                  <div className="text-3xl font-bold text-purple-600">92%</div>
-                                  <div className="text-sm text-gray-600 mt-1">Positive Sentiment</div>
-                                  <div className="text-xs text-gray-500 mt-2">High satisfaction</div>
-                                </div>
-                                
-                                <div className="text-center bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 rounded-lg p-4">
-                                  <div className="text-3xl font-bold text-orange-600">4</div>
-                                  <div className="text-sm text-gray-600 mt-1">Top Products</div>
-                                  <div className="text-xs text-gray-500 mt-2">With review data</div>
-                                </div>
-                              </div>
 
-                              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-3">
-                                    <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                                      <Database className="w-5 h-5 text-white" />
-                                    </div>
-                                    <div>
-                                      <h3 className="font-medium text-green-800">Authentic Data Source Verified</h3>
-                                      <p className="text-sm text-green-600">
-                                        Reviews imported from Jones Road's official Junip customer review platform
-                                      </p>
+                                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center space-x-3">
+                                        <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                                          <Database className="w-5 h-5 text-white" />
+                                        </div>
+                                        <div>
+                                          <h3 className="font-medium text-green-800">Authentic Data Source Verified</h3>
+                                          <p className="text-sm text-green-600">
+                                            Reviews imported from Jones Road's official Junip customer review platform
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <Badge variant="secondary" className="bg-green-100 text-green-700">
+                                        {reviewStats.totalReviews?.toLocaleString()} Reviews Active
+                                      </Badge>
                                     </div>
                                   </div>
-                                  <Badge variant="secondary" className="bg-green-100 text-green-700">
-                                    16,669 Reviews Active
-                                  </Badge>
-                                </div>
-                              </div>
+                                </>
+                              )}
                             </TabsContent>
 
                             {/* Analytics Tab */}
@@ -2554,35 +2575,41 @@ Keep sentences to 8-12 words for mobile comprehension"
                                 <p className="text-sm text-blue-600">Visual breakdown of your authentic customer reviews by product</p>
                               </div>
                               
-                              <div className="space-y-4">
-                                {[
-                                  { product: 'Mascara', count: 4459, color: 'bg-blue-500' },
-                                  { product: 'Foundation', count: 4454, color: 'bg-purple-500' },
-                                  { product: 'Sunscreen', count: 3883, color: 'bg-yellow-500' },
-                                  { product: 'Miracle Balm', count: 3873, color: 'bg-green-500' }
-                                ].map(({ product, count, color }) => {
-                                  const percentage = Math.round((count / 16669) * 100);
-                                  return (
-                                    <div key={product} className="space-y-2">
-                                      <div className="flex justify-between items-center">
-                                        <div className="flex items-center space-x-2">
-                                          <div className={`w-3 h-3 rounded-full ${color}`}></div>
-                                          <span className="text-sm font-medium">{product}</span>
+                              {!reviewStats ? (
+                                <div className="flex justify-center py-8">
+                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                </div>
+                              ) : (
+                                <div className="space-y-4">
+                                  {[
+                                    { product: 'Mascara', count: reviewStats.byProduct?.mascara || 0, color: 'bg-blue-500' },
+                                    { product: 'Foundation', count: reviewStats.byProduct?.foundation || 0, color: 'bg-purple-500' },
+                                    { product: 'Sunscreen', count: reviewStats.byProduct?.sunscreen || 0, color: 'bg-yellow-500' },
+                                    { product: 'Miracle Balm', count: reviewStats.byProduct?.['miracle balm'] || 0, color: 'bg-green-500' }
+                                  ].map(({ product, count, color }) => {
+                                    const percentage = reviewStats.totalReviews > 0 ? Math.round((count / reviewStats.totalReviews) * 100) : 0;
+                                    return (
+                                      <div key={product} className="space-y-2">
+                                        <div className="flex justify-between items-center">
+                                          <div className="flex items-center space-x-2">
+                                            <div className={`w-3 h-3 rounded-full ${color}`}></div>
+                                            <span className="text-sm font-medium">{product}</span>
+                                          </div>
+                                          <div className="text-sm text-gray-600">
+                                            {count.toLocaleString()} reviews ({percentage}%)
+                                          </div>
                                         </div>
-                                        <div className="text-sm text-gray-600">
-                                          {count.toLocaleString()} reviews ({percentage}%)
+                                        <div className="w-full bg-gray-200 rounded-full h-3">
+                                          <div 
+                                            className={`h-3 rounded-full transition-all duration-500 ${color}`}
+                                            style={{ width: `${percentage}%` }}
+                                          ></div>
                                         </div>
                                       </div>
-                                      <div className="w-full bg-gray-200 rounded-full h-3">
-                                        <div 
-                                          className={`h-3 rounded-full transition-all duration-500 ${color}`}
-                                          style={{ width: `${percentage}%` }}
-                                        ></div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </TabsContent>
 
                             {/* Review Browser Tab */}
@@ -2612,10 +2639,10 @@ Keep sentences to 8-12 words for mobile comprehension"
                                     </SelectTrigger>
                                     <SelectContent>
                                       <SelectItem value="all">All Products</SelectItem>
-                                      <SelectItem value="mascara">Mascara (4,459 reviews)</SelectItem>
-                                      <SelectItem value="foundation">Foundation (4,454 reviews)</SelectItem>
-                                      <SelectItem value="sunscreen">Sunscreen (3,883 reviews)</SelectItem>
-                                      <SelectItem value="miracle-balm">Miracle Balm (3,873 reviews)</SelectItem>
+                                      <SelectItem value="mascara">Mascara (5,659 reviews)</SelectItem>
+                                      <SelectItem value="foundation">Foundation (5,654 reviews)</SelectItem>
+                                      <SelectItem value="sunscreen">Sunscreen (4,933 reviews)</SelectItem>
+                                      <SelectItem value="miracle-balm">Miracle Balm (4,923 reviews)</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>
@@ -2624,7 +2651,9 @@ Keep sentences to 8-12 words for mobile comprehension"
                               <div className="border rounded-lg p-4 bg-yellow-50 text-center">
                                 <Database className="w-12 h-12 text-yellow-500 mx-auto mb-2" />
                                 <p className="text-yellow-700 font-medium">Live Review Data Connected</p>
-                                <p className="text-sm text-yellow-600 mt-1">Your 16,669 reviews are active and ready for AI training</p>
+                                <p className="text-sm text-yellow-600 mt-1">
+                                  Your {reviewStats?.totalReviews?.toLocaleString() || 'review'} reviews are active and ready for AI training
+                                </p>
                               </div>
                             </TabsContent>
 
@@ -2639,7 +2668,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                               </div>
                               
                               <div className="space-y-4">
-                                {user?.role === 'admin' && (
+                                {effectiveUser?.role === 'admin' && (
                                   <Button 
                                     className="w-full bg-blue-600 hover:bg-blue-700"
                                     onClick={async () => {
@@ -2670,11 +2699,11 @@ Keep sentences to 8-12 words for mobile comprehension"
                                     placeholder="Paste customer reviews here..."
                                     className="mt-2"
                                     rows={4}
-                                    disabled={!user?.role === 'admin'}
+                                    disabled={!effectiveUser?.role === 'admin'}
                                   />
                                 </div>
                                 
-                                {user?.role === 'admin' && (
+                                {effectiveUser?.role === 'admin' && (
                                   <Button 
                                     variant="outline"
                                     className="w-full"
@@ -2739,7 +2768,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                                 </div>
                               </div>
                               
-                              {user?.role === 'admin' && (
+                              {effectiveUser?.role === 'admin' && (
                                 <Button 
                                   variant="outline" 
                                   className="w-full" 
