@@ -2447,9 +2447,32 @@ Keep sentences to 8-12 words for mobile comprehension"
                                   {user?.role === 'admin' && (
                                     <Button 
                                       className="w-full bg-green-600 hover:bg-green-700"
-                                      onClick={() => {
-                                        // TODO: Implement import functionality
-                                        console.log('Import reviews clicked');
+                                      onClick={async () => {
+                                        try {
+                                          const reviewText = (document.querySelector('textarea[placeholder*="reviews"]') as HTMLTextAreaElement)?.value;
+                                          if (!reviewText?.trim()) {
+                                            alert('Please paste some reviews in the text area above first');
+                                            return;
+                                          }
+                                          
+                                          const response = await fetch('/api/reviews/import-text', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ 
+                                              content: reviewText,
+                                              source: 'junip-manual'
+                                            })
+                                          });
+                                          
+                                          const result = await response.json();
+                                          if (result.success) {
+                                            alert(`Successfully imported ${result.imported} reviews and analyzed them for AI training!`);
+                                          } else {
+                                            alert('Import failed: ' + result.message);
+                                          }
+                                        } catch (error) {
+                                          alert('Import error: ' + error.message);
+                                        }
                                       }}
                                     >
                                       Import & Analyze Reviews
@@ -2501,9 +2524,22 @@ Keep sentences to 8-12 words for mobile comprehension"
                                   <Button 
                                     variant="outline" 
                                     className="w-full mt-3" 
-                                    onClick={() => {
-                                      // TODO: Implement insights generation
-                                      console.log('Generate insights clicked');
+                                    onClick={async () => {
+                                      try {
+                                        const response = await fetch('/api/reviews/generate-insights', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' }
+                                        });
+                                        
+                                        const result = await response.json();
+                                        if (result.success) {
+                                          alert('Training insights generated successfully! The AI now has updated customer language patterns.');
+                                        } else {
+                                          alert('Failed to generate insights: ' + result.message);
+                                        }
+                                      } catch (error) {
+                                        alert('Error: ' + error.message);
+                                      }
                                     }}
                                   >
                                     Generate Training Insights
