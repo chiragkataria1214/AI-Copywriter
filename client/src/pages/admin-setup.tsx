@@ -11,6 +11,7 @@ import { Settings } from 'lucide-react';
 export default function AdminSetup() {
   const [username, setUsername] = useState('cody@jonesroadbeauty.com');
   const [newPassword, setNewPassword] = useState('');
+  const [useEmergencyLogin, setUseEmergencyLogin] = useState(false);
 
   const resetPasswordMutation = useMutation({
     mutationFn: async (data: { username: string; newPassword: string }) => {
@@ -36,17 +37,56 @@ export default function AdminSetup() {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username.trim() || !newPassword.trim()) {
+  const emergencyLoginMutation = useMutation({
+    mutationFn: async (data: { username: string }) => {
+      return await apiRequest('/api/emergency-login', {
+        method: 'POST',
+        body: data
+      });
+    },
+    onSuccess: () => {
       toast({
-        title: "Missing Information",
-        description: "Please enter both username and new password.",
+        title: "Emergency Access Granted!",
+        description: "You've been logged in. Redirecting to the app...",
+      });
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    },
+    onError: (error) => {
+      console.error('Emergency login error:', error);
+      toast({
+        title: "Emergency Login Failed",
+        description: "Could not complete emergency login. Try password reset instead.",
         variant: "destructive",
       });
-      return;
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (useEmergencyLogin) {
+      if (!username.trim()) {
+        toast({
+          title: "Missing Information",
+          description: "Please enter your username.",
+          variant: "destructive",
+        });
+        return;
+      }
+      emergencyLoginMutation.mutate({ username: username.trim() });
+    } else {
+      if (!username.trim() || !newPassword.trim()) {
+        toast({
+          title: "Missing Information",
+          description: "Please enter both username and new password.",
+          variant: "destructive",
+        });
+        return;
+      }
+      resetPasswordMutation.mutate({ username: username.trim(), newPassword });
     }
-    resetPasswordMutation.mutate({ username: username.trim(), newPassword });
   };
 
   return (
@@ -73,25 +113,42 @@ export default function AdminSetup() {
               />
             </div>
             
-            <div>
-              <Label htmlFor="newPassword">New Password</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter new password"
-                required
+            <div className="flex items-center space-x-2 mb-4">
+              <input
+                type="checkbox"
+                id="emergencyLogin"
+                checked={useEmergencyLogin}
+                onChange={(e) => setUseEmergencyLogin(e.target.checked)}
+                className="rounded"
               />
+              <Label htmlFor="emergencyLogin" className="text-sm">
+                Emergency Login (skip password reset)
+              </Label>
             </div>
+
+            {!useEmergencyLogin && (
+              <div>
+                <Label htmlFor="newPassword">New Password</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  required
+                />
+              </div>
+            )}
 
             <Button 
               type="submit" 
               className="w-full"
               style={{ backgroundColor: '#004182' }}
-              disabled={resetPasswordMutation.isPending}
+              disabled={resetPasswordMutation.isPending || emergencyLoginMutation.isPending}
             >
-              {resetPasswordMutation.isPending ? 'Resetting...' : 'Reset Password'}
+              {resetPasswordMutation.isPending ? 'Resetting...' : 
+               emergencyLoginMutation.isPending ? 'Logging in...' :
+               useEmergencyLogin ? 'Emergency Login' : 'Reset Password'}
             </Button>
           </form>
 

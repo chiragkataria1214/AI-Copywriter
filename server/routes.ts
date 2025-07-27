@@ -164,10 +164,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Password reset endpoint
+  // Password reset endpoint (no auth required for emergency access)
   app.post('/api/reset-password', async (req, res) => {
     try {
       const { username, newPassword } = req.body;
+      
+      console.log('Password reset attempt for:', username);
       
       if (!username || !newPassword) {
         return res.status(400).json({ message: 'Username and new password required' });
@@ -176,11 +178,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find user
       const user = await storage.getUserByUsername(username);
       if (!user) {
+        console.log('User not found for reset:', username);
         return res.status(404).json({ message: 'User not found' });
       }
       
       // Hash new password
       const hashedPassword = await bcrypt.hash(newPassword, 10);
+      console.log('Generated hash for new password');
       
       // Update password
       await storage.updateUserPassword(user.id, hashedPassword);
@@ -190,6 +194,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Password reset error:', error);
       res.status(500).json({ message: 'Password reset failed' });
+    }
+  });
+
+  // Emergency admin access endpoint for deployment issues
+  app.post('/api/emergency-login', async (req, res) => {
+    try {
+      const { username } = req.body;
+      
+      console.log('Emergency login attempt for:', username);
+      
+      if (!username) {
+        return res.status(400).json({ message: 'Username required' });
+      }
+      
+      // Find user
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        console.log('User not found for emergency login:', username);
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Set session without password check (emergency only)
+      (req.session as any).userId = user.id;
+      
+      // Ensure session is saved
+      req.session.save((err) => {
+        if (err) {
+          console.error('Emergency session save error:', err);
+          return res.status(500).json({ message: 'Session save failed' });
+        }
+        
+        console.log('Emergency login successful for user:', user.username, 'Session ID:', req.sessionID);
+        res.json({ 
+          message: 'Emergency login successful',
+          user: { id: user.id, username: user.username, role: user.role }
+        });
+      });
+    } catch (error) {
+      console.error('Emergency login error:', error);
+      res.status(500).json({ message: 'Emergency login failed' });
     }
   });
 
