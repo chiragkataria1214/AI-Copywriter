@@ -30,6 +30,18 @@ const requireAdmin = async (req: any, res: any, next: any) => {
   }
   
   try {
+    // Handle bypass user
+    if (req.session.userId === 'demo-user') {
+      req.user = {
+        id: 'demo-user',
+        username: 'demo@jonesroadbeauty.com',
+        role: 'admin',
+        email: 'demo@jonesroadbeauty.com',
+        isAdmin: true
+      };
+      return next();
+    }
+    
     const user = await storage.getUser(req.session.userId);
     if (!user || user.role !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
@@ -89,6 +101,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       hasSession: !!req.session,
       userId: (req.session as any)?.userId,
       nodeEnv: process.env.NODE_ENV
+    });
+  });
+
+  // Bypass authentication - temporary development route
+  app.get('/api/bypass-login', (req, res) => {
+    const tempUser = {
+      id: 'demo-user',
+      username: 'demo@jonesroadbeauty.com',
+      email: 'demo@jonesroadbeauty.com',
+      role: 'admin',
+      isAdmin: true
+    };
+    
+    (req.session as any).userId = tempUser.id;
+    (req.session as any).isAuthenticated = true;
+    
+    req.session.save((err) => {
+      if (err) {
+        console.error('Bypass session save error:', err);
+        return res.status(500).json({ message: 'Session creation failed' });
+      }
+      console.log('Bypass session created for demo user');
+      res.json({ success: true, user: tempUser, redirect: '/' });
     });
   });
 
@@ -314,6 +349,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req.session as any).userId;
       console.log('Getting user for session:', req.sessionID, 'userId:', userId);
+      
+      // Handle bypass user
+      if (userId === 'demo-user') {
+        return res.json({
+          id: 'demo-user',
+          username: 'demo@jonesroadbeauty.com',
+          role: 'admin',
+          email: 'demo@jonesroadbeauty.com',
+          isAdmin: true
+        });
+      }
       
       const user = await storage.getUser(userId);
       if (!user) {

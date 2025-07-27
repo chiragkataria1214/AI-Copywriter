@@ -10,6 +10,7 @@ import Login from "@/pages/login";
 import Register from "@/pages/register";
 import AdminSetup from "@/pages/admin-setup";
 import NotFound from "@/pages/not-found";
+import BypassPage from "@/pages/bypass";
 
 function AuthenticatedRouter() {
   const { user, isLoading, isAuthenticated, isUnauthenticated } = useAuth();
@@ -44,6 +45,7 @@ function AuthenticatedRouter() {
       <Route path="/register" component={Register} />
       <Route path="/login" component={Login} />
       <Route path="/admin-setup" component={AdminSetup} />
+      <Route path="/bypass" component={BypassPage} />
       <Route component={Login} /> {/* Default to login for any other route */}
     </Switch>
   );
