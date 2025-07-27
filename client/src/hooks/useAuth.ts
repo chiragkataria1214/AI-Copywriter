@@ -41,8 +41,7 @@ export function useAuth() {
   const isAuthenticated = !!user && !error;
   const isUnauthenticated = error && (error?.message?.includes('401') || error?.message?.includes('Authentication required'));
 
-  // Debug logging
-  console.log('Auth Debug:', { user, isLoading, error, isAuthenticated, isUnauthenticated });
+
 
   return {
     user,

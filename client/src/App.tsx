@@ -25,24 +25,29 @@ function AuthenticatedRouter() {
     );
   }
 
-  // Redirect to login if not authenticated and not already on auth pages
-  if (isUnauthenticated && location !== '/login' && location !== '/register') {
-    return <Login />;
+  // If not authenticated, show login/register pages only
+  if (isUnauthenticated) {
+    return (
+      <Switch>
+        <Route path="/register" component={Register} />
+        <Route path="/login" component={Login} />
+        <Route component={Login} /> {/* Default to login for any other route */}
+      </Switch>
+    );
   }
 
-  // If authenticated and on auth pages, redirect to main app
-  if (isAuthenticated && (location === '/login' || location === '/register')) {
-    return <MetaAdGenerator />;
+  // If authenticated, show main app
+  if (isAuthenticated) {
+    return (
+      <Switch>
+        <Route path="/" component={MetaAdGenerator} />
+        <Route component={NotFound} />
+      </Switch>
+    );
   }
 
-  return (
-    <Switch>
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
-      <Route path="/" component={MetaAdGenerator} />
-      <Route component={NotFound} />
-    </Switch>
-  );
+  // Fallback - shouldn't reach here, but show login just in case
+  return <Login />;
 }
 
 function App() {
