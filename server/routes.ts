@@ -699,6 +699,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Training configuration routes
   registerTrainingRoutes(app, requireAdmin);
+  
+  // Register review routes
+  const { registerReviewRoutes } = await import("./routes-reviews");
+  registerReviewRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;

@@ -73,6 +73,10 @@ export default function ReviewTraining() {
     retry: false,
   });
 
+  // Type guards for stats
+  const hasValidStats = reviewStats && typeof reviewStats === 'object' && 
+    'totalReviews' in reviewStats;
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -207,22 +211,22 @@ Format examples:
                 <CardContent>
                   {statsLoading ? (
                     <div className="text-center py-8 text-gray-500">Loading stats...</div>
-                  ) : reviewStats ? (
+                  ) : hasValidStats ? (
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-[#004182]">{reviewStats.totalReviews}</div>
+                        <div className="text-2xl font-bold text-[#004182]">{(reviewStats as any).totalReviews}</div>
                         <div className="text-sm text-gray-500">Total Reviews</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-[#004182]">{reviewStats.analyzedReviews}</div>
+                        <div className="text-2xl font-bold text-[#004182]">{(reviewStats as any).analyzedReviews}</div>
                         <div className="text-sm text-gray-500">Analyzed</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-[#004182]">{reviewStats.momReviews}</div>
+                        <div className="text-2xl font-bold text-[#004182]">{(reviewStats as any).momReviews}</div>
                         <div className="text-sm text-gray-500">Mom-Specific</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-[#004182]">{reviewStats.avgRating}</div>
+                        <div className="text-2xl font-bold text-[#004182]">{(reviewStats as any).avgRating}</div>
                         <div className="text-sm text-gray-500">Avg Rating</div>
                       </div>
                     </div>
@@ -295,12 +299,12 @@ Format examples:
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {reviewStats?.personaBreakdown ? (
+                  {hasValidStats && (reviewStats as any).personaBreakdown ? (
                     <div className="space-y-2">
-                      {Object.entries(reviewStats.personaBreakdown).map(([persona, count]) => (
+                      {Object.entries((reviewStats as any).personaBreakdown).map(([persona, count]) => (
                         <div key={persona} className="flex justify-between">
                           <span className="capitalize">{persona.replace(/([A-Z])/g, ' $1').trim()}</span>
-                          <Badge variant="outline">{count}</Badge>
+                          <Badge variant="outline">{String(count)}</Badge>
                         </div>
                       ))}
                     </div>
@@ -315,9 +319,9 @@ Format examples:
                   <CardTitle>Top Pain Points</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {reviewStats?.topPainPoints ? (
+                  {hasValidStats && (reviewStats as any).topPainPoints ? (
                     <div className="space-y-2">
-                      {reviewStats.topPainPoints.map((painPoint: string, index: number) => (
+                      {(reviewStats as any).topPainPoints.map((painPoint: string, index: number) => (
                         <div key={index} className="text-sm p-2 bg-red-50 rounded">
                           {painPoint}
                         </div>
@@ -334,9 +338,9 @@ Format examples:
                   <CardTitle>Most Mentioned Benefits</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {reviewStats?.topBenefits ? (
+                  {hasValidStats && (reviewStats as any).topBenefits ? (
                     <div className="space-y-2">
-                      {reviewStats.topBenefits.map((benefit: string, index: number) => (
+                      {(reviewStats as any).topBenefits.map((benefit: string, index: number) => (
                         <div key={index} className="text-sm p-2 bg-green-50 rounded">
                           {benefit}
                         </div>

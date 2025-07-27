@@ -12,6 +12,7 @@ import AdminSetup from "@/pages/admin-setup";
 import NotFound from "@/pages/not-found";
 import BypassPage from "@/pages/bypass";
 import DemoGenerator from "@/pages/demo-generator";
+import ReviewTraining from "@/pages/review-training";
 
 function AuthenticatedRouter() {
   const { user, isLoading, isAuthenticated, isUnauthenticated } = useAuth();
@@ -46,6 +47,7 @@ function AuthenticatedRouter() {
       <Switch>
         <Route path="/" component={MetaAdGenerator} />
         <Route path="/users" component={UserManagement} />
+        <Route path="/reviews" component={ReviewTraining} />
         <Route component={NotFound} />
       </Switch>
     );

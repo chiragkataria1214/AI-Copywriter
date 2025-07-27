@@ -168,7 +168,7 @@ Generate actionable insights for AI copywriting training.`;
             insight: insight.insight,
             frequency: insight.frequency,
             confidence: insight.confidence,
-            supportingReviewIds: analyses.map(a => a.reviewId).filter(Boolean)
+            supportingReviewIds: analyses.map(a => a.reviewId).filter(Boolean) as string[]
           });
         }
 
