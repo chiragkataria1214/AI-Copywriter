@@ -2841,7 +2841,7 @@ Keep sentences to 8-12 words for mobile comprehension"
                           </div>
 
                           {/* Listicle Framework Section */}
-                          <div className="border border-gray-200 rounded-lg p-6 bg-gray-50">
+                          <div className="border border-gray-200 rounded-lg p-6 bg-white">
                             <div className="flex items-center mb-4">
                               <span className="w-3 h-3 bg-gray-600 rounded-full mr-2"></span>
                               <Label className="text-sm font-medium text-gray-900">Listicle Framework (Based on Real Examples)</Label>
