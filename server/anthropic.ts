@@ -30,6 +30,8 @@ export interface AdCopyRequest {
   landingPageUrl?: string;
   brandDrBalance: number;
   useJonesBrandGuide: boolean;
+  airLink?: string;
+  uploadedImage?: string;
 }
 
 export interface LandingPageRequest {
@@ -43,7 +45,7 @@ export interface LandingPageRequest {
 }
 
 export async function generateAdCopy(request: AdCopyRequest, trainingConfig: TrainingConfig = defaultTrainingConfig) {
-  const { transcription, customBrief, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide } = request;
+  const { transcription, customBrief, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage } = request;
   
   const brandPercent = brandDrBalance;
   const drPercent = 100 - brandPercent;
@@ -106,16 +108,84 @@ ${customBrief.trim()}
 
 PRIORITY INSTRUCTION: Incorporate the specific instructions above into the ad copy while maintaining brand voice and framework structure.` : '';
 
+  // Handle image analysis if Air link or uploaded image is provided
+  let imageAnalysisSection = '';
+  let hasImageContent = false;
+  let imageUrl = '';
+  let base64Image = '';
+
+  if (airLink && airLink.trim()) {
+    // For Air.com links, extract the actual image URL
+    imageUrl = airLink.includes('air.com') ? airLink : airLink;
+    hasImageContent = true;
+    imageAnalysisSection = `
+
+EXISTING AD CREATIVE ANALYSIS:
+Analyze the existing ad creative from this URL: ${airLink}
+Extract key visual elements, text overlay, color scheme, brand elements, and overall messaging strategy. Use insights from this existing creative to inform your new ad copy generation while maintaining brand consistency.`;
+  } else if (uploadedImage && uploadedImage.trim()) {
+    // Handle base64 uploaded image
+    base64Image = uploadedImage;
+    hasImageContent = true;
+    imageAnalysisSection = `
+
+EXISTING AD CREATIVE ANALYSIS:
+Analyze the uploaded ad creative image to extract key visual elements, text overlay, color scheme, brand elements, and overall messaging strategy. Use insights from this existing creative to inform your new ad copy generation while maintaining brand consistency.`;
+  }
+
   const userPrompt = trainingConfig.userPromptTemplates.adCopy
     .replace('{transcription}', transcription)
-    .replace('{landingPageContext}', landingPageContext) + momTargetingSection + customBriefSection;
+    .replace('{landingPageContext}', landingPageContext) + momTargetingSection + customBriefSection + imageAnalysisSection;
 
   try {
+    // Build message content with optional image
+    let messageContent: any[] = [{ type: 'text', text: userPrompt }];
+    
+    if (hasImageContent) {
+      if (base64Image) {
+        // Extract mime type and data from base64 string
+        const mimeMatch = base64Image.match(/^data:image\/([a-zA-Z0-9+/]+);base64,(.+)$/);
+        if (mimeMatch) {
+          const mimeType = `image/${mimeMatch[1]}`;
+          const imageData = mimeMatch[2];
+          messageContent.push({
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: mimeType,
+              data: imageData
+            }
+          });
+        }
+      } else if (imageUrl) {
+        // For URLs, we'll need to fetch and convert to base64
+        try {
+          const imageResponse = await fetch(imageUrl);
+          if (imageResponse.ok) {
+            const buffer = await imageResponse.arrayBuffer();
+            const base64Data = Buffer.from(buffer).toString('base64');
+            const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+            
+            messageContent.push({
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: contentType,
+                data: base64Data
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Failed to fetch image from URL:', error);
+        }
+      }
+    }
+
     const response = await anthropic.messages.create({
       model: trainingConfig.modelParameters.model,
       system: systemPrompt,
       max_tokens: trainingConfig.modelParameters.maxTokens,
-      messages: [{ role: 'user', content: userPrompt }],
+      messages: [{ role: 'user', content: messageContent }],
     });
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';

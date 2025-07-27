@@ -31,6 +31,8 @@ export default function MetaAdGenerator() {
     isAdmin: true
   } : user;
   const [transcription, setTranscription] = useState('');
+  const [airLink, setAirLink] = useState('');
+  const [uploadedImage, setUploadedImage] = useState<string>('');
   const [customBrief, setCustomBrief] = useState('');
   const [concept, setConcept] = useState('lifeJuggler');
   const [subPersona, setSubPersona] = useState('newMom');
@@ -314,6 +316,21 @@ export default function MetaAdGenerator() {
     reader.readAsText(file);
   };
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result;
+      if (typeof result === 'string') {
+        setUploadedImage(result);
+        setAirLink(''); // Clear air link if image is uploaded
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Load training configuration
   const loadTrainingConfigMutation = useMutation({
     mutationFn: async () => {
@@ -385,7 +402,9 @@ export default function MetaAdGenerator() {
         targetAudience,
         landingPageUrl,
         brandDrBalance: brandDrBalance[0],
-        useJonesBrandGuide
+        useJonesBrandGuide,
+        airLink,
+        uploadedImage
       };
       
       const result = await apiRequest('/api/generate-ad-copy', {
@@ -646,10 +665,59 @@ export default function MetaAdGenerator() {
                     </h3>
                     
                     <div className="space-y-4">
+                      <div>
+                        <Label className="block text-sm font-medium text-gray-700 mb-2">Air Link or Image URL</Label>
+                        <Input 
+                          type="url" 
+                          placeholder="Paste Air.com link or image URL..."
+                          value={airLink}
+                          onChange={(e) => setAirLink(e.target.value)}
+                          className="mb-2"
+                        />
+                        <p className="text-xs text-gray-500">
+                          Add an Air.com link or direct image URL to analyze existing ad creatives
+                        </p>
+                      </div>
+
+                      {(airLink || uploadedImage) && (
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                          {airLink && (
+                            <div className="flex items-center text-sm text-blue-700">
+                              <span className="font-medium">Air Link:</span>
+                              <span className="ml-2 truncate">{airLink}</span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => setAirLink('')}
+                                className="ml-2 h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                              >
+                                ×
+                              </Button>
+                            </div>
+                          )}
+                          {uploadedImage && (
+                            <div className="flex items-center text-sm text-blue-700">
+                              <span className="font-medium">Uploaded Image:</span>
+                              <span className="ml-2">Ready for analysis</span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => setUploadedImage('')}
+                                className="ml-2 h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                              >
+                                ×
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="text-center text-sm text-gray-500">OR</div>
+
                       <Textarea 
                         rows={6}
                         className="w-full resize-none text-sm"
-                        placeholder="Paste your video transcription here or upload a file..."
+                        placeholder="Paste your video transcription or ad concept here..."
                         value={transcription}
                         onChange={(e) => setTranscription(e.target.value)}
                       />
@@ -675,8 +743,8 @@ export default function MetaAdGenerator() {
                         <div className="flex items-center space-x-2">
                           <Label htmlFor="file-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
                             <Upload size={14} />
-                            <span className="hidden sm:inline">Upload Transcription</span>
-                            <span className="sm:hidden">Upload</span>
+                            <span className="hidden sm:inline">Upload Text</span>
+                            <span className="sm:hidden">Text</span>
                           </Label>
                           <Input 
                             id="file-upload" 
@@ -685,8 +753,20 @@ export default function MetaAdGenerator() {
                             accept=".txt,.doc,.docx" 
                             onChange={handleFileUpload} 
                           />
+                          
+                          <Label htmlFor="image-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
+                            <Upload size={14} />
+                            <span className="hidden sm:inline">Upload Image</span>
+                            <span className="sm:hidden">Image</span>
+                          </Label>
+                          <Input 
+                            id="image-upload" 
+                            type="file" 
+                            className="sr-only" 
+                            accept=".jpg,.jpeg,.png,.gif,.webp" 
+                            onChange={handleImageUpload} 
+                          />
                         </div>
-                        
 
                       </div>
                     </div>

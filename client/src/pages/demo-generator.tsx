@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, Check, Target, Sparkles, Video, FileText } from 'lucide-react';
+import { Copy, Check, Target, Sparkles, Video, FileText, Upload } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,9 @@ import { toast } from '@/hooks/use-toast';
 export default function DemoGenerator() {
   const [activeTab, setActiveTab] = useState('ads');
   const [transcription, setTranscription] = useState('');
+  const [airLink, setAirLink] = useState('');
+  const [uploadedImage, setUploadedImage] = useState<string>('');
+  const [customBrief, setCustomBrief] = useState('');
   const [concept, setConcept] = useState('lifeJuggler');
   const [subPersona, setSubPersona] = useState('newMom');
   const [targetAudience, setTargetAudience] = useState('');
@@ -92,12 +95,15 @@ export default function DemoGenerator() {
 
     generateAdCopyMutation.mutate({
       transcription,
+      customBrief,
       concept,
       subPersona,
       targetAudience: targetAudience || selectedPersona?.label,
       landingPageUrl,
       brandDrBalance: brandPercent,
-      useJonesBrandGuide: true
+      useJonesBrandGuide: true,
+      airLink,
+      uploadedImage
     });
   };
 
@@ -124,6 +130,35 @@ export default function DemoGenerator() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result;
+      if (typeof result === 'string') {
+        setTranscription(result);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result;
+      if (typeof result === 'string') {
+        setUploadedImage(result);
+        setAirLink(''); // Clear air link if image is uploaded
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const copyHeadlinesText = generatedHeadlines.map(h => h.copy).join('\n');
@@ -168,6 +203,55 @@ export default function DemoGenerator() {
                   
                   <div className="space-y-4">
                     <div>
+                      <Label className="block text-sm font-medium text-gray-700 mb-2">Air Link or Image URL</Label>
+                      <Input 
+                        type="url" 
+                        placeholder="Paste Air.com link or image URL..."
+                        value={airLink}
+                        onChange={(e) => setAirLink(e.target.value)}
+                        className="mb-2"
+                      />
+                      <p className="text-xs text-gray-500">
+                        Add an Air.com link or direct image URL to analyze existing ad creatives
+                      </p>
+                    </div>
+
+                    {(airLink || uploadedImage) && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                        {airLink && (
+                          <div className="flex items-center text-sm text-blue-700">
+                            <span className="font-medium">Air Link:</span>
+                            <span className="ml-2 truncate">{airLink}</span>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => setAirLink('')}
+                              className="ml-2 h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        )}
+                        {uploadedImage && (
+                          <div className="flex items-center text-sm text-blue-700">
+                            <span className="font-medium">Uploaded Image:</span>
+                            <span className="ml-2">Ready for analysis</span>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => setUploadedImage('')}
+                              className="ml-2 h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="text-center text-sm text-gray-500">OR</div>
+
+                    <div>
                       <Label htmlFor="transcription">Video Transcription or Content</Label>
                       <Textarea
                         id="transcription"
@@ -176,6 +260,53 @@ export default function DemoGenerator() {
                         onChange={(e) => setTranscription(e.target.value)}
                         className="min-h-32"
                       />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="customBrief" className="block text-sm font-medium text-gray-700 mb-2">
+                        Custom Brief <span className="text-xs text-gray-500">(Optional)</span>
+                      </Label>
+                      <Textarea
+                        id="customBrief"
+                        rows={3}
+                        className="w-full resize-none text-sm"
+                        placeholder="Add specific instructions for this ad (e.g., 'Focus on quick routine', 'Mention free shipping', 'Target working moms specifically')..."
+                        value={customBrief}
+                        onChange={(e) => setCustomBrief(e.target.value)}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        These instructions will be included in the AI prompt for this specific generation
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                      <div className="flex items-center space-x-2">
+                        <Label htmlFor="file-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md transition-colors text-sm">
+                          <Upload size={14} />
+                          <span className="hidden sm:inline">Upload Text</span>
+                          <span className="sm:hidden">Text</span>
+                        </Label>
+                        <Input 
+                          id="file-upload" 
+                          type="file" 
+                          className="sr-only" 
+                          accept=".txt,.doc,.docx" 
+                          onChange={handleFileUpload} 
+                        />
+                        
+                        <Label htmlFor="image-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md transition-colors text-sm">
+                          <Upload size={14} />
+                          <span className="hidden sm:inline">Upload Image</span>
+                          <span className="sm:hidden">Image</span>
+                        </Label>
+                        <Input 
+                          id="image-upload" 
+                          type="file" 
+                          className="sr-only" 
+                          accept=".jpg,.jpeg,.png,.gif,.webp" 
+                          onChange={handleImageUpload} 
+                        />
+                      </div>
                     </div>
                     
                     <div>
