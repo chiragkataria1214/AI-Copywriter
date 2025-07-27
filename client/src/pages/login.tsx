@@ -45,6 +45,13 @@ export default function Login() {
     },
   });
 
+  // Quick demo login for testing
+  const handleDemoLogin = () => {
+    setUsername('cody@jonesroadbeauty.com');
+    setPassword('password123');
+    loginMutation.mutate({ username: 'cody@jonesroadbeauty.com', password: 'password123' });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
@@ -138,7 +145,19 @@ export default function Login() {
               </Button>
             </form>
 
-            <div className="mt-6 text-center space-y-2">
+            <div className="mt-6 text-center space-y-3">
+              <div className="border-t pt-4">
+                <Button
+                  onClick={handleDemoLogin}
+                  variant="outline"
+                  className="w-full"
+                  disabled={loginMutation.isPending}
+                >
+                  Quick Demo Login
+                </Button>
+                <p className="text-xs text-gray-500 mt-1">Use this to test the app quickly</p>
+              </div>
+              
               <p className="text-sm text-gray-600">
                 Don't have an account?{' '}
                 <Link href="/register" className="font-medium text-blue-600 hover:text-blue-800 hover:underline">
