@@ -12,6 +12,7 @@ import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'wouter';
@@ -692,64 +693,68 @@ export default function MetaAdGenerator() {
               </div>
             </div>
             
-            <div className="flex items-center space-x-2 sm:space-x-3">
-              <div className="hidden sm:flex items-center space-x-2 px-3 py-1 rounded-full bg-green-100">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-sm font-medium text-green-700">Connected</span>
-              </div>
-              <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-600">
-                <User size={14} />
-                <span className="hidden sm:inline">Welcome, {effectiveUser?.username}</span>
-                <span className="sm:hidden">{effectiveUser?.username}</span>
-                {effectiveUser?.role === 'admin' && (
-                  <Badge variant="default" className="ml-2">Admin</Badge>
-                )}
-              </div>
-              {effectiveUser?.role !== 'admin' && (
-                <Button 
-                  variant="secondary" 
-                  size="sm"
-                  onClick={setupAdmin}
-                  disabled={isSettingUpAdmin}
-                  className="flex items-center space-x-1 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
-                >
-                  <Settings size={12} />
-                  {isSettingUpAdmin ? 'Setting up...' : 'Become Admin'}
-                </Button>
-              )}
-              {effectiveUser?.role === 'admin' && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => window.location.href = '/users'}
-                  className="flex items-center space-x-1 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
-                >
-                  <Users size={12} />
-                  <span className="hidden sm:inline">Manage Users</span>
-                  <span className="sm:hidden">Users</span>
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={logout}
-                disabled={isLoggingOut}
-                className="flex items-center space-x-1 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
-              >
-                {isLoggingOut ? (
-                  <>
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600"></div>
-                    <span className="hidden sm:inline">Signing out...</span>
-                    <span className="sm:hidden">...</span>
-                  </>
-                ) : (
-                  <>
-                    <LogOut size={12} />
-                    <span className="hidden sm:inline">Sign Out</span>
-                    <span className="sm:hidden">Out</span>
-                  </>
-                )}
-              </Button>
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-gray-600">{effectiveUser?.username}</span>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <Settings size={16} className="text-gray-600" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <div className="px-3 py-2 border-b">
+                    <div className="flex items-center space-x-2 text-xs text-gray-500">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span>Connected</span>
+                    </div>
+                    {effectiveUser?.role === 'admin' && (
+                      <div className="text-xs text-blue-600 mt-1">Administrator</div>
+                    )}
+                  </div>
+                  
+                  {effectiveUser?.role !== 'admin' && (
+                    <DropdownMenuItem 
+                      onClick={setupAdmin}
+                      disabled={isSettingUpAdmin}
+                      className="flex items-center space-x-2"
+                    >
+                      <Settings size={14} />
+                      <span>{isSettingUpAdmin ? 'Setting up...' : 'Become Admin'}</span>
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {effectiveUser?.role === 'admin' && (
+                    <DropdownMenuItem 
+                      onClick={() => window.location.href = '/users'}
+                      className="flex items-center space-x-2"
+                    >
+                      <Users size={14} />
+                      <span>Manage Users</span>
+                    </DropdownMenuItem>
+                  )}
+                  
+                  <DropdownMenuSeparator />
+                  
+                  <DropdownMenuItem 
+                    onClick={logout}
+                    disabled={isLoggingOut}
+                    className="flex items-center space-x-2 text-red-600"
+                  >
+                    {isLoggingOut ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600"></div>
+                        <span>Signing out...</span>
+                      </>
+                    ) : (
+                      <>
+                        <LogOut size={14} />
+                        <span>Sign Out</span>
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
