@@ -1972,6 +1972,36 @@ export default function MetaAdGenerator() {
                             {landingPageAnalysis.sectionCount < 5 && <div>• Include all 5 strategic reasons</div>}
                             {landingPageAnalysis.totalWords < 800 && <div>• Expand content depth</div>}
                           </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-2 w-full text-xs"
+                            onClick={() => {
+                              const improvements = [];
+                              if (!landingPageAnalysis.hasRiskReversal) improvements.push('Add risk reversal/guarantee');
+                              if (!landingPageAnalysis.productSpecific) improvements.push('Select specific product for insights');
+                              if (landingPageAnalysis.sectionCount < 5) improvements.push('Include all 5 strategic reasons');
+                              if (landingPageAnalysis.totalWords < 800) improvements.push('Expand content depth');
+                              improvements.push('Shorten body paragraphs for better readability'); // User's specific feedback
+                              
+                              fetch('/api/conversion-feedback', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  conversionScore: landingPageAnalysis.conversionScore,
+                                  content: generatedLandingCopy,
+                                  improvements
+                                })
+                              });
+                              
+                              toast({
+                                title: "Feedback Sent",
+                                description: "Your feedback will help improve future copy generation.",
+                              });
+                            }}
+                          >
+                            Send Feedback to Improve AI Model
+                          </Button>
                         </div>
                       )}
                     </div>

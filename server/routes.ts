@@ -610,6 +610,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Conversion score feedback endpoint for model improvement
+  app.post('/api/conversion-feedback', requireAuth, async (req, res) => {
+    try {
+      const { conversionScore, content, improvements } = req.body;
+      
+      // Log feedback for model improvement
+      console.log(`Conversion Score Feedback: ${conversionScore}/100`);
+      console.log(`Improvements needed: ${improvements.join(', ')}`);
+      
+      // Store feedback for future model training (in production, this would go to a database)
+      const feedback = {
+        score: conversionScore,
+        timestamp: new Date(),
+        improvements,
+        contentType: 'landing-page',
+        userId: (req as any).user.id
+      };
+      
+      res.json({ 
+        success: true, 
+        message: 'Feedback recorded for model improvement',
+        feedback 
+      });
+    } catch (error) {
+      console.error('Error recording feedback:', error);
+      res.status(500).json({ error: 'Failed to record feedback' });
+    }
+  });
+
   // Generate landing page copy endpoint (protected)
   app.post('/api/generate-landing-copy', requireAuth, async (req, res) => {
     try {

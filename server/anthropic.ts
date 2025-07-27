@@ -336,9 +336,9 @@ USE THESE INSIGHTS TO:
 // Customer review insights function for landing pages
 async function getCustomerReviewInsights(product: string) {
   try {
-    // Use existing review analysis system
-    const { analyzeReviewsForProduct } = require('./review-analyzer');
-    const analysis = await analyzeReviewsForProduct(product);
+    // Use existing review analysis system - dynamic import for ES modules
+    const reviewAnalyzer = await import('./review-analyzer');
+    const analysis = await reviewAnalyzer.analyzeReviewsForProduct(product);
     
     return {
       topBenefits: analysis.topBenefits?.slice(0, 5) || ['natural coverage', 'moisturizing formula', 'easy application'],
@@ -386,22 +386,34 @@ PSYCHOLOGICAL SEQUENCING:
 4. SOCIAL PROOF: Real customer results (removes risk)
 5. URGENCY/SCARCITY: Why act now (creates action)
 
-EACH REASON STRUCTURE:
-- PATTERN INTERRUPT (25-40 words): Counterintuitive statement or surprising fact
-- STORY/EXPLANATION (75-125 words): Context→Mechanism→Specific outcome
-- SOCIAL PROOF (40-75 words): Customer testimonials, studies, or statistics
-- BENEFIT BRIDGE (25-50 words): "This means you can [specific outcome] without [specific struggle]"
+EACH REASON STRUCTURE (OPTIMIZED FOR HIGH CONVERSION SCORES):
+- PATTERN INTERRUPT (15-25 words): Counterintuitive statement or surprising fact
+- STORY/EXPLANATION (40-75 words): Context→Mechanism→Specific outcome [KEEP CONCISE]
+- SOCIAL PROOF (25-40 words): Customer testimonials, studies, or statistics [SHORT & PUNCHY]
+- BENEFIT BRIDGE (15-30 words): "This means you can [specific outcome] without [specific struggle]"
 - MICRO-CTA: Small commitment ask ("Keep reading to discover...")
+
+CONVERSION OPTIMIZATION RULES:
+- Maximum 150 words per reason section (target 100-120 words)
+- Use bullet points and short paragraphs for mobile readability
+- Each sentence should be 20 words or less for maximum impact
+- Focus on ONE clear benefit per reason to avoid confusion
 ` : `
-HIGH-CONVERTING TROJAN HORSE STRUCTURE:
-- Hook: Seemingly unrelated story that connects to deep pain point
-- Pattern interrupt: Challenge conventional beauty wisdom
-- Bridge: Connect story to audience's specific problem
-- Solution reveal: Present product as natural evolution of story
-- Social proof: Real customer transformations
-- Benefits ladder: Emotional + functional + social benefits
-- Risk reversal: Guarantee + testimonials
-- Urgency CTA: Clear reason to act now
+HIGH-CONVERTING TROJAN HORSE STRUCTURE (OPTIMIZED FOR CONVERSION SCORES):
+- Hook (50-75 words): Seemingly unrelated story that connects to deep pain point
+- Pattern interrupt (25-40 words): Challenge conventional beauty wisdom
+- Bridge (30-50 words): Connect story to audience's specific problem
+- Solution reveal (40-60 words): Present product as natural evolution of story
+- Social proof (25-40 words): Real customer transformations
+- Benefits ladder (60-90 words): Emotional + functional + social benefits [KEEP SCANNABLE]
+- Risk reversal (20-35 words): Guarantee + testimonials
+- Urgency CTA (15-25 words): Clear reason to act now
+
+CONVERSION OPTIMIZATION FOR TROJAN HORSE:
+- Maximum 400 words total for entire page (excluding introduction)
+- Break long paragraphs into 2-3 sentence blocks
+- Use specific numbers and timeframes for credibility
+- Each section should have ONE clear takeaway
 `}
 
 CONVERSION PSYCHOLOGY PRINCIPLES:
