@@ -463,7 +463,9 @@ EACH REASON STRUCTURE (BASED ON REAL LISTICLE EXAMPLES):
 - BRIEF EXPLANATION (20-35 words): Why this matters, how it works [FACTUAL TONE]
 - SPECIFIC DETAILS (15-25 words): Numbers, features, or proof points that support the claim
 - NATURAL BENEFIT BRIDGE (10-15 words): What this means for the user in practical terms
-- OPTIONAL SOCIAL PROOF: Real customer quote if it feels natural
+- SOCIAL PROOF (ALTERNATE BETWEEN THESE TWO OPTIONS):
+  * CUSTOMER REVIEW (15-25 words): Short, relevant quote that supports THIS specific benefit
+  * BRAND COPY (15-25 words): Educational statement that reinforces the benefit naturally
 
 AUTHENTIC LISTICLE OPTIMIZATION RULES:
 - Maximum 80 words per reason section (concise and scannable)
@@ -473,6 +475,8 @@ AUTHENTIC LISTICLE OPTIMIZATION RULES:
 - Each reason should stand alone and deliver immediate value
 - Break up long paragraphs into 2-3 short sentences maximum
 - Use bullet points or short phrases for better readability
+- REVIEW RELEVANCE: When using customer reviews, select quotes that directly support the specific benefit of that section
+- VARIETY: Alternate between customer reviews and brand copy for social proof - don't use only reviews
 ` : ''}
 
 REAL LISTICLE EXAMPLES TO EMULATE:
@@ -489,14 +493,20 @@ HIGH-CONVERTING TROJAN HORSE STRUCTURE (OPTIMIZED FOR CONVERSION SCORES):
 - Solution reveal (40-60 words): Present product as natural evolution of story
 - Social proof (25-40 words): Real customer transformations
 - Benefits ladder (60-90 words): Emotional + functional + social benefits [KEEP SCANNABLE]
-- Risk reversal (20-35 words): Guarantee + testimonials
-- Urgency CTA (15-25 words): Clear reason to act now
+- Clear CTA (15-25 words): Direct call to action that feels natural
 
 CONVERSION OPTIMIZATION FOR TROJAN HORSE:
 - Maximum 400 words total for entire page (excluding introduction)
 - Break long paragraphs into 2-3 sentence blocks
 - Use specific numbers and timeframes for credibility
 - Each section should have ONE clear takeaway
+
+CUSTOMER REVIEW USAGE GUIDELINES:
+- Select reviews that DIRECTLY mention the benefit you're discussing in that section
+- Keep customer quotes to 15-25 words maximum - extract the most impactful part
+- Balance reviews with brand copy - don't use only reviews for social proof
+- Match review sentiment to the specific benefit being discussed
+- Use reviews that sound natural and authentic, not overly promotional
 
 CONVERSION PSYCHOLOGY PRINCIPLES:
 - Use curiosity gaps and open loops
@@ -505,7 +515,7 @@ CONVERSION PSYCHOLOGY PRINCIPLES:
 - Use "because" reasoning for every claim
 - Include social proof in every section
 - Create multiple micro-commitments leading to main CTA
-- Use loss aversion and urgency appropriately
+- Use loss aversion appropriately (but avoid aggressive urgency tactics)
 
 BRAND/DR BALANCE: ${brandPercent}% brand voice, ${drPercent}% direct response optimization
 TARGET PERSONA: ${concept}${subPersona ? ` (${subPersona})` : ''}
