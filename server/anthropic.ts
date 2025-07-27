@@ -23,6 +23,7 @@ const anthropic = new Anthropic({
 
 export interface AdCopyRequest {
   transcription: string;
+  customBrief?: string;
   concept: string;
   subPersona?: string;
   targetAudience: string;
@@ -42,7 +43,7 @@ export interface LandingPageRequest {
 }
 
 export async function generateAdCopy(request: AdCopyRequest, trainingConfig: TrainingConfig = defaultTrainingConfig) {
-  const { transcription, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide } = request;
+  const { transcription, customBrief, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide } = request;
   
   const brandPercent = brandDrBalance;
   const drPercent = 100 - brandPercent;
@@ -83,9 +84,17 @@ FUNNEL ALIGNMENT REQUIREMENT:
 Ensure the ad copy creates a seamless transition from ad to landing page. The messaging should be congruent - if the landing page emphasizes certain benefits or uses specific language, mirror that in the ad copy to create expectation alignment and reduce bounce rate.
 ` : '';
 
+  // Add custom brief section if provided
+  const customBriefSection = customBrief && customBrief.trim() ? `
+
+CUSTOM BRIEF FOR THIS GENERATION:
+${customBrief.trim()}
+
+PRIORITY INSTRUCTION: Incorporate the specific instructions above into the ad copy while maintaining brand voice and framework structure.` : '';
+
   const userPrompt = trainingConfig.userPromptTemplates.adCopy
     .replace('{transcription}', transcription)
-    .replace('{landingPageContext}', landingPageContext);
+    .replace('{landingPageContext}', landingPageContext) + customBriefSection;
 
   try {
     const response = await anthropic.messages.create({

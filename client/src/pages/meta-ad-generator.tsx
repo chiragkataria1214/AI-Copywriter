@@ -31,6 +31,7 @@ export default function MetaAdGenerator() {
     isAdmin: true
   } : user;
   const [transcription, setTranscription] = useState('');
+  const [customBrief, setCustomBrief] = useState('');
   const [concept, setConcept] = useState('lifeJuggler');
   const [subPersona, setSubPersona] = useState('newMom');
   const [targetAudience, setTargetAudience] = useState('');
@@ -378,6 +379,7 @@ export default function MetaAdGenerator() {
     mutationFn: async () => {
       const payload = {
         transcription,
+        customBrief,
         concept,
         subPersona,
         targetAudience,
@@ -651,6 +653,23 @@ export default function MetaAdGenerator() {
                         value={transcription}
                         onChange={(e) => setTranscription(e.target.value)}
                       />
+                      
+                      <div>
+                        <Label htmlFor="customBrief" className="block text-sm font-medium text-gray-700 mb-2">
+                          Custom Brief <span className="text-xs text-gray-500">(Optional)</span>
+                        </Label>
+                        <Textarea
+                          id="customBrief"
+                          rows={3}
+                          className="w-full resize-none text-sm"
+                          placeholder="Add specific instructions for this ad (e.g., 'Focus on quick routine', 'Mention free shipping', 'Target working moms specifically')..."
+                          value={customBrief}
+                          onChange={(e) => setCustomBrief(e.target.value)}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          These instructions will be included in the AI prompt for this specific generation
+                        </p>
+                      </div>
                       
                       <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                         <div className="flex items-center space-x-2">

@@ -514,7 +514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Demo ad copy generation endpoint (no auth required)
   app.post('/api/demo/generate-ad-copy', async (req, res) => {
     try {
-      const { transcription, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide } = req.body;
+      const { transcription, customBrief, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide } = req.body;
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -522,6 +522,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const result = await generateAdCopy({
         transcription,
+        customBrief,
         concept,
         subPersona,
         targetAudience,
@@ -549,7 +550,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/generate-ad-copy', requireAuth, async (req, res) => {
     try {
       const startTime = Date.now();
-      const { transcription, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide } = req.body;
+      const { transcription, customBrief, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide } = req.body;
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -560,6 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const result = await generateAdCopy({
         transcription,
+        customBrief,
         concept,
         subPersona,
         targetAudience,
