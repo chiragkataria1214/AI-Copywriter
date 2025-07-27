@@ -232,13 +232,14 @@ Analyze the uploaded ad creative image to extract key visual elements, text over
       // Get product name from request
       const getProductName = (product: string) => {
         switch(product) {
-          case 'foundation': return 'What The Foundation';
-          case 'mascara': return 'What The Mascara';
-          case 'sunscreen': return 'What The SPF';
           case 'miracle balm': return 'Miracle Balm';
+          case 'foundation': return 'What The Foundation';
+          case 'tinted moisturizer': return 'Just Enough Tinted Moisturizer';
+          case 'hero kit': return 'The Hero Kit';
+          case 'sunscreen': return 'Everyday Sunscreen';
+          case 'mascara': return 'What The Mascara';
           case 'lip stick': return 'Lip & Cheek Stick';
           case 'face pencil': return 'The Face Pencil';
-          case 'hero kit': return 'The Hero Kit';
           default: return 'What The Foundation';
         }
       };

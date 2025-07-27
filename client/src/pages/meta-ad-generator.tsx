@@ -895,28 +895,73 @@ export default function MetaAdGenerator() {
                     
                     <div className="space-y-4">
                       <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                          Select Product (filters customer reviews for training)
+                        <Label className="text-sm font-medium text-gray-700 mb-3 block">
+                          Quick Select - Top Products
                         </Label>
-                        <Select value={selectedProduct || "all"} onValueChange={(value) => setSelectedProduct(value === "all" ? "" : value)}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="All products (no filtering)" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All products</SelectItem>
-                            <SelectItem value="miracle balm">Miracle Balm</SelectItem>
-                            <SelectItem value="foundation">What The Foundation</SelectItem>
-                            <SelectItem value="tinted moisturizer">Just Enough Tinted Moisturizer</SelectItem>
-                            <SelectItem value="sunscreen">What The SPF</SelectItem>
-                            <SelectItem value="mascara">What The Mascara</SelectItem>
-                            <SelectItem value="lip stick">Lip & Cheek Stick</SelectItem>
-                            <SelectItem value="face pencil">The Face Pencil</SelectItem>
-                            <SelectItem value="hero kit">The Hero Kit</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="grid grid-cols-2 gap-2 mb-4">
+                          {[
+                            { value: 'miracle balm', label: 'Miracle Balm', icon: 'MB' },
+                            { value: 'foundation', label: 'What The Foundation', icon: 'WTF' },
+                            { value: 'tinted moisturizer', label: 'Just Enough', icon: 'JE' },
+                            { value: 'hero kit', label: 'The Hero Kit', icon: 'HK' }
+                          ].map((product) => (
+                            <Button
+                              key={product.value}
+                              variant={selectedProduct === product.value ? "default" : "outline"}
+                              className={`h-auto p-3 flex flex-col items-center text-center ${
+                                selectedProduct === product.value 
+                                  ? 'bg-[#004182] text-white border-[#004182]' 
+                                  : 'hover:bg-gray-50'
+                              }`}
+                              onClick={() => setSelectedProduct(product.value)}
+                            >
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-1 ${
+                                selectedProduct === product.value 
+                                  ? 'bg-white text-[#004182]' 
+                                  : 'bg-[#004182] text-white'
+                              }`}>
+                                {product.icon}
+                              </div>
+                              <span className="text-xs leading-tight">{product.label}</span>
+                            </Button>
+                          ))}
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">
+                            Or choose from all products
+                          </Label>
+                          <Select value={selectedProduct || "all"} onValueChange={(value) => setSelectedProduct(value === "all" ? "" : value)}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="All products (no filtering)" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All products</SelectItem>
+                              <SelectItem value="miracle balm">Miracle Balm</SelectItem>
+                              <SelectItem value="foundation">What The Foundation</SelectItem>
+                              <SelectItem value="tinted moisturizer">Just Enough Tinted Moisturizer</SelectItem>
+                              <SelectItem value="hero kit">The Hero Kit</SelectItem>
+                              <SelectItem value="sunscreen">Everyday Sunscreen</SelectItem>
+                              <SelectItem value="mascara">What The Mascara</SelectItem>
+                              <SelectItem value="lip stick">Lip & Cheek Stick</SelectItem>
+                              <SelectItem value="face pencil">The Face Pencil</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
                         {selectedProduct && (
                           <p className="text-xs text-gray-500 mt-2">
-                            AI will use customer reviews specific to {selectedProduct} for authentic language patterns
+                            AI will use customer reviews specific to {
+                              selectedProduct === 'miracle balm' ? 'Miracle Balm' :
+                              selectedProduct === 'foundation' ? 'What The Foundation' :
+                              selectedProduct === 'tinted moisturizer' ? 'Just Enough Tinted Moisturizer' :
+                              selectedProduct === 'hero kit' ? 'The Hero Kit' :
+                              selectedProduct === 'sunscreen' ? 'Everyday Sunscreen' :
+                              selectedProduct === 'mascara' ? 'What The Mascara' :
+                              selectedProduct === 'lip stick' ? 'Lip & Cheek Stick' :
+                              selectedProduct === 'face pencil' ? 'The Face Pencil' :
+                              selectedProduct
+                            } for authentic language patterns
                           </p>
                         )}
                       </div>
@@ -1219,15 +1264,18 @@ export default function MetaAdGenerator() {
                                       {selectedProduct === 'foundation' ? 'WTF' : 
                                        selectedProduct === 'mascara' ? 'WTM' :
                                        selectedProduct === 'sunscreen' ? 'SPF' :
-                                       selectedProduct === 'miracle balm' ? 'MB' : 'JR'}
+                                       selectedProduct === 'miracle balm' ? 'MB' :
+                                       selectedProduct === 'tinted moisturizer' ? 'JE' :
+                                       selectedProduct === 'hero kit' ? 'HK' : 'JR'}
                                     </span>
                                   </div>
                                 </div>
                                 <div className="text-gray-500 text-xs font-medium">
                                   {selectedProduct === 'foundation' ? 'What The Foundation' : 
                                    selectedProduct === 'mascara' ? 'What The Mascara' :
-                                   selectedProduct === 'sunscreen' ? 'What The SPF' :
+                                   selectedProduct === 'sunscreen' ? 'Everyday Sunscreen' :
                                    selectedProduct === 'miracle balm' ? 'Miracle Balm' :
+                                   selectedProduct === 'tinted moisturizer' ? 'Just Enough' :
                                    selectedProduct === 'lip stick' ? 'Lip & Cheek Stick' :
                                    selectedProduct === 'face pencil' ? 'The Face Pencil' :
                                    selectedProduct === 'hero kit' ? 'The Hero Kit' : 
@@ -1252,7 +1300,7 @@ export default function MetaAdGenerator() {
                               className="w-full text-white text-[14px] py-2.5 h-9 rounded-md font-semibold hover:opacity-90 shadow-sm"
                               style={{ backgroundColor: '#1877f2' }}
                             >
-                              Learn More
+                              SHOP NOW
                             </Button>
                           </div>
                         )}
