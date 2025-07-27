@@ -511,6 +511,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Demo ad copy generation endpoint (no auth required)
+  app.post('/api/demo/generate-ad-copy', async (req, res) => {
+    try {
+      const { transcription, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide } = req.body;
+      
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(400).json({ message: 'Anthropic API key not configured' });
+      }
+      
+      const result = await generateAdCopy({
+        transcription,
+        concept,
+        subPersona,
+        targetAudience,
+        landingPageUrl,
+        brandDrBalance,
+        useJonesBrandGuide
+      });
+      
+      res.json({
+        copyId: 'demo-' + Date.now(), // Demo ID
+        headlines: result.headlines,
+        primaryText: result.primaryText,
+        performance: {
+          estimatedCpc: 0.42,
+          brandAlignment: 85
+        }
+      });
+    } catch (error) {
+      console.error('Demo generation error:', error);
+      res.status(500).json({ message: 'Failed to generate ad copy' });
+    }
+  });
+
   // Generate ad copy endpoint with analytics tracking (protected)
   app.post('/api/generate-ad-copy', requireAuth, async (req, res) => {
     try {

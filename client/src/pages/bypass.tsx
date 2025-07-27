@@ -7,38 +7,15 @@ import { toast } from '@/hooks/use-toast';
 
 export default function BypassPage() {
   const [, setLocation] = useLocation();
-  const [isCreatingSession, setIsCreatingSession] = useState(false);
 
-  const handleBypassLogin = async () => {
-    setIsCreatingSession(true);
+  const handleDirectAccess = () => {
+    toast({
+      title: "Accessing AI Copywriter",
+      description: "Loading demo mode with full access",
+    });
     
-    try {
-      const response = await fetch('/api/bypass-login');
-      const data = await response.json();
-      
-      if (data.success) {
-        toast({
-          title: "Access Granted",
-          description: "You've been logged in as a demo user",
-        });
-        
-        // Force page reload to update auth state
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 500);
-      } else {
-        throw new Error('Bypass login failed');
-      }
-    } catch (error) {
-      console.error('Bypass login error:', error);
-      toast({
-        title: "Access Failed",
-        description: "Could not create demo session",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCreatingSession(false);
-    }
+    // Direct navigation to demo mode
+    setLocation('/demo');
   };
 
   return (
@@ -54,27 +31,17 @@ export default function BypassPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <Button 
-            onClick={handleBypassLogin}
-            disabled={isCreatingSession}
+            onClick={handleDirectAccess}
             className="w-full bg-[#004182] hover:bg-[#003366] text-white"
             size="lg"
           >
-            {isCreatingSession ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating Session...
-              </>
-            ) : (
-              <>
-                <LogIn className="mr-2 h-4 w-4" />
-                Access AI Copywriter
-              </>
-            )}
+            <LogIn className="mr-2 h-4 w-4" />
+            Access AI Copywriter (Demo Mode)
           </Button>
           
           <div className="text-center text-sm text-gray-500 space-y-1">
-            <p>This creates a temporary admin session</p>
-            <p>Full access to all copywriting features</p>
+            <p>Demo mode with full access</p>
+            <p>No authentication required</p>
           </div>
         </CardContent>
       </Card>

@@ -14,10 +14,22 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useLocation } from 'wouter';
 
 export default function MetaAdGenerator() {
   const [activeTab, setActiveTab] = useState('ads');
   const { user, logout, isLoggingOut, setupAdmin, isSettingUpAdmin } = useAuth();
+  const [location] = useLocation();
+  
+  // Check if we're in demo mode (no auth required)
+  const isDemoMode = location.startsWith('/demo');
+  
+  // Create demo user object for consistency
+  const effectiveUser = isDemoMode ? {
+    username: 'demo@jonesroadbeauty.com',
+    role: 'admin',
+    isAdmin: true
+  } : user;
   const [transcription, setTranscription] = useState('');
   const [concept, setConcept] = useState('lifeJuggler');
   const [subPersona, setSubPersona] = useState('newMom');
@@ -50,10 +62,10 @@ export default function MetaAdGenerator() {
   
   // Auto-load training config when debug tab is accessed
   useEffect(() => {
-    if (activeTab === 'debug' && !trainingConfig && !configLoading) {
+    if (activeTab === 'debug' && !trainingConfig && !configLoading && (user || isDemoMode)) {
       loadTrainingConfigMutation.mutate();
     }
-  }, [activeTab]);
+  }, [activeTab, user, isDemoMode]);
   
   // Landing Page States
   const [landingPageType, setLandingPageType] = useState('listicle');

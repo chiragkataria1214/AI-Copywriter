@@ -11,10 +11,22 @@ import Register from "@/pages/register";
 import AdminSetup from "@/pages/admin-setup";
 import NotFound from "@/pages/not-found";
 import BypassPage from "@/pages/bypass";
+import DemoGenerator from "@/pages/demo-generator";
 
 function AuthenticatedRouter() {
   const { user, isLoading, isAuthenticated, isUnauthenticated } = useAuth();
   const [location] = useLocation();
+
+  // Check if we're on a bypass route - allow direct access
+  if (location.startsWith('/demo') || location.startsWith('/bypass')) {
+    return (
+      <Switch>
+        <Route path="/demo" component={DemoGenerator} />
+        <Route path="/bypass" component={BypassPage} />
+        <Route component={DemoGenerator} />
+      </Switch>
+    );
+  }
 
   // Show loading spinner while checking authentication
   if (isLoading) {
