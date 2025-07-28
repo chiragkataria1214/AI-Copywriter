@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Upload, Copy, Check, Target, Sparkles, Video, FileText, Zap, ThumbsUp, ThumbsDown, Star, Globe, List, AlertCircle, Palette, Users, Settings, LogOut, User, Database, Brain, BarChart3 } from 'lucide-react';
+import { Upload, Copy, Check, Target, Sparkles, Video, FileText, Zap, ThumbsUp, ThumbsDown, Star, Globe, List, AlertCircle, Palette, Users, Settings, LogOut, User, Database, Brain, BarChart3, Camera } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent } from '@/components/ui/card';
@@ -822,7 +822,7 @@ export default function MetaAdGenerator() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6 sm:mb-8">
+          <TabsList className="grid w-full grid-cols-5 mb-6 sm:mb-8">
             <TabsTrigger value="ads" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
               <Sparkles size={16} />
               <span className="text-xs sm:text-sm">Ad Copy</span>
@@ -830,6 +830,10 @@ export default function MetaAdGenerator() {
             <TabsTrigger value="landing" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
               <FileText size={16} />
               <span className="text-xs sm:text-sm">Landing Page</span>
+            </TabsTrigger>
+            <TabsTrigger value="static-ad" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
+              <Camera size={16} />
+              <span className="text-xs sm:text-sm">Static Ad</span>
             </TabsTrigger>
             <TabsTrigger value="custom" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
               <Brain size={16} />
