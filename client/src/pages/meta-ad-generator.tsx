@@ -2765,11 +2765,34 @@ export default function MetaAdGenerator() {
             </div>
           </TabsContent>
 
-          {/* Debug Tab */}
+          {/* AI Settings Tab - Protected by Admin Key */}
           <TabsContent value="settings">
-            <div className="space-y-6">
-              {/* Training Configuration Section */}
-              <Card>
+            {!hasAdminAccess ? (
+              <div className="flex items-center justify-center min-h-[400px]">
+                <Card className="w-full max-w-md">
+                  <CardContent className="p-8 text-center">
+                    <Lock className="mx-auto mb-4 text-gray-400" size={48} />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Protected Area
+                    </h3>
+                    <p className="text-gray-600 mb-6">
+                      AI Settings contains sensitive training configuration and requires admin access.
+                    </p>
+                    <Button
+                      onClick={() => setShowAdminKeyPrompt(true)}
+                      className="w-full"
+                      style={{ backgroundColor: '#004182' }}
+                    >
+                      <Lock className="mr-2" size={16} />
+                      Enter Admin Key
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Training Configuration Section */}
+                <Card>
                 <CardContent className="p-6">
                   <div className="flex flex-col space-y-4 mb-4 md:flex-row md:items-center md:justify-between md:space-y-0">
                     <h3 className="text-lg font-semibold text-gray-900 flex items-center">
