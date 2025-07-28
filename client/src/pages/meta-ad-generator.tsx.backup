@@ -125,6 +125,48 @@ export default function MetaAdGenerator() {
   
   // Training Configuration States
   const [trainingConfig, setTrainingConfig] = useState<any>(null);
+  
+  // Admin key verification
+  const verifyAdminKey = async (key: string) => {
+    try {
+      const response = await fetch('/api/verify-admin-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminKey: key })
+      });
+      
+      if (response.ok) {
+        setHasAdminAccess(true);
+        setShowAdminKeyPrompt(false);
+        setAdminKeyInput('');
+        toast({
+          title: "Admin Access Granted",
+          description: "You now have access to AI Settings",
+        });
+      } else {
+        toast({
+          title: "Access Denied",
+          description: "Invalid admin key",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to verify admin key",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Handle AI Settings tab click
+  const handleAISettingsClick = () => {
+    if (hasAdminAccess) {
+      setActiveTab('settings');
+    } else {
+      setShowAdminKeyPrompt(true);
+    }
+  };
   const [editingConfig, setEditingConfig] = useState<any>(null);
   const [configLoading, setConfigLoading] = useState(false);
   // Admin state managed through useAuth hook

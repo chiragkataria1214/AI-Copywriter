@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { registerTrainingRoutes } from "./routes-training";
 import { registerJunipRoutes } from "./routes-junip";
+import { registerAdminRoutes } from "./routes-admin";
 import { storage } from "./storage";
 import multer from "multer";
 import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd } from "./anthropic";
@@ -1031,6 +1032,9 @@ Landing Page: ${data.landingPageUrl || 'None provided'}
   
   // Register Junip API routes
   registerJunipRoutes(app);
+  
+  // Register admin routes
+  registerAdminRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
