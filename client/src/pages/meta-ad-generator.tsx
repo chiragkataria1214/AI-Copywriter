@@ -138,6 +138,7 @@ export default function MetaAdGenerator() {
   const [copiedHeadlines, setCopiedHeadlines] = useState(false);
   const [copiedPrimaryText, setCopiedPrimaryText] = useState(false);
   const [copiedLandingCopy, setCopiedLandingCopy] = useState(false);
+  const [copiedStatic, setCopiedStatic] = useState(false);
   const [useJonesBrandGuide, setUseJonesBrandGuide] = useState(true);
   const [brandDrBalance, setBrandDrBalance] = useState([50]);
   
@@ -643,6 +644,37 @@ export default function MetaAdGenerator() {
     }
   });
 
+  // Static ad analysis mutation
+  const analyzeStaticAdMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/analyze-static-ad', {
+        method: 'POST',
+        body: {
+          staticAdImage,
+          concept,
+          subPersona,
+          brandDrBalance: brandDrBalance[0],
+          selectedProduct
+        }
+      });
+    },
+    onSuccess: (data) => {
+      setStaticAdAnalysis(data.analysis || '');
+      toast({
+        title: "Ad Analysis Complete",
+        description: "Static ad has been analyzed and Jones Road variations generated.",
+      });
+    },
+    onError: (error) => {
+      console.error('Static ad analysis error:', error);
+      toast({
+        title: "Analysis Failed",
+        description: "Failed to analyze static ad. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
   const generateLandingCopyMutation = useMutation({
     mutationFn: async () => {
       // When using ads content, include the selected headline and primary text
@@ -709,6 +741,7 @@ export default function MetaAdGenerator() {
       if (type === 'headlines') setCopiedHeadlines(true);
       if (type === 'primary') setCopiedPrimaryText(true);
       if (type === 'landing') setCopiedLandingCopy(true);
+      if (type === 'static-analysis') setCopiedStatic(true);
       if (type === 'custom') {
         // Custom copy doesn't need specific state, just show the toast
       }
@@ -717,6 +750,7 @@ export default function MetaAdGenerator() {
         setCopiedHeadlines(false);
         setCopiedPrimaryText(false);
         setCopiedLandingCopy(false);
+        setCopiedStatic(false);
       }, 2000);
       
       toast({
@@ -2620,57 +2654,60 @@ export default function MetaAdGenerator() {
                     </div>
 
                     <Button 
-                      onClick={() => {
-                        if (staticAdImage) {
-                          alert('Static Ad Analysis feature coming soon! The uploaded image will be analyzed by Claude AI to extract messaging, visual elements, and generate Jones Road Beauty variations targeted to your selected persona.');
-                        }
-                      }}
-                      disabled={!staticAdImage}
+                      onClick={() => analyzeStaticAdMutation.mutate()}
+                      disabled={!staticAdImage || analyzeStaticAdMutation.isPending}
                       className="w-full flex items-center justify-center space-x-2"
                     >
                       <Camera size={16} />
-                      <span>{staticAdImage ? 'Analyze Ad & Generate Variations' : 'Upload Image First'}</span>
+                      <span>
+                        {analyzeStaticAdMutation.isPending ? 'Analyzing...' :
+                         staticAdImage ? 'Analyze Ad & Generate Variations' : 'Upload Image First'}
+                      </span>
                     </Button>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Coming Soon Notice */}
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <div className="bg-blue-50 rounded-lg p-6">
-                    <Camera className="mx-auto h-12 w-12 text-blue-500 mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      Static Ad Analysis - Coming Soon
-                    </h3>
-                    <p className="text-gray-600 mb-4">
-                      Upload any competitor ad or static creative and get Jones Road Beauty variations with:
-                    </p>
-                    <div className="text-left max-w-md mx-auto space-y-2">
+              {/* Analysis Results */}
+              {staticAdAnalysis && (
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                        <Target className="text-jones-primary mr-3" size={18} />
+                        Ad Analysis & Jones Road Variations
+                      </h3>
                       <div className="flex items-center space-x-2">
-                        <Check className="h-4 w-4 text-green-500" />
-                        <span className="text-sm text-gray-700">AI visual analysis of layout and messaging</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Check className="h-4 w-4 text-green-500" />
-                        <span className="text-sm text-gray-700">Text extraction from images</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Check className="h-4 w-4 text-green-500" />
-                        <span className="text-sm text-gray-700">Jones Road voice adaptations</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Check className="h-4 w-4 text-green-500" />
-                        <span className="text-sm text-gray-700">Multiple persona targeting</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Check className="h-4 w-4 text-green-500" />
-                        <span className="text-sm text-gray-700">Customer review integration</span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedItemForRevision({ type: 'custom' });
+                            setShowRevisionPanel(true);
+                          }}
+                          title="Edit analysis"
+                        >
+                          <Target size={14} />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => copyToClipboard(staticAdAnalysis, 'static-analysis')}
+                        >
+                          {copiedStatic ? <Check size={16} /> : <Copy size={16} />}
+                          <span className="ml-1">{copiedStatic ? 'Copied' : 'Copy'}</span>
+                        </Button>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    
+                    <div className="prose max-w-none">
+                      <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+                        {staticAdAnalysis}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </TabsContent>
 

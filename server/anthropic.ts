@@ -56,6 +56,14 @@ export interface CustomCopyRequest {
   useJonesBrandGuide: boolean;
 }
 
+export interface StaticAdAnalysisRequest {
+  staticAdImage: string;
+  concept: string;
+  subPersona?: string;
+  brandDrBalance: number;
+  selectedProduct?: string;
+}
+
 export async function generateAdCopy(request: AdCopyRequest, trainingConfig: TrainingConfig = defaultTrainingConfig) {
   const { transcription, customBrief, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProduct } = request;
   
@@ -878,6 +886,109 @@ Please revise the content applying the improvement instructions while maintainin
   } catch (error) {
     console.error('Content revision error:', error);
     throw new Error('Failed to revise content');
+  }
+}
+
+export async function analyzeStaticAd(request: StaticAdAnalysisRequest, trainingConfig: TrainingConfig = defaultTrainingConfig) {
+  const { staticAdImage, concept, subPersona, brandDrBalance, selectedProduct } = request;
+  
+  const brandPercent = brandDrBalance;
+  const drPercent = 100 - brandPercent;
+
+  const systemPrompt = `You are an expert marketing analyst and copywriter specializing in competitive analysis and adaptation for Jones Road Beauty.
+
+JONES ROAD BEAUTY BRAND VOICE:
+- Core positioning: "Your Skin But Better" - natural, effortless enhancement
+- Educational tone like Bobbi Brown, warm and approachable
+- "Make up, Simplified" philosophy - clean, uncomplicated messaging
+- Authentic and genuine, never pushy or aggressive
+- Focus on enhancing natural beauty, not covering it up
+- Use "moisturizing" not "hydrating" for makeup products
+
+BRAND/DR BALANCE: ${brandPercent}% Brand Voice, ${drPercent}% Direct Response
+
+TARGET AUDIENCE: ${concept}${subPersona ? ` (${subPersona})` : ''}
+${selectedProduct ? `PRODUCT FOCUS: ${selectedProduct}` : ''}
+
+YOUR TASK:
+1. Analyze the uploaded static ad image comprehensively
+2. Extract key messaging, visual elements, and marketing strategies
+3. Generate Jones Road Beauty variations that adapt the effective elements while maintaining authentic brand voice
+4. Provide multiple targeting approaches for the specified persona
+
+ANALYSIS FRAMEWORK:
+- Visual elements: layout, colors, typography, imagery style
+- Messaging hierarchy: headline, subtext, call-to-action
+- Marketing psychology: hooks, benefits, urgency/scarcity elements
+- Target audience signals: language, imagery, positioning
+- Brand positioning: how they present their value proposition
+
+OUTPUT FORMAT:
+1. AD ANALYSIS
+   - Visual Elements
+   - Core Message
+   - Marketing Strategy
+   - Target Audience Indicators
+
+2. JONES ROAD ADAPTATIONS
+   Generate 3-5 Facebook ad variations that:
+   - Use Jones Road's authentic voice
+   - Target the specified persona effectively
+   - Adapt successful elements from the original
+   - Include headlines and primary text for each variation
+
+Use clean, plain text formatting without special characters.`;
+
+  const userPrompt = `Please analyze this static ad image and create Jones Road Beauty variations targeting ${concept}${subPersona ? ` (${subPersona})` : ''}:
+
+INSTRUCTIONS:
+- Provide comprehensive analysis of what makes this ad effective
+- Create compelling Jones Road variations that adapt the successful elements
+- Focus on authentic language that resonates with the target persona
+- Include specific headlines and primary text for each variation
+- Maintain Jones Road's "effortless beauty" positioning throughout`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      system: systemPrompt,
+      max_tokens: 2000,
+      messages: [{
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: userPrompt
+          },
+          {
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: "image/jpeg",
+              data: staticAdImage
+            }
+          }
+        ]
+      }]
+    });
+
+    const content = response.content[0].type === 'text' ? response.content[0].text : '';
+    
+    // Clean up formatting - remove special characters
+    const cleanedContent = content
+      .replace(/\*\*/g, '') // Remove bold formatting
+      .replace(/#{1,6}\s?/g, '') // Remove markdown headers
+      .replace(/\[([^\]]+)\]/g, '$1') // Remove square brackets
+      .replace(/`([^`]+)`/g, '$1') // Remove code formatting
+      .trim();
+    
+    return {
+      analysis: cleanedContent,
+      rawResponse: content
+    };
+  } catch (error) {
+    console.error('Static ad analysis error:', error);
+    throw new Error('Failed to analyze static ad');
   }
 }
 

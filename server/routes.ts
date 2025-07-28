@@ -4,7 +4,7 @@ import { registerTrainingRoutes } from "./routes-training";
 import { registerJunipRoutes } from "./routes-junip";
 import { storage } from "./storage";
 import multer from "multer";
-import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy } from "./anthropic";
+import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd } from "./anthropic";
 import { analyzeInfluencerVoice, generateInfluencerStyleCopy, fetchInstagramContent } from "./influencer-analyzer";
 import { getTrainingConfig } from "./routes-training";
 import { z } from "zod";
@@ -670,6 +670,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Custom copy generation error:', error);
       res.status(500).json({ error: 'Failed to generate custom copy' });
+    }
+  });
+
+  // Static ad analysis endpoint (protected)
+  app.post('/api/analyze-static-ad', requireAuth, async (req, res) => {
+    try {
+      const { staticAdImage, concept, subPersona, brandDrBalance, selectedProduct } = req.body;
+      
+      console.log('Static ad analysis request:', { concept, subPersona, brandDrBalance, selectedProduct, imageLength: staticAdImage?.length });
+      
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(400).json({ message: 'Anthropic API key not configured' });
+      }
+      
+      if (!staticAdImage) {
+        return res.status(400).json({ message: 'Static ad image is required' });
+      }
+      
+      const result = await analyzeStaticAd({
+        staticAdImage,
+        concept: concept || 'lifeJuggler',
+        subPersona: subPersona || undefined,
+        brandDrBalance: brandDrBalance || 50,
+        selectedProduct: selectedProduct || undefined
+      });
+      
+      res.json({
+        analysis: result.analysis,
+        rawResponse: result.rawResponse // For debug purposes
+      });
+    } catch (error) {
+      console.error('Static ad analysis error:', error);
+      res.status(500).json({ message: 'Failed to analyze static ad' });
     }
   });
 
