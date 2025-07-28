@@ -53,16 +53,11 @@ export function registerTrainingRoutes(app: Express, requireAdmin: any) {
   // Update training configuration
   app.post('/api/training-config', requireAdmin, async (req, res) => {
     try {
-      const { adminPassword, ...updatedConfig } = req.body;
-      
-      // Admin authentication check
-      if (adminPassword !== 'admin123') {
-        return res.status(403).json({ message: "Unauthorized: Invalid admin credentials" });
-      }
+      const updatedConfig = req.body;
       
       // Validate the config structure (basic validation)
-      if (!updatedConfig.brandGuidelines || !updatedConfig.copyFrameworks || !updatedConfig.systemPrompts) {
-        return res.status(400).json({ message: "Invalid configuration structure" });
+      if (!updatedConfig || typeof updatedConfig !== 'object') {
+        return res.status(400).json({ message: "Invalid configuration format" });
       }
 
       // Read the current file
