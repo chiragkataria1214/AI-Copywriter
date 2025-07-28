@@ -13,6 +13,35 @@ When copying code from this code snippet, ensure you also include this informati
 const DEFAULT_MODEL_STR = "claude-sonnet-4-20250514";
 // </important_do_not_delete>
 
+// Helper functions for image processing
+function detectImageType(base64String: string): string {
+  // If it's already a data URL, extract the type
+  if (base64String.startsWith('data:image/')) {
+    if (base64String.startsWith('data:image/png')) return 'image/png';
+    if (base64String.startsWith('data:image/jpeg') || base64String.startsWith('data:image/jpg')) return 'image/jpeg';
+    if (base64String.startsWith('data:image/gif')) return 'image/gif';
+    if (base64String.startsWith('data:image/webp')) return 'image/webp';
+  }
+  
+  // For raw base64, try to detect from magic bytes
+  const bytes = base64String.substring(0, 20);
+  
+  // PNG signature: iVBORw0KGgo
+  if (bytes.startsWith('iVBORw0KGgo')) return 'image/png';
+  
+  // JPEG signature: /9j/
+  if (bytes.startsWith('/9j/')) return 'image/jpeg';
+  
+  // GIF signature: R0lGODlh or R0lGODdh
+  if (bytes.startsWith('R0lGODlh') || bytes.startsWith('R0lGODdh')) return 'image/gif';
+  
+  // WebP signature: UklGR
+  if (bytes.startsWith('UklGR')) return 'image/webp';
+  
+  // Default to jpeg if cannot detect
+  return 'image/jpeg';
+}
+
 if (!process.env.ANTHROPIC_API_KEY) {
   console.error('ANTHROPIC_API_KEY environment variable is not set');
 }
@@ -894,6 +923,16 @@ export async function analyzeStaticAd(request: StaticAdAnalysisRequest, training
   
   const brandPercent = brandDrBalance;
   const drPercent = 100 - brandPercent;
+  
+  // Debug image format
+  const detectedType = detectImageType(staticAdImage);
+  const imagePreview = staticAdImage.substring(0, 50);
+  console.log('Static ad image analysis:', {
+    detectedType,
+    imageLength: staticAdImage.length,
+    imagePreview,
+    hasDataPrefix: staticAdImage.startsWith('data:')
+  });
 
   const systemPrompt = `You are an expert marketing analyst and copywriter specializing in competitive analysis and adaptation for Jones Road Beauty.
 
@@ -964,7 +1003,7 @@ INSTRUCTIONS:
             type: "image",
             source: {
               type: "base64",
-              media_type: "image/jpeg",
+              media_type: detectImageType(staticAdImage) || "image/jpeg",
               data: staticAdImage
             }
           }

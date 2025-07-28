@@ -2575,8 +2575,8 @@ export default function MetaAdGenerator() {
                               const reader = new FileReader();
                               reader.onload = (e) => {
                                 const base64 = e.target?.result as string;
-                                setStaticAdImage(base64.split(',')[1]); // Remove data:image/jpeg;base64, prefix
-                                setStaticAdImagePreview(base64);
+                                setStaticAdImage(base64.split(',')[1]); // Store just the base64 data
+                                setStaticAdImagePreview(base64); // Keep full URL for preview
                               };
                               reader.readAsDataURL(file);
                             }
