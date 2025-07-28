@@ -23,23 +23,19 @@ export default function Login() {
         body: data
       });
     },
-    onSuccess: async () => {
-      // Force clear all queries and refetch fresh auth state
-      queryClient.clear();
-      
-      // Immediately refetch user data to ensure we have fresh authentication
-      await queryClient.prefetchQuery({
-        queryKey: ['/api/me'],
-        staleTime: 0
-      });
-      
+    onSuccess: () => {
       toast({
         title: "Welcome back!",
         description: "You've successfully logged in.",
       });
       
-      // Navigate using router instead of window.location
-      setLocation('/');
+      // Clear queries and force a complete page reload to ensure proper session loading
+      queryClient.clear();
+      
+      // Use a slight delay to ensure the backend session is fully established
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 200);
     },
     onError: (error) => {
       console.error('Login error:', error);
@@ -86,6 +82,12 @@ export default function Login() {
         </div>
 
         {/* Login Form */}
+        {/* Debug Info - Remove when login works */}
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-sm">
+          <p><strong>Debug:</strong> If you see this but you're already logged in, 
+          <a href="/direct" className="text-blue-600 underline ml-1">click here to access the app directly</a></p>
+        </div>
+
         <Card className="shadow-xl border-0">
           <CardHeader className="space-y-1 pb-6">
             <CardTitle className="text-2xl font-semibold text-center text-gray-800">

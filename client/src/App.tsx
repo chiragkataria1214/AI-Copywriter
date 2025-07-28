@@ -55,8 +55,22 @@ function AuthenticatedRouter() {
     );
   }
 
+  // If we have an authentication error, show login immediately
+  if (isUnauthenticated) {
+    return (
+      <Switch>
+        <Route path="/register" component={Register} />
+        <Route path="/login" component={Login} />
+        <Route path="/admin-setup" component={AdminSetup} />
+        <Route path="/bypass" component={BypassPage} />
+        <Route component={Login} />
+      </Switch>
+    );
+  }
+
   // If we have a user object, show the main app
   if (user && isAuthenticated) {
+    console.log('🟢 SHOWING MAIN APP - User authenticated');
     return (
       <Switch>
         <Route path="/" component={MetaAdGenerator} />
@@ -70,6 +84,7 @@ function AuthenticatedRouter() {
   }
 
   // If not authenticated or no user, show login/register pages
+  console.log('🔴 SHOWING LOGIN PAGE - Not authenticated');
   return (
     <Switch>
       <Route path="/register" component={Register} />

@@ -20,7 +20,9 @@ export function useAuth() {
     gcTime: 0, // Don't store in cache
     refetchOnWindowFocus: true,
     refetchOnMount: true,
-    refetchInterval: false
+    refetchInterval: false,
+    // Force query to always refetch without using cached data
+    queryHash: Date.now().toString() // This forces a fresh query every time
   });
 
   // Logout mutation
@@ -63,6 +65,15 @@ export function useAuth() {
 
   const isAuthenticated = !!user && !error;
   const isUnauthenticated = error && (error?.message?.includes('401') || error?.message?.includes('Authentication required'));
+  
+  // Debug authentication state
+  console.log('useAuth debug:', {
+    user: user ? { id: user.id, username: user.username } : null,
+    error: error ? error.message : null,
+    isAuthenticated,
+    isUnauthenticated,
+    isLoading
+  });
 
   return {
     user,
