@@ -1,6 +1,6 @@
-import DeploymentTest from './deployment-test';
+import StandaloneApp from './standalone-app';
 
-// Minimal deployment test - zero dependencies
+// Full AI Copywriter - zero authentication barriers
 export default function SimpleMain() {
-  return <DeploymentTest />;
+  return <StandaloneApp />;
 }

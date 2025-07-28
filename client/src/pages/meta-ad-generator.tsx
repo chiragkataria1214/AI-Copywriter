@@ -20,18 +20,19 @@ import { ProductSelection } from "@/components/ProductSelection";
 
 export default function MetaAdGenerator() {
   const [activeTab, setActiveTab] = useState('ads');
-  const { user, logout, isLoggingOut, setupAdmin, isSettingUpAdmin } = useAuth();
-  const [location] = useLocation();
   
-  // Check if we're in demo mode (no auth required)
-  const isDemoMode = location.startsWith('/demo');
-  
-  // Create demo user object for consistency
-  const effectiveUser = isDemoMode ? {
-    username: 'demo@jonesroadbeauty.com',
+  // BYPASS AUTHENTICATION - Direct access mode
+  const effectiveUser = {
+    username: 'user@jonesroadbeauty.com',
     role: 'admin',
     isAdmin: true
-  } : user;
+  };
+  
+  // Dummy auth functions for compatibility
+  const logout = () => {};
+  const isLoggingOut = false;
+  const setupAdmin = () => {};
+  const isSettingUpAdmin = false;
   const [transcription, setTranscription] = useState('');
   const [airLink, setAirLink] = useState('');
   const [uploadedImage, setUploadedImage] = useState<string>('');
