@@ -443,38 +443,40 @@ JONES ROAD BEAUTY BRAND GUIDELINES:
 ${reviewInsights}
 
 ${landingPageType === 'multiProduct' ? `
-JONES ROAD MULTI PRODUCT PAGE STRUCTURE:
-- Hero section introducing the product collection or routine
-- Brief introduction explaining the value of using products together (30-50 words)
-- 3-4 main product sections, each highlighting a specific product with benefits
-- Cross-selling opportunities between products (why they work better together)
-- Bundle or routine recommendations with clear value propositions
-- Social proof from customers who use multiple products
-- Clear product differentiation while maintaining collection cohesion
+JONES ROAD MULTI PRODUCT PAGE STRUCTURE (INSPIRED BY LOOP EARPLUGS MODEL):
+- Strong social proof hero headline (like "THE MAKEUP EVERYONE IS TALKING ABOUT")
+- Brief collection introduction explaining the range value (30-50 words)  
+- Individual product showcases with clear differentiation and use cases
+- Visual icons/indicators for different product benefits
+- Individual CTAs per product while maintaining collection cohesion
+- Strong social proof elements throughout (customer numbers, reviews)
+- Bundle/routine sections showing products work better together
 
-MULTI PRODUCT PAGE OPTIMIZATION:
-- Showcase product synergy and complementary benefits
-- Use "complete routine" or "perfect collection" messaging
-- Include specific use cases for different product combinations
-- Address different customer needs with product recommendations
-- Create clear navigation between products while keeping them connected
-- Highlight cost savings or convenience of purchasing multiple items
-- Use customer testimonials that mention multiple products
+SUCCESSFUL MULTI-PRODUCT PATTERNS (BASED ON LOOP EXAMPLE):
+- Collection-focused hero with social proof numbers
+- "Explore the [Brand] Range" section header
+- Each product gets equal visual and copy treatment
+- Clear use case differentiation (like Loop's Focus/Conversations/Live music)
+- Individual pricing and CTAs for each product
+- Color/variant options within each product section
+- Community/social proof numbers prominently displayed
 
-EACH PRODUCT SECTION STRUCTURE:
-- PRODUCT NAME & BRIEF BENEFIT (8-12 words): What this specific product does
-- KEY DIFFERENTIATOR (15-25 words): What makes this product unique in the collection
-- MAIN BENEFITS (2-3 bullet points, 10-12 words each): Specific advantages
-- HOW IT WORKS WITH OTHER PRODUCTS (12-20 words): Synergy explanation
-- CUSTOMER QUOTE (12-20 words): Testimonial focusing on this specific product
-- SOFT CTA (8-12 words): Natural transition to next product or purchase
+EACH PRODUCT SECTION STRUCTURE (LOOP-INSPIRED):
+- PRODUCT NAME (clear, distinctive): What this specific item is called
+- ONE-LINE BENEFIT (8-12 words): Primary value proposition for this product
+- USE CASE ICONS/BULLETS (3-4 items): Specific situations where this product excels
+- BRIEF DESCRIPTION (20-30 words): How it works and why it's different
+- CUSTOMER INSIGHT (12-20 words): Quote or stat specific to this product
+- INDIVIDUAL CTA with price: Clear action for this specific item
 
-PRODUCT CROSS-SELLING STRATEGIES:
-- "Perfect with" recommendations between related products
-- Routine suggestions for morning/evening or specific occasions
-- Bundle messaging that creates value perception
-- Problem-solution mapping across multiple products
-- Natural progression from one product benefit to another's complementary benefit
+MULTI-PRODUCT SUCCESS ELEMENTS:
+- Hero: Strong collection-level social proof ("THE [PRODUCTS] EVERYONE IS TALKING ABOUT")
+- Range presentation: "Explore the Jones Road Range" or similar
+- Product differentiation: Each serves different needs/occasions
+- Use case clarity: Morning routine vs. evening vs. quick touch-up
+- Individual value props: Why someone would choose this specific item
+- Collection synergy: How using multiple products enhances results
+- Social proof variety: Different stats for different aspects (customers, reviews, community)
 ` : landingPageType === 'listicle' ? `
 AUTHENTIC JONES ROAD LISTICLE STRUCTURE (BASED ON REAL EXAMPLES):
 - Direct, benefit-focused headline (6-12 words) - clear value proposition, not clickbait
@@ -587,19 +589,20 @@ SPECIFIC INSTRUCTIONS:
 10. Maximum 50 words per reason section - be extremely concise and scannable like real listicles
 
 ${landingPageType === 'multiProduct' ? `
-Generate complete multi-product landing page copy with all required sections. Structure your response as:
+Generate complete multi-product landing page copy inspired by successful examples like Loop Earplugs. Structure your response as:
 
-HEADLINE: [Main collection/routine headline]
-SUBHEADLINE: [Supporting value proposition]
-INTRODUCTION: [Brief intro about why products work better together]
+HEADLINE: [Strong social proof collection headline like "THE MAKEUP EVERYONE IS TALKING ABOUT"]
+SUBHEADLINE: [Brief range description with social proof numbers]
+INTRODUCTION: [Explore the [Brand] Range intro with value proposition]
 PRODUCT #1: [Product Name]
-[Product description, benefits, synergy with others, customer quote]
-PRODUCT #2: [Product Name]
-[Product description, benefits, synergy with others, customer quote]
+[One-line benefit, 3-4 use case bullets, brief description, customer insight, CTA with price]
+PRODUCT #2: [Product Name] 
+[One-line benefit, 3-4 use case bullets, brief description, customer insight, CTA with price]
 PRODUCT #3: [Product Name]
-[Product description, benefits, synergy with others, customer quote]
-BUNDLE SECTION: [Bundle benefits and value]
-CTA: [Main call-to-action for collection/bundle]
+[One-line benefit, 3-4 use case bullets, brief description, customer insight, CTA with price]
+COLLECTION BENEFITS: [Why the complete range works better together]
+SOCIAL PROOF: [Customer numbers, reviews, community stats]
+CTA: [Main collection call-to-action]
 RISK REVERSAL: [Guarantee or trust elements]
 ` : `
 Generate complete landing page copy with all required sections. Structure your response as:
@@ -674,18 +677,29 @@ RISK REVERSAL: [Guarantee or trust elements]
       }
     }
     
-    // For multi-product pages, also extract bundle section if present
-    let bundleSection = '';
+    // For multi-product pages, also extract collection benefits and social proof sections
     if (landingPageType === 'multiProduct') {
-      const bundleMatch = content.match(/BUNDLE SECTION:?\s*([\s\S]*?)(?=CTA:|RISK REVERSAL:|$)/i);
-      if (bundleMatch) {
-        bundleSection = bundleMatch[1].trim().replace(/\*\*/g, '');
-        // Add bundle as a special section
+      // Extract Collection Benefits section
+      const collectionMatch = content.match(/COLLECTION BENEFITS:?\s*([\s\S]*?)(?=SOCIAL PROOF:|CTA:|RISK REVERSAL:|$)/i);
+      if (collectionMatch) {
+        const collectionContent = collectionMatch[1].trim().replace(/\*\*/g, '');
         sections.push({
-          title: 'Complete Collection',
-          content: bundleSection,
+          title: 'Collection Benefits',
+          content: collectionContent,
           hook: '',
-          wordCount: bundleSection.split(/\s+/).length
+          wordCount: collectionContent.split(/\s+/).length
+        });
+      }
+      
+      // Extract Social Proof section
+      const socialProofMatch = content.match(/SOCIAL PROOF:?\s*([\s\S]*?)(?=CTA:|RISK REVERSAL:|$)/i);
+      if (socialProofMatch) {
+        const socialProofContent = socialProofMatch[1].trim().replace(/\*\*/g, '');
+        sections.push({
+          title: 'Social Proof',
+          content: socialProofContent,
+          hook: '',
+          wordCount: socialProofContent.split(/\s+/).length
         });
       }
     }
