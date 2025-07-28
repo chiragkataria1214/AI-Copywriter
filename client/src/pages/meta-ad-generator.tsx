@@ -156,6 +156,11 @@ export default function MetaAdGenerator() {
   const [voiceAnalysisMethod, setVoiceAnalysisMethod] = useState('combined');
   const [influencerBrandBalance, setInfluencerBrandBalance] = useState([50]);
 
+  // Static Ad Analysis States
+  const [staticAdImage, setStaticAdImage] = useState('');
+  const [staticAdImagePreview, setStaticAdImagePreview] = useState('');
+  const [staticAdAnalysis, setStaticAdAnalysis] = useState('');
+
   // Define personas
   const personas = {
     innovators: {
@@ -2536,8 +2541,8 @@ export default function MetaAdGenerator() {
                               const reader = new FileReader();
                               reader.onload = (e) => {
                                 const base64 = e.target?.result as string;
-                                // setStaticAdImage(base64.split(',')[1]); // Remove data:image/jpeg;base64, prefix
-                                // setStaticAdImagePreview(base64);
+                                setStaticAdImage(base64.split(',')[1]); // Remove data:image/jpeg;base64, prefix
+                                setStaticAdImagePreview(base64);
                               };
                               reader.readAsDataURL(file);
                             }
@@ -2554,6 +2559,33 @@ export default function MetaAdGenerator() {
                         </label>
                       </div>
                     </div>
+
+                    {/* Image Preview */}
+                    {staticAdImagePreview && (
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                          Uploaded Image Preview
+                        </Label>
+                        <div className="relative">
+                          <img 
+                            src={staticAdImagePreview} 
+                            alt="Uploaded ad"
+                            className="max-w-full h-auto max-h-64 rounded-lg border"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setStaticAdImage('');
+                              setStaticAdImagePreview('');
+                            }}
+                            className="absolute top-2 right-2 bg-white/80 hover:bg-white"
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -2588,12 +2620,16 @@ export default function MetaAdGenerator() {
                     </div>
 
                     <Button 
-                      // onClick={() => analyzeStaticAdMutation.mutate()}
-                      disabled={true}
+                      onClick={() => {
+                        if (staticAdImage) {
+                          alert('Static Ad Analysis feature coming soon! The uploaded image will be analyzed by Claude AI to extract messaging, visual elements, and generate Jones Road Beauty variations targeted to your selected persona.');
+                        }
+                      }}
+                      disabled={!staticAdImage}
                       className="w-full flex items-center justify-center space-x-2"
                     >
                       <Camera size={16} />
-                      <span>Analyze Ad & Generate Variations</span>
+                      <span>{staticAdImage ? 'Analyze Ad & Generate Variations' : 'Upload Image First'}</span>
                     </Button>
                   </div>
                 </CardContent>
