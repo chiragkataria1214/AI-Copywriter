@@ -102,6 +102,7 @@ export default function MetaAdGenerator() {
   const [useAdsForLanding, setUseAdsForLanding] = useState(false);
   const [adsContent, setAdsContent] = useState('');
   const [productBrief, setProductBrief] = useState('');
+  const [mainAngle, setMainAngle] = useState('');
   const [generatedLandingCopy, setGeneratedLandingCopy] = useState<{
     headline: string;
     subheadline: string;
@@ -604,7 +605,8 @@ export default function MetaAdGenerator() {
           useAdsContent: useAdsForLanding,
           adsContent: chosenAdsContent,
           brandDrBalance: brandDrBalance[0],
-          selectedProduct: landingPageType === 'multiProduct' ? selectedProducts.join(',') : selectedProduct
+          selectedProduct: landingPageType === 'multiProduct' ? selectedProducts.join(',') : selectedProduct,
+          mainAngle
         }
       });
     },
@@ -1818,6 +1820,35 @@ export default function MetaAdGenerator() {
                             } for authentic language patterns
                           </p>
                         )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Main Angle */}
+                <Card>
+                  <CardContent className="p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Target className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                      Main Angle
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="mainAngle" className="block text-sm font-medium text-gray-700 mb-2">
+                          Landing Page Hook
+                        </Label>
+                        <Textarea 
+                          id="mainAngle" 
+                          rows={3}
+                          className="w-full resize-none text-sm"
+                          placeholder="What's the main hook or angle? (e.g., 'Perfect for busy moms', 'The 5-minute glow', 'Anne's personal favorites')"
+                          value={mainAngle}
+                          onChange={(e) => setMainAngle(e.target.value)}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          The primary messaging angle that drives the entire landing page story
+                        </p>
                       </div>
                     </div>
                   </CardContent>

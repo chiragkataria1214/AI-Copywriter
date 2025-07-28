@@ -642,7 +642,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate landing page copy endpoint (protected)
   app.post('/api/generate-landing-copy', requireAuth, async (req, res) => {
     try {
-      const { landingPageType, productBrief, concept, subPersona, useAdsContent, adsContent, brandDrBalance, selectedProduct } = req.body;
+      const { landingPageType, productBrief, concept, subPersona, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle } = req.body;
+      
+      console.log('Landing copy request body:', { landingPageType, productBrief, concept, subPersona, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle });
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -656,7 +658,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         useAdsContent,
         adsContent,
         brandDrBalance,
-        selectedProduct
+        selectedProduct,
+        mainAngle
       });
       
       // Calculate performance metrics based on copy structure

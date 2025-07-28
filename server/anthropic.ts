@@ -44,6 +44,7 @@ export interface LandingPageRequest {
   adsContent?: string;
   brandDrBalance: number;
   selectedProduct?: string;
+  mainAngle?: string;
 }
 
 export async function generateAdCopy(request: AdCopyRequest, trainingConfig: TrainingConfig = defaultTrainingConfig) {
@@ -305,7 +306,7 @@ Analyze the uploaded ad creative image to extract key visual elements, text over
 }
 
 export async function generateLandingPageCopy(request: LandingPageRequest) {
-  const { landingPageType, productBrief, concept, subPersona, useAdsContent, adsContent, brandDrBalance, selectedProduct } = request;
+  const { landingPageType, productBrief, concept, subPersona, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle } = request;
   
   const brandPercent = brandDrBalance;
   const drPercent = 100 - brandPercent;
@@ -570,7 +571,10 @@ OUTPUT FORMATTING RULES:
 
   const userPrompt = `Create a high-converting ${landingPageType} landing page that drives sales and builds trust:
 
-PRODUCT BRIEF:
+${mainAngle ? `MAIN ANGLE/HOOK:
+${mainAngle}
+
+` : ''}PRODUCT BRIEF:
 ${productBrief}
 
 ${useAdsContent && adsContent ? `
