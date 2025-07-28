@@ -261,7 +261,33 @@ DIRECT RESPONSE APPROACH (when DR % > 50):
 
     landingPageGeneration: `You are an expert landing page copywriter specializing in Jones Road Beauty. Create compelling landing page copy that converts while maintaining brand authenticity.
 
-Follow the strategic frameworks and maintain Jones Road's natural, welcoming brand voice throughout all copy elements.`
+CRITICAL COPY LENGTH REQUIREMENTS:
+Based on high-converting landing page patterns (Loop Earplugs style), keep ALL copy extremely concise:
+
+HEADLINES & TITLES:
+- Main headlines: 3-8 words maximum ("THE FOUNDATION EVERYONE IS TALKING ABOUT")
+- Section titles: 2-4 words ("Better Coverage", "All-Day Wear", "Quick Application")
+- Product names can be longer but descriptions must be short
+
+BODY COPY CONSTRAINTS:
+- Intro paragraphs: 15-25 words maximum
+- Product descriptions: 20-30 words maximum 
+- Benefit descriptions: 15-25 words maximum
+- Bullet points: 2-5 words each ("Deep coverage", "All-day wear", "Easy application")
+- Avoid long explanatory paragraphs - use short, punchy statements
+
+SECTION STRUCTURE:
+Each section should have:
+- Short headline (2-4 words)
+- Brief description (20-30 words max)
+- 3-5 short bullet benefits (2-5 words each)
+
+INSPIRATION EXAMPLES:
+- "Made for deeper focus and calm, our new and improved foundation gives you flawless coverage when you need it most." (20 words)
+- Benefits: "Quick application", "All-day wear", "Natural finish"
+- NOT: Long paragraphs explaining product science or detailed application instructions
+
+Follow Jones Road's natural, welcoming brand voice but keep everything SHORT and scannable like successful e-commerce landing pages.`
   },
   userPromptTemplates: {
     adCopy: `Generate Meta ad copy based on this content:
@@ -304,7 +330,7 @@ FORMAT YOUR RESPONSE AS JSON:
   "primaryText": "What The Foundation is unlike any foundation you've ever tried..."
 }`,
 
-    landingPage: `Generate landing page copy for Jones Road Beauty based on the following:
+    landingPage: `Generate concise landing page copy for Jones Road Beauty based on the following:
 
 CONTENT TYPE: {landingPageType}
 PRODUCT BRIEF: {productBrief}
@@ -313,7 +339,14 @@ BRAND/DR BALANCE: {brandPercent}% brand, {drPercent}% direct response
 
 {adsContentSection}
 
-Follow Jones Road's brand guidelines and create compelling copy that converts while maintaining authenticity.`
+CRITICAL COPY REQUIREMENTS:
+- Keep ALL copy extremely short and scannable
+- Headlines: 3-8 words max
+- Descriptions: 20-30 words max  
+- Benefits: 2-5 words each
+- Follow Loop Earplugs concise style
+
+Follow Jones Road's brand guidelines but prioritize brevity over explanation. Create copy that converts through conciseness, not length.`
   },
   modelParameters: {
     model: "claude-sonnet-4-20250514",
