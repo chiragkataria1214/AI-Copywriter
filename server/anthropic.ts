@@ -825,6 +825,8 @@ SPECIAL NOTES FOR CUSTOM COPY REVISION:
 - Focus on the specific improvements requested while keeping Jones Road's authentic voice
 - Be adaptable to any copywriting format or purpose
 - Keep the educational, helpful tone that matches Jones Road's approach
+- Use clean, plain text formatting without special characters like asterisks, hashtags, or markdown
+- Output should be clean and readable without formatting symbols
 ` : ''}
 
 REVISION PRINCIPLES:
@@ -834,7 +836,7 @@ REVISION PRINCIPLES:
 - Ensure copy aligns with Jones Road's "effortless beauty" positioning
 - Use authentic language patterns that feel genuine
 
-Return ONLY the revised content without explanations or formatting.`;
+Return ONLY the revised content without explanations, special characters, or markdown formatting. Use clean, plain text only.`;
 
   const userPrompt = `ORIGINAL CONTENT:
 "${originalContent}"
@@ -897,7 +899,9 @@ Time-Constrained Professional: Career-focused women needing quick, polished look
 Natural Beauty Seeker: Women wanting to enhance rather than mask their natural features
 
 OUTPUT FORMATTING GUIDELINES:
-- Use detailed section headers and numbered lists when appropriate
+- Use clean, readable formatting without special characters like asterisks, hashtags, or markdown
+- Structure content with clear section headers using plain text
+- Use numbered lists and bullet points with simple dashes or numbers
 - Include specific examples and references (like competitor analysis)
 - Provide comprehensive strategic recommendations
 - Use professional marketing terminology and structure
@@ -905,6 +909,7 @@ OUTPUT FORMATTING GUIDELINES:
 - Break down complex concepts into clear, organized sections
 - Reference specific design elements, copy blocks, and user experience details
 - Maintain the strategic depth and professional format of marketing briefs
+- Output should be clean plain text that displays properly without formatting characters
 
 YOUR TASK:
 Create copy that fulfills the user's specific request while maintaining Jones Road Beauty's authentic brand voice AND matching the detailed, professional format style they prefer. Structure your response to match the comprehensive, strategic format of their input.
@@ -962,6 +967,8 @@ Please analyze the structure and format of the user's request and mirror that st
 - Strategic recommendations → Provide strategic recommendations
 - Implementation details → Include implementation details
 - Bullet points and structured lists → Use similar formatting
+
+IMPORTANT: Use only clean, plain text formatting. Avoid special characters like asterisks (*), hashtags (#), brackets [], or other markdown formatting. Use simple numbered lists (1. 2. 3.) and bullet points with dashes (-) for clean, readable output.
 
 Create copy that fulfills this request while maintaining Jones Road Beauty's authentic brand voice, addressing the target audience effectively, AND matching the comprehensive format and professional structure demonstrated in their brief.`;
 
