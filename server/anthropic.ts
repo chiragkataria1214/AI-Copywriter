@@ -96,15 +96,26 @@ export interface StaticAdAnalysisRequest {
 export async function generateAdCopy(request: AdCopyRequest, trainingConfig: TrainingConfig = defaultTrainingConfig) {
   const { transcription, customBrief, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProduct } = request;
   
-  const brandPercent = brandDrBalance;
+  // Provide safe defaults for undefined values
+  const safeBrandDrBalance = brandDrBalance || 50;
+  const brandPercent = safeBrandDrBalance;
   const drPercent = 100 - brandPercent;
+  const safeConcept = concept || 'lifeJuggler';
+  const safeTargetAudience = targetAudience || 'busy modern women';
+  const safeSubPersona = subPersona || '';
   
-  const systemPrompt = trainingConfig.systemPrompts.adCopyGeneration
+  // Safe access to system prompt with fallback
+  const baseSystemPrompt = trainingConfig?.systemPrompts?.adCopyGeneration || 
+    `You are an expert Meta ad copywriter specializing in Jones Road Beauty's brand voice. 
+     Create authentic, engaging ad copy that balances brand storytelling ({brandPercent}%) with direct response ({drPercent}%).
+     Target audience: {targetAudience}. Concept: {concept}{subPersona}.`;
+  
+  const systemPrompt = baseSystemPrompt
     .replace('{brandPercent}', brandPercent.toString())
     .replace('{drPercent}', drPercent.toString())
-    .replace('{targetAudience}', targetAudience)
-    .replace('{concept}', concept)
-    .replace('{subPersona}', subPersona ? ` (${subPersona})` : '');
+    .replace('{targetAudience}', safeTargetAudience)
+    .replace('{concept}', safeConcept)
+    .replace('{subPersona}', safeSubPersona ? ` (${safeSubPersona})` : '');
 
   // Fetch landing page content if URL is provided
   let landingPageContent = '';
@@ -136,8 +147,8 @@ Ensure the ad copy creates a seamless transition from ad to landing page. The me
 ` : '';
 
   // Detect mom personas and add mom-specific targeting
-  const isMomPersona = concept.toLowerCase().includes('mom') || 
-                      (subPersona && subPersona.toLowerCase().includes('mom'));
+  const isMomPersona = safeConcept.toLowerCase().includes('mom') || 
+                      (safeSubPersona && safeSubPersona.toLowerCase().includes('mom'));
   
   const momTargetingSection = isMomPersona ? `
 
@@ -1003,7 +1014,7 @@ INSTRUCTIONS:
             type: "image",
             source: {
               type: "base64",
-              media_type: detectImageType(staticAdImage) || "image/jpeg",
+              media_type: detectImageType(staticAdImage) as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
               data: staticAdImage
             }
           }
