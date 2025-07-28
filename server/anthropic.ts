@@ -897,7 +897,25 @@ GUIDELINES:
 - Adapt length and format to the request's needs
 - If product-specific, incorporate relevant product benefits naturally`;
 
-  const audienceContext = getAudienceContext(request.concept, request.subPersona);
+  // Define audience context based on concept
+  const getAudienceDescription = (concept: string, subPersona?: string) => {
+    const baseDescriptions = {
+      lifeJuggler: "Busy women managing multiple responsibilities who want simple, effective beauty solutions that work with their hectic lifestyle",
+      cleanBeautyEnthusiast: "Health-conscious consumers seeking natural, safe beauty products with clean ingredients and transparent formulations",
+      timeConstrainedProfessional: "Career-focused women needing quick, polished looks that transition from office to evening seamlessly",
+      naturalBeautySeeker: "Women wanting to enhance rather than mask their natural features, preferring authentic, effortless beauty"
+    };
+    
+    let description = baseDescriptions[concept as keyof typeof baseDescriptions] || baseDescriptions.lifeJuggler;
+    
+    if (subPersona === 'newMom') {
+      description += ". Specifically new mothers dealing with changing skin, limited time, and needing beauty solutions that work with their new lifestyle demands";
+    }
+    
+    return description;
+  };
+
+  const audienceDescription = getAudienceDescription(request.concept, request.subPersona);
   const productContext = request.selectedProduct ? `\n\nPRODUCT CONTEXT: ${request.selectedProduct}` : '';
   const brandBalance = request.brandDrBalance || 50;
   const balanceGuidance = brandBalance > 60 
@@ -909,7 +927,7 @@ GUIDELINES:
   const userPrompt = `USER'S REQUEST:
 ${request.customRequest}
 
-TARGET AUDIENCE: ${audienceContext.description}
+TARGET AUDIENCE: ${audienceDescription}
 ${productContext}
 
 BRAND/DR BALANCE: ${brandBalance}% brand voice - ${balanceGuidance}

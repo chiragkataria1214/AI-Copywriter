@@ -6,7 +6,16 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
-**Latest Update - Added Multi Product Landing Page Type (July 28, 2025)**
+**Latest Update - Added Custom Request Chat Feature (July 28, 2025)**
+- **✅ CUSTOM REQUEST TAB**: Added flexible "Custom Request" tab for open-ended copywriting requests beyond standard templates
+- **✅ CHAT-LIKE INTERFACE**: Built conversational interface for any copywriting need - briefs, social media, emails, product announcements
+- **✅ REQUEST HISTORY**: Added history tracking showing recent custom requests with copy-to-clipboard functionality
+- **✅ JONES ROAD VOICE**: Maintains authentic brand voice while adapting to any format or copywriting request
+- **✅ BACKEND INTEGRATION**: Created '/api/generate-custom-copy' endpoint with audience context and brand balance controls
+- **✅ NAVIGATION ENHANCEMENT**: Fixed admin page navigation with "Back to Main App" buttons on all admin interfaces
+- **✅ FLEXIBLE COPYWRITING**: Users can now request briefs, campaigns, social content, or any marketing copy outside standard templates
+
+**Previous Update - Added Multi Product Landing Page Type (July 28, 2025)**
 - **✅ NEW LANDING PAGE TYPE**: Added "Multi Product Page" option to landing page generator for showcasing product collections and cross-selling
 - **✅ DUAL-PATTERN AI STRUCTURE**: Enhanced AI generation combining Loop Earplugs social proof patterns with Jones Road Beauty's clean, simplified approach
 - **✅ ENHANCED UI GRID**: Updated landing page type selection to accommodate three options with improved grid layout and descriptions
