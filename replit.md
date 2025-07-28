@@ -6,7 +6,12 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
-**Latest Update - Added Custom Request Chat Feature (July 28, 2025)**
+**Latest Update - Enhanced Custom Request with Revision System (July 28, 2025)**
+- **✅ EDIT/REVISION SYSTEM**: Added full revision capabilities to Custom Request feature with "Edit" button and feedback system
+- **✅ FORMAT MATCHING**: Enhanced AI to mirror user's brief format and structure - professional marketing terminology, numbered sections, detailed breakdowns
+- **✅ STRATEGIC OUTPUT**: AI now provides comprehensive strategic recommendations with implementation details matching industry standards
+- **✅ REVISION INTEGRATION**: Custom copy revisions work seamlessly with existing revision system, maintaining Jones Road voice during edits
+- **✅ PROFESSIONAL STRUCTURE**: Output matches detailed formatting style of user briefs with section headers, strategic depth, and actionable recommendations
 - **✅ CUSTOM REQUEST TAB**: Added flexible "Custom Request" tab for open-ended copywriting requests beyond standard templates
 - **✅ CHAT-LIKE INTERFACE**: Built conversational interface for any copywriting need - briefs, social media, emails, product announcements
 - **✅ REQUEST HISTORY**: Added history tracking showing recent custom requests with copy-to-clipboard functionality

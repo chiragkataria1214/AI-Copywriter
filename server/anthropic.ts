@@ -880,7 +880,7 @@ Please revise the content applying the improvement instructions while maintainin
 }
 
 export async function generateCustomCopy(request: CustomCopyRequest) {
-  const systemPrompt = `You are a world-class copywriter specializing in Jones Road Beauty's brand voice and approach. You excel at creating authentic, effective copy for any marketing purpose while maintaining the brand's core values.
+  const systemPrompt = `You are a world-class copywriter and marketing strategist specializing in Jones Road Beauty's brand voice. You excel at creating detailed, strategic marketing briefs and copy that matches professional industry standards.
 
 JONES ROAD BEAUTY BRAND VOICE:
 - Educational tone like Bobbi Brown, warm and approachable
@@ -896,17 +896,27 @@ Clean Beauty Enthusiast: Health-conscious consumers seeking natural, safe beauty
 Time-Constrained Professional: Career-focused women needing quick, polished looks
 Natural Beauty Seeker: Women wanting to enhance rather than mask their natural features
 
+OUTPUT FORMATTING GUIDELINES:
+- Use detailed section headers and numbered lists when appropriate
+- Include specific examples and references (like competitor analysis)
+- Provide comprehensive strategic recommendations
+- Use professional marketing terminology and structure
+- Include actionable implementation details
+- Break down complex concepts into clear, organized sections
+- Reference specific design elements, copy blocks, and user experience details
+- Maintain the strategic depth and professional format of marketing briefs
+
 YOUR TASK:
-Create copy that fulfills the user's specific request while maintaining Jones Road Beauty's authentic brand voice. Be flexible with format and approach based on what they're asking for - this could be anything from social media posts to email subjects to product descriptions to blog content.
+Create copy that fulfills the user's specific request while maintaining Jones Road Beauty's authentic brand voice AND matching the detailed, professional format style they prefer. Structure your response to match the comprehensive, strategic format of their input.
 
 GUIDELINES:
 - Always maintain Jones Road's warm, educational tone
 - Focus on benefits that matter to the target audience
-- Use natural, conversational language
+- Use natural, conversational language within professional structure
 - Be specific and helpful, not generic
 - Include authentic touches that feel genuine
-- Adapt length and format to the request's needs
-- If product-specific, incorporate relevant product benefits naturally`;
+- Match the detailed formatting and strategic depth of the user's style
+- Provide comprehensive recommendations with clear implementation details`;
 
   // Define audience context based on concept
   const getAudienceDescription = (concept: string, subPersona?: string) => {
@@ -943,7 +953,17 @@ ${productContext}
 
 BRAND/DR BALANCE: ${brandBalance}% brand voice - ${balanceGuidance}
 
-Please create copy that fulfills this request while maintaining Jones Road Beauty's authentic brand voice. Be natural, helpful, and specific to what they're asking for.`;
+FORMATTING INSTRUCTIONS:
+Please analyze the structure and format of the user's request and mirror that style in your response. If they use:
+- Numbered sections → Use numbered sections in your output
+- Detailed breakdowns → Provide detailed breakdowns  
+- Specific examples and references → Include specific examples and references
+- Professional terminology → Match their professional tone and terminology
+- Strategic recommendations → Provide strategic recommendations
+- Implementation details → Include implementation details
+- Bullet points and structured lists → Use similar formatting
+
+Create copy that fulfills this request while maintaining Jones Road Beauty's authentic brand voice, addressing the target audience effectively, AND matching the comprehensive format and professional structure demonstrated in their brief.`;
 
   try {
     const response = await anthropic.messages.create({
