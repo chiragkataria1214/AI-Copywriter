@@ -17,6 +17,7 @@ export function useAuth() {
       return failureCount < 2;
     },
     staleTime: 0, // Don't cache auth state
+    gcTime: 0, // Don't store in cache
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     refetchInterval: false

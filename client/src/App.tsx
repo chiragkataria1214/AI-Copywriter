@@ -20,6 +20,15 @@ import DirectAccess from "@/pages/direct-access";
 function AuthenticatedRouter() {
   const { user, isLoading, isAuthenticated, isUnauthenticated } = useAuth();
   const [location] = useLocation();
+  
+  // Debug authentication state
+  console.log('AuthenticatedRouter debug:', {
+    location,
+    user: user ? { id: user.id, username: user.username } : null,
+    isLoading,
+    isAuthenticated,
+    isUnauthenticated
+  });
 
   // Check if we're on a bypass route - allow direct access
   if (location.startsWith('/demo') || location.startsWith('/bypass') || location.startsWith('/analytics') || location.startsWith('/direct')) {

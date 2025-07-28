@@ -23,14 +23,23 @@ export default function Login() {
         body: data
       });
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Force clear all queries and refetch fresh auth state
+      queryClient.clear();
+      
+      // Immediately refetch user data to ensure we have fresh authentication
+      await queryClient.prefetchQuery({
+        queryKey: ['/api/me'],
+        staleTime: 0
+      });
+      
       toast({
         title: "Welcome back!",
         description: "You've successfully logged in.",
       });
       
-      // Force a complete page reload to ensure session is properly loaded
-      window.location.href = '/';
+      // Navigate using router instead of window.location
+      setLocation('/');
     },
     onError: (error) => {
       console.error('Login error:', error);
