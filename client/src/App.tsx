@@ -14,6 +14,7 @@ import NotFound from "@/pages/not-found";
 import BypassPage from "@/pages/bypass";
 import DemoGenerator from "@/pages/demo-generator";
 import ReviewAnalytics from "@/pages/review-analytics";
+import DirectAccess from "@/pages/direct-access";
 
 
 function AuthenticatedRouter() {
@@ -21,12 +22,13 @@ function AuthenticatedRouter() {
   const [location] = useLocation();
 
   // Check if we're on a bypass route - allow direct access
-  if (location.startsWith('/demo') || location.startsWith('/bypass') || location.startsWith('/analytics')) {
+  if (location.startsWith('/demo') || location.startsWith('/bypass') || location.startsWith('/analytics') || location.startsWith('/direct')) {
     return (
       <Switch>
         <Route path="/demo" component={DemoGenerator} />
         <Route path="/analytics" component={ReviewAnalytics} />
         <Route path="/bypass" component={BypassPage} />
+        <Route path="/direct" component={DirectAccess} />
         <Route component={DemoGenerator} />
       </Switch>
     );
@@ -38,7 +40,7 @@ function AuthenticatedRouter() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Checking authentication...</p>
         </div>
       </div>
     );

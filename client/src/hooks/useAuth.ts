@@ -19,7 +19,7 @@ export function useAuth() {
     staleTime: 0, // Don't cache auth state
     refetchOnWindowFocus: true,
     refetchOnMount: true,
-    refetchInterval: false,
+    refetchInterval: false
   });
 
   // Logout mutation

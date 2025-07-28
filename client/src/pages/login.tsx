@@ -28,14 +28,9 @@ export default function Login() {
         title: "Welcome back!",
         description: "You've successfully logged in.",
       });
-      // Clear auth queries and invalidate to refetch user data
-      queryClient.removeQueries({ queryKey: ['/api/me'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/me'] });
       
-      // Navigate to home page
-      setTimeout(() => {
-        setLocation('/');
-      }, 100);
+      // Force a complete page reload to ensure session is properly loaded
+      window.location.href = '/';
     },
     onError: (error) => {
       console.error('Login error:', error);
