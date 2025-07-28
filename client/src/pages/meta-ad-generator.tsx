@@ -83,10 +83,10 @@ export default function MetaAdGenerator() {
   
   // Auto-load training config when debug tab is accessed
   useEffect(() => {
-    if (activeTab === 'debug' && !trainingConfig && !configLoading && (user || isDemoMode)) {
+    if (activeTab === 'debug' && !trainingConfig && !configLoading) {
       loadTrainingConfigMutation.mutate();
     }
-  }, [activeTab, user, isDemoMode]);
+  }, [activeTab]);
   
   // Load review stats
   useEffect(() => {
@@ -433,22 +433,16 @@ export default function MetaAdGenerator() {
     }
   });
 
-  // Admin authentication
+  // Admin state (bypassed for direct access)
+  const [isAdmin, setIsAdmin] = useState(true);
+  
+  // Admin authentication (bypassed)
   const authenticateAdmin = () => {
-    // Simple admin check - in production this would be more secure
-    if (adminPassword === 'admin123') {
-      setIsAdmin(true);
-      toast({
-        title: "Admin Access Granted",
-        description: "You can now edit training configuration.",
-      });
-    } else {
-      toast({
-        title: "Access Denied",
-        description: "Invalid admin password.",
-        variant: "destructive"
-      });
-    }
+    setIsAdmin(true);
+    toast({
+      title: "Admin Access Granted",
+      description: "You can now edit training configuration.",
+    });
   };
 
   // API mutations for generating copy
