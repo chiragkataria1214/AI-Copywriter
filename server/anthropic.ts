@@ -790,7 +790,7 @@ CTA: [Main call-to-action]
 export interface RevisionRequest {
   originalContent: string;
   revisionInstructions: string;
-  contentType: 'headline' | 'primaryText' | 'landingCopy';
+  contentType: 'headline' | 'primaryText' | 'landingCopy' | 'custom';
   context?: {
     transcription?: string;
     customBrief?: string;
@@ -800,6 +800,7 @@ export interface RevisionRequest {
     brandDrBalance?: number;
     selectedProduct?: string;
     field?: string;
+    customRequest?: string;
   };
 }
 
@@ -817,8 +818,17 @@ JONES ROAD BEAUTY BRAND GUIDELINES:
 
 Your task is to revise ${contentType} copy based on specific improvement instructions while maintaining the Jones Road Beauty brand voice and style.
 
+${contentType === 'custom' ? `
+SPECIAL NOTES FOR CUSTOM COPY REVISION:
+- This could be any format: social media, email, brief, announcement, etc.
+- Maintain the original format and structure unless specifically asked to change it
+- Focus on the specific improvements requested while keeping Jones Road's authentic voice
+- Be adaptable to any copywriting format or purpose
+- Keep the educational, helpful tone that matches Jones Road's approach
+` : ''}
+
 REVISION PRINCIPLES:
-- Keep the core message and structure intact
+- Keep the core message and structure intact (unless explicitly asked to change)
 - Apply the requested improvements precisely
 - Maintain natural, conversational tone
 - Ensure copy aligns with Jones Road's "effortless beauty" positioning
@@ -841,6 +851,7 @@ CONTEXT:
 - Product: ${context.selectedProduct || 'General Jones Road Beauty'}
 - Brand/DR Balance: ${context.brandDrBalance || 50}% brand voice
 ${context.customBrief ? `- Custom Brief: ${context.customBrief}` : ''}
+${context.customRequest && contentType === 'custom' ? `- Original Request: ${context.customRequest}` : ''}
 ` : ''}
 
 Please revise the content applying the improvement instructions while maintaining Jones Road Beauty's brand voice and the original intent.`;

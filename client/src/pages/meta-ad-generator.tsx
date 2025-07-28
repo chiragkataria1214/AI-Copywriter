@@ -57,7 +57,7 @@ export default function MetaAdGenerator() {
   const [showRevisionPanel, setShowRevisionPanel] = useState(false);
   const [revisionInstructions, setRevisionInstructions] = useState('');
   const [selectedItemForRevision, setSelectedItemForRevision] = useState<{
-    type: 'headline' | 'primaryText' | 'landingCopy';
+    type: 'headline' | 'primaryText' | 'landingCopy' | 'custom';
     index?: number;
     field?: string;
   } | null>(null);
@@ -505,14 +505,15 @@ export default function MetaAdGenerator() {
   const reviseContentMutation = useMutation({
     mutationFn: async ({ instructions, type, index, field }: {
       instructions: string;
-      type: 'headline' | 'primaryText' | 'landingCopy';
+      type: 'headline' | 'primaryText' | 'landingCopy' | 'custom';
       index?: number;
       field?: string;
     }) => {
       const payload = {
         originalContent: type === 'headline' ? generatedHeadlines[index || 0].copy :
                         type === 'primaryText' ? generatedPrimaryText :
-                        type === 'landingCopy' && field ? (generatedLandingCopy as any)[field] : '',
+                        type === 'landingCopy' && field ? (generatedLandingCopy as any)[field] :
+                        type === 'custom' ? generatedCustomResponse : '',
         revisionInstructions: instructions,
         contentType: type,
         context: {
@@ -523,7 +524,8 @@ export default function MetaAdGenerator() {
           targetAudience,
           brandDrBalance: brandDrBalance[0],
           selectedProduct,
-          field: field || undefined
+          field: field || undefined,
+          customRequest: type === 'custom' ? customRequest : undefined
         }
       };
       
@@ -548,6 +550,8 @@ export default function MetaAdGenerator() {
             ...prev,
             [field]: data.revisedContent
           }));
+        } else if (type === 'custom') {
+          setGeneratedCustomResponse(data.revisedContent);
         }
       }
       
@@ -2424,15 +2428,29 @@ export default function MetaAdGenerator() {
                           <Sparkles className="text-jones-primary mr-2 sm:mr-3" size={18} />
                           Generated Copy
                         </h3>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => copyToClipboard(generatedCustomResponse, 'custom')}
-                          className="flex items-center space-x-1"
-                        >
-                          <Copy size={14} />
-                          <span>Copy</span>
-                        </Button>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedItemForRevision({ type: 'custom' });
+                              setShowRevisionPanel(true);
+                            }}
+                            className="flex items-center space-x-1"
+                          >
+                            <Sparkles size={14} />
+                            <span>Edit</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(generatedCustomResponse, 'custom')}
+                            className="flex items-center space-x-1"
+                          >
+                            <Copy size={14} />
+                            <span>Copy</span>
+                          </Button>
+                        </div>
                       </div>
                       
                       <div className="bg-gray-50 rounded-lg p-4 border">
