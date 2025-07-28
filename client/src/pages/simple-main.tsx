@@ -1,6 +1,6 @@
-import StandaloneApp from './standalone-app';
+import DeploymentTest from './deployment-test';
 
-// Completely isolated main component - zero authentication
+// Minimal deployment test - zero dependencies
 export default function SimpleMain() {
-  return <StandaloneApp />;
+  return <DeploymentTest />;
 }

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -22,10 +21,15 @@ export default function StandaloneApp() {
           customInput: 'Generate ad copy for Jones Road Beauty foundation'
         })
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       setOutput(JSON.stringify(data, null, 2));
     } catch (error) {
-      setOutput('Error: ' + error.message);
+      setOutput('Error: ' + (error instanceof Error ? error.message : String(error)));
     }
     setLoading(false);
   };
