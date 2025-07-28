@@ -261,36 +261,33 @@ DIRECT RESPONSE APPROACH (when DR % > 50):
 
     landingPageGeneration: `You are an expert landing page copywriter specializing in Jones Road Beauty. Create compelling landing page copy that converts while maintaining brand authenticity.
 
-CRITICAL LISTICLE FRAMEWORK REQUIREMENTS:
-Follow the uploaded framework for Listicle/Reason-Why Format with mobile-optimized copy:
+CRITICAL COPY LENGTH REQUIREMENTS:
+Based on high-converting landing page patterns (Loop Earplugs style), keep ALL copy extremely concise:
 
-SENTENCE LENGTH RULE:
-- **All sentences must be 8-12 words maximum** for mobile comprehension
-- **Briefly enumerate reasons** - no long explanatory paragraphs
-- Focus on unique features, lifestyle fit, and trust signals
+HEADLINES & TITLES:
+- Main headlines: 3-8 words maximum ("THE FOUNDATION EVERYONE IS TALKING ABOUT")
+- Section titles: 2-4 words ("Better Coverage", "All-Day Wear", "Quick Application")
+- Product names can be longer but descriptions must be short
 
-LISTICLE STRUCTURE:
-- **Headline:** "Top N Reasons" or "Why You Should..." format (8-12 words)
-- **Introduction:** 1-2 sentences maximum (8-12 words each)
-- **Each Reason:** Short title + brief explanation (8-12 words each)
-- **Benefits:** 2-5 words each ("Quick application", "All-day wear", "Natural finish")
+BODY COPY CONSTRAINTS:
+- Intro paragraphs: 15-25 words maximum
+- Product descriptions: 20-30 words maximum 
+- Benefit descriptions: 15-25 words maximum
+- Bullet points: 2-5 words each ("Deep coverage", "All-day wear", "Easy application")
+- Keep paragraphs to 1-3 sentences maximum
 
-EXAMPLES OF CORRECT LENGTH:
-✓ "Made for deeper focus and calm." (7 words)
-✓ "Our new foundation gives flawless coverage." (7 words)  
-✓ "Perfect for busy morning routines." (6 words)
+SECTION STRUCTURE:
+Each section should have:
+- Short headline (2-4 words)
+- Brief description (20-30 words max)
+- 3-5 short bullet benefits (2-5 words each)
 
-EXAMPLES TO AVOID:
-✗ "That moment when you're running late again, and you catch yourself in the mirror looking completely washed out." (18 words - TOO LONG)
-✗ Long paragraphs explaining product science or application instructions
+INSPIRATION EXAMPLES:
+- "Made for deeper focus and calm, our new and improved foundation gives you flawless coverage when you need it most." (20 words)
+- Benefits: "Quick application", "All-day wear", "Natural finish"
+- NOT: Long paragraphs explaining product science or detailed application instructions
 
-MOBILE-FIRST COPY:
-- Each sentence stands alone and makes sense
-- Scannable format with short bursts of information
-- No complex sentence structures or multiple clauses
-- Front-load key differentiators early
-
-Follow Jones Road's natural, welcoming brand voice while strictly adhering to the 8-12 words per sentence rule for mobile optimization.`
+Follow Jones Road's natural, welcoming brand voice but keep everything SHORT and scannable like successful e-commerce landing pages.`
   },
   userPromptTemplates: {
     adCopy: `Generate Meta ad copy based on this content:
@@ -333,7 +330,7 @@ FORMAT YOUR RESPONSE AS JSON:
   "primaryText": "What The Foundation is unlike any foundation you've ever tried..."
 }`,
 
-    landingPage: `Generate mobile-optimized listicle landing page copy for Jones Road Beauty:
+    landingPage: `Generate concise landing page copy for Jones Road Beauty based on the following:
 
 CONTENT TYPE: {landingPageType}
 PRODUCT BRIEF: {productBrief}
@@ -342,24 +339,21 @@ BRAND/DR BALANCE: {brandPercent}% brand, {drPercent}% direct response
 
 {adsContentSection}
 
-MANDATORY 8-12 WORD SENTENCE RULE:
-Every sentence must be 8-12 words. Count each word. No exceptions.
+CRITICAL COPY REQUIREMENTS:
+- Keep ALL copy extremely short and scannable
+- Headlines: 3-8 words max
+- Intro paragraphs: 15-25 words maximum
+- Section descriptions: 20-30 words maximum  
+- Benefits: 2-5 words each
+- Follow Loop Earplugs concise style - no long explanatory paragraphs
 
-EXACT FORMAT TO FOLLOW:
-❌ WRONG: "You love your kids, but let's be honest - between school lunches, lost socks, and getting everyone out the door, your morning routine gets exactly zero priority." (30 words - TOO LONG)
+MOBILE-OPTIMIZED STRUCTURE:
+- Break long thoughts into multiple short sentences
+- Each paragraph should be 1-3 sentences maximum
+- Use short, punchy statements that are easy to scan
+- Front-load key benefits and differentiators
 
-✅ CORRECT: "You love your kids. But mornings are pure chaos. Your routine gets zero priority. Lost socks and lunch boxes steal your time." (4 sentences, each 8-12 words)
-
-❌ WRONG: "This foundation gives you that 'I woke up like this' look because it melts into your skin instead of sitting on top." (21 words - TOO LONG)
-
-✅ CORRECT: "This foundation melts into your skin perfectly. You get that 'I woke up like this' look." (2 sentences, each under 12 words)
-
-INTRODUCTION EXAMPLE:
-"Mornings are chaos. Kids need everything. You need five minutes for yourself. This foundation works with busy mom life."
-
-Each sentence = 2-4 words, 4 words, 8 words, 8 words. All under 12 words.
-
-Follow Jones Road's brand voice while strictly adhering to mobile-first copy constraints. Brevity drives conversion.`
+Follow Jones Road's brand guidelines but prioritize brevity over explanation. Create copy that converts through conciseness, not length.`
   },
   modelParameters: {
     model: "claude-sonnet-4-20250514",
