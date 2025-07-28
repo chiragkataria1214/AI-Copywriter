@@ -21,14 +21,16 @@ function AuthenticatedRouter() {
   const { user, isLoading, isAuthenticated, isUnauthenticated } = useAuth();
   const [location] = useLocation();
   
-  // Debug authentication state
-  console.log('AuthenticatedRouter debug:', {
-    location,
-    user: user ? { id: user.id, username: user.username } : null,
-    isLoading,
-    isAuthenticated,
-    isUnauthenticated
-  });
+  // Debug authentication state - remove after fix
+  if (Math.random() < 0.1) { // Only log 10% of the time to reduce noise
+    console.log('AuthenticatedRouter debug:', {
+      location,
+      user: user ? { id: user.id, username: user.username } : null,
+      isLoading,
+      isAuthenticated,
+      isUnauthenticated
+    });
+  }
 
   // Check if we're on a bypass route - allow direct access
   if (location.startsWith('/demo') || location.startsWith('/bypass') || location.startsWith('/analytics') || location.startsWith('/direct')) {

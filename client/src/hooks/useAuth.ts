@@ -16,13 +16,10 @@ export function useAuth() {
       }
       return failureCount < 2;
     },
-    staleTime: 0, // Don't cache auth state
-    gcTime: 0, // Don't store in cache
-    refetchOnWindowFocus: true,
+    staleTime: 1000 * 60 * 5, // 5 minutes - reasonable caching
+    refetchOnWindowFocus: false,
     refetchOnMount: true,
-    refetchInterval: false,
-    // Force query to always refetch without using cached data
-    queryHash: Date.now().toString() // This forces a fresh query every time
+    refetchInterval: false
   });
 
   // Logout mutation
@@ -66,14 +63,16 @@ export function useAuth() {
   const isAuthenticated = !!user && !error;
   const isUnauthenticated = error && (error?.message?.includes('401') || error?.message?.includes('Authentication required'));
   
-  // Debug authentication state
-  console.log('useAuth debug:', {
-    user: user ? { id: user.id, username: user.username } : null,
-    error: error ? error.message : null,
-    isAuthenticated,
-    isUnauthenticated,
-    isLoading
-  });
+  // Debug authentication state - remove after fix
+  if (Math.random() < 0.1) { // Only log 10% of the time to reduce noise
+    console.log('useAuth debug:', {
+      user: user ? { id: user.id, username: user.username } : null,
+      error: error ? error.message : null,
+      isAuthenticated,
+      isUnauthenticated,
+      isLoading
+    });
+  }
 
   return {
     user,
