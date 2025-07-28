@@ -2508,6 +2508,136 @@ export default function MetaAdGenerator() {
             </div>
           </TabsContent>
 
+          {/* Static Ad Analysis Tab */}
+          <TabsContent value="static-ad">
+            <div className="space-y-6">
+              {/* Upload Section */}
+              <Card>
+                <CardContent className="p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <Camera className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                    Static Ad Analysis
+                  </h3>
+                  
+                  <div className="space-y-4 sm:space-y-6">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                        Upload Ad Image
+                      </Label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          id="static-ad-upload"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (e) => {
+                                const base64 = e.target?.result as string;
+                                // setStaticAdImage(base64.split(',')[1]); // Remove data:image/jpeg;base64, prefix
+                                // setStaticAdImagePreview(base64);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                        <label htmlFor="static-ad-upload" className="cursor-pointer">
+                          <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                          <p className="text-sm text-gray-600">
+                            Click to upload an ad image (JPG, PNG)
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Upload competitor ads, social media posts, or any static creative
+                          </p>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Target Audience</Label>
+                        <Select value={concept} onValueChange={setConcept}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select audience" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="lifeJuggler">Life Juggler</SelectItem>
+                            <SelectItem value="cleanBeautyEnthusiast">Clean Beauty Enthusiast</SelectItem>
+                            <SelectItem value="timeConstrainedProfessional">Time-Constrained Professional</SelectItem>
+                            <SelectItem value="naturalBeautySeeker">Natural Beauty Seeker</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Sub-Persona</Label>
+                        <Select value={subPersona} onValueChange={setSubPersona}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select sub-persona" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="newMom">New Mom</SelectItem>
+                            <SelectItem value="workingMom">Working Mom</SelectItem>
+                            <SelectItem value="busyProfessional">Busy Professional</SelectItem>
+                            <SelectItem value="naturalBeautyLover">Natural Beauty Lover</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <Button 
+                      // onClick={() => analyzeStaticAdMutation.mutate()}
+                      disabled={true}
+                      className="w-full flex items-center justify-center space-x-2"
+                    >
+                      <Camera size={16} />
+                      <span>Analyze Ad & Generate Variations</span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Coming Soon Notice */}
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <div className="bg-blue-50 rounded-lg p-6">
+                    <Camera className="mx-auto h-12 w-12 text-blue-500 mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Static Ad Analysis - Coming Soon
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Upload any competitor ad or static creative and get Jones Road Beauty variations with:
+                    </p>
+                    <div className="text-left max-w-md mx-auto space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        <span className="text-sm text-gray-700">AI visual analysis of layout and messaging</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        <span className="text-sm text-gray-700">Text extraction from images</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        <span className="text-sm text-gray-700">Jones Road voice adaptations</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        <span className="text-sm text-gray-700">Multiple persona targeting</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        <span className="text-sm text-gray-700">Customer review integration</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           {/* Debug Tab */}
           <TabsContent value="debug">
             <div className="space-y-6">
