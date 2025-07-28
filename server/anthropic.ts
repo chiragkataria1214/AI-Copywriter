@@ -594,7 +594,8 @@ SPECIFIC INSTRUCTIONS:
 7. End each section with a soft CTA or continuation hook
 8. KEEP PARAGRAPHS SHORT (2-3 sentences maximum)
 9. Use bullet points or short phrases for better readability
-10. Maximum 50 words per reason section - be extremely concise and scannable like real listicles
+10. Maximum 30 words per bullet point - be extremely concise and scannable
+11. NO RISK REVERSAL SECTION - remove guarantees and risk reversal content completely
 
 ${landingPageType === 'multiProduct' ? `
 Generate complete multi-product landing page copy combining Loop Earplugs and Jones Road patterns. Structure your response as:
@@ -611,7 +612,6 @@ PRODUCT #3: [Supporting Product Name]
 COLLECTION BENEFITS: [Why this curated selection works as a complete routine]
 SOCIAL PROOF: [Mix of media mentions and customer testimonials]
 CTA: [Main collection call-to-action with bundle value]
-RISK REVERSAL: [Guarantee or trust elements]
 ` : `
 Generate complete landing page copy with all required sections. Structure your response as:
 
@@ -623,7 +623,6 @@ REASON #1: [Title]
 REASON #2: [Title]
 [Continue for all 5 reasons]
 CTA: [Main call-to-action]
-RISK REVERSAL: [Guarantee or trust elements]
 `}`;
 
   try {

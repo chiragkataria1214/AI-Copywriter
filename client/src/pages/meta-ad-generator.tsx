@@ -16,6 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'wouter';
+import { ProductSelection } from "@/components/ProductSelection";
 
 export default function MetaAdGenerator() {
   const [activeTab, setActiveTab] = useState('ads');
@@ -40,6 +41,7 @@ export default function MetaAdGenerator() {
   const [targetAudience, setTargetAudience] = useState('');
   const [landingPageUrl, setLandingPageUrl] = useState('');
   const [selectedProduct, setSelectedProduct] = useState('');
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   
   // Ad Copy States
   const [generatedHeadlines, setGeneratedHeadlines] = useState<Array<{ framework: string; copy: string }>>([]);
@@ -602,7 +604,7 @@ export default function MetaAdGenerator() {
           useAdsContent: useAdsForLanding,
           adsContent: chosenAdsContent,
           brandDrBalance: brandDrBalance[0],
-          selectedProduct
+          selectedProduct: landingPageType === 'multiProduct' ? selectedProducts.join(',') : selectedProduct
         }
       });
     },

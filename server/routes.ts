@@ -673,8 +673,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         (totalWords >= 800 ? 25 : totalWords / 32) + // Content depth  
         (result.introduction ? 15 : 0) + // Has introduction
         (result.cta ? 15 : 0) + // Has CTA
-        (result.riskReversal ? 10 : 0) + // Has risk reversal
-        (selectedProduct ? 15 : 5) // Product-specific insights
+        (selectedProduct ? 25 : 15) // Product-specific insights (bonus for no risk reversal)
       ));
       
       const readabilityScore = Math.min(10, Math.max(6,
