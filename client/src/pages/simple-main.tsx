@@ -1,6 +1,6 @@
-import MetaAdGenerator from './meta-ad-generator';
+import StandaloneApp from './standalone-app';
 
 // Completely isolated main component - zero authentication
 export default function SimpleMain() {
-  return <MetaAdGenerator />;
+  return <StandaloneApp />;
 }
