@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3, Database, Search, Filter, TrendingUp, Star, Users, Target } from "lucide-react";
+import { BarChart3, Database, Search, Filter, TrendingUp, Star, Users, Target, ArrowLeft, Home } from "lucide-react";
+import { Link } from "wouter";
 
 export default function ReviewAnalytics() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,6 +28,30 @@ export default function ReviewAnalytics() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Navigation Header */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          <div className="flex items-center gap-4">
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Main App
+              </Button>
+            </Link>
+            <div className="h-4 w-px bg-gray-300" />
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+                <Home className="h-4 w-4" />
+                Home
+              </Button>
+            </Link>
+          </div>
+          <div className="text-sm text-gray-500">
+            Review Analytics
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-6xl mx-auto px-6 py-4">

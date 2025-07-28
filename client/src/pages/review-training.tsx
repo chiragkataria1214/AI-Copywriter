@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Upload, Database, Brain, FileText, TrendingUp, Users, Search } from 'lucide-react';
+import { Upload, Database, Brain, FileText, TrendingUp, Users, Search, ArrowLeft, Home } from 'lucide-react';
+import { Link } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -151,6 +152,30 @@ export default function ReviewTraining() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Navigation Header */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          <div className="flex items-center gap-4">
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Main App
+              </Button>
+            </Link>
+            <div className="h-4 w-px bg-gray-300" />
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+                <Home className="h-4 w-4" />
+                Home
+              </Button>
+            </Link>
+          </div>
+          <div className="text-sm text-gray-500">
+            Review Training
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">

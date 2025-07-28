@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { Users, Plus, Edit, Trash2, Shield, User } from 'lucide-react';
+import { Users, Plus, Edit, Trash2, Shield, User, ArrowLeft, Home } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { Link } from 'wouter';
 
 interface User {
   id: string;
@@ -158,11 +159,37 @@ export default function UserManagement() {
 
   if (currentUser?.role !== 'admin') {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <Shield className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Admin Access Required</h3>
-          <p className="text-gray-500">You need admin privileges to access user management.</p>
+      <div>
+        {/* Navigation Header */}
+        <div className="bg-white border-b border-gray-200 px-4 py-3 mb-6">
+          <div className="flex items-center justify-between max-w-7xl mx-auto">
+            <div className="flex items-center gap-4">
+              <Link href="/">
+                <Button variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to Main App
+                </Button>
+              </Link>
+              <div className="h-4 w-px bg-gray-300" />
+              <Link href="/">
+                <Button variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+                  <Home className="h-4 w-4" />
+                  Home
+                </Button>
+              </Link>
+            </div>
+            <div className="text-sm text-gray-500">
+              User Management
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Shield className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Admin Access Required</h3>
+            <p className="text-gray-500">You need admin privileges to access user management.</p>
+          </div>
         </div>
       </div>
     );
@@ -170,6 +197,30 @@ export default function UserManagement() {
 
   return (
     <div className="space-y-6">
+      {/* Navigation Header */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3 mb-6">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          <div className="flex items-center gap-4">
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Main App
+              </Button>
+            </Link>
+            <div className="h-4 w-px bg-gray-300" />
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+                <Home className="h-4 w-4" />
+                Home
+              </Button>
+            </Link>
+          </div>
+          <div className="text-sm text-gray-500">
+            User Management
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
