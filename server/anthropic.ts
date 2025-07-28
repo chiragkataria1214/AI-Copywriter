@@ -640,8 +640,9 @@ RISK REVERSAL: [Guarantee or trust elements]
     console.log('AI Response for landing page:', content.substring(0, 500) + '...');
     
     // Parse the enhanced response structure with more flexible matching
-    const headlineMatch = content.match(/HEADLINE:?\s*(.+?)(?=\n|SUBHEADLINE|INTRODUCTION|$)/is) || 
-                         content.match(/^(.+?)(?=\n)/); // Fallback to first line if no HEADLINE: prefix
+    const headlineMatch = content.match(/HEADLINE:?\s*(.+?)(?=\n|SUBHEADLINE|INTRODUCTION|$)/is);
+    // If no HEADLINE prefix found, use the first line as headline
+    const fallbackHeadline = !headlineMatch ? content.match(/^(.+?)(?=\n)/) : null;
     const subheadlineMatch = content.match(/SUBHEADLINE:?\s*(.+?)(?=\n|INTRODUCTION|REASON|HERO PRODUCT|PRODUCT|$)/is);
     const introMatch = landingPageType === 'multiProduct' 
       ? content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=HERO PRODUCT|PRODUCT #?1|$)/i)
@@ -650,9 +651,12 @@ RISK REVERSAL: [Guarantee or trust elements]
     const riskReversalMatch = content.match(/RISK REVERSAL:?\s*([\s\S]*?)$/i);
     
     console.log('Parsing results:', {
-      headline: headlineMatch ? headlineMatch[1] : 'NOT FOUND',
+      headline: headlineMatch ? headlineMatch[1] : (fallbackHeadline ? fallbackHeadline[1] : 'NOT FOUND'),
       hasReasons: content.includes('REASON'),
-      contentStart: content.substring(0, 100)
+      hasProducts: content.includes('PRODUCT'),
+      hasHeroProduct: content.includes('HERO PRODUCT'),
+      landingPageType: landingPageType,
+      contentStart: content.substring(0, 200)
     });
     
     // Extract sections with improved parsing (works for REASON, PRODUCT, and HERO PRODUCT sections)
@@ -749,8 +753,10 @@ RISK REVERSAL: [Guarantee or trust elements]
       }
     }
     
+    const finalHeadline = headlineMatch ? headlineMatch[1] : (fallbackHeadline ? fallbackHeadline[1] : '');
+    
     return {
-      headline: headlineMatch ? headlineMatch[1].trim().replace(/\*\*/g, '') : '',
+      headline: finalHeadline.trim().replace(/\*\*/g, ''),
       subheadline: subheadlineMatch ? subheadlineMatch[1].trim().replace(/\*\*/g, '') : '',
       introduction: introMatch ? introMatch[1].trim().replace(/\*\*/g, '') : '',
       sections,
