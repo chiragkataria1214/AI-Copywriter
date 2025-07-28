@@ -443,23 +443,31 @@ JONES ROAD BEAUTY BRAND GUIDELINES:
 ${reviewInsights}
 
 ${landingPageType === 'multiProduct' ? `
-JONES ROAD MULTI PRODUCT PAGE STRUCTURE (INSPIRED BY LOOP EARPLUGS MODEL):
-- Strong social proof hero headline (like "THE MAKEUP EVERYONE IS TALKING ABOUT")
-- Brief collection introduction explaining the range value (30-50 words)  
-- Individual product showcases with clear differentiation and use cases
-- Visual icons/indicators for different product benefits
-- Individual CTAs per product while maintaining collection cohesion
-- Strong social proof elements throughout (customer numbers, reviews)
-- Bundle/routine sections showing products work better together
+JONES ROAD MULTI PRODUCT PAGE STRUCTURE (COMBINING LOOP + JONES ROAD PATTERNS):
+- Clean, simplified hero messaging following Jones Road's "Make up, Simplified" approach
+- Authority/recommendation element (like "Recommended by [Influencer]")
+- Brief collection introduction explaining the curated selection value (30-50 words)
+- Hero product prominence with supporting product grid
+- Individual product showcases with clear benefits and use cases  
+- Trust signals and media mentions for credibility
+- Individual pricing and CTAs while maintaining collection cohesion
 
-SUCCESSFUL MULTI-PRODUCT PATTERNS (BASED ON LOOP EXAMPLE):
-- Collection-focused hero with social proof numbers
-- "Explore the [Brand] Range" section header
-- Each product gets equal visual and copy treatment
-- Clear use case differentiation (like Loop's Focus/Conversations/Live music)
-- Individual pricing and CTAs for each product
-- Color/variant options within each product section
-- Community/social proof numbers prominently displayed
+JONES ROAD SPECIFIC MULTI-PRODUCT PATTERNS:
+- Simplified, clean messaging (avoid overwhelming copy)
+- "Favorites" or "Essentials" framing for product collections
+- Hero product + supporting cast structure
+- Authority figures/influencer recommendations
+- Media trust signals rather than just customer numbers
+- Individual product focus with clear value props
+- Natural, effortless beauty positioning throughout
+
+SUCCESSFUL MULTI-PRODUCT COMBINATION (LOOP + JONES ROAD):
+- Hero: Clean, benefit-focused headline with authority element
+- Collection framing: "[Person's] Favorites" or "The Essential Collection"
+- Hero product: One standout product with detailed benefits
+- Supporting products: Grid of complementary items with individual value props
+- Trust signals: Mix of media mentions and customer social proof
+- Individual CTAs: Clear pricing and action for each product
 
 EACH PRODUCT SECTION STRUCTURE (LOOP-INSPIRED):
 - PRODUCT NAME (clear, distinctive): What this specific item is called
@@ -589,20 +597,20 @@ SPECIFIC INSTRUCTIONS:
 10. Maximum 50 words per reason section - be extremely concise and scannable like real listicles
 
 ${landingPageType === 'multiProduct' ? `
-Generate complete multi-product landing page copy inspired by successful examples like Loop Earplugs. Structure your response as:
+Generate complete multi-product landing page copy combining Loop Earplugs and Jones Road patterns. Structure your response as:
 
-HEADLINE: [Strong social proof collection headline like "THE MAKEUP EVERYONE IS TALKING ABOUT"]
-SUBHEADLINE: [Brief range description with social proof numbers]
-INTRODUCTION: [Explore the [Brand] Range intro with value proposition]
-PRODUCT #1: [Product Name]
-[One-line benefit, 3-4 use case bullets, brief description, customer insight, CTA with price]
-PRODUCT #2: [Product Name] 
-[One-line benefit, 3-4 use case bullets, brief description, customer insight, CTA with price]
-PRODUCT #3: [Product Name]
-[One-line benefit, 3-4 use case bullets, brief description, customer insight, CTA with price]
-COLLECTION BENEFITS: [Why the complete range works better together]
-SOCIAL PROOF: [Customer numbers, reviews, community stats]
-CTA: [Main collection call-to-action]
+HEADLINE: [Clean, simplified headline following "Make up, Simplified" approach]
+SUBHEADLINE: [Authority element like "Recommended by [Expert]" or collection framing]
+INTRODUCTION: [Brief explanation of curated collection value - why these specific products]
+HERO PRODUCT: [Main Product Name]
+[Detailed benefits, use cases, customer insight, individual CTA]
+PRODUCT #2: [Supporting Product Name] 
+[Brief benefit, use case, price point, individual CTA]
+PRODUCT #3: [Supporting Product Name]
+[Brief benefit, use case, price point, individual CTA]
+COLLECTION BENEFITS: [Why this curated selection works as a complete routine]
+SOCIAL PROOF: [Mix of media mentions and customer testimonials]
+CTA: [Main collection call-to-action with bundle value]
 RISK REVERSAL: [Guarantee or trust elements]
 ` : `
 Generate complete landing page copy with all required sections. Structure your response as:
@@ -632,9 +640,12 @@ RISK REVERSAL: [Guarantee or trust elements]
     console.log('AI Response for landing page:', content.substring(0, 500) + '...');
     
     // Parse the enhanced response structure with more flexible matching
-    const headlineMatch = content.match(/HEADLINE:?\s*(.+?)(?=\n|SUBHEADLINE|INTRODUCTION|$)/is);
-    const subheadlineMatch = content.match(/SUBHEADLINE:?\s*(.+?)(?=\n|INTRODUCTION|REASON|$)/is);
-    const introMatch = content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=REASON #?1|$)/i);
+    const headlineMatch = content.match(/HEADLINE:?\s*(.+?)(?=\n|SUBHEADLINE|INTRODUCTION|$)/is) || 
+                         content.match(/^(.+?)(?=\n)/); // Fallback to first line if no HEADLINE: prefix
+    const subheadlineMatch = content.match(/SUBHEADLINE:?\s*(.+?)(?=\n|INTRODUCTION|REASON|HERO PRODUCT|PRODUCT|$)/is);
+    const introMatch = landingPageType === 'multiProduct' 
+      ? content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=HERO PRODUCT|PRODUCT #?1|$)/i)
+      : content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=REASON #?1|$)/i);
     const ctaMatch = content.match(/CTA:?\s*([\s\S]*?)(?=RISK REVERSAL|$)/i);
     const riskReversalMatch = content.match(/RISK REVERSAL:?\s*([\s\S]*?)$/i);
     
@@ -644,35 +655,69 @@ RISK REVERSAL: [Guarantee or trust elements]
       contentStart: content.substring(0, 100)
     });
     
-    // Extract sections with improved parsing (works for both REASON and PRODUCT sections)
+    // Extract sections with improved parsing (works for REASON, PRODUCT, and HERO PRODUCT sections)
     const sections = [];
-    const sectionPattern = landingPageType === 'multiProduct' 
-      ? /PRODUCT #(\d+):?\s*(.+?)(?=\n)([\s\S]*?)(?=PRODUCT #\d+|BUNDLE SECTION:|CTA:|RISK REVERSAL:|$)/gi
-      : /REASON #(\d+):?\s*(.+?)(?=\n)([\s\S]*?)(?=REASON #\d+|CTA:|RISK REVERSAL:|$)/gi;
     
-    const sectionMatches = content.match(sectionPattern);
-    if (sectionMatches) {
-      for (const match of sectionMatches) {
-        const titlePattern = landingPageType === 'multiProduct' 
-          ? /PRODUCT #\d+:?\s*(.+?)(?=\n)/i
-          : /REASON #\d+:?\s*(.+?)(?=\n)/i;
+    if (landingPageType === 'multiProduct') {
+      // Handle HERO PRODUCT first
+      const heroMatch = content.match(/HERO PRODUCT:?\s*(.+?)(?=\n)([\s\S]*?)(?=PRODUCT #\d+|COLLECTION BENEFITS:|SOCIAL PROOF:|CTA:|RISK REVERSAL:|$)/i);
+      if (heroMatch) {
+        const title = heroMatch[1].trim().replace(/\*\*/g, '');
+        const content = heroMatch[2].trim().replace(/\*\*/g, '');
+        const hookMatch = content.match(/^([^.!?]*[.!?])/);
+        const hook = hookMatch ? hookMatch[1].trim() : '';
         
-        const titleMatch = match.match(titlePattern);
-        const contentMatch = match.match(/\n([\s\S]*?)$/);
-        if (titleMatch && contentMatch) {
-          const title = titleMatch[1].trim().replace(/\*\*/g, ''); // Remove markdown formatting
-          const content = contentMatch[1].trim().replace(/\*\*/g, ''); // Remove markdown formatting
-          
-          // Extract components for better display
-          const hookMatch = content.match(/^([^.!?]*[.!?])/);
-          const hook = hookMatch ? hookMatch[1].trim() : '';
-          
-          sections.push({
-            title,
-            content,
-            hook: hook.length < 200 ? hook : '', // Only use if reasonably short
-            wordCount: content.split(/\s+/).length
-          });
+        sections.push({
+          title: `Hero: ${title}`,
+          content,
+          hook: hook.length < 200 ? hook : '',
+          wordCount: content.split(/\s+/).length
+        });
+      }
+      
+      // Handle numbered PRODUCT sections
+      const productPattern = /PRODUCT #(\d+):?\s*(.+?)(?=\n)([\s\S]*?)(?=PRODUCT #\d+|COLLECTION BENEFITS:|SOCIAL PROOF:|CTA:|RISK REVERSAL:|$)/gi;
+      const productMatches = content.match(productPattern);
+      if (productMatches) {
+        for (const match of productMatches) {
+          const titleMatch = match.match(/PRODUCT #\d+:?\s*(.+?)(?=\n)/i);
+          const contentMatch = match.match(/\n([\s\S]*?)$/);
+          if (titleMatch && contentMatch) {
+            const title = titleMatch[1].trim().replace(/\*\*/g, '');
+            const content = contentMatch[1].trim().replace(/\*\*/g, '');
+            const hookMatch = content.match(/^([^.!?]*[.!?])/);
+            const hook = hookMatch ? hookMatch[1].trim() : '';
+            
+            sections.push({
+              title,
+              content,
+              hook: hook.length < 200 ? hook : '',
+              wordCount: content.split(/\s+/).length
+            });
+          }
+        }
+      }
+    } else {
+      // Handle REASON sections for other landing page types
+      const sectionPattern = /REASON #(\d+):?\s*(.+?)(?=\n)([\s\S]*?)(?=REASON #\d+|CTA:|RISK REVERSAL:|$)/gi;
+      const sectionMatches = content.match(sectionPattern);
+      if (sectionMatches) {
+        for (const match of sectionMatches) {
+          const titleMatch = match.match(/REASON #\d+:?\s*(.+?)(?=\n)/i);
+          const contentMatch = match.match(/\n([\s\S]*?)$/);
+          if (titleMatch && contentMatch) {
+            const title = titleMatch[1].trim().replace(/\*\*/g, '');
+            const content = contentMatch[1].trim().replace(/\*\*/g, '');
+            const hookMatch = content.match(/^([^.!?]*[.!?])/);
+            const hook = hookMatch ? hookMatch[1].trim() : '';
+            
+            sections.push({
+              title,
+              content,
+              hook: hook.length < 200 ? hook : '',
+              wordCount: content.split(/\s+/).length
+            });
+          }
         }
       }
     }
