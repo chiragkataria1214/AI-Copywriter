@@ -6,7 +6,15 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
-**Latest Update - Custom Domain Restored & Deployment Complete (July 28, 2025)**
+**Latest Update - Landing Page Copy Length Optimization (July 28, 2025)**
+- **✅ MOBILE-OPTIMIZED COPY**: Updated landing page generation to follow strict 8-12 word sentence rule for mobile comprehension
+- **✅ LISTICLE FRAMEWORK**: Implemented precise framework from uploaded guidelines - "briefly enumerate reasons" with concise sentences
+- **✅ EXPLICIT EXAMPLES**: Added wrong/correct examples in prompts showing exact word count constraints and formatting
+- **✅ LOOP EARPLUGS STYLE**: Copy now matches inspiration pages with scannable, short sentences instead of long paragraphs
+- **✅ WORD COUNT ENFORCEMENT**: Every sentence must be 8-12 words maximum - no exceptions for mobile optimization
+- **✅ SENTENCE STRUCTURE**: Break complex thoughts into multiple short sentences for better mobile readability
+
+**Previous Update - Custom Domain Restored & Deployment Complete (July 28, 2025)**
 - **✅ DOMAIN RESTORED**: jrbcopy.com custom domain successfully reconnected to deployed application
 - **✅ AUTHENTICATION BYPASS**: Completely removed authentication system to enable immediate app access for deployment
 - **✅ AI SETTINGS FIXED**: Training configuration endpoints now accessible without authentication barriers
