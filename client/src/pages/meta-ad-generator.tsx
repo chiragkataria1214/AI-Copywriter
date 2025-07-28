@@ -1607,7 +1607,7 @@ export default function MetaAdGenerator() {
                       Landing Page Type
                     </h3>
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div className={`relative border-2 rounded-lg p-4 cursor-pointer transition-colors ${
                         landingPageType === 'listicle' 
                           ? 'border-jones-primary bg-jones-light' 
@@ -1622,6 +1622,7 @@ export default function MetaAdGenerator() {
                           }`}></div>
                         </div>
                         <h4 className="font-semibold text-gray-900">Listicle</h4>
+                        <p className="text-xs text-gray-500 mt-1">List-based content with numbered benefits</p>
                       </div>
                       
                       <div className={`relative border-2 rounded-lg p-4 cursor-pointer transition-colors ${
@@ -1638,6 +1639,24 @@ export default function MetaAdGenerator() {
                           }`}></div>
                         </div>
                         <h4 className="font-semibold text-gray-900">Trojan Horse</h4>
+                        <p className="text-xs text-gray-500 mt-1">Story-driven approach connecting to benefits</p>
+                      </div>
+                      
+                      <div className={`relative border-2 rounded-lg p-4 cursor-pointer transition-colors ${
+                        landingPageType === 'multiProduct' 
+                          ? 'border-jones-primary bg-jones-light' 
+                          : 'border-gray-300 hover:border-jones-primary'
+                      }`} onClick={() => setLandingPageType('multiProduct')}>
+                        <div className="flex items-center justify-between mb-2">
+                          <Sparkles className={landingPageType === 'multiProduct' ? 'text-jones-primary' : 'text-gray-400'} size={24} />
+                          <div className={`w-4 h-4 border-2 rounded-full ${
+                            landingPageType === 'multiProduct' 
+                              ? 'border-jones-primary bg-jones-primary' 
+                              : 'border-gray-300'
+                          }`}></div>
+                        </div>
+                        <h4 className="font-semibold text-gray-900">Multi Product Page</h4>
+                        <p className="text-xs text-gray-500 mt-1">Showcase multiple products with cross-selling</p>
                       </div>
                     </div>
                   </CardContent>

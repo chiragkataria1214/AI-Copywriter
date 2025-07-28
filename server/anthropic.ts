@@ -442,7 +442,40 @@ JONES ROAD BEAUTY BRAND GUIDELINES:
 
 ${reviewInsights}
 
-${landingPageType === 'listicle' ? `
+${landingPageType === 'multiProduct' ? `
+JONES ROAD MULTI PRODUCT PAGE STRUCTURE:
+- Hero section introducing the product collection or routine
+- Brief introduction explaining the value of using products together (30-50 words)
+- 3-4 main product sections, each highlighting a specific product with benefits
+- Cross-selling opportunities between products (why they work better together)
+- Bundle or routine recommendations with clear value propositions
+- Social proof from customers who use multiple products
+- Clear product differentiation while maintaining collection cohesion
+
+MULTI PRODUCT PAGE OPTIMIZATION:
+- Showcase product synergy and complementary benefits
+- Use "complete routine" or "perfect collection" messaging
+- Include specific use cases for different product combinations
+- Address different customer needs with product recommendations
+- Create clear navigation between products while keeping them connected
+- Highlight cost savings or convenience of purchasing multiple items
+- Use customer testimonials that mention multiple products
+
+EACH PRODUCT SECTION STRUCTURE:
+- PRODUCT NAME & BRIEF BENEFIT (8-12 words): What this specific product does
+- KEY DIFFERENTIATOR (15-25 words): What makes this product unique in the collection
+- MAIN BENEFITS (2-3 bullet points, 10-12 words each): Specific advantages
+- HOW IT WORKS WITH OTHER PRODUCTS (12-20 words): Synergy explanation
+- CUSTOMER QUOTE (12-20 words): Testimonial focusing on this specific product
+- SOFT CTA (8-12 words): Natural transition to next product or purchase
+
+PRODUCT CROSS-SELLING STRATEGIES:
+- "Perfect with" recommendations between related products
+- Routine suggestions for morning/evening or specific occasions
+- Bundle messaging that creates value perception
+- Problem-solution mapping across multiple products
+- Natural progression from one product benefit to another's complementary benefit
+` : landingPageType === 'listicle' ? `
 AUTHENTIC JONES ROAD LISTICLE STRUCTURE (BASED ON REAL EXAMPLES):
 - Direct, benefit-focused headline (6-12 words) - clear value proposition, not clickbait
 - Brief introduction that states the value clearly (30-50 words) - no fluff, get straight to the point
@@ -553,6 +586,22 @@ SPECIFIC INSTRUCTIONS:
 9. Use bullet points or short phrases for better readability
 10. Maximum 50 words per reason section - be extremely concise and scannable like real listicles
 
+${landingPageType === 'multiProduct' ? `
+Generate complete multi-product landing page copy with all required sections. Structure your response as:
+
+HEADLINE: [Main collection/routine headline]
+SUBHEADLINE: [Supporting value proposition]
+INTRODUCTION: [Brief intro about why products work better together]
+PRODUCT #1: [Product Name]
+[Product description, benefits, synergy with others, customer quote]
+PRODUCT #2: [Product Name]
+[Product description, benefits, synergy with others, customer quote]
+PRODUCT #3: [Product Name]
+[Product description, benefits, synergy with others, customer quote]
+BUNDLE SECTION: [Bundle benefits and value]
+CTA: [Main call-to-action for collection/bundle]
+RISK REVERSAL: [Guarantee or trust elements]
+` : `
 Generate complete landing page copy with all required sections. Structure your response as:
 
 HEADLINE: [Main headline]
@@ -563,7 +612,8 @@ REASON #1: [Title]
 REASON #2: [Title]
 [Continue for all 5 reasons]
 CTA: [Main call-to-action]
-RISK REVERSAL: [Guarantee or trust elements]`;
+RISK REVERSAL: [Guarantee or trust elements]
+`}`;
 
   try {
     const response = await anthropic.messages.create({
@@ -591,12 +641,20 @@ RISK REVERSAL: [Guarantee or trust elements]`;
       contentStart: content.substring(0, 100)
     });
     
-    // Extract reasons with improved parsing
+    // Extract sections with improved parsing (works for both REASON and PRODUCT sections)
     const sections = [];
-    const reasonMatches = content.match(/REASON #(\d+):?\s*(.+?)(?=\n)([\s\S]*?)(?=REASON #\d+|CTA:|RISK REVERSAL:|$)/gi);
-    if (reasonMatches) {
-      for (const match of reasonMatches) {
-        const titleMatch = match.match(/REASON #\d+:?\s*(.+?)(?=\n)/i);
+    const sectionPattern = landingPageType === 'multiProduct' 
+      ? /PRODUCT #(\d+):?\s*(.+?)(?=\n)([\s\S]*?)(?=PRODUCT #\d+|BUNDLE SECTION:|CTA:|RISK REVERSAL:|$)/gi
+      : /REASON #(\d+):?\s*(.+?)(?=\n)([\s\S]*?)(?=REASON #\d+|CTA:|RISK REVERSAL:|$)/gi;
+    
+    const sectionMatches = content.match(sectionPattern);
+    if (sectionMatches) {
+      for (const match of sectionMatches) {
+        const titlePattern = landingPageType === 'multiProduct' 
+          ? /PRODUCT #\d+:?\s*(.+?)(?=\n)/i
+          : /REASON #\d+:?\s*(.+?)(?=\n)/i;
+        
+        const titleMatch = match.match(titlePattern);
         const contentMatch = match.match(/\n([\s\S]*?)$/);
         if (titleMatch && contentMatch) {
           const title = titleMatch[1].trim().replace(/\*\*/g, ''); // Remove markdown formatting
@@ -613,6 +671,22 @@ RISK REVERSAL: [Guarantee or trust elements]`;
             wordCount: content.split(/\s+/).length
           });
         }
+      }
+    }
+    
+    // For multi-product pages, also extract bundle section if present
+    let bundleSection = '';
+    if (landingPageType === 'multiProduct') {
+      const bundleMatch = content.match(/BUNDLE SECTION:?\s*([\s\S]*?)(?=CTA:|RISK REVERSAL:|$)/i);
+      if (bundleMatch) {
+        bundleSection = bundleMatch[1].trim().replace(/\*\*/g, '');
+        // Add bundle as a special section
+        sections.push({
+          title: 'Complete Collection',
+          content: bundleSection,
+          hook: '',
+          wordCount: bundleSection.split(/\s+/).length
+        });
       }
     }
     
