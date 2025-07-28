@@ -4,7 +4,7 @@ import { registerTrainingRoutes } from "./routes-training";
 import { registerJunipRoutes } from "./routes-junip";
 import { storage } from "./storage";
 import multer from "multer";
-import { generateAdCopy, generateLandingPageCopy } from "./anthropic";
+import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy } from "./anthropic";
 import { analyzeInfluencerVoice, generateInfluencerStyleCopy, fetchInstagramContent } from "./influencer-analyzer";
 import { getTrainingConfig } from "./routes-training";
 import { z } from "zod";
@@ -639,6 +639,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate custom copy endpoint (protected)
+  app.post('/api/generate-custom-copy', requireAuth, async (req, res) => {
+    try {
+      const { customRequest, concept, subPersona, brandDrBalance, selectedProduct, useJonesBrandGuide } = req.body;
+      
+      console.log('Custom copy request:', { customRequest, concept, subPersona, brandDrBalance, selectedProduct, useJonesBrandGuide });
+      
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(400).json({ message: 'Anthropic API key not configured' });
+      }
+      
+      if (!customRequest || !customRequest.trim()) {
+        return res.status(400).json({ message: 'Custom request is required' });
+      }
+      
+      const result = await generateCustomCopy({
+        customRequest: customRequest.trim(),
+        concept,
+        subPersona,
+        brandDrBalance,
+        selectedProduct,
+        useJonesBrandGuide
+      });
+      
+      res.json({
+        response: result.response,
+        debugInfo: result.debugInfo
+      });
+    } catch (error) {
+      console.error('Custom copy generation error:', error);
+      res.status(500).json({ error: 'Failed to generate custom copy' });
+    }
+  });
+
   // Generate landing page copy endpoint (protected)
   app.post('/api/generate-landing-copy', requireAuth, async (req, res) => {
     try {
@@ -738,7 +772,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Import and use revision function from anthropic module
-      const { reviseContent } = await import('./anthropic');
+      // reviseContent is now imported at the top
       
       const revisedContent = await reviseContent({
         originalContent,

@@ -47,6 +47,15 @@ export interface LandingPageRequest {
   mainAngle?: string;
 }
 
+export interface CustomCopyRequest {
+  customRequest: string;
+  concept: string;
+  subPersona?: string;
+  brandDrBalance: number;
+  selectedProduct?: string;
+  useJonesBrandGuide: boolean;
+}
+
 export async function generateAdCopy(request: AdCopyRequest, trainingConfig: TrainingConfig = defaultTrainingConfig) {
   const { transcription, customBrief, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProduct } = request;
   
@@ -856,5 +865,78 @@ Please revise the content applying the improvement instructions while maintainin
   } catch (error) {
     console.error('Content revision error:', error);
     throw new Error('Failed to revise content');
+  }
+}
+
+export async function generateCustomCopy(request: CustomCopyRequest) {
+  const systemPrompt = `You are a world-class copywriter specializing in Jones Road Beauty's brand voice and approach. You excel at creating authentic, effective copy for any marketing purpose while maintaining the brand's core values.
+
+JONES ROAD BEAUTY BRAND VOICE:
+- Educational tone like Bobbi Brown, warm and approachable
+- "Make up, Simplified" philosophy - clean, uncomplicated messaging
+- Authentic and genuine, never pushy or aggressive
+- Focus on enhancing natural beauty, not covering it up
+- Speak to real women with real lives
+- Professional yet relatable expertise
+
+AUDIENCE PERSONAS:
+Life Juggler: Busy women managing multiple responsibilities who want simple, effective beauty solutions
+Clean Beauty Enthusiast: Health-conscious consumers seeking natural, safe beauty products
+Time-Constrained Professional: Career-focused women needing quick, polished looks
+Natural Beauty Seeker: Women wanting to enhance rather than mask their natural features
+
+YOUR TASK:
+Create copy that fulfills the user's specific request while maintaining Jones Road Beauty's authentic brand voice. Be flexible with format and approach based on what they're asking for - this could be anything from social media posts to email subjects to product descriptions to blog content.
+
+GUIDELINES:
+- Always maintain Jones Road's warm, educational tone
+- Focus on benefits that matter to the target audience
+- Use natural, conversational language
+- Be specific and helpful, not generic
+- Include authentic touches that feel genuine
+- Adapt length and format to the request's needs
+- If product-specific, incorporate relevant product benefits naturally`;
+
+  const audienceContext = getAudienceContext(request.concept, request.subPersona);
+  const productContext = request.selectedProduct ? `\n\nPRODUCT CONTEXT: ${request.selectedProduct}` : '';
+  const brandBalance = request.brandDrBalance || 50;
+  const balanceGuidance = brandBalance > 60 
+    ? "Lean more toward brand storytelling and emotional connection"
+    : brandBalance < 40 
+    ? "Focus more on direct benefits and actionable results"
+    : "Balance brand voice with clear benefits";
+
+  const userPrompt = `USER'S REQUEST:
+${request.customRequest}
+
+TARGET AUDIENCE: ${audienceContext.description}
+${productContext}
+
+BRAND/DR BALANCE: ${brandBalance}% brand voice - ${balanceGuidance}
+
+Please create copy that fulfills this request while maintaining Jones Road Beauty's authentic brand voice. Be natural, helpful, and specific to what they're asking for.`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      system: systemPrompt,
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: userPrompt }],
+    });
+
+    const content = response.content[0].type === 'text' ? response.content[0].text : '';
+    
+    return {
+      response: content.trim(),
+      debugInfo: {
+        systemPrompt,
+        userPrompt,
+        requestPayload: request,
+        rawResponse: content
+      }
+    };
+  } catch (error) {
+    console.error('Custom copy generation error:', error);
+    throw new Error('Failed to generate custom copy');
   }
 }

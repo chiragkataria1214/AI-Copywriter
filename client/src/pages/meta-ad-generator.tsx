@@ -143,6 +143,15 @@ export default function MetaAdGenerator() {
   
   // Influencer Mode States
   const [enableInfluencerMode, setEnableInfluencerMode] = useState(false);
+  
+  // Custom Request States
+  const [customRequest, setCustomRequest] = useState('');
+  const [customRequestHistory, setCustomRequestHistory] = useState<Array<{
+    request: string;
+    response: string;
+    timestamp: Date;
+  }>>([]);
+  const [generatedCustomResponse, setGeneratedCustomResponse] = useState('');
   const [influencerHandle, setInfluencerHandle] = useState('');
   const [voiceAnalysisMethod, setVoiceAnalysisMethod] = useState('combined');
   const [influencerBrandBalance, setInfluencerBrandBalance] = useState([50]);
@@ -585,6 +594,46 @@ export default function MetaAdGenerator() {
     },
   });
 
+  // Custom request mutation
+  const generateCustomCopyMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/generate-custom-copy', {
+        method: 'POST',
+        body: {
+          customRequest,
+          concept,
+          subPersona,
+          brandDrBalance: brandDrBalance[0],
+          selectedProduct,
+          useJonesBrandGuide
+        }
+      });
+    },
+    onSuccess: (data) => {
+      setGeneratedCustomResponse(data.response || '');
+      
+      // Add to history
+      setCustomRequestHistory(prev => [{
+        request: customRequest,
+        response: data.response,
+        timestamp: new Date()
+      }, ...prev]);
+      
+      toast({
+        title: "Custom Copy Generated Successfully",
+        description: "Your custom copywriting request has been completed.",
+      });
+    },
+    onError: (error) => {
+      console.error('Generation error:', error);
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate custom copy. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
   const generateLandingCopyMutation = useMutation({
     mutationFn: async () => {
       // When using ads content, include the selected headline and primary text
@@ -651,6 +700,9 @@ export default function MetaAdGenerator() {
       if (type === 'headlines') setCopiedHeadlines(true);
       if (type === 'primary') setCopiedPrimaryText(true);
       if (type === 'landing') setCopiedLandingCopy(true);
+      if (type === 'custom') {
+        // Custom copy doesn't need specific state, just show the toast
+      }
       
       setTimeout(() => {
         setCopiedHeadlines(false);
@@ -766,7 +818,7 @@ export default function MetaAdGenerator() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6 sm:mb-8">
+          <TabsList className="grid w-full grid-cols-4 mb-6 sm:mb-8">
             <TabsTrigger value="ads" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
               <Sparkles size={16} />
               <span className="text-xs sm:text-sm">Ad Copy</span>
@@ -774,6 +826,10 @@ export default function MetaAdGenerator() {
             <TabsTrigger value="landing" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
               <FileText size={16} />
               <span className="text-xs sm:text-sm">Landing Page</span>
+            </TabsTrigger>
+            <TabsTrigger value="custom" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
+              <Brain size={16} />
+              <span className="text-xs sm:text-sm">Custom Request</span>
             </TabsTrigger>
             <TabsTrigger value="debug" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
               <Settings size={16} />
@@ -2260,6 +2316,172 @@ export default function MetaAdGenerator() {
                     </div>
                   </CardContent>
                 </Card>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Custom Request Tab */}
+          <TabsContent value="custom">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+              {/* Input Section */}
+              <div className="space-y-4 sm:space-y-6">
+                <Card>
+                  <CardContent className="p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Brain className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                      Custom Copy Request
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                          Describe what you need
+                        </Label>
+                        <Textarea
+                          placeholder="Example: Write a product announcement for our new mascara launch targeting busy moms, or create social media captions for a limited-time promotion, or write email subject lines for our newsletter..."
+                          value={customRequest}
+                          onChange={(e) => setCustomRequest(e.target.value)}
+                          className="min-h-[120px]"
+                        />
+                        <p className="text-xs text-gray-500 mt-2">
+                          Be as specific as possible about format, audience, tone, and purpose
+                        </p>
+                      </div>
+
+                      {/* Basic Settings */}
+                      <div className="space-y-3">
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">Audience</Label>
+                          <Select value={concept} onValueChange={setConcept}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="lifeJuggler">Life Juggler</SelectItem>
+                              <SelectItem value="cleanBeautyEnthusiast">Clean Beauty Enthusiast</SelectItem>
+                              <SelectItem value="timeConstrainedProfessional">Time-Constrained Professional</SelectItem>
+                              <SelectItem value="naturalBeautySeeker">Natural Beauty Seeker</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">Product Context</Label>
+                          <ProductSelection
+                            value={selectedProduct}
+                            onChange={setSelectedProduct}
+                            placeholder="Optional: Select product if relevant"
+                          />
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">
+                            Brand/DR Balance: {brandDrBalance[0]}% Brand
+                          </Label>
+                          <Slider
+                            value={brandDrBalance}
+                            onValueChange={setBrandDrBalance}
+                            max={100}
+                            step={10}
+                            className="mt-2"
+                          />
+                          <div className="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>Direct Response</span>
+                            <span>Brand Focused</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button 
+                        onClick={() => generateCustomCopyMutation.mutate()}
+                        disabled={!customRequest.trim() || generateCustomCopyMutation.isPending}
+                        className="w-full flex items-center justify-center space-x-2"
+                      >
+                        {generateCustomCopyMutation.isPending ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>Generating...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Brain size={16} />
+                            <span>Generate Custom Copy</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Output Section */}
+              <div className="space-y-4 sm:space-y-6">
+                {generatedCustomResponse && (
+                  <Card>
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
+                          <Sparkles className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                          Generated Copy
+                        </h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard(generatedCustomResponse, 'custom')}
+                          className="flex items-center space-x-1"
+                        >
+                          <Copy size={14} />
+                          <span>Copy</span>
+                        </Button>
+                      </div>
+                      
+                      <div className="bg-gray-50 rounded-lg p-4 border">
+                        <pre className="whitespace-pre-wrap text-sm text-gray-900 font-mono">
+                          {generatedCustomResponse}
+                        </pre>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Request History */}
+                {customRequestHistory.length > 0 && (
+                  <Card>
+                    <CardContent className="p-4 sm:p-6">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <FileText className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                        Recent Requests
+                      </h3>
+                      
+                      <div className="space-y-4 max-h-96 overflow-y-auto">
+                        {customRequestHistory.slice(0, 5).map((item, index) => (
+                          <div key={index} className="border border-gray-200 rounded-lg p-3">
+                            <div className="text-xs text-gray-500 mb-1">
+                              {item.timestamp.toLocaleString()}
+                            </div>
+                            <div className="text-sm font-medium text-gray-700 mb-2">
+                              Request: {item.request.substring(0, 100)}
+                              {item.request.length > 100 && '...'}
+                            </div>
+                            <div className="text-sm text-gray-600 bg-gray-50 rounded p-2">
+                              {item.response.substring(0, 200)}
+                              {item.response.length > 200 && '...'}
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => copyToClipboard(item.response, 'custom')}
+                              className="mt-2 flex items-center space-x-1"
+                            >
+                              <Copy size={12} />
+                              <span>Copy</span>
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </div>
           </TabsContent>
