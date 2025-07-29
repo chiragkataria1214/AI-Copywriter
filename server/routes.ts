@@ -5,7 +5,7 @@ import { registerJunipRoutes } from "./routes-junip";
 import { registerAdminRoutes } from "./routes-admin";
 import { storage } from "./storage";
 import multer from "multer";
-import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd, generateLaunchCopy } from "./anthropic";
+import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd, generateLaunchCopy, generateStrategy } from "./anthropic";
 import { analyzeInfluencerVoice, generateInfluencerStyleCopy, fetchInstagramContent } from "./influencer-analyzer";
 import { getTrainingConfig } from "./routes-training";
 import { z } from "zod";
@@ -662,6 +662,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Launch copy generation error:', error);
       res.status(500).json({ 
         message: error.message || 'Failed to generate launch copy'
+      });
+    }
+  });
+
+  // Strategy planning generation endpoint
+  app.post('/api/generate-strategy', requireAuth, async (req, res) => {
+    try {
+      const { strategyBrief, selectedDepartments, concept, subPersona, brandDrBalance, selectedProduct, useJonesBrandGuide } = req.body;
+      
+      const trainingConfig = await getTrainingConfig();
+      const result = await generateStrategy(
+        strategyBrief,
+        selectedDepartments,
+        concept,
+        subPersona,
+        brandDrBalance,
+        selectedProduct,
+        useJonesBrandGuide,
+        trainingConfig
+      );
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error('Strategy generation error:', error);
+      res.status(500).json({ 
+        message: error.message || 'Failed to generate strategy planning'
       });
     }
   });

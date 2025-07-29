@@ -1201,6 +1201,186 @@ Create copy that fulfills this request while maintaining Jones Road Beauty's aut
   }
 }
 
+export async function generateStrategy(
+  strategyBrief: string,
+  selectedDepartments: string[],
+  concept: string,
+  subPersona: string | undefined,
+  brandDrBalance: number,
+  selectedProduct: string | undefined,
+  useJonesBrandGuide: boolean,
+  trainingConfig: TrainingConfig
+) {
+  const audienceDescription = concept && trainingConfig.personas[concept as keyof typeof trainingConfig.personas] 
+    ? trainingConfig.personas[concept as keyof typeof trainingConfig.personas].description 
+    : 'beauty enthusiasts looking for authentic, clean beauty solutions';
+
+  const productContext = selectedProduct && selectedProduct !== 'general'
+    ? `\n\nPRODUCT FOCUS: ${selectedProduct.charAt(0).toUpperCase() + selectedProduct.slice(1)}`
+    : '';
+
+  const brandBalance = brandDrBalance <= 25 ? 'Heavy brand emphasis' :
+                     brandDrBalance <= 50 ? 'Brand-focused with subtle persuasion' :
+                     brandDrBalance <= 75 ? 'Balanced brand and conversion' :
+                     'Performance-driven with brand integration';
+
+  const balanceGuidance = brandDrBalance <= 25 ? 'Focus on Jones Road\'s brand story, values, and authentic beauty philosophy' :
+                         brandDrBalance <= 50 ? 'Lead with brand voice while including strategic positioning elements' :
+                         brandDrBalance <= 75 ? 'Balance brand authenticity with strategic business objectives' :
+                         'Emphasize strategic objectives and performance metrics while maintaining brand alignment';
+
+  const systemPrompt = `You are an expert marketing strategist and campaign director specializing in comprehensive launch planning for beauty brands, specifically Jones Road Beauty. You excel at creating department-specific strategic frameworks that serve as foundational planning documents for integrated marketing campaigns.
+
+Your role is to analyze creative briefs and generate detailed strategic planning documents that department leads can use to create coordinated, cohesive campaigns. Each strategic framework should serve as the foundation for tactical execution across all marketing channels.
+
+${useJonesBrandGuide ? `
+JONES ROAD BEAUTY BRAND GUIDELINES:
+${trainingConfig.brandGuidelines}
+
+BRAND VOICE: ${trainingConfig.brandVoice}
+` : ''}
+
+DEPARTMENT-SPECIFIC STRATEGIC FRAMEWORKS:
+
+ECOM DEPARTMENT:
+Create comprehensive website and conversion strategy including:
+- User journey mapping and conversion funnel optimization
+- Product positioning and merchandising strategy  
+- Site experience and UX recommendations
+- Conversion rate optimization tactics
+- Cross-sell and upsell opportunities
+- Technical implementation priorities
+
+RETENTION DEPARTMENT:
+Develop customer lifecycle and retention strategy including:
+- Email marketing campaign architecture
+- SMS and communication channel strategy
+- Customer segmentation and personalization
+- Loyalty program integration opportunities
+- Post-purchase engagement sequence
+- Customer lifetime value optimization
+
+GROWTH DEPARTMENT:
+Build paid acquisition and performance marketing strategy including:
+- Paid advertising channel strategy and budget allocation
+- Audience targeting and creative testing framework
+- Performance metrics and KPI definitions
+- Funnel optimization and conversion tracking
+- Scale planning and growth trajectory
+- Attribution and measurement strategy
+
+BRAND DEPARTMENT:
+Establish brand positioning and PR strategy including:
+- Brand narrative and messaging architecture
+- Partnership and collaboration opportunities
+- Influencer and ambassador program strategy
+- Public relations and media outreach plan
+- Brand awareness and perception goals
+- Community building and engagement tactics
+
+SOCIAL DEPARTMENT:
+Design social media strategy and content framework including:
+- Platform-specific content strategy and posting cadence
+- Community management and engagement approach
+- Social commerce and conversion tactics
+- User-generated content and community activation
+- Social listening and reputation management
+- Cross-platform integration and amplification
+
+FORMAT REQUIREMENTS:
+For each selected department, create:
+1. Strategic Overview (3-4 sentences)
+2. Key Objectives (3-5 bullet points)
+3. Target Audience Alignment (2-3 sentences)
+4. Channel Strategy (4-6 bullet points)
+5. Success Metrics (3-4 KPIs)
+6. Implementation Timeline (high-level phases)
+7. Integration Points (how this connects with other departments)
+
+TONE AND STYLE:
+- Professional yet accessible strategic language
+- Action-oriented recommendations
+- Data-informed strategic thinking
+- Clear prioritization and sequencing
+- Collaborative cross-department mindset
+
+Generate comprehensive strategic frameworks that provide clear direction for tactical execution while maintaining brand consistency and campaign cohesion across all selected departments.`;
+
+  const userPrompt = `CREATIVE BRIEF:
+${strategyBrief}
+
+SELECTED DEPARTMENTS: ${selectedDepartments.join(', ')}
+
+TARGET AUDIENCE: ${audienceDescription}
+${productContext}
+
+BRAND/STRATEGY BALANCE: ${brandBalance}% strategic focus - ${balanceGuidance}
+
+INSTRUCTIONS:
+Analyze the creative brief thoroughly and create comprehensive strategic planning frameworks for each selected department. Each framework should provide the strategic foundation that department leads need to develop tactical campaigns and ensure all efforts are coordinated and aligned.
+
+For each department:
+1. Extract relevant strategic insights from the brief
+2. Define department-specific objectives that align with overall campaign goals
+3. Provide actionable strategic recommendations
+4. Include success metrics and measurement approaches
+5. Identify integration opportunities with other departments
+6. Maintain Jones Road Beauty's brand integrity throughout
+
+OUTPUT FORMAT:
+Structure your response with clear headers for each department using this format:
+
+DEPARTMENT: [Department Name]
+[Complete strategic framework following the format requirements]
+
+IMPORTANT: Use only clean, plain text formatting. Avoid special characters like asterisks (*), hashtags (#), brackets [], or other markdown formatting. Use simple numbered lists and bullet points with dashes for clean, readable output.`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      system: systemPrompt,
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: userPrompt }],
+    });
+
+    const content = response.content[0].type === 'text' ? response.content[0].text : '';
+    
+    // Parse the response to extract department strategies
+    const strategies: {[key: string]: string} = {};
+    const sections = content.split(/DEPARTMENT:\s*([^,\n]+)/i);
+    
+    for (let i = 1; i < sections.length; i += 2) {
+      const deptName = sections[i].trim();
+      const deptStrategy = sections[i + 1] ? sections[i + 1].trim() : '';
+      
+      if (deptName && deptStrategy) {
+        strategies[deptName] = deptStrategy;
+      }
+    }
+    
+    // If parsing failed, create a fallback structure
+    if (Object.keys(strategies).length === 0) {
+      for (const deptId of selectedDepartments) {
+        strategies[deptId] = `Strategic framework for ${deptId} department based on your creative brief. Please regenerate for more specific strategic guidance.`;
+      }
+    }
+    
+    return {
+      strategies,
+      rawResponse: content,
+      debugInfo: {
+        systemPrompt,
+        userPrompt,
+        selectedDepartments,
+        parsedCount: Object.keys(strategies).length
+      }
+    };
+  } catch (error) {
+    console.error('Strategy generation error:', error);
+    throw new Error('Failed to generate strategy planning');
+  }
+}
+
 export async function generateLaunchCopy(
   launchBrief: string,
   selectedDeliverables: string[],

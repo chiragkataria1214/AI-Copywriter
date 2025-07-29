@@ -231,6 +231,13 @@ export default function MetaAdGenerator() {
   const [selectedDeliverables, setSelectedDeliverables] = useState<string[]>([]);
   const [generatedLaunchCopy, setGeneratedLaunchCopy] = useState<{[key: string]: string}>({});
   const [briefSource, setBriefSource] = useState<'paste' | 'upload' | 'drive'>('paste');
+
+  // Strategy Planning States
+  const [strategyBrief, setStrategyBrief] = useState('');
+  const [strategyDriveLink, setStrategyDriveLink] = useState('');
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+  const [generatedStrategies, setGeneratedStrategies] = useState<{[key: string]: any}>({});
+  const [strategyBriefSource, setStrategyBriefSource] = useState<'paste' | 'upload' | 'drive'>('paste');
   const [generatedCustomResponse, setGeneratedCustomResponse] = useState('');
   const [influencerHandle, setInfluencerHandle] = useState('');
   const [voiceAnalysisMethod, setVoiceAnalysisMethod] = useState('combined');
@@ -750,6 +757,39 @@ export default function MetaAdGenerator() {
     }
   });
 
+  // Strategy planning generation mutation
+  const generateStrategyMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/generate-strategy', {
+        method: 'POST',
+        body: {
+          strategyBrief,
+          selectedDepartments,
+          concept,
+          subPersona,
+          brandDrBalance: brandDrBalance[0],
+          selectedProduct,
+          useJonesBrandGuide
+        }
+      });
+    },
+    onSuccess: (data) => {
+      setGeneratedStrategies(data.strategies || {});
+      toast({
+        title: "Strategy Planning Generated Successfully",
+        description: `Generated strategic frameworks for ${selectedDepartments.length} departments.`,
+      });
+    },
+    onError: (error) => {
+      console.error('Strategy generation error:', error);
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate strategy planning. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
   // Google Drive fetch mutation
   const fetchDriveBriefMutation = useMutation({
     mutationFn: async (driveUrl: string) => {
@@ -1045,7 +1085,7 @@ export default function MetaAdGenerator() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="flex w-full mb-6 sm:mb-8">
-            <TabsList className="grid grid-cols-5 flex-1">
+            <TabsList className="grid grid-cols-6 flex-1">
               <TabsTrigger value="ads" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
                 <Sparkles size={16} />
                 <span className="text-xs sm:text-sm">Ad Copy</span>
@@ -1059,6 +1099,11 @@ export default function MetaAdGenerator() {
               <TabsTrigger value="static-ad" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
                 <Camera size={16} />
                 <span className="text-xs sm:text-sm">Static Ad</span>
+              </TabsTrigger>
+              
+              <TabsTrigger value="strategy" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
+                <Target size={16} />
+                <span className="text-xs sm:text-sm">Strategy</span>
               </TabsTrigger>
               
               <TabsTrigger value="custom" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
@@ -2740,6 +2785,247 @@ export default function MetaAdGenerator() {
                             </Button>
                           </div>
                         ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Strategy Planning Tab */}
+          <TabsContent value="strategy">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+              {/* Input Section */}
+              <div className="space-y-4 sm:space-y-6">
+                {/* Strategy Brief Input */}
+                <Card>
+                  <CardContent className="p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Target className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                      Creative Brief Input
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      {/* Brief Source Selection */}
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 mb-3 block">
+                          How would you like to add your brief?
+                        </Label>
+                        <div className="grid grid-cols-3 gap-2">
+                          <button
+                            onClick={() => setStrategyBriefSource('paste')}
+                            className={`p-3 rounded-lg border text-center transition-colors ${
+                              strategyBriefSource === 'paste' 
+                                ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <div className="text-sm font-medium">Paste Text</div>
+                            <div className="text-xs text-gray-500 mt-1">Type or paste</div>
+                          </button>
+                          <button
+                            onClick={() => setStrategyBriefSource('drive')}
+                            className={`p-3 rounded-lg border text-center transition-colors ${
+                              strategyBriefSource === 'drive' 
+                                ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <div className="text-sm font-medium">Google Drive</div>
+                            <div className="text-xs text-gray-500 mt-1">Share link</div>
+                          </button>
+                          <button
+                            onClick={() => setStrategyBriefSource('upload')}
+                            className={`p-3 rounded-lg border text-center transition-colors ${
+                              strategyBriefSource === 'upload' 
+                                ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <div className="text-sm font-medium">File Upload</div>
+                            <div className="text-xs text-gray-500 mt-1">.txt/.pdf</div>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Paste Option */}
+                      {strategyBriefSource === 'paste' && (
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                            Paste Your Creative Brief
+                          </Label>
+                          <textarea
+                            rows={10}
+                            className="w-full resize-none text-sm"
+                            placeholder="Paste your complete creative brief here including product details, target audience, key messages, positioning, launch timeline, budget, objectives, etc..."
+                            value={strategyBrief}
+                            onChange={(e) => setStrategyBrief(e.target.value)}
+                            style={{
+                              border: '1px solid #d1d5db',
+                              borderRadius: '6px',
+                              padding: '12px',
+                              fontFamily: 'inherit'
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      <p className="text-xs text-gray-500">
+                        Include all relevant information: product details, positioning, target audience, key messages, launch goals, timeline, budget considerations, competitive landscape, etc.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Department Selection */}
+                <Card>
+                  <CardContent className="p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Users className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                      Select Departments
+                    </h3>
+                    
+                    <div className="space-y-6">
+                      {/* Departments organized by function */}
+                      {[
+                        {
+                          department: 'Ecom',
+                          color: '#3b82f6',
+                          description: 'Website strategy, product pages, user experience, conversion optimization'
+                        },
+                        {
+                          department: 'Retention',
+                          color: '#10b981',
+                          description: 'Email marketing, SMS campaigns, loyalty programs, customer lifecycle'
+                        },
+                        {
+                          department: 'Growth',
+                          color: '#8b5cf6',
+                          description: 'Paid advertising, Meta ads, acquisition channels, performance marketing'
+                        },
+                        {
+                          department: 'Brand',
+                          color: '#f59e0b',
+                          description: 'Public relations, brand positioning, partnerships, influencer strategy'
+                        },
+                        {
+                          department: 'Social',
+                          color: '#ec4899',
+                          description: 'Social media strategy, content planning, community management'
+                        }
+                      ].map((dept) => (
+                        <div key={dept.department} className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            id={dept.department}
+                            checked={selectedDepartments.includes(dept.department)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedDepartments([...selectedDepartments, dept.department]);
+                              } else {
+                                setSelectedDepartments(selectedDepartments.filter(id => id !== dept.department));
+                              }
+                            }}
+                            className="mt-1 w-4 h-4 text-blue-600"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <div 
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: dept.color }}
+                              ></div>
+                              <Label htmlFor={dept.department} className="text-sm font-medium text-gray-700 cursor-pointer uppercase tracking-wide">
+                                {dept.department}
+                              </Label>
+                            </div>
+                            <p className="text-xs text-gray-500">{dept.description}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {selectedDepartments.length > 0 && (
+                      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-700">
+                          <strong>{selectedDepartments.length}</strong> departments selected for strategy planning
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Button 
+                  onClick={() => generateStrategyMutation.mutate()}
+                  className="w-full text-white"
+                  style={{ backgroundColor: '#004182' }}
+                  disabled={!strategyBrief.trim() || selectedDepartments.length === 0 || generateStrategyMutation.isPending}
+                >
+                  {generateStrategyMutation.isPending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Generating Strategy Plans...
+                    </>
+                  ) : (
+                    <>
+                      <Target className="mr-2" size={16} />
+                      Generate Strategy Planning
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Output Section */}
+              <div className="space-y-4 sm:space-y-6">
+                {Object.keys(generatedStrategies).length > 0 ? (
+                  Object.entries(generatedStrategies).map(([deptId, strategy]) => (
+                    <Card key={deptId}>
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 capitalize flex items-center">
+                            <div 
+                              className="w-3 h-3 rounded-full mr-2"
+                              style={{
+                                backgroundColor: deptId === 'Ecom' ? '#3b82f6' :
+                                               deptId === 'Retention' ? '#10b981' :
+                                               deptId === 'Growth' ? '#8b5cf6' :
+                                               deptId === 'Brand' ? '#f59e0b' :
+                                               deptId === 'Social' ? '#ec4899' : '#6b7280'
+                              }}
+                            ></div>
+                            {deptId} Strategy
+                          </h3>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(strategy, 'strategy')}
+                            className="flex items-center space-x-1"
+                          >
+                            <Copy size={12} />
+                            <span>Copy</span>
+                          </Button>
+                        </div>
+                        
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans">
+                            {strategy}
+                          </pre>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <Card>
+                    <CardContent className="p-4 sm:p-6 text-center">
+                      <Target className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Strategic Planning Framework</h3>
+                      <p className="text-gray-600 mb-4">
+                        Upload your creative brief and select departments to generate comprehensive strategic frameworks.
+                      </p>
+                      <div className="text-sm text-gray-500 space-y-1">
+                        <p>• Paste your complete creative brief</p>
+                        <p>• Select the departments that need strategy</p>
+                        <p>• Get professional strategic planning documents</p>
                       </div>
                     </CardContent>
                   </Card>

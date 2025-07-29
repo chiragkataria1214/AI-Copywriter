@@ -6,7 +6,17 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
-**Latest Update - Ecom Sections Added to Launch Brief + Enhanced Google Drive/PDF Support (July 29, 2025)**
+**Latest Update - New Strategy Planning Tab: Department-Specific Strategic Frameworks (July 29, 2025)**
+- **✅ STRATEGY PLANNING TAB ADDED**: Built comprehensive Strategy Planning feature that generates department-specific strategic frameworks as intermediate planning phase
+- **✅ DEPARTMENT SELECTION INTERFACE**: Added professional department selection with color-coded categories (Ecom, Retention, Growth, Brand, Social)
+- **✅ STRATEGIC FRAMEWORK GENERATION**: Claude AI generates detailed strategic planning documents for each selected department with 7-part framework structure
+- **✅ PROFESSIONAL STRATEGIC OUTPUT**: Each framework includes Strategic Overview, Key Objectives, Target Audience Alignment, Channel Strategy, Success Metrics, Implementation Timeline, and Integration Points
+- **✅ BACKEND API INTEGRATION**: Built `/api/generate-strategy` endpoint with comprehensive anthropic service function for strategic planning generation
+- **✅ CONSISTENT UI DESIGN**: Maintains same input methods (paste, Google Drive, file upload) and professional interface design as other tabs
+- **✅ COMPREHENSIVE PROMPTS**: Strategic planning prompts include department-specific guidance for website strategy, retention campaigns, performance marketing, brand positioning, and social media planning
+- **✅ TAB NAVIGATION UPDATED**: Updated main navigation to 6-column grid including new Strategy tab with Target icon for professional appearance
+
+**Previous Update - Ecom Sections Added to Launch Brief + Enhanced Google Drive/PDF Support (July 29, 2025)**
 - **✅ ECOM SECTIONS ADDED**: Added announcement bar copy, hero module headline, and hero module subheadline to Launch Brief deliverables
 - **✅ COMPREHENSIVE WEBSITE COPY**: Launch Brief now generates complete ecommerce sections alongside existing marketing deliverables  
 - **✅ GOOGLE DRIVE PRESENTATIONS FIXED**: Enhanced Google Drive integration to properly handle Presentations and Spreadsheets with smart document type detection
