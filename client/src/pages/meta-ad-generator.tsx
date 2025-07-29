@@ -284,6 +284,7 @@ export default function MetaAdGenerator() {
   // API mutations for generating copy
   const generateAdCopyMutation = useMutation({
     mutationFn: async () => {
+      console.log('TRANSCRIPTION DEBUG:', { transcription, length: transcription?.length });
       const payload = {
         transcription,
         customBrief,
@@ -299,6 +300,7 @@ export default function MetaAdGenerator() {
         partnershipAds
       };
       
+      console.log('API PAYLOAD:', payload);
       const result = await apiRequest('/api/generate-ad-copy', {
         method: 'POST',
         body: payload
@@ -888,13 +890,22 @@ export default function MetaAdGenerator() {
                       />
                     </div>
 
-                    <ProductSelection 
-                      landingPageType="single"
-                      selectedProduct={selectedProduct}
-                      setSelectedProduct={setSelectedProduct}
-                      selectedProducts={selectedProducts}
-                      setSelectedProducts={setSelectedProducts}
-                    />
+                    <div className="space-y-2">
+                      <Label>Select Product Focus</Label>
+                      <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a product to focus on" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="miracle-balm">Miracle Balm</SelectItem>
+                          <SelectItem value="what-the-foundation">What The Foundation</SelectItem>
+                          <SelectItem value="just-enough">Just Enough</SelectItem>
+                          <SelectItem value="hero-kit">The Hero Kit</SelectItem>
+                          <SelectItem value="sunscreen">Like Butter Sunscreen</SelectItem>
+                          <SelectItem value="mascara">Lash Sculpt Mascara</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
