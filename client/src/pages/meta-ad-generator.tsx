@@ -278,8 +278,18 @@ export default function MetaAdGenerator() {
 
   // Helper functions for transcription
   const handleTranscriptionChange = (value: string) => {
-    console.log('Transcription changed:', { value, length: value?.length });
-    setTranscription(value);
+    console.log('🎯 Transcription Input Event:', { 
+      valuePreview: value.substring(0, 100) + (value.length > 100 ? '...' : ''), 
+      length: value?.length,
+      timestamp: new Date().toISOString()
+    });
+    
+    try {
+      setTranscription(value);
+      console.log('✅ Transcription state updated successfully');
+    } catch (error) {
+      console.error('❌ Error updating transcription state:', error);
+    }
   };
 
   const getTranscriptionPreview = () => {
@@ -291,8 +301,15 @@ export default function MetaAdGenerator() {
   // API mutations for generating copy
   const generateAdCopyMutation = useMutation({
     mutationFn: async () => {
+      console.log('🚀 MUTATION STARTED - generateAdCopyMutation');
+      
       try {
-        console.log('TRANSCRIPTION DEBUG:', { transcription, length: transcription?.length });
+        console.log('🔍 TRANSCRIPTION DEBUG:', { 
+          transcription: transcription?.substring(0, 200) + '...', 
+          length: transcription?.length,
+          hasTranscription: !!transcription
+        });
+        
         const payload = {
           transcription,
           customBrief,
@@ -311,18 +328,24 @@ export default function MetaAdGenerator() {
           influencerBrandBalance: influencerBrandBalance[0]
         };
         
-        console.log('API PAYLOAD:', payload);
+        console.log('📦 API PAYLOAD:', JSON.stringify(payload, null, 2));
+        console.log('🌐 Making API request to /api/generate-ad-copy...');
         
-        // Fix: Ensure we only pass 2 arguments to apiRequest
         const result = await apiRequest('/api/generate-ad-copy', {
           method: 'POST',
           body: payload
         });
         
-        console.log('API RESULT:', result);
+        console.log('✅ API RESULT:', result);
+        console.log('🎉 MUTATION COMPLETED SUCCESSFULLY');
         return result;
       } catch (error) {
-        console.error('API Call Error:', error);
+        console.error('❌ MUTATION ERROR:', error);
+        console.error('❌ Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
         throw error;
       }
     },
@@ -521,7 +544,12 @@ export default function MetaAdGenerator() {
                         id="transcription"
                         placeholder="Paste your video transcription, content brief, or any additional context here..."
                         value={transcription}
-                        onChange={(e) => handleTranscriptionChange(e.target.value)}
+                        onChange={(e) => {
+                          console.log('🔥 Direct onChange triggered:', e.target.value.length);
+                          handleTranscriptionChange(e.target.value);
+                        }}
+                        onFocus={() => console.log('🎯 Transcription textarea focused')}
+                        onBlur={() => console.log('🎯 Transcription textarea blurred')}
                         className="w-full min-h-[120px] p-3 border border-gray-300 rounded-md resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                       {transcription && (
@@ -837,7 +865,15 @@ export default function MetaAdGenerator() {
               <Button 
                 className="w-full"
                 size="lg"
-                onClick={() => generateAdCopyMutation.mutate()}
+                onClick={() => {
+                  console.log('🎯 BUTTON CLICKED - Generate Ad Copy');
+                  console.log('🔍 Button click state:', {
+                    isPending: generateAdCopyMutation.isPending,
+                    transcriptionLength: transcription?.length || 0,
+                    hasTranscription: !!transcription
+                  });
+                  generateAdCopyMutation.mutate();
+                }}
                 disabled={generateAdCopyMutation.isPending}
               >
                 <Sparkles className="mr-2 h-4 w-4" />
