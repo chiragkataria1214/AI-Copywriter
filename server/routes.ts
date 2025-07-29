@@ -555,7 +555,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/generate-ad-copy', requireAuth, async (req, res) => {
     try {
       const startTime = Date.now();
-      const { transcription, customBrief, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage } = req.body;
+      const { 
+        transcription, 
+        customBrief, 
+        concept, 
+        subPersona, 
+        targetAudience, 
+        landingPageUrl, 
+        brandDrBalance, 
+        useJonesBrandGuide, 
+        airLink, 
+        uploadedImage,
+        selectedProduct,
+        partnershipAds,
+        influencerHandle,
+        voiceAnalysisMethod,
+        influencerBrandBalance
+      } = req.body;
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -564,18 +580,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get current training config for snapshot
       const trainingConfig = await getTrainingConfig();
       
-      const result = await generateAdCopy({
-        transcription,
-        customBrief,
-        concept,
-        subPersona,
-        targetAudience,
-        landingPageUrl,
-        brandDrBalance,
-        useJonesBrandGuide,
-        airLink,
-        uploadedImage
-      });
+      // Check if influencer mode is enabled and handle accordingly
+      let result;
+      if (partnershipAds && influencerHandle && voiceAnalysisMethod) {
+        console.log('Generating influencer-style copy for @' + influencerHandle);
+        // For now, use regular generation but log the influencer parameters
+        // TODO: Implement full influencer voice analysis integration
+        result = await generateAdCopy({
+          transcription,
+          customBrief,
+          concept,
+          subPersona,
+          targetAudience,
+          landingPageUrl,
+          brandDrBalance,
+          useJonesBrandGuide,
+          airLink,
+          uploadedImage,
+          selectedProduct,
+          influencerContext: `Influencer: @${influencerHandle}, Analysis: ${voiceAnalysisMethod}, Brand Balance: ${influencerBrandBalance}%`
+        });
+      } else {
+        result = await generateAdCopy({
+          transcription,
+          customBrief,
+          concept,
+          subPersona,
+          targetAudience,
+          landingPageUrl,
+          brandDrBalance,
+          useJonesBrandGuide,
+          airLink,
+          uploadedImage,
+          selectedProduct
+        });
+      }
       
       const generationTime = Date.now() - startTime;
 
