@@ -134,14 +134,6 @@ export default function MetaAdGenerator() {
     field?: string;
   } | null>(null);
   
-  // Debug States
-  const [debugInfo, setDebugInfo] = useState<{
-    systemPrompt: string;
-    userPrompt: string;
-    requestPayload: any;
-    rawResponse: string;
-  } | null>(null);
-  
   // Training Configuration States
   const [trainingConfig, setTrainingConfig] = useState<any>(null);
   
@@ -225,6 +217,14 @@ export default function MetaAdGenerator() {
     timestamp: Date;
   }>>([]);
   const [generatedCustomResponse, setGeneratedCustomResponse] = useState('');
+  
+  // Debug States
+  const [debugInfo, setDebugInfo] = useState<{
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null>(null);
   const [influencerHandle, setInfluencerHandle] = useState('');
   const [voiceAnalysisMethod, setVoiceAnalysisMethod] = useState('combined');
   const [influencerBrandBalance, setInfluencerBrandBalance] = useState([50]);
