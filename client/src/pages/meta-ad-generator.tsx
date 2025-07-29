@@ -401,10 +401,34 @@ export default function MetaAdGenerator() {
         <p className="text-gray-600">Generate professional marketing copy with AI</p>
       </div>
 
+      <div className="flex items-center justify-between mb-6">
+        <div></div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Settings className="h-4 w-4 mr-2" />
+              {effectiveUser.username}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setActiveTab('settings')}>
+              <Database className="h-4 w-4 mr-2" />
+              AI Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setActiveTab('analytics')}>
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Review Analytics
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="ads">Ad Copy</TabsTrigger>
           <TabsTrigger value="landing">Landing Pages</TabsTrigger>
+          <TabsTrigger value="static">Static Ad</TabsTrigger>
           <TabsTrigger value="launch">Launch</TabsTrigger>
           <TabsTrigger value="custom">Custom Request</TabsTrigger>
         </TabsList>
@@ -695,47 +719,248 @@ export default function MetaAdGenerator() {
         </TabsContent>
 
         <TabsContent value="landing" className="space-y-6">
-          <Card>
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Landing Page Generator</h3>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Landing Page Type</Label>
-                  <Select value={landingPageType} onValueChange={setLandingPageType}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="listicle">Listicle</SelectItem>
-                      <SelectItem value="trojanHorse">Trojan Horse</SelectItem>
-                      <SelectItem value="multiProduct">Multi Product</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Column - Input Form */}
+            <div className="space-y-6">
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Landing Page Configuration</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Landing Page Type</Label>
+                      <Select value={landingPageType} onValueChange={setLandingPageType}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="listicle">Listicle Page</SelectItem>
+                          <SelectItem value="trojanHorse">Trojan Horse Page</SelectItem>
+                          <SelectItem value="multiProduct">Multi Product Page</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-sm text-gray-500">
+                        {landingPageType === 'listicle' && 'List-based page format (e.g., "5 Reasons Why...")'}
+                        {landingPageType === 'trojanHorse' && 'Educational content that leads to product'}
+                        {landingPageType === 'multiProduct' && 'Showcase multiple products together'}
+                      </p>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="productBrief">Product Brief</Label>
-                  <Textarea
-                    id="productBrief"
-                    placeholder="Describe your product and key benefits..."
-                    value={productBrief}
-                    onChange={(e) => setProductBrief(e.target.value)}
-                    className="min-h-[100px]"
-                  />
-                </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Switch 
+                          id="use-ads-for-landing"
+                          checked={useAdsForLanding}
+                          onCheckedChange={setUseAdsForLanding}
+                        />
+                        <Label htmlFor="use-ads-for-landing">Use Generated Ads Content</Label>
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        Use previously generated ad copy and transcription for landing page consistency
+                      </p>
+                    </div>
 
-                <Button 
-                  className="w-full" 
-                  size="lg"
-                  onClick={() => generateLandingPageMutation.mutate()}
-                  disabled={generateLandingPageMutation.isPending}
-                >
-                  <Globe className="mr-2 h-4 w-4" />
-                  {generateLandingPageMutation.isPending ? 'Generating...' : 'Generate Landing Page'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                    {!useAdsForLanding && (
+                      <div className="space-y-2">
+                        <Label htmlFor="adsContent">Ads Content Reference (Optional)</Label>
+                        <Textarea
+                          id="adsContent"
+                          placeholder="Paste existing ad copy to align landing page messaging..."
+                          value={adsContent}
+                          onChange={(e) => setAdsContent(e.target.value)}
+                          className="min-h-[100px]"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="productBrief">Product Brief</Label>
+                      <Textarea
+                        id="productBrief"
+                        placeholder="Describe your product, key benefits, target audience, and main selling points..."
+                        value={productBrief}
+                        onChange={(e) => setProductBrief(e.target.value)}
+                        className="min-h-[120px]"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="mainAngle">Main Marketing Angle</Label>
+                      <Input
+                        id="mainAngle"
+                        placeholder="e.g., 'Clean beauty that actually works' or 'Professional results at home'"
+                        value={mainAngle}
+                        onChange={(e) => setMainAngle(e.target.value)}
+                      />
+                    </div>
+
+                    <ProductSelection 
+                      selectedProduct={selectedProduct}
+                      onProductChange={setSelectedProduct}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Target Audience</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Primary Persona</Label>
+                      <Select value={concept} onValueChange={setConcept}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(personas).map(([key, persona]) => (
+                            <SelectItem key={key} value={key}>
+                              {persona.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Sub-Persona</Label>
+                      <Select value={subPersona} onValueChange={setSubPersona}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {concept && personas[concept as keyof typeof personas]?.subPersonas && 
+                            Object.entries(personas[concept as keyof typeof personas].subPersonas).map(([key, subPers]) => (
+                              <SelectItem key={key} value={key}>
+                                {(subPers as any).label}
+                              </SelectItem>
+                            ))
+                          }
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Brand/DR Balance</Label>
+                      <div className="text-sm text-gray-600 mb-2">
+                        {brandDrBalance[0]}% Brand / {100 - brandDrBalance[0]}% DR
+                      </div>
+                      <Slider
+                        value={brandDrBalance}
+                        onValueChange={setBrandDrBalance}
+                        max={100}
+                        step={1}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Button 
+                className="w-full" 
+                size="lg"
+                onClick={() => generateLandingPageMutation.mutate()}
+                disabled={generateLandingPageMutation.isPending}
+              >
+                <Globe className="mr-2 h-4 w-4" />
+                {generateLandingPageMutation.isPending ? 'Generating...' : 'Generate Landing Page'}
+              </Button>
+            </div>
+
+            {/* Right Column - Generated Landing Page */}
+            <div className="space-y-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Generated Landing Page</h3>
+                    {generatedLandingCopy.headline && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => copyToClipboard(
+                          `${generatedLandingCopy.headline}\n\n${generatedLandingCopy.subheadline}\n\n${generatedLandingCopy.introduction}\n\n${generatedLandingCopy.sections.map(s => `${s.title}\n${s.content}`).join('\n\n')}\n\n${generatedLandingCopy.socialProof}\n\n${generatedLandingCopy.conclusion}\n\n${generatedLandingCopy.cta}`,
+                          'Landing Page Copy'
+                        )}
+                      >
+                        Copy All
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {generatedLandingCopy.headline ? (
+                    <div className="space-y-6">
+                      <div>
+                        <h4 className="font-semibold text-sm text-gray-600 mb-2">HEADLINE</h4>
+                        <p className="text-lg font-bold">{generatedLandingCopy.headline}</p>
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold text-sm text-gray-600 mb-2">SUBHEADLINE</h4>
+                        <p className="text-base">{generatedLandingCopy.subheadline}</p>
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold text-sm text-gray-600 mb-2">INTRODUCTION</h4>
+                        <p className="text-sm text-gray-700">{generatedLandingCopy.introduction}</p>
+                      </div>
+
+                      {generatedLandingCopy.sections.map((section, index) => (
+                        <div key={index}>
+                          <h4 className="font-semibold text-sm text-gray-600 mb-2">{section.title.toUpperCase()}</h4>
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap">{section.content}</p>
+                        </div>
+                      ))}
+
+                      <div>
+                        <h4 className="font-semibold text-sm text-gray-600 mb-2">SOCIAL PROOF</h4>
+                        <p className="text-sm text-gray-700">{generatedLandingCopy.socialProof}</p>
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold text-sm text-gray-600 mb-2">CONCLUSION</h4>
+                        <p className="text-sm text-gray-700">{generatedLandingCopy.conclusion}</p>
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold text-sm text-gray-600 mb-2">CALL TO ACTION</h4>
+                        <p className="text-sm font-semibold">{generatedLandingCopy.cta}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No landing page generated yet. Configure settings and click "Generate Landing Page".</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {landingPageAnalysis && (
+                <Card>
+                  <CardContent className="p-6">
+                    <h3 className="text-lg font-semibold mb-4">Performance Analysis</h3>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600">Conversion Score:</span>
+                        <span className="ml-2 font-semibold">{landingPageAnalysis.conversionScore}/100</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Total Words:</span>
+                        <span className="ml-2 font-semibold">{landingPageAnalysis.totalWords}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Sections:</span>
+                        <span className="ml-2 font-semibold">{landingPageAnalysis.sectionCount}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Readability:</span>
+                        <span className="ml-2 font-semibold">{landingPageAnalysis.readabilityScore}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="launch" className="space-y-6">
@@ -824,6 +1049,176 @@ export default function MetaAdGenerator() {
                   </Button>
                 </TabsContent>
               </Tabs>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="static" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Column - Input Form */}
+            <div className="space-y-6">
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Static Ad Analysis</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="staticAdImage">Image URL</Label>
+                      <Input
+                        id="staticAdImage"
+                        placeholder="Paste image URL of static ad to analyze..."
+                        value={staticAdImage}
+                        onChange={(e) => setStaticAdImage(e.target.value)}
+                      />
+                    </div>
+
+                    {staticAdImage && (
+                      <div className="space-y-2">
+                        <Label>Image Preview</Label>
+                        <div className="border rounded-lg p-4">
+                          <img 
+                            src={staticAdImage} 
+                            alt="Static ad preview" 
+                            className="max-w-full h-auto rounded"
+                            onError={() => setStaticAdImagePreview('')}
+                            onLoad={() => setStaticAdImagePreview(staticAdImage)}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <Button className="w-full" size="lg">
+                      <Camera className="mr-2 h-4 w-4" />
+                      Analyze Static Ad
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Column - Analysis Results */}
+            <div className="space-y-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Analysis Results</h3>
+                    {staticAdAnalysis && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => copyToClipboard(staticAdAnalysis, 'Static Ad Analysis')}
+                      >
+                        Copy Analysis
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {staticAdAnalysis ? (
+                    <div className="prose max-w-none">
+                      <p className="whitespace-pre-wrap text-sm">{staticAdAnalysis}</p>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No analysis generated yet. Upload an image and click "Analyze Static Ad".</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="settings" className="space-y-6">
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-4">AI Settings</h3>
+              
+              <div className="space-y-6">
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <h4 className="font-medium">Training Configuration</h4>
+                    <p className="text-sm text-gray-500">Configure AI training parameters and prompts</p>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    <Brain className="h-4 w-4 mr-2" />
+                    Configure
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <h4 className="font-medium">Customer Reviews</h4>
+                    <p className="text-sm text-gray-500">Import and manage customer review data</p>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    <Users className="h-4 w-4 mr-2" />
+                    Manage Reviews
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <h4 className="font-medium">Product Claims</h4>
+                    <p className="text-sm text-gray-500">Configure approved product claims and validation</p>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    <Check className="h-4 w-4 mr-2" />
+                    Edit Claims
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <h4 className="font-medium">Brand Guidelines</h4>
+                    <p className="text-sm text-gray-500">Update Jones Road Beauty brand voice and guidelines</p>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    <Palette className="h-4 w-4 mr-2" />
+                    Edit Guidelines
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Review Analytics</h3>
+              
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 border rounded-lg text-center">
+                    <div className="text-2xl font-bold text-blue-600">1,500+</div>
+                    <div className="text-sm text-gray-500">Total Reviews</div>
+                  </div>
+                  <div className="p-4 border rounded-lg text-center">
+                    <div className="text-2xl font-bold text-green-600">4.8</div>
+                    <div className="text-sm text-gray-500">Average Rating</div>
+                  </div>
+                  <div className="p-4 border rounded-lg text-center">
+                    <div className="text-2xl font-bold text-purple-600">95%</div>
+                    <div className="text-sm text-gray-500">Positive Sentiment</div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-medium">Top Products by Review Volume</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center p-3 border rounded">
+                      <span>What The Foundation</span>
+                      <Badge variant="outline">450+ reviews</Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-3 border rounded">
+                      <span>Miracle Balm</span>
+                      <Badge variant="outline">400+ reviews</Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-3 border rounded">
+                      <span>Just Enough</span>
+                      <Badge variant="outline">350+ reviews</Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
