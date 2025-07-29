@@ -2799,14 +2799,14 @@ export default function MetaAdGenerator() {
 
                   {trainingConfig ? (
                     <Tabs defaultValue="brand-guidelines" className="w-full">
-                      <TabsList className="grid w-full grid-cols-2 md:grid-cols-7 gap-1">
-                        <TabsTrigger value="brand-guidelines" className="text-xs sm:text-sm">Brand Guidelines</TabsTrigger>
-                        <TabsTrigger value="product-claims" className="text-xs sm:text-sm">Product Claims</TabsTrigger>
-                        <TabsTrigger value="personas" className="text-xs sm:text-sm">Personas</TabsTrigger>
-                        <TabsTrigger value="frameworks" className="text-xs sm:text-sm">Copy Frameworks</TabsTrigger>
-                        <TabsTrigger value="reviews" className="text-xs sm:text-sm">Customer Reviews</TabsTrigger>
-                        <TabsTrigger value="prompts" className="text-xs sm:text-sm">System Prompts</TabsTrigger>
-                        <TabsTrigger value="model" className="text-xs sm:text-sm">Model Settings</TabsTrigger>
+                      <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 p-2 h-auto">
+                        <TabsTrigger value="brand-guidelines" className="text-xs sm:text-sm py-2 px-3">Brand Guidelines</TabsTrigger>
+                        <TabsTrigger value="product-claims" className="text-xs sm:text-sm py-2 px-3">Product Claims</TabsTrigger>
+                        <TabsTrigger value="personas" className="text-xs sm:text-sm py-2 px-3">Personas</TabsTrigger>
+                        <TabsTrigger value="frameworks" className="text-xs sm:text-sm py-2 px-3">Copy Frameworks</TabsTrigger>
+                        <TabsTrigger value="reviews" className="text-xs sm:text-sm py-2 px-3">Customer Reviews</TabsTrigger>
+                        <TabsTrigger value="prompts" className="text-xs sm:text-sm py-2 px-3">System Prompts</TabsTrigger>
+                        <TabsTrigger value="model" className="text-xs sm:text-sm py-2 px-3">Model Settings</TabsTrigger>
                       </TabsList>
 
                       <TabsContent value="brand-guidelines" className="mt-4">
