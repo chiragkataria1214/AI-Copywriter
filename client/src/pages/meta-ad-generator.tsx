@@ -72,6 +72,7 @@ export default function MetaAdGenerator() {
   const [copiedCreativeBrief, setCopiedCreativeBrief] = useState(false);
   const [useJonesBrandGuide, setUseJonesBrandGuide] = useState(true);
   const [brandDrBalance, setBrandDrBalance] = useState([50]);
+  const [partnershipAds, setPartnershipAds] = useState(false);
   
   // Landing Page States
   const [landingPageType, setLandingPageType] = useState('listicle');
@@ -148,6 +149,92 @@ export default function MetaAdGenerator() {
   const [staticAdImagePreview, setStaticAdImagePreview] = useState('');
   const [staticAdAnalysis, setStaticAdAnalysis] = useState('');
 
+  // File upload states
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  // File upload handlers
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'text' | 'image') => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', type);
+
+    try {
+      const response = await fetch('/api/upload-file', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        if (type === 'text') {
+          setCustomBrief(result.content || '');
+          toast({
+            title: "File Uploaded",
+            description: "Text content has been loaded into the custom brief.",
+          });
+        } else if (type === 'image') {
+          setUploadedImage(result.url || '');
+          toast({
+            title: "Image Uploaded",
+            description: "Image has been processed and is ready for analysis.",
+          });
+        }
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload file. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+
+
+  // Copy to clipboard function
+  const copyToClipboard = async (text: string, label: string = 'Content') => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied!",
+        description: `${label} copied to clipboard`,
+      });
+      
+      // Set appropriate copied state
+      if (label.includes('Headlines')) {
+        setCopiedHeadlines(true);
+        setTimeout(() => setCopiedHeadlines(false), 2000);
+      } else if (label.includes('Primary Text')) {
+        setCopiedPrimaryText(true);
+        setTimeout(() => setCopiedPrimaryText(false), 2000);
+      } else if (label.includes('Landing')) {
+        setCopiedLandingCopy(true);
+        setTimeout(() => setCopiedLandingCopy(false), 2000);
+      }
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy to clipboard",
+        variant: "destructive"
+      });
+    }
+  };
+
   // BYPASS AUTHENTICATION - Direct access mode for all copywriting features
   const effectiveUser = {
     username: 'user@jonesroadbeauty.com',
@@ -155,11 +242,32 @@ export default function MetaAdGenerator() {
     isAdmin: hasAdminAccess
   };
 
-  // Ultra-simple transcription handler 
-  const handleTranscriptionChange = (value: string) => {
-    console.log('PARENT: Transcription change received, length:', value.length);
-    setTranscription(value);
-    console.log('PARENT: State update completed');
+  // Personas configuration
+  const personas = {
+    lifeJuggler: {
+      label: 'Life Juggler',
+      subPersonas: {
+        newMom: { label: 'New Mom (6 month postpartum)' },
+        workingMom: { label: 'Working Mom' },
+        busyProfessional: { label: 'Busy Professional' }
+      }
+    },
+    beautyEnthusiast: {
+      label: 'Beauty Enthusiast',
+      subPersonas: {
+        makeupLover: { label: 'Makeup Lover' },
+        skincareFocused: { label: 'Skincare Focused' },
+        trendsetter: { label: 'Trendsetter' }
+      }
+    },
+    minimalist: {
+      label: 'Minimalist',
+      subPersonas: {
+        simpleBeauty: { label: 'Simple Beauty' },
+        lowMaintenance: { label: 'Low Maintenance' },
+        naturalLook: { label: 'Natural Look' }
+      }
+    }
   };
 
   // Completely static transcription preview to eliminate all re-render possibilities
@@ -183,7 +291,8 @@ export default function MetaAdGenerator() {
         useJonesBrandGuide,
         airLink,
         uploadedImage,
-        selectedProduct
+        selectedProduct,
+        partnershipAds
       };
       
       const result = await apiRequest('/api/generate-ad-copy', {
@@ -328,71 +437,7 @@ export default function MetaAdGenerator() {
     }
   });
 
-  // Copy to clipboard function
-  const copyToClipboard = async (text: string, type: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast({
-        title: "Copied to Clipboard",
-        description: `${type} copied successfully.`,
-      });
-      
-      // Set appropriate copied state based on type
-      if (type.includes('Headlines')) setCopiedHeadlines(true);
-      if (type.includes('Primary Text')) setCopiedPrimaryText(true);
-      if (type.includes('Landing')) setCopiedLandingCopy(true);
-      if (type.includes('Custom')) setCopiedCreativeBrief(true);
-      
-      // Reset after 2 seconds
-      setTimeout(() => {
-        setCopiedHeadlines(false);
-        setCopiedPrimaryText(false);
-        setCopiedLandingCopy(false);
-        setCopiedCreativeBrief(false);
-      }, 2000);
-    } catch (err) {
-      toast({
-        title: "Copy Failed",
-        description: "Failed to copy to clipboard.",
-        variant: "destructive"
-      });
-    }
-  };
 
-  // Define personas with proper TypeScript structure
-  const personas = {
-    lifeJuggler: {
-      label: 'Life Juggler',
-      description: 'Busy individuals balancing work, family, and personal life, looking for reliable, time-saving beauty solutions',
-      subPersonas: {
-        newMom: {
-          label: 'New Mom (6 month postpartum)',
-          description: 'First time struggling with guilt, no time for self-care, hormone changes',
-          valueProps: ['No time', 'Guilt about self-care', 'Hormone changes', 'Ingredient focused']
-        },
-        repeatMom: {
-          label: 'Repeat Mom',
-          description: 'Trying to maintain routine, worried about disruption',
-          valueProps: ['Stress', 'Fear of losing established routine', 'Time management', 'Consistency needs']
-        },
-        professionalMom: {
-          label: 'Professional Mom',
-          description: 'Innovative, checking things off checklist, Type A personality',
-          valueProps: ['Busy schedule', 'Guilt about self-care', 'Needs quick solutions', 'Efficiency focused']
-        },
-        wellnessMom: {
-          label: 'Wellness/Stay-at-home Mom',
-          description: 'Aspirational persona focused on clean ingredients for whole family',
-          valueProps: ['Clean ingredients for family', 'Ingredient research', 'Health conscious', 'Quality focused']
-        }
-      }
-    },
-    beautyEnthusiast: {
-      label: 'Beauty Enthusiast',
-      description: 'Passionate about all things beauty, from trying the latest trends to experimenting with new looks',
-      subPersonas: {}
-    }
-  };
 
   return (
     <div className="container mx-auto p-6">
@@ -419,6 +464,10 @@ export default function MetaAdGenerator() {
             <DropdownMenuItem onClick={() => setActiveTab('analytics')}>
               <BarChart3 className="h-4 w-4 mr-2" />
               Review Analytics
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setActiveTab('debug')}>
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Debug
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -468,14 +517,48 @@ export default function MetaAdGenerator() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
-                      <Button variant="outline" className="flex items-center gap-2">
-                        <Upload className="h-4 w-4" />
-                        Upload Text
-                      </Button>
-                      <Button variant="outline" className="flex items-center gap-2">
-                        <Camera className="h-4 w-4" />
-                        Upload Image
-                      </Button>
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept=".txt,.pdf,.doc,.docx"
+                          onChange={(e) => handleFileUpload(e, 'text')}
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                          disabled={isUploading}
+                        />
+                        <Button variant="outline" className="w-full flex items-center gap-2" disabled={isUploading}>
+                          <Upload className="h-4 w-4" />
+                          {isUploading ? 'Uploading...' : 'Upload Text'}
+                        </Button>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleFileUpload(e, 'image')}
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                          disabled={isUploading}
+                        />
+                        <Button variant="outline" className="w-full flex items-center gap-2" disabled={isUploading}>
+                          <Camera className="h-4 w-4" />
+                          {isUploading ? 'Uploading...' : 'Upload Image'}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="transcription">Video Transcription or Content Input</Label>
+                      <textarea
+                        id="transcription"
+                        placeholder="Paste your video transcription, content brief, or any additional context here..."
+                        value={transcription}
+                        onChange={(e) => handleTranscriptionChange(e.target.value)}
+                        className="w-full min-h-[120px] p-3 border border-gray-300 rounded-md resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      {transcription && (
+                        <div className="text-sm text-gray-500">
+                          Preview: {getTranscriptionPreview()}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -540,7 +623,11 @@ export default function MetaAdGenerator() {
                   <p className="text-sm text-gray-500 mb-4">Generate copy in the influencer's authentic voice while respecting brand guidelines</p>
                   
                   <div className="flex items-center space-x-2">
-                    <Switch id="influencer-mode" />
+                    <Switch 
+                      id="influencer-mode"
+                      checked={partnershipAds}
+                      onCheckedChange={setPartnershipAds}
+                    />
                     <Label htmlFor="influencer-mode">Enable Influencer Mode</Label>
                   </div>
                 </CardContent>
@@ -625,8 +712,11 @@ export default function MetaAdGenerator() {
                     <div className="space-y-2">
                       <Label className="text-sm">Or choose from all products</Label>
                       <ProductSelection 
+                        landingPageType="single"
                         selectedProduct={selectedProduct}
-                        onProductChange={setSelectedProduct}
+                        setSelectedProduct={setSelectedProduct}
+                        selectedProducts={selectedProducts}
+                        setSelectedProducts={setSelectedProducts}
                       />
                     </div>
                   </div>
@@ -795,8 +885,11 @@ export default function MetaAdGenerator() {
                     </div>
 
                     <ProductSelection 
+                      landingPageType="single"
                       selectedProduct={selectedProduct}
-                      onProductChange={setSelectedProduct}
+                      setSelectedProduct={setSelectedProduct}
+                      selectedProducts={selectedProducts}
+                      setSelectedProducts={setSelectedProducts}
                     />
                   </div>
                 </CardContent>
@@ -1223,55 +1316,182 @@ export default function MetaAdGenerator() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="custom" className="space-y-6">
+        <TabsContent value="debug" className="space-y-6">
           <Card>
             <CardContent className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Custom Request</h3>
+              <h3 className="text-lg font-semibold mb-4">Debug Information</h3>
               
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="customRequest">Describe what you need</Label>
-                  <Textarea
-                    id="customRequest"
-                    placeholder="Describe any copywriting task you need help with..."
-                    value={customRequest}
-                    onChange={(e) => setCustomRequest(e.target.value)}
-                    className="min-h-[120px]"
-                  />
-                </div>
+              {debugInfo ? (
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="font-medium mb-2">System Prompt</h4>
+                    <pre className="text-xs bg-gray-100 p-3 rounded overflow-x-auto whitespace-pre-wrap">
+                      {debugInfo.systemPrompt}
+                    </pre>
+                  </div>
 
-                <Button 
-                  className="w-full" 
-                  size="lg"
-                  onClick={() => generateCustomCopyMutation.mutate()}
-                  disabled={generateCustomCopyMutation.isPending || !customRequest.trim()}
-                >
-                  <Brain className="mr-2 h-4 w-4" />
-                  {generateCustomCopyMutation.isPending ? 'Generating...' : 'Generate Custom Copy'}
-                </Button>
-              </div>
+                  <div>
+                    <h4 className="font-medium mb-2">User Prompt</h4>
+                    <pre className="text-xs bg-gray-100 p-3 rounded overflow-x-auto whitespace-pre-wrap">
+                      {debugInfo.userPrompt}
+                    </pre>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium mb-2">Request Payload</h4>
+                    <pre className="text-xs bg-gray-100 p-3 rounded overflow-x-auto">
+                      {JSON.stringify(debugInfo.requestPayload, null, 2)}
+                    </pre>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium mb-2">Raw AI Response</h4>
+                    <pre className="text-xs bg-gray-100 p-3 rounded overflow-x-auto whitespace-pre-wrap">
+                      {debugInfo.rawResponse}
+                    </pre>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No debug information available. Generate some content to see debug details.</p>
+              )}
             </CardContent>
           </Card>
+        </TabsContent>
 
-          {generatedCustomResponse && (
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Generated Response</h3>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => copyToClipboard(generatedCustomResponse, 'Custom Response')}
-                  >
-                    {copiedCreativeBrief ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
-                <div className="prose max-w-none">
-                  <p className="whitespace-pre-wrap">{generatedCustomResponse}</p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+        <TabsContent value="custom" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Column - Custom Request Input */}
+            <div className="space-y-6">
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Custom Request</h3>
+                  <p className="text-sm text-gray-500 mb-4">Request any type of copywriting beyond standard templates</p>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="customRequest">Your Request</Label>
+                      <Textarea
+                        id="customRequest"
+                        placeholder="Describe what type of copy you need - social media posts, email campaigns, product announcements, campaign briefs, etc."
+                        value={customRequest}
+                        onChange={(e) => setCustomRequest(e.target.value)}
+                        className="min-h-[120px]"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Target Audience Context</Label>
+                      <Select value={concept} onValueChange={setConcept}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(personas).map(([key, persona]) => (
+                            <SelectItem key={key} value={key}>
+                              {persona.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Brand/DR Balance</Label>
+                      <div className="text-sm text-gray-600 mb-2">
+                        {brandDrBalance[0]}% Brand / {100 - brandDrBalance[0]}% DR
+                      </div>
+                      <Slider
+                        value={brandDrBalance}
+                        onValueChange={setBrandDrBalance}
+                        max={100}
+                        step={1}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Button 
+                className="w-full" 
+                size="lg"
+                onClick={() => generateCustomCopyMutation.mutate()}
+                disabled={generateCustomCopyMutation.isPending || !customRequest.trim()}
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                {generateCustomCopyMutation.isPending ? 'Generating...' : 'Generate Custom Copy'}
+              </Button>
+            </div>
+
+            {/* Right Column - Generated Custom Copy */}
+            <div className="space-y-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Generated Custom Copy</h3>
+                    {generatedCustomResponse && (
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => copyToClipboard(generatedCustomResponse, 'Custom Copy')}
+                        >
+                          Copy
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setShowRevisionPanel(true);
+                            setSelectedItemForRevision({ type: 'custom' });
+                          }}
+                        >
+                          Edit
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {generatedCustomResponse ? (
+                    <div className="prose max-w-none">
+                      <div className="whitespace-pre-wrap text-sm">{generatedCustomResponse}</div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No custom copy generated yet. Enter your request and click "Generate Custom Copy".</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Request History */}
+              {customRequestHistory.length > 0 && (
+                <Card>
+                  <CardContent className="p-6">
+                    <h3 className="text-lg font-semibold mb-4">Recent Requests</h3>
+                    <div className="space-y-3">
+                      {customRequestHistory.slice(-3).map((item, index) => (
+                        <div key={index} className="p-3 border rounded-lg">
+                          <div className="text-sm font-medium text-gray-700 mb-1">
+                            {item.request.substring(0, 80)}...
+                          </div>
+                          <div className="text-xs text-gray-500 mb-2">
+                            {item.timestamp.toLocaleDateString()}
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => copyToClipboard(item.response, 'Previous Request')}
+                          >
+                            <Copy className="h-3 w-3 mr-1" />
+                            Copy
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
