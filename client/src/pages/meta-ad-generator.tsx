@@ -2880,7 +2880,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={rule}
                                     onChange={(e) => {
-                                      if (!effectiveUser?.role === 'admin') return;
+                                      if (effectiveUser?.role !== 'admin') return;
                                       const rules = [...(editingConfig.brandGuidelines.brandVoice || [])];
                                       rules[index] = e.target.value;
                                       setEditingConfig({
@@ -2974,7 +2974,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={term}
                                     onChange={(e) => {
-                                      if (!effectiveUser?.role === 'admin') return;
+                                      if (effectiveUser?.role !== 'admin') return;
                                       const terms = [...(editingConfig.brandGuidelines.keyTerminology || [])];
                                       terms[index] = e.target.value;
                                       setEditingConfig({
@@ -3073,7 +3073,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={phrase}
                                     onChange={(e) => {
-                                      if (!effectiveUser?.role === 'admin') return;
+                                      if (effectiveUser?.role !== 'admin') return;
                                       const phrases = [...(editingConfig.brandGuidelines.approvedLanguage || [])];
                                       phrases[index] = e.target.value;
                                       setEditingConfig({
@@ -3172,7 +3172,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={phrase}
                                     onChange={(e) => {
-                                      if (!effectiveUser?.role === 'admin') return;
+                                      if (effectiveUser?.role !== 'admin') return;
                                       const phrases = [...(editingConfig.brandGuidelines.avoidedLanguage || [])];
                                       phrases[index] = e.target.value;
                                       setEditingConfig({
@@ -3559,7 +3559,7 @@ export default function MetaAdGenerator() {
                                       <Input 
                                         value={framework.name}
                                         onChange={(e) => {
-                                          if (!effectiveUser?.role === 'admin') return;
+                                          if (effectiveUser?.role !== 'admin') return;
                                           const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                           updated[index] = { ...updated[index], name: e.target.value };
                                           setEditingConfig({
@@ -3580,7 +3580,7 @@ export default function MetaAdGenerator() {
                                       <Input 
                                         value={framework.template}
                                         onChange={(e) => {
-                                          if (!effectiveUser?.role === 'admin') return;
+                                          if (effectiveUser?.role !== 'admin') return;
                                           const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                           updated[index] = { ...updated[index], template: e.target.value };
                                           setEditingConfig({
@@ -3602,7 +3602,7 @@ export default function MetaAdGenerator() {
                                     <Textarea 
                                       value={framework.description}
                                       onChange={(e) => {
-                                        if (!effectiveUser?.role === 'admin') return;
+                                        if (effectiveUser?.role !== 'admin') return;
                                         const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                         updated[index] = { ...updated[index], description: e.target.value };
                                         setEditingConfig({
@@ -3624,7 +3624,7 @@ export default function MetaAdGenerator() {
                                     <Textarea 
                                       value={framework.examples?.join('\n') || ''}
                                       onChange={(e) => {
-                                        if (!effectiveUser?.role === 'admin') return;
+                                        if (effectiveUser?.role !== 'admin') return;
                                         const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                         updated[index] = { 
                                           ...updated[index], 
@@ -3796,7 +3796,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                     <Input
                                       value={guideline}
                                       onChange={(e) => {
-                                        if (!effectiveUser?.role === 'admin') return;
+                                        if (effectiveUser?.role !== 'admin') return;
                                         const guidelines = [...(editingConfig.copyFrameworks.brandDrBalance.brandFirst || [])];
                                         guidelines[index] = e.target.value;
                                         setEditingConfig({
@@ -3878,7 +3878,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                     <Input
                                       value={guideline}
                                       onChange={(e) => {
-                                        if (!effectiveUser?.role === 'admin') return;
+                                        if (effectiveUser?.role !== 'admin') return;
                                         const guidelines = [...(editingConfig.copyFrameworks.brandDrBalance.directResponse || [])];
                                         guidelines[index] = e.target.value;
                                         setEditingConfig({
