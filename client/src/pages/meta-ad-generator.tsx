@@ -270,7 +270,11 @@ export default function MetaAdGenerator() {
     }
   };
 
-  // Completely static transcription preview to eliminate all re-render possibilities
+  // Helper functions for transcription
+  const handleTranscriptionChange = (value: string) => {
+    setTranscription(value);
+  };
+
   const getTranscriptionPreview = () => {
     if (!transcription) return '';
     if (transcription.length <= 200) return transcription;
@@ -492,6 +496,24 @@ export default function MetaAdGenerator() {
                   
                   <div className="space-y-4">
                     <div className="space-y-2">
+                      <Label htmlFor="transcription">Video Transcription or Content Input</Label>
+                      <textarea
+                        id="transcription"
+                        placeholder="Paste your video transcription, content brief, or any additional context here..."
+                        value={transcription}
+                        onChange={(e) => handleTranscriptionChange(e.target.value)}
+                        className="w-full min-h-[120px] p-3 border border-gray-300 rounded-md resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      {transcription && (
+                        <div className="text-sm text-gray-500">
+                          Preview: {getTranscriptionPreview()}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="text-center text-sm text-gray-500">OR</div>
+
+                    <div className="space-y-2">
                       <Label htmlFor="airLink">Air Link or Image URL</Label>
                       <Input
                         id="airLink"
@@ -501,8 +523,6 @@ export default function MetaAdGenerator() {
                       />
                       <p className="text-sm text-gray-500">Add an Air.com link or direct image URL to analyze existing ad creatives</p>
                     </div>
-
-                    <div className="text-center text-sm text-gray-500">OR</div>
 
                     <div className="space-y-2">
                       <Label htmlFor="customBrief">Custom Brief (Optional)</Label>
@@ -543,22 +563,6 @@ export default function MetaAdGenerator() {
                           {isUploading ? 'Uploading...' : 'Upload Image'}
                         </Button>
                       </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="transcription">Video Transcription or Content Input</Label>
-                      <textarea
-                        id="transcription"
-                        placeholder="Paste your video transcription, content brief, or any additional context here..."
-                        value={transcription}
-                        onChange={(e) => handleTranscriptionChange(e.target.value)}
-                        className="w-full min-h-[120px] p-3 border border-gray-300 rounded-md resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                      {transcription && (
-                        <div className="text-sm text-gray-500">
-                          Preview: {getTranscriptionPreview()}
-                        </div>
-                      )}
                     </div>
                   </div>
                 </CardContent>
