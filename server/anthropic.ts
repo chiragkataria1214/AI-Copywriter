@@ -1235,9 +1235,9 @@ EMAIL COPY: Complete launch announcement email including subject line, preview t
 
 SOCIAL MEDIA CAPTIONS: Platform-specific captions for Instagram, Facebook, and TikTok. Include relevant hashtags, call-to-action, and engagement hooks. Maintain authentic brand voice while optimizing for each platform.
 
-PAID AD HEADLINES: 3-5 Facebook/Instagram ad headlines that capture attention and drive clicks. Balance benefit-driven and curiosity-driven approaches.
+META AD HEADLINES: 3-5 Facebook/Instagram ad headlines that capture attention and drive clicks. Balance benefit-driven and curiosity-driven approaches.
 
-PAID AD COPY: Complete Facebook/Instagram ad copy including headline, primary text, and description. Optimized for conversion with clear value proposition and strong CTA.
+META AD COPY: Complete Facebook/Instagram ad copy including headline, primary text, and description. Optimized for conversion with clear value proposition and strong CTA.
 
 PRODUCT DESCRIPTIONS: Comprehensive product descriptions for website and marketplace use. Include features, benefits, usage instructions, and key selling points in scannable format.
 
@@ -1343,8 +1343,8 @@ IMPORTANT: Use only clean, plain text formatting. Avoid special characters like 
         'email-subject-lines': 'email-subject',
         'email-copy': 'email-body',
         'social-media-captions': 'social-captions',
-        'paid-ad-headlines': 'ad-headlines',
-        'paid-ad-copy': 'ad-copy',
+        'meta-ad-headlines': 'ad-headlines',
+        'meta-ad-copy': 'ad-copy',
         'product-descriptions': 'product-descriptions',
         'press-release': 'press-release',
         'landing-page-copy': 'landing-page',
