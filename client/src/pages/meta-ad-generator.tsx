@@ -452,7 +452,7 @@ export default function MetaAdGenerator() {
 
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-6 page-container main-content">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">AI Copywriter</h1>
         <p className="text-gray-600">Generate professional marketing copy with AI</p>
