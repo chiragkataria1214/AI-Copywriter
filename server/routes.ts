@@ -5,7 +5,7 @@ import { registerJunipRoutes } from "./routes-junip";
 import { registerAdminRoutes } from "./routes-admin";
 import { storage } from "./storage";
 import multer from "multer";
-import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd, generateLaunchCopy, generateStrategy, generateCreativeBrief } from "./anthropic";
+import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd } from "./anthropic";
 import { analyzeInfluencerVoice, generateInfluencerStyleCopy, fetchInstagramContent } from "./influencer-analyzer";
 import { getTrainingConfig } from "./routes-training";
 import { z } from "zod";
@@ -555,23 +555,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/generate-ad-copy', requireAuth, async (req, res) => {
     try {
       const startTime = Date.now();
-      const { 
-        transcription, 
-        customBrief, 
-        concept, 
-        subPersona, 
-        targetAudience, 
-        landingPageUrl, 
-        brandDrBalance, 
-        useJonesBrandGuide, 
-        airLink, 
-        uploadedImage,
-        selectedProduct,
-        partnershipAds,
-        influencerHandle,
-        voiceAnalysisMethod,
-        influencerBrandBalance
-      } = req.body;
+      const { transcription, customBrief, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage } = req.body;
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -580,41 +564,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get current training config for snapshot
       const trainingConfig = await getTrainingConfig();
       
-      // Check if influencer mode is enabled and handle accordingly
-      let result;
-      if (partnershipAds && influencerHandle && voiceAnalysisMethod) {
-        console.log('Generating influencer-style copy for @' + influencerHandle);
-        // For now, use regular generation but log the influencer parameters
-        // TODO: Implement full influencer voice analysis integration
-        result = await generateAdCopy({
-          transcription,
-          customBrief,
-          concept,
-          subPersona,
-          targetAudience,
-          landingPageUrl,
-          brandDrBalance,
-          useJonesBrandGuide,
-          airLink,
-          uploadedImage,
-          selectedProduct,
-          influencerContext: `Influencer: @${influencerHandle}, Analysis: ${voiceAnalysisMethod}, Brand Balance: ${influencerBrandBalance}%`
-        });
-      } else {
-        result = await generateAdCopy({
-          transcription,
-          customBrief,
-          concept,
-          subPersona,
-          targetAudience,
-          landingPageUrl,
-          brandDrBalance,
-          useJonesBrandGuide,
-          airLink,
-          uploadedImage,
-          selectedProduct
-        });
-      }
+      const result = await generateAdCopy({
+        transcription,
+        customBrief,
+        concept,
+        subPersona,
+        targetAudience,
+        landingPageUrl,
+        brandDrBalance,
+        useJonesBrandGuide,
+        airLink,
+        uploadedImage
+      });
       
       const generationTime = Date.now() - startTime;
 
@@ -676,252 +637,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error recording feedback:', error);
       res.status(500).json({ error: 'Failed to record feedback' });
-    }
-  });
-
-  // Launch copy generation endpoint  
-  app.post('/api/generate-launch-copy', requireAuth, async (req, res) => {
-    try {
-      const { launchBrief, selectedDeliverables, concept, subPersona, brandDrBalance, selectedProduct, useJonesBrandGuide } = req.body;
-      
-      const trainingConfig = await getTrainingConfig();
-      const result = await generateLaunchCopy(
-        launchBrief,
-        selectedDeliverables,
-        concept,
-        subPersona,
-        brandDrBalance,
-        selectedProduct,
-        useJonesBrandGuide,
-        trainingConfig
-      );
-      
-      res.json(result);
-    } catch (error: any) {
-      console.error('Launch copy generation error:', error);
-      res.status(500).json({ 
-        message: error.message || 'Failed to generate launch copy'
-      });
-    }
-  });
-
-  // Strategy planning generation endpoint
-  app.post('/api/generate-strategy', requireAuth, async (req, res) => {
-    try {
-      const { strategyBrief, selectedDepartments, concept, subPersona, brandDrBalance, selectedProduct, useJonesBrandGuide } = req.body;
-      
-      const trainingConfig = await getTrainingConfig();
-      const result = await generateStrategy(
-        strategyBrief,
-        selectedDepartments,
-        concept,
-        subPersona,
-        brandDrBalance,
-        selectedProduct,
-        useJonesBrandGuide,
-        trainingConfig
-      );
-      
-      res.json(result);
-    } catch (error: any) {
-      console.error('Strategy generation error:', error);
-      res.status(500).json({ 
-        message: error.message || 'Failed to generate strategy planning'
-      });
-    }
-  });
-
-  // Creative brief generation endpoint
-  app.post('/api/generate-creative-brief', requireAuth, async (req, res) => {
-    try {
-      const { meetingNotes, meetingTranscription, concept, subPersona, brandDrBalance, selectedProduct, useJonesBrandGuide } = req.body;
-      
-      const trainingConfig = await getTrainingConfig();
-      const result = await generateCreativeBrief(
-        meetingNotes,
-        meetingTranscription,
-        concept,
-        subPersona,
-        brandDrBalance,
-        selectedProduct,
-        useJonesBrandGuide,
-        trainingConfig
-      );
-      
-      res.json({ creativeBrief: result });
-    } catch (error: any) {
-      console.error('Creative brief generation error:', error);
-      res.status(500).json({ 
-        message: error.message || 'Failed to generate creative brief'
-      });
-    }
-  });
-
-  // Google Drive brief fetch endpoint
-  app.post('/api/fetch-drive-brief', requireAuth, async (req, res) => {
-    try {
-      const { driveUrl } = req.body;
-      
-      if (!driveUrl) {
-        return res.status(400).json({ message: 'Drive URL is required' });
-      }
-      
-      console.log('Attempting to fetch Drive URL:', driveUrl);
-      
-      // Handle different Google Drive URL formats
-      let docId = '';
-      
-      // Try multiple patterns to extract document ID
-      const patterns = [
-        /\/d\/([a-zA-Z0-9-_]+)/, // Standard format: /d/docId/
-        /\/document\/d\/([a-zA-Z0-9-_]+)/, // Alternative format
-        /\/presentation\/d\/([a-zA-Z0-9-_]+)/, // Presentation format
-        /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/, // Spreadsheet format
-        /id=([a-zA-Z0-9-_]+)/, // Query parameter format
-        /\/open\?id=([a-zA-Z0-9-_]+)/, // Open format
-        /\/file\/d\/([a-zA-Z0-9-_]+)/ // File format
-      ];
-      
-      for (const pattern of patterns) {
-        const match = driveUrl.match(pattern);
-        if (match) {
-          docId = match[1];
-          break;
-        }
-      }
-      
-      if (!docId) {
-        return res.status(400).json({ 
-          message: 'Could not extract document ID from URL. Please use a standard Google Docs share link.' 
-        });
-      }
-      
-      console.log('Extracted document ID:', docId);
-      
-      // Detect document type from URL and use appropriate export methods
-      let exportUrls = [];
-      if (driveUrl.includes('/presentation/')) {
-        exportUrls = [
-          `https://docs.google.com/presentation/d/${docId}/export/txt`,
-          `https://docs.google.com/presentation/d/${docId}/export?format=txt`,
-          `https://docs.google.com/presentation/export?format=txt&id=${docId}`,
-        ];
-      } else if (driveUrl.includes('/spreadsheets/')) {
-        exportUrls = [
-          `https://docs.google.com/spreadsheets/d/${docId}/export?format=txt`,
-          `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv`,
-          `https://docs.google.com/spreadsheets/export?format=txt&id=${docId}`,
-        ];
-      } else {
-        // Default to document format
-        exportUrls = [
-          `https://docs.google.com/document/d/${docId}/export?format=txt`,
-          `https://docs.google.com/document/export?format=txt&id=${docId}`,
-          `https://docs.google.com/document/d/${docId}/export?format=txt&exportFormat=txt`,
-        ];
-      }
-      
-      let content = '';
-      let lastError = '';
-      
-      for (const exportUrl of exportUrls) {
-        try {
-          console.log('Trying export URL:', exportUrl);
-          
-          // Add proper headers for Google Drive access
-          const response = await fetch(exportUrl, {
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-              'Accept': 'text/plain,text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-              'Accept-Language': 'en-US,en;q=0.5',
-              'Accept-Encoding': 'gzip, deflate',
-              'Connection': 'keep-alive',
-              'Cache-Control': 'no-cache'
-            }
-          });
-          
-          console.log('Response status:', response.status, response.statusText);
-          
-          if (response.ok) {
-            content = await response.text();
-            console.log('Content length:', content.length);
-            console.log('Content preview:', content.substring(0, 200));
-            
-            if (content && content.trim().length > 0 && !content.includes('<!DOCTYPE html>')) {
-              console.log('Successfully fetched content');
-              break;
-            } else {
-              console.log('Content appears to be HTML or empty');
-            }
-          } else {
-            lastError = `${response.status} ${response.statusText}`;
-            console.log('Export URL failed:', exportUrl, 'Status:', response.status);
-          }
-        } catch (fetchError) {
-          console.log('Fetch error for URL:', exportUrl, fetchError);
-          lastError = String(fetchError);
-        }
-      }
-      
-      if (!content || content.trim().length === 0 || content.includes('<!DOCTYPE html>')) {
-        const docType = driveUrl.includes('/presentation/') ? 'Presentation' : 
-                        driveUrl.includes('/spreadsheets/') ? 'Spreadsheet' : 'Document';
-        return res.status(400).json({ 
-          message: `Could not access ${docType.toLowerCase()} content. Please ensure:\n• ${docType} is shared with "Anyone with the link can view"\n• ${docType} is not empty\n• The ${docType.toLowerCase()} is publicly accessible\n• Link permissions are set correctly\n\nError: ${lastError}`
-        });
-      }
-      
-      res.json({ 
-        content: content.trim(),
-        success: true,
-        docId: docId
-      });
-    } catch (error) {
-      console.error('Google Drive fetch error:', error);
-      res.status(500).json({ 
-        message: 'Failed to fetch document from Google Drive. Please check the link and try again.' 
-      });
-    }
-  });
-
-  // PDF parsing endpoint
-  app.post('/api/parse-pdf', requireAuth, async (req, res) => {
-    try {
-      const multer = require('multer');
-      const pdfParse = require('pdf-parse');
-      
-      // Configure multer for memory storage
-      const upload = multer({ storage: multer.memoryStorage() });
-      
-      // Use multer middleware
-      upload.single('file')(req, res, async (err: any) => {
-        if (err) {
-          return res.status(400).json({ message: 'File upload error' });
-        }
-        
-        if (!req.file) {
-          return res.status(400).json({ message: 'No file provided' });
-        }
-        
-        try {
-          const data = await pdfParse(req.file.buffer);
-          res.json({ 
-            content: data.text,
-            success: true,
-            pages: data.numpages
-          });
-        } catch (parseError) {
-          console.error('PDF parse error:', parseError);
-          res.status(400).json({ 
-            message: 'Failed to parse PDF. Please ensure it contains readable text.' 
-          });
-        }
-      });
-    } catch (error) {
-      console.error('PDF endpoint error:', error);
-      res.status(500).json({ 
-        message: 'PDF processing failed. Please try again.' 
-      });
     }
   });
 
