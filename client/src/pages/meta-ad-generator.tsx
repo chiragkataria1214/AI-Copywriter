@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Upload, Copy, Check, Target, Sparkles, Video, FileText, Zap, ThumbsUp, ThumbsDown, Star, Globe, List, AlertCircle, Palette, Users, Settings, LogOut, User, Database, Brain, BarChart3, Camera, Lock } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -75,11 +75,11 @@ export default function MetaAdGenerator() {
   };
   
   // BYPASS AUTHENTICATION - Direct access mode for all copywriting features
-  const effectiveUser = {
+  const effectiveUser = useMemo(() => ({
     username: 'user@jonesroadbeauty.com',
     role: hasAdminAccess ? 'admin' : 'user',
     isAdmin: hasAdminAccess
-  };
+  }), [hasAdminAccess]);
   
   // Dummy auth functions for compatibility
   const logout = () => {};
@@ -145,13 +145,11 @@ export default function MetaAdGenerator() {
   
   // Load review stats
   useEffect(() => {
-    if (effectiveUser) {
-      fetch('/api/reviews/stats')
-        .then(res => res.json())
-        .then(data => setReviewStats(data))
-        .catch(err => console.error('Failed to load review stats:', err));
-    }
-  }, [effectiveUser]);
+    fetch('/api/reviews/stats')
+      .then(res => res.json())
+      .then(data => setReviewStats(data))
+      .catch(err => console.error('Failed to load review stats:', err));
+  }, []); // Remove effectiveUser dependency to prevent infinite loop
   
   // Landing Page States
   const [landingPageType, setLandingPageType] = useState('listicle');
@@ -1013,7 +1011,14 @@ export default function MetaAdGenerator() {
                         className="w-full resize-none text-sm"
                         placeholder="Paste your video transcription or ad concept here..."
                         value={transcription}
-                        onChange={(e) => setTranscription(e.target.value)}
+                        onChange={(e) => {
+                          try {
+                            console.log('Transcription change triggered');
+                            setTranscription(e.target.value);
+                          } catch (error) {
+                            console.error('Error setting transcription:', error);
+                          }
+                        }}
                       />
                       
                       <div>
