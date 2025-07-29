@@ -686,7 +686,7 @@ CTA: [Main collection call-to-action with bundle value]
 ` : landingPageType === 'listicle' ? `
 Generate complete listicle landing page copy without introduction. Structure your response as:
 
-HEADLINE: [Main headline - 8-12 words maximum]
+HEADLINE: [Main headline - 8-12 words maximum - MUST predominantly use "5 reasons why" format]
 SUBHEADLINE: [Supporting headline if needed - 8-15 words]
 REASON #1: [Title - 8-12 words]
 [Single paragraph: 40-50 words maximum. Start with benefit, add brief explanation, end with outcome. Very concise.]
@@ -700,12 +700,20 @@ REASON #5: [Title - 8-12 words]
 [Single paragraph: 40-50 words maximum. Start with benefit, add brief explanation, end with outcome. Very concise.]
 CTA: [Main call-to-action - mention free shipping over $85, not $50]
 
+LISTICLE HEADLINE EXAMPLES (USE THESE AS MODELS):
+- "5 Reasons Why What The Foundation Is Different"
+- "5 Reasons Why Miracle Balm Beats Regular Blush"
+- "5 Reasons Why This Mascara Changes Everything"
+- "5 Reasons Why Moms Choose This Foundation"
+- "5 Reasons Why Your Skin Deserves This"
+
 COPY LENGTH REQUIREMENTS:
 - Each reason paragraph: 40-50 words maximum (not 80+ words)
 - Use simple, clear sentences
 - Focus on ONE key benefit per reason
 - Match the concise style of actual Jones Road listicles
 - NO introductions, NO long explanations
+- Headlines MUST follow "5 reasons why" format for consistency
 ` : `
 Generate complete landing page copy with all required sections. Structure your response as:
 
