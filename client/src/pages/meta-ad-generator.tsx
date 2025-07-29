@@ -3975,7 +3975,7 @@ export default function MetaAdGenerator() {
                             variant="ghost" 
                             size="sm"
                             onClick={() => {
-                              setSelectedItemForRevision({ type: 'creative-brief', content: generatedCreativeBrief });
+                              setSelectedItemForRevision({ type: 'custom' });
                               setShowRevisionPanel(true);
                             }}
                             title="Edit creative brief"
@@ -4097,7 +4097,9 @@ export default function MetaAdGenerator() {
 
                   {/* Generate Button */}
                   <Button 
-                    onClick={handleGenerateCustomCopy}
+                    onClick={() => generateCustomCopyMutation.mutate({
+                      request: customRequest
+                    })}
                     disabled={!customRequest.trim() || generateCustomCopyMutation.isPending}
                     className="w-full bg-jones-primary hover:bg-jones-primary/90"
                   >
@@ -4133,7 +4135,7 @@ export default function MetaAdGenerator() {
                         variant="ghost" 
                         size="sm"
                         onClick={() => {
-                          setSelectedItemForRevision({ type: 'custom', content: generatedCustomResponse });
+                          setSelectedItemForRevision({ type: 'custom' });
                           setShowRevisionPanel(true);
                         }}
                         title="Edit custom copy"
