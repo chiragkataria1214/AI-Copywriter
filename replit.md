@@ -6,13 +6,14 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
-**Latest Update - Landing Page Transcription Integration (July 29, 2025)**
+**Latest Update - Landing Page Transcription Integration & Listicle Format Optimization (July 29, 2025)**
 - **✅ TRANSCRIPTION INTEGRATION**: Landing page generation now includes video transcription content when using generated ads content
 - **✅ FRONTEND ENHANCEMENT**: Updated landing page mutation to pass transcription data when "Use Generated Ads Content" is selected
 - **✅ BACKEND IMPLEMENTATION**: Enhanced server routes and anthropic functions to handle transcription parameter in landing page generation
 - **✅ AI PROMPT ENHANCEMENT**: Added transcription content section to landing page AI prompts for consistent messaging and tone matching
 - **✅ INTERFACE UPDATES**: Updated TypeScript interfaces to properly type transcription data flow throughout the system
 - **✅ SEAMLESS WORKFLOW**: Users can now generate ads with transcription, then create landing pages that maintain the same messaging consistency
+- **✅ LISTICLE FORMAT OPTIMIZED**: Removed introduction sections from listicle landing pages per user preference - now generates clean listicles without intros
 
 **Previous Update - Product Claims Validation System (July 29, 2025)**
 - **✅ PRODUCT CLAIMS INTEGRATION**: Built comprehensive product claims validation system from Google Sheets data to ensure accurate copy

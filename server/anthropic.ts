@@ -681,6 +681,16 @@ PRODUCT #3: [Supporting Product Name]
 COLLECTION BENEFITS: [Why this curated selection works as a complete routine]
 SOCIAL PROOF: [Mix of media mentions and customer testimonials]
 CTA: [Main collection call-to-action with bundle value]
+` : landingPageType === 'listicle' ? `
+Generate complete listicle landing page copy without introduction. Structure your response as:
+
+HEADLINE: [Main headline]
+SUBHEADLINE: [Supporting headline if needed]
+REASON #1: [Title]
+[Complete reason content with hook, explanation, proof, benefit]
+REASON #2: [Title]
+[Continue for all 5 reasons]
+CTA: [Main call-to-action]
 ` : `
 Generate complete landing page copy with all required sections. Structure your response as:
 
@@ -714,7 +724,9 @@ CTA: [Main call-to-action]
     const subheadlineMatch = content.match(/SUBHEADLINE:?\s*(.+?)(?=\n|INTRODUCTION|REASON|HERO PRODUCT|PRODUCT|$)/is);
     const introMatch = landingPageType === 'multiProduct' 
       ? content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=HERO PRODUCT|PRODUCT #?1|$)/i)
-      : content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=REASON #?1|$)/i);
+      : landingPageType === 'listicle' 
+        ? null // No introduction for listicles
+        : content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=REASON #?1|$)/i);
     const ctaMatch = content.match(/CTA:?\s*([\s\S]*?)(?=RISK REVERSAL|$)/i);
     const riskReversalMatch = content.match(/RISK REVERSAL:?\s*([\s\S]*?)$/i);
     
