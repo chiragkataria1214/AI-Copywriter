@@ -14,6 +14,9 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 - **✅ INTERFACE UPDATES**: Updated TypeScript interfaces to properly type transcription data flow throughout the system
 - **✅ SEAMLESS WORKFLOW**: Users can now generate ads with transcription, then create landing pages that maintain the same messaging consistency
 - **✅ LISTICLE FORMAT OPTIMIZED**: Removed introduction sections from listicle landing pages per user preference - now generates clean listicles without intros
+- **✅ COPY LENGTH FIXED**: Adjusted listicle paragraph length to 40-50 words maximum to match actual Jones Road listicles (was previously too long)
+- **✅ SHIPPING THRESHOLD CORRECTED**: Fixed free shipping mentions from incorrect $50 to accurate $85 threshold per Jones Road policy
+- **✅ WORD COUNT ENFORCEMENT**: Added explicit word count limits for headlines (8-12 words), subheadlines (8-15 words), and reason paragraphs (40-50 words)
 
 **Previous Update - Product Claims Validation System (July 29, 2025)**
 - **✅ PRODUCT CLAIMS INTEGRATION**: Built comprehensive product claims validation system from Google Sheets data to ensure accurate copy

@@ -665,6 +665,8 @@ SPECIFIC INSTRUCTIONS:
 9. Use bullet points or short phrases for better readability
 10. Maximum 30 words per bullet point - be extremely concise and scannable
 11. NO RISK REVERSAL SECTION - remove guarantees and risk reversal content completely
+12. FREE SHIPPING THRESHOLD: Always use $85, never $50 or other amounts - this is Jones Road's actual threshold
+13. NEVER mention unauthorized claims or pricing - stick to approved product claims only
 
 ${landingPageType === 'multiProduct' ? `
 Generate complete multi-product landing page copy combining Loop Earplugs and Jones Road patterns. Structure your response as:
@@ -684,13 +686,26 @@ CTA: [Main collection call-to-action with bundle value]
 ` : landingPageType === 'listicle' ? `
 Generate complete listicle landing page copy without introduction. Structure your response as:
 
-HEADLINE: [Main headline]
-SUBHEADLINE: [Supporting headline if needed]
-REASON #1: [Title]
-[Complete reason content with hook, explanation, proof, benefit]
-REASON #2: [Title]
-[Continue for all 5 reasons]
-CTA: [Main call-to-action]
+HEADLINE: [Main headline - 8-12 words maximum]
+SUBHEADLINE: [Supporting headline if needed - 8-15 words]
+REASON #1: [Title - 8-12 words]
+[Single paragraph: 40-50 words maximum. Start with benefit, add brief explanation, end with outcome. Very concise.]
+REASON #2: [Title - 8-12 words]
+[Single paragraph: 40-50 words maximum. Start with benefit, add brief explanation, end with outcome. Very concise.]
+REASON #3: [Title - 8-12 words]
+[Single paragraph: 40-50 words maximum. Start with benefit, add brief explanation, end with outcome. Very concise.]
+REASON #4: [Title - 8-12 words]
+[Single paragraph: 40-50 words maximum. Start with benefit, add brief explanation, end with outcome. Very concise.]
+REASON #5: [Title - 8-12 words]
+[Single paragraph: 40-50 words maximum. Start with benefit, add brief explanation, end with outcome. Very concise.]
+CTA: [Main call-to-action - mention free shipping over $85, not $50]
+
+COPY LENGTH REQUIREMENTS:
+- Each reason paragraph: 40-50 words maximum (not 80+ words)
+- Use simple, clear sentences
+- Focus on ONE key benefit per reason
+- Match the concise style of actual Jones Road listicles
+- NO introductions, NO long explanations
 ` : `
 Generate complete landing page copy with all required sections. Structure your response as:
 
