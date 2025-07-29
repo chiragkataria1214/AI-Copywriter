@@ -2803,9 +2803,13 @@ export default function MetaAdGenerator() {
                               )}
                             </Button>
                           </div>
-                          <p className="text-xs text-gray-500 mt-2">
-                            Make sure the document is shared with "Anyone with the link can view" permission
-                          </p>
+                          <div className="text-xs text-gray-500 mt-2 space-y-1">
+                            <p><strong>To share your Google Doc:</strong></p>
+                            <p>1. Click "Share" in your Google Doc</p>
+                            <p>2. Change to "Anyone with the link can view"</p>
+                            <p>3. Copy and paste the share link here</p>
+                            <p>4. Make sure it's a Google Docs link (not Sheets or Slides)</p>
+                          </div>
                           
                           {launchBrief && (
                             <div className="mt-4">
