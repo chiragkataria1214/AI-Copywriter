@@ -6,16 +6,13 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
-**Latest Update - Launch Brief Google Drive Integration (July 29, 2025)**
-- **✅ GOOGLE DRIVE INTEGRATION**: Added seamless Google Drive document fetching for creative briefs stored in Drive
-- **✅ THREE INPUT OPTIONS**: Users can now paste text, upload files, or connect Google Drive links for brief input
-- **✅ DRIVE API ENDPOINT**: Built `/api/fetch-drive-brief` endpoint that converts share links to export URLs and fetches document content
-- **✅ SMART URL PARSING**: Automatically extracts document ID from various Google Drive URL formats and converts to text export format
-- **✅ PERMISSION HANDLING**: Clear instructions for users to set "Anyone with the link can view" permissions for access
-- **✅ LIVE PREVIEW**: Real-time preview of loaded Google Drive document content with truncation for better UX
-- **✅ ERROR HANDLING**: Comprehensive error handling for invalid URLs, permission issues, and empty documents
-- **✅ UI ENHANCEMENT**: Clean tabbed interface for selecting input method (paste, Drive link, or file upload)
-- **✅ WORKFLOW OPTIMIZATION**: Streamlines creative brief workflow by connecting directly to existing Google Drive storage
+**Latest Update - Simplified Launch Brief Interface & Meta Ads Terminology (July 29, 2025)**
+- **✅ SIMPLIFIED INPUT OPTIONS**: Removed problematic Google Drive integration, now offers clean paste text and file upload options
+- **✅ IMPROVED USER EXPERIENCE**: Streamlined interface with just two clear input methods for creative briefs
+- **✅ META ADS TERMINOLOGY**: Updated all "Paid Ad" references to "Meta Ad" throughout Launch Brief deliverables per user preference
+- **✅ CONSISTENT BRANDING**: Changed ad copy terminology to "Meta Ad Headlines" and "Meta Ad Copy" for better platform alignment
+- **✅ CLEAN UI**: Removed complex Google Drive setup that was causing 404 errors and user confusion
+- **✅ FOCUSED WORKFLOW**: Users can now easily paste briefs or upload files without technical barriers
 
 **Previous Update - CRITICAL PRODUCTION FREEZE RESOLVED: Direct Textarea Implementation (July 29, 2025)**
 - **✅ FREEZE ISSUE COMPLETELY RESOLVED**: User confirmed transcription functionality works perfectly in production after cache clearing
