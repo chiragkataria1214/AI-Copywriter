@@ -18,7 +18,7 @@ import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'wouter';
 import { ProductSelection } from "@/components/ProductSelection";
-import { FeatureTooltip, AIFeatureTooltip, QuickTooltip } from "@/components/FeatureTooltip";
+
 
 export default function MetaAdGenerator() {
   const [activeTab, setActiveTab] = useState('ads');
@@ -915,66 +915,35 @@ export default function MetaAdGenerator() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="flex w-full mb-6 sm:mb-8">
             <TabsList className="grid grid-cols-4 flex-1">
-              <FeatureTooltip
-                title="AI Ad Copy Generator"
-                description="Generate high-converting Facebook ad headlines and primary text using Claude AI trained on Jones Road Beauty's brand voice and customer insights."
-                feature="ai"
-                pulse={true}
-              >
-                <TabsTrigger value="ads" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
-                  <Sparkles size={16} />
-                  <span className="text-xs sm:text-sm">Ad Copy</span>
-                </TabsTrigger>
-              </FeatureTooltip>
+              <TabsTrigger value="ads" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
+                <Sparkles size={16} />
+                <span className="text-xs sm:text-sm">Ad Copy</span>
+              </TabsTrigger>
               
-              <FeatureTooltip
-                title="Landing Page Creator"
-                description="Create optimized landing pages with listicle formats, customer review integration, and mobile-first design for maximum conversion."
-                feature="enhanced"
-              >
-                <TabsTrigger value="landing" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
-                  <FileText size={16} />
-                  <span className="text-xs sm:text-sm">Landing Page</span>
-                </TabsTrigger>
-              </FeatureTooltip>
+              <TabsTrigger value="landing" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
+                <FileText size={16} />
+                <span className="text-xs sm:text-sm">Landing Page</span>
+              </TabsTrigger>
               
-              <FeatureTooltip
-                title="Static Ad Analyzer"
-                description="Upload static ad images and generate compelling copy that matches the visual content for cohesive advertising campaigns."
-                feature="new"
-              >
-                <TabsTrigger value="static-ad" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
-                  <Camera size={16} />
-                  <span className="text-xs sm:text-sm">Static Ad</span>
-                </TabsTrigger>
-              </FeatureTooltip>
+              <TabsTrigger value="static-ad" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
+                <Camera size={16} />
+                <span className="text-xs sm:text-sm">Static Ad</span>
+              </TabsTrigger>
               
-              <FeatureTooltip
-                title="Custom Copy Requests"
-                description="Generate any type of marketing copy - social media posts, email campaigns, product announcements, or campaign briefs using AI."
-                feature="pro"
-              >
-                <TabsTrigger value="custom" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
-                  <Brain size={16} />
-                  <span className="text-xs sm:text-sm">Custom Request</span>
-                </TabsTrigger>
-              </FeatureTooltip>
+              <TabsTrigger value="custom" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
+                <Brain size={16} />
+                <span className="text-xs sm:text-sm">Custom Request</span>
+              </TabsTrigger>
             </TabsList>
-            <FeatureTooltip
-              title={hasAdminAccess ? "AI Settings Panel" : "Protected AI Settings"}
-              description={hasAdminAccess ? "Configure AI prompts, brand guidelines, and training data for optimized copy generation." : "Access advanced AI configuration with admin code 'jrb-admin-2024' to modify prompts and training data."}
-              feature={hasAdminAccess ? "pro" : "beta"}
+            <Button
+              variant={activeTab === 'settings' ? 'default' : 'outline'}
+              onClick={handleAISettingsClick}
+              className="ml-2 flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2 h-auto py-2 px-3"
+              style={activeTab === 'settings' ? { backgroundColor: '#004182', color: 'white' } : {}}
             >
-              <Button
-                variant={activeTab === 'settings' ? 'default' : 'outline'}
-                onClick={handleAISettingsClick}
-                className="ml-2 flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2 h-auto py-2 px-3"
-                style={activeTab === 'settings' ? { backgroundColor: '#004182', color: 'white' } : {}}
-              >
-                {hasAdminAccess ? <Settings size={16} /> : <Lock size={16} />}
-                <span className="text-xs sm:text-sm">AI Settings</span>
-              </Button>
-            </FeatureTooltip>
+              {hasAdminAccess ? <Settings size={16} /> : <Lock size={16} />}
+              <span className="text-xs sm:text-sm">AI Settings</span>
+            </Button>
           </div>
 
           <TabsContent value="ads">
@@ -1385,32 +1354,24 @@ export default function MetaAdGenerator() {
                   </CardContent>
                 </Card>
 
-                <AIFeatureTooltip
-                  title="AI Ad Copy Generation"
-                  description="Generate Facebook ad headlines and primary text using Claude 4.0 Sonnet trained on Jones Road Beauty's brand voice, customer insights, and 21,000+ authentic reviews."
-                  modelInfo="Claude 4.0 Sonnet"
-                  accuracy="95%+ Brand Voice Match"
-                  placement="top"
+                <Button 
+                  onClick={generateAdCopy} 
+                  className="w-full text-white"
+                  style={{ backgroundColor: '#004182' }}
+                  disabled={generateAdCopyMutation.isPending}
                 >
-                  <Button 
-                    onClick={generateAdCopy} 
-                    className="w-full text-white hover:opacity-90"
-                    style={{ backgroundColor: '#004182' }}
-                    disabled={generateAdCopyMutation.isPending}
-                  >
-                    {generateAdCopyMutation.isPending ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2" size={16} />
-                        Generate Ad Copy
-                      </>
-                    )}
-                  </Button>
-                </AIFeatureTooltip>
+                  {generateAdCopyMutation.isPending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2" size={16} />
+                      Generate Ad Copy
+                    </>
+                  )}
+                </Button>
               </div>
 
               {/* Results Section */}
