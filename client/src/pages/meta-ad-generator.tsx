@@ -89,9 +89,23 @@ export default function MetaAdGenerator() {
   const isSettingUpAdmin = false;
   const [transcription, setTranscription] = useState('');
   
-  // Simple transcription preview without memoization to test
-  const transcriptionPreview = !transcription ? '' : 
-    transcription.length > 200 ? transcription.substring(0, 200) + '...' : transcription;
+  // Debug transcription changes to identify freeze pattern
+  const handleTranscriptionChange = (value: string) => {
+    console.log('TRANSCRIPTION CHANGE START:', value.length);
+    console.log('Current render count check');
+    requestAnimationFrame(() => {
+      console.log('RAF: Setting transcription');
+      setTranscription(value);
+      console.log('RAF: Transcription set successfully');
+    });
+  };
+  
+  // Completely static transcription preview to eliminate all re-render possibilities
+  const getTranscriptionPreview = () => {
+    if (!transcription) return '';
+    if (transcription.length <= 200) return transcription;
+    return transcription.substring(0, 200) + '...';
+  };
 
   const [airLink, setAirLink] = useState('');
   const [uploadedImage, setUploadedImage] = useState<string>('');
@@ -1016,7 +1030,7 @@ export default function MetaAdGenerator() {
 
                       <TranscriptionInput 
                         value={transcription}
-                        onChange={setTranscription}
+                        onChange={handleTranscriptionChange}
                       />
                       
                       <div>
@@ -2117,7 +2131,7 @@ export default function MetaAdGenerator() {
                               <div>
                                 <Label className="text-xs font-medium text-gray-600 mb-2 block">Source Transcription</Label>
                                 <div className="p-3 bg-gray-50 rounded border text-xs text-gray-600 max-h-24 overflow-y-auto">
-                                  {transcriptionPreview}
+                                  {getTranscriptionPreview()}
                                 </div>
                                 <p className="text-xs text-gray-500 mt-1">
                                   This transcription content will be included in the landing page generation for consistency
