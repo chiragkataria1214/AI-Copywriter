@@ -6,7 +6,15 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
-**Latest Update - Landing Page Copy Length Optimization (July 28, 2025)**
+**Latest Update - Product Claims Validation System (July 29, 2025)**
+- **✅ PRODUCT CLAIMS INTEGRATION**: Built comprehensive product claims validation system from Google Sheets data to ensure accurate copy
+- **✅ AI SETTINGS INTERFACE**: Added dedicated "Product Claims" tab in AI Settings with visual approved/prohibited claims management
+- **✅ CLAIMS VALIDATION**: AI prompts now include explicit product claims validation for Foundation, Mascara, Sunscreen, and Miracle Balm
+- **✅ DR SAFETY MEASURES**: System prevents false claims especially when DR slider > 50% by enforcing approved claims only
+- **✅ ADMIN CONTROLS**: Editable claims interface with toggle switches and real-time editing for authorized administrators
+- **✅ TRUTH ENFORCEMENT**: All generated copy now validated against approved product claims to prevent marketing compliance issues
+
+**Previous Update - Landing Page Copy Length Optimization (July 28, 2025)**
 - **✅ MOBILE-OPTIMIZED COPY**: Updated landing page generation to follow strict 8-12 word sentence rule for mobile comprehension
 - **✅ LISTICLE FRAMEWORK**: Implemented precise framework from uploaded guidelines - "briefly enumerate reasons" with concise sentences
 - **✅ EXPLICIT EXAMPLES**: Added wrong/correct examples in prompts showing exact word count constraints and formatting

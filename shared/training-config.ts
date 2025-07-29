@@ -14,6 +14,14 @@ export interface TrainingConfig {
     enabledApprovedLanguage?: boolean[];
     enabledAvoidedLanguage?: boolean[];
   };
+  productClaims: {
+    [productName: string]: {
+      approvedClaims: string[];
+      prohibitedClaims: string[];
+      enabledApproved?: boolean[];
+      enabledProhibited?: boolean[];
+    };
+  };
   personaPillars: {
     [personaName: string]: {
       description?: string;
@@ -84,6 +92,98 @@ export const defaultTrainingConfig: TrainingConfig = {
       "aggressive claims",
       "pushy language"
     ]
+  },
+  productClaims: {
+    foundation: {
+      approvedClaims: [
+        "Buildable coverage from light to medium",
+        "Skincare and makeup in one step", 
+        "Clean, nontoxic formula",
+        "Weightless, natural finish",
+        "Works with fingertips - no tools needed",
+        "Suitable for all skin types",
+        "Long-wearing formula",
+        "Melts into skin seamlessly",
+        "Non-comedogenic formula"
+      ],
+      prohibitedClaims: [
+        "Full coverage",
+        "24-hour wear", 
+        "Waterproof",
+        "Acne-fighting",
+        "Anti-aging properties",
+        "SPF protection",
+        "Pore-minimizing",
+        "Matte finish",
+        "Transfer-proof"
+      ]
+    },
+    mascara: {
+      approvedClaims: [
+        "Lengthening and separating",
+        "Clean, nontoxic formula",
+        "Easy to remove with warm water",
+        "Natural-looking lashes",
+        "Buildable volume",
+        "Ophthalmologist tested",
+        "Smudge-resistant",
+        "Comfortable all-day wear"
+      ],
+      prohibitedClaims: [
+        "Waterproof",
+        "24-hour wear",
+        "Dramatic volume",
+        "False lash effect", 
+        "Fiber-enhanced",
+        "Lengthens lashes up to X%",
+        "Tubing formula",
+        "Lash growth properties"
+      ]
+    },
+    sunscreen: {
+      approvedClaims: [
+        "SPF 30 broad spectrum protection",
+        "Zinc oxide mineral formula",
+        "Reef-safe ingredients",
+        "Makeup primer in one",
+        "Clean, nontoxic formula",
+        "Lightweight, non-greasy",
+        "Daily use suitable",
+        "Blue light protection"
+      ],
+      prohibitedClaims: [
+        "SPF 50+ protection",
+        "Water-resistant for 80 minutes",
+        "Anti-aging benefits",
+        "Tinted coverage",
+        "Chemical sunscreen",
+        "All-day protection",
+        "Sweat-proof",
+        "UVA/UVB blocking beyond SPF 30"
+      ]
+    },
+    miracleBalm: {
+      approvedClaims: [
+        "Multi-use balm for lips and cheeks",
+        "Clean, nontoxic formula", 
+        "Buildable color",
+        "Moisturizing ingredients",
+        "Natural finish",
+        "Travel-friendly size",
+        "Sheer to medium coverage",
+        "Blendable texture"
+      ],
+      prohibitedClaims: [
+        "Long-wearing color",
+        "Transfer-proof",
+        "Full-coverage concealer",
+        "Lip plumping effects",
+        "Matte finish",
+        "8-hour wear",
+        "Stain-resistant",
+        "Waterproof formula"
+      ]
+    }
   },
   personaPillars: {
     "Mom": {
@@ -227,6 +327,25 @@ JONES ROAD BEAUTY BRAND GUIDELINES:
 - Focus on enhancement, not transformation
 - Avoid superlatives and exaggerated claims
 
+PRODUCT CLAIMS VALIDATION:
+When creating copy for specific products, ONLY use approved claims and NEVER use prohibited claims:
+
+FOR FOUNDATION:
+✓ APPROVED: "Buildable coverage from light to medium", "Skincare and makeup in one step", "Clean, nontoxic formula", "Weightless, natural finish", "Works with fingertips - no tools needed", "Suitable for all skin types", "Long-wearing formula", "Melts into skin seamlessly", "Non-comedogenic formula"
+✗ PROHIBITED: "Full coverage", "24-hour wear", "Waterproof", "Acne-fighting", "Anti-aging properties", "SPF protection", "Pore-minimizing", "Matte finish", "Transfer-proof"
+
+FOR MASCARA:
+✓ APPROVED: "Lengthening and separating", "Clean, nontoxic formula", "Easy to remove with warm water", "Natural-looking lashes", "Buildable volume", "Ophthalmologist tested", "Smudge-resistant", "Comfortable all-day wear"
+✗ PROHIBITED: "Waterproof", "24-hour wear", "Dramatic volume", "False lash effect", "Fiber-enhanced", "Lengthens lashes up to X%", "Tubing formula", "Lash growth properties"
+
+FOR SUNSCREEN:
+✓ APPROVED: "SPF 30 broad spectrum protection", "Zinc oxide mineral formula", "Reef-safe ingredients", "Makeup primer in one", "Clean, nontoxic formula", "Lightweight, non-greasy", "Daily use suitable", "Blue light protection"
+✗ PROHIBITED: "SPF 50+ protection", "Water-resistant for 80 minutes", "Anti-aging benefits", "Tinted coverage", "Chemical sunscreen", "All-day protection", "Sweat-proof", "UVA/UVB blocking beyond SPF 30"
+
+FOR MIRACLE BALM:
+✓ APPROVED: "Multi-use balm for lips and cheeks", "Clean, nontoxic formula", "Buildable color", "Moisturizing ingredients", "Natural finish", "Travel-friendly size", "Sheer to medium coverage", "Blendable texture"
+✗ PROHIBITED: "Long-wearing color", "Transfer-proof", "Full-coverage concealer", "Lip plumping effects", "Matte finish", "8-hour wear", "Stain-resistant", "Waterproof formula"
+
 COPY REQUIREMENTS:
 - Headlines: 8-15 words for maximum impact (up to 125 characters on Facebook)
 - Create complete, compelling thoughts rather than short phrases
@@ -286,6 +405,25 @@ INSPIRATION EXAMPLES:
 - "Made for deeper focus and calm, our new and improved foundation gives you flawless coverage when you need it most." (20 words)
 - Benefits: "Quick application", "All-day wear", "Natural finish"
 - NOT: Long paragraphs explaining product science or detailed application instructions
+
+PRODUCT CLAIMS VALIDATION:
+When creating copy for specific products, ONLY use approved claims and NEVER use prohibited claims:
+
+FOR FOUNDATION:
+✓ APPROVED: "Buildable coverage from light to medium", "Skincare and makeup in one step", "Clean, nontoxic formula", "Weightless, natural finish", "Works with fingertips - no tools needed", "Suitable for all skin types", "Long-wearing formula", "Melts into skin seamlessly", "Non-comedogenic formula"
+✗ PROHIBITED: "Full coverage", "24-hour wear", "Waterproof", "Acne-fighting", "Anti-aging properties", "SPF protection", "Pore-minimizing", "Matte finish", "Transfer-proof"
+
+FOR MASCARA:
+✓ APPROVED: "Lengthening and separating", "Clean, nontoxic formula", "Easy to remove with warm water", "Natural-looking lashes", "Buildable volume", "Ophthalmologist tested", "Smudge-resistant", "Comfortable all-day wear"
+✗ PROHIBITED: "Waterproof", "24-hour wear", "Dramatic volume", "False lash effect", "Fiber-enhanced", "Lengthens lashes up to X%", "Tubing formula", "Lash growth properties"
+
+FOR SUNSCREEN:
+✓ APPROVED: "SPF 30 broad spectrum protection", "Zinc oxide mineral formula", "Reef-safe ingredients", "Makeup primer in one", "Clean, nontoxic formula", "Lightweight, non-greasy", "Daily use suitable", "Blue light protection"
+✗ PROHIBITED: "SPF 50+ protection", "Water-resistant for 80 minutes", "Anti-aging benefits", "Tinted coverage", "Chemical sunscreen", "All-day protection", "Sweat-proof", "UVA/UVB blocking beyond SPF 30"
+
+FOR MIRACLE BALM:
+✓ APPROVED: "Multi-use balm for lips and cheeks", "Clean, nontoxic formula", "Buildable color", "Moisturizing ingredients", "Natural finish", "Travel-friendly size", "Sheer to medium coverage", "Blendable texture"
+✗ PROHIBITED: "Long-wearing color", "Transfer-proof", "Full-coverage concealer", "Lip plumping effects", "Matte finish", "8-hour wear", "Stain-resistant", "Waterproof formula"
 
 Follow Jones Road's natural, welcoming brand voice but keep everything SHORT and scannable like successful e-commerce landing pages.`
   },
