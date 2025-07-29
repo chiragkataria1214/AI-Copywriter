@@ -125,29 +125,7 @@ export default function MetaAdGenerator() {
   }>>([]);
   const [generatedCustomResponse, setGeneratedCustomResponse] = useState('');
   
-  // Launch Brief state
-  const [launchBrief, setLaunchBrief] = useState('');
-  const [driveLink, setDriveLink] = useState('');
-  const [selectedDeliverables, setSelectedDeliverables] = useState<string[]>([]);
-  const [generatedLaunchCopy, setGeneratedLaunchCopy] = useState<{[key: string]: string}>({});
-  const [briefSource, setBriefSource] = useState<'paste' | 'upload' | 'drive'>('paste');
-  
-  // Launch tab navigation state
-  const [launchSubTab, setLaunchSubTab] = useState('creative-brief');
 
-  // Creative Brief Generator States
-  const [meetingNotes, setMeetingNotes] = useState('');
-  const [meetingTranscription, setMeetingTranscription] = useState('');
-  const [creativeBriefSource, setCreativeBriefSource] = useState<'paste' | 'upload' | 'drive'>('paste');
-  const [generatedCreativeBrief, setGeneratedCreativeBrief] = useState('');
-  const [creativeBriefDriveLink, setCreativeBriefDriveLink] = useState('');
-
-  // Strategy Planning States
-  const [strategyBrief, setStrategyBrief] = useState('');
-  const [strategyDriveLink, setStrategyDriveLink] = useState('');
-  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-  const [generatedStrategies, setGeneratedStrategies] = useState<{[key: string]: any}>({});
-  const [strategyBriefSource, setStrategyBriefSource] = useState<'paste' | 'upload' | 'drive'>('paste');
 
   // Static Ad Analysis States
   const [staticAdImage, setStaticAdImage] = useState('');
@@ -457,32 +435,7 @@ export default function MetaAdGenerator() {
     }
   });
 
-  const generateCreativeBriefMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest('/api/generate-creative-brief', {
-        method: 'POST',
-        body: {
-          meetingNotes,
-          meetingTranscription
-        }
-      });
-    },
-    onSuccess: (data) => {
-      setGeneratedCreativeBrief(data.creativeBrief || '');
-      toast({
-        title: "Creative Brief Generated",
-        description: "Your creative brief has been generated from the meeting notes.",
-      });
-    },
-    onError: (error) => {
-      console.error('Generation error:', error);
-      toast({
-        title: "Generation Failed",
-        description: "Failed to generate creative brief. Please try again.",
-        variant: "destructive"
-      });
-    }
-  });
+  // Clean mutation structure for core functionality
 
 
 

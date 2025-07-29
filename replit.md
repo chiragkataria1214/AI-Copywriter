@@ -6,7 +6,15 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
-**Latest Update - COMPREHENSIVE FEATURE RESTORATION: Complete Deployed Version Match (July 29, 2025)**
+**Latest Update - ROLLBACK TO STABLE VERSION: Restored Working 4-Tab Interface (July 29, 2025)**
+- **✅ COMPLETE ROLLBACK**: Successfully restored application to stable working version before Launch tab issues
+- **✅ CLEAN 4-TAB STRUCTURE**: Back to core interface with Ad Copy, Landing Pages, Static Ad, Custom Request
+- **✅ REMOVED PROBLEMATIC CODE**: Eliminated all Launch-related state variables and mutations causing syntax errors
+- **✅ TRANSCRIPTION RESTORED**: Video transcription input positioned above Content Input section as separate card
+- **✅ DEBUGGING MAINTAINED**: Enhanced debugging functionality preserved for transcription issue resolution
+- **✅ STABLE FOUNDATION**: Clean codebase ready for user testing and further development
+
+**Previous Update - COMPREHENSIVE FEATURE RESTORATION: Complete Deployed Version Match (July 29, 2025)**
 - **✅ DEPLOYED VERSION MATCH**: Successfully restored app interface to exactly match the working deployed version at https://ai-copywriter-cody76.replit.app/
 - **✅ TWO-COLUMN LAYOUT**: Implemented professional left-right layout with input forms on left and generated content display on right
 - **✅ TRANSCRIPTION INPUT**: Restored transcription textarea with preview functionality for video content processing
