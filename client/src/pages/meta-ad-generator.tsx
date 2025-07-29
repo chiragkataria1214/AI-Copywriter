@@ -211,6 +211,7 @@ export default function MetaAdGenerator() {
   const [copiedPrimaryText, setCopiedPrimaryText] = useState(false);
   const [copiedLandingCopy, setCopiedLandingCopy] = useState(false);
   const [copiedStatic, setCopiedStatic] = useState(false);
+  const [copiedCreativeBrief, setCopiedCreativeBrief] = useState(false);
   const [useJonesBrandGuide, setUseJonesBrandGuide] = useState(true);
   const [brandDrBalance, setBrandDrBalance] = useState([50]);
   
@@ -238,6 +239,16 @@ export default function MetaAdGenerator() {
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [generatedStrategies, setGeneratedStrategies] = useState<{[key: string]: any}>({});
   const [strategyBriefSource, setStrategyBriefSource] = useState<'paste' | 'upload' | 'drive'>('paste');
+
+  // Creative Brief Generator States
+  const [meetingNotes, setMeetingNotes] = useState('');
+  const [meetingTranscription, setMeetingTranscription] = useState('');
+  const [creativeBriefSource, setCreativeBriefSource] = useState<'paste' | 'upload' | 'drive'>('paste');
+  const [generatedCreativeBrief, setGeneratedCreativeBrief] = useState('');
+  const [creativeBriefDriveLink, setCreativeBriefDriveLink] = useState('');
+
+  // Launch tab navigation state
+  const [launchSubTab, setLaunchSubTab] = useState('creative-brief');
   const [generatedCustomResponse, setGeneratedCustomResponse] = useState('');
   const [influencerHandle, setInfluencerHandle] = useState('');
   const [voiceAnalysisMethod, setVoiceAnalysisMethod] = useState('combined');
@@ -790,6 +801,53 @@ export default function MetaAdGenerator() {
     }
   });
 
+  // Creative brief generation mutation
+  const generateCreativeBriefMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/generate-creative-brief', {
+        method: 'POST',
+        body: {
+          meetingNotes,
+          meetingTranscription,
+          concept,
+          subPersona,
+          brandDrBalance: brandDrBalance[0],
+          selectedProduct,
+          useJonesBrandGuide
+        }
+      });
+    },
+    onSuccess: (data) => {
+      setGeneratedCreativeBrief(data.creativeBrief || '');
+      toast({
+        title: "Creative Brief Generated Successfully",
+        description: "Your creative brief draft has been generated based on the holiday kit format.",
+      });
+    },
+    onError: (error) => {
+      console.error('Creative brief generation error:', error);
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate creative brief. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Creative Brief Generation Handler
+  const handleGenerateCreativeBrief = async () => {
+    if (!meetingNotes.trim()) {
+      toast({
+        title: "Meeting Notes Required",
+        description: "Please add meeting notes before generating the creative brief.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    generateCreativeBriefMutation.mutate();
+  };
+
   // Google Drive fetch mutation
   const fetchDriveBriefMutation = useMutation({
     mutationFn: async (driveUrl: string) => {
@@ -965,6 +1023,7 @@ export default function MetaAdGenerator() {
       if (type === 'primary') setCopiedPrimaryText(true);
       if (type === 'landing') setCopiedLandingCopy(true);
       if (type === 'static-analysis') setCopiedStatic(true);
+      if (type === 'creative-brief') setCopiedCreativeBrief(true);
       if (type === 'custom') {
         // Custom copy doesn't need specific state, just show the toast
       }
@@ -1085,7 +1144,7 @@ export default function MetaAdGenerator() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="flex w-full mb-6 sm:mb-8">
-            <TabsList className="grid grid-cols-6 flex-1">
+            <TabsList className="grid grid-cols-5 flex-1">
               <TabsTrigger value="ads" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
                 <Sparkles size={16} />
                 <span className="text-xs sm:text-sm">Ad Copy</span>
@@ -1101,19 +1160,14 @@ export default function MetaAdGenerator() {
                 <span className="text-xs sm:text-sm">Static Ad</span>
               </TabsTrigger>
               
-              <TabsTrigger value="strategy" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
-                <Target size={16} />
-                <span className="text-xs sm:text-sm">Strategy</span>
+              <TabsTrigger value="launch" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
+                <List size={16} />
+                <span className="text-xs sm:text-sm">Launch</span>
               </TabsTrigger>
               
               <TabsTrigger value="custom" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
                 <Brain size={16} />
                 <span className="text-xs sm:text-sm">Custom Request</span>
-              </TabsTrigger>
-              
-              <TabsTrigger value="launch" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
-                <List size={16} />
-                <span className="text-xs sm:text-sm">Launch Brief</span>
               </TabsTrigger>
             </TabsList>
             <Button
@@ -2793,18 +2847,230 @@ export default function MetaAdGenerator() {
             </div>
           </TabsContent>
 
-          {/* Strategy Planning Tab */}
-          <TabsContent value="strategy">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-              {/* Input Section */}
-              <div className="space-y-4 sm:space-y-6">
-                {/* Strategy Brief Input */}
-                <Card>
-                  <CardContent className="p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Target className="text-jones-primary mr-2 sm:mr-3" size={18} />
-                      Creative Brief Input
-                    </h3>
+          {/* Launch Tab with Nested Structure */}
+          <TabsContent value="launch">
+            <div className="space-y-6">
+              {/* Launch Sub-Navigation */}
+              <div className="border-b border-gray-200">
+                <div className="flex space-x-8">
+                  <button
+                    onClick={() => setLaunchSubTab('creative-brief')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      launchSubTab === 'creative-brief'
+                        ? 'border-jones-primary text-jones-primary'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Creative Brief Generator
+                  </button>
+                  <button
+                    onClick={() => setLaunchSubTab('strategy')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      launchSubTab === 'strategy'
+                        ? 'border-jones-primary text-jones-primary'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Strategy Planning
+                  </button>
+                  <button
+                    onClick={() => setLaunchSubTab('launch-brief')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      launchSubTab === 'launch-brief'
+                        ? 'border-jones-primary text-jones-primary'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Launch Brief Generation
+                  </button>
+                </div>
+              </div>
+
+              {/* Creative Brief Generator */}
+              {launchSubTab === 'creative-brief' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                  {/* Input Section */}
+                  <div className="space-y-4 sm:space-y-6">
+                    {/* Meeting Notes Input */}
+                    <Card>
+                      <CardContent className="p-4 sm:p-6">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <FileText className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                          Meeting Notes & Transcription
+                        </h3>
+                        
+                        <div className="space-y-4">
+                          {/* Brief Source Selection */}
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700 mb-3 block">
+                              How would you like to add your content?
+                            </Label>
+                            <div className="grid grid-cols-3 gap-2">
+                              <button
+                                onClick={() => setCreativeBriefSource('paste')}
+                                className={`p-3 rounded-lg border text-center transition-colors ${
+                                  creativeBriefSource === 'paste' 
+                                    ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                    : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                              >
+                                <div className="text-sm font-medium">Paste Text</div>
+                                <div className="text-xs text-gray-500 mt-1">Type or paste</div>
+                              </button>
+                              <button
+                                onClick={() => setCreativeBriefSource('drive')}
+                                className={`p-3 rounded-lg border text-center transition-colors ${
+                                  creativeBriefSource === 'drive' 
+                                    ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                    : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                              >
+                                <div className="text-sm font-medium">Google Drive</div>
+                                <div className="text-xs text-gray-500 mt-1">Share link</div>
+                              </button>
+                              <button
+                                onClick={() => setCreativeBriefSource('upload')}
+                                className={`p-3 rounded-lg border text-center transition-colors ${
+                                  creativeBriefSource === 'upload' 
+                                    ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                    : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                              >
+                                <div className="text-sm font-medium">File Upload</div>
+                                <div className="text-xs text-gray-500 mt-1">.txt/.pdf</div>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Paste Option */}
+                          {creativeBriefSource === 'paste' && (
+                            <div className="space-y-4">
+                              <div>
+                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Meeting Notes
+                                </Label>
+                                <textarea
+                                  rows={6}
+                                  className="w-full resize-none text-sm"
+                                  placeholder="Paste your meeting notes here including key decisions, product details, target audience discussions, creative direction, etc..."
+                                  value={meetingNotes}
+                                  onChange={(e) => setMeetingNotes(e.target.value)}
+                                  style={{
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '6px',
+                                    padding: '12px',
+                                    fontFamily: 'inherit'
+                                  }}
+                                />
+                              </div>
+                              
+                              <div>
+                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Meeting Transcription <span className="text-xs text-gray-500">(Optional)</span>
+                                </Label>
+                                <textarea
+                                  rows={6}
+                                  className="w-full resize-none text-sm"
+                                  placeholder="Paste your meeting transcription here for additional context and direct quotes..."
+                                  value={meetingTranscription}
+                                  onChange={(e) => setMeetingTranscription(e.target.value)}
+                                  style={{
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '6px',
+                                    padding: '12px',
+                                    fontFamily: 'inherit'
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          <p className="text-xs text-gray-500">
+                            Upload your meeting notes and transcription. The AI will generate a comprehensive creative brief following the holiday kit format with all necessary sections for campaign planning.
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Button 
+                      onClick={() => generateCreativeBriefMutation.mutate()}
+                      className="w-full text-white"
+                      style={{ backgroundColor: '#004182' }}
+                      disabled={!meetingNotes.trim() || generateCreativeBriefMutation.isPending}
+                    >
+                      {generateCreativeBriefMutation.isPending ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Generating Creative Brief...
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="mr-2" size={16} />
+                          Generate Creative Brief
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Output Section */}
+                  <div className="space-y-4 sm:space-y-6">
+                    {generatedCreativeBrief ? (
+                      <Card>
+                        <CardContent className="p-4 sm:p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+                              Generated Creative Brief
+                            </h3>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => copyToClipboard(generatedCreativeBrief, 'creative-brief')}
+                              className="flex items-center space-x-1"
+                            >
+                              <Copy size={12} />
+                              <span>Copy</span>
+                            </Button>
+                          </div>
+                          
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans">
+                              {generatedCreativeBrief}
+                            </pre>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <Card>
+                        <CardContent className="p-4 sm:p-6 text-center">
+                          <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">Creative Brief Generator</h3>
+                          <p className="text-gray-600 mb-4">
+                            Upload your meeting notes and transcription to generate a comprehensive creative brief.
+                          </p>
+                          <div className="text-sm text-gray-500 space-y-1">
+                            <p>• Paste meeting notes and transcription</p>
+                            <p>• Generate professional creative brief</p>
+                            <p>• Based on holiday kit brief format</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Strategy Planning */}
+              {launchSubTab === 'strategy' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                  {/* Input Section */}
+                  <div className="space-y-4 sm:space-y-6">
+                    {/* Strategy Brief Input */}
+                    <Card>
+                      <CardContent className="p-4 sm:p-6">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <Target className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                          Strategic Planning Brief
+                        </h3>
                     
                     <div className="space-y-4">
                       {/* Brief Source Selection */}
@@ -3032,12 +3298,13 @@ export default function MetaAdGenerator() {
                 )}
               </div>
             </div>
-          </TabsContent>
+              )}
 
-          {/* Launch Brief Tab */}
-          <TabsContent value="launch">
-            {/* Beta Banner */}
-            <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              {/* Launch Brief Generation */}
+              {launchSubTab === 'launch-brief' && (
+                <div className="space-y-6">
+                  {/* Beta Banner */}
+                  <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
               <div className="flex items-center space-x-2">
                 <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded">BETA</span>
                 <span className="text-orange-800 text-sm font-medium">Launch Brief Generation</span>
@@ -3389,6 +3656,8 @@ export default function MetaAdGenerator() {
                   </Card>
                 )}
               </div>
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -3556,37 +3825,418 @@ export default function MetaAdGenerator() {
             </div>
           </TabsContent>
 
-          {/* Debug Tab */}
-          <TabsContent value="settings">
-            <div className="space-y-6">
-              {/* Training Configuration Section */}
+          {/* Creative Brief Generation subtab */}
+          <TabsContent value="creative-brief">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+              {/* Input Section */}
+              <div className="space-y-4 sm:space-y-6">
+                <Card>
+                  <CardContent className="p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center mb-4">
+                      <FileText className="text-jones-primary mr-3" size={18} />
+                      Creative Brief Generator
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-6">
+                      Upload meeting notes or transcriptions to generate comprehensive creative briefs based on the holiday kit brief format.
+                    </p>
+
+                    {/* Meeting Notes Input */}
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                          Meeting Notes
+                        </Label>
+                        <Textarea
+                          placeholder="Paste meeting notes, strategy session notes, or planning discussion summaries..."
+                          value={meetingNotes}
+                          onChange={(e) => setMeetingNotes(e.target.value)}
+                          rows={8}
+                          className="resize-none"
+                        />
+                      </div>
+
+                      {/* Meeting Transcription Input */}
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                          Meeting Transcription (Optional)
+                        </Label>
+                        <Textarea
+                          placeholder="Paste meeting transcription for additional context..."
+                          value={meetingTranscription}
+                          onChange={(e) => setMeetingTranscription(e.target.value)}
+                          rows={6}
+                          className="resize-none"
+                        />
+                      </div>
+
+                      {/* Controls */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">Target Audience</Label>
+                          <Select value={concept} onValueChange={setConcept}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select audience" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="lifeJuggler">Life Juggler</SelectItem>
+                              <SelectItem value="cleanBeautyEnthusiast">Clean Beauty Enthusiast</SelectItem>
+                              <SelectItem value="timeConstrainedProfessional">Time-Constrained Professional</SelectItem>
+                              <SelectItem value="naturalBeautySeeker">Natural Beauty Seeker</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">Sub-Persona</Label>
+                          <Select value={subPersona} onValueChange={setSubPersona}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select sub-persona" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="newMom">New Mom</SelectItem>
+                              <SelectItem value="workingMom">Working Mom</SelectItem>
+                              <SelectItem value="busyProfessional">Busy Professional</SelectItem>
+                              <SelectItem value="naturalBeautyLover">Natural Beauty Lover</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* Brand/DR Balance */}
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                          Brand vs Direct Response Balance: {brandDrBalance[0]}% Brand
+                        </Label>
+                        <Slider
+                          value={brandDrBalance}
+                          onValueChange={setBrandDrBalance}
+                          max={100}
+                          step={10}
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>100% Direct Response</span>
+                          <span>100% Brand Focused</span>
+                        </div>
+                      </div>
+
+                      {/* Product Selection */}
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Product Focus (Optional)</Label>
+                        <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select product focus" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">No specific product</SelectItem>
+                            <SelectItem value="What The Foundation">What The Foundation</SelectItem>
+                            <SelectItem value="Miracle Balm">Miracle Balm</SelectItem>
+                            <SelectItem value="Mascara">Mascara</SelectItem>
+                            <SelectItem value="Sunscreen">Sunscreen</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Generate Button */}
+                      <Button 
+                        onClick={handleGenerateCreativeBrief}
+                        disabled={!meetingNotes.trim() || generateCreativeBriefMutation.isPending}
+                        className="w-full bg-jones-primary hover:bg-jones-primary/90"
+                      >
+                        {generateCreativeBriefMutation.isPending ? (
+                          <>
+                            <Sparkles className="mr-2 h-4 w-4 animate-spin" />
+                            Generating Creative Brief...
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="mr-2 h-4 w-4" />
+                            Generate Creative Brief
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Output Section */}
+              <div className="space-y-4 sm:space-y-6">
+                {generatedCreativeBrief ? (
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                          <FileText className="text-jones-primary mr-3" size={18} />
+                          Generated Creative Brief
+                        </h3>
+                        <div className="flex items-center space-x-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedItemForRevision({ type: 'creative-brief', content: generatedCreativeBrief });
+                              setShowRevisionPanel(true);
+                            }}
+                            title="Edit creative brief"
+                          >
+                            <Target size={14} />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => copyToClipboard(generatedCreativeBrief, 'creative-brief')}
+                          >
+                            {copiedCreativeBrief ? <Check size={16} /> : <Copy size={16} />}
+                            <span className="ml-1">{copiedCreativeBrief ? 'Copied' : 'Copy'}</span>
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="prose max-w-none">
+                        <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+                          {generatedCreativeBrief}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Creative Brief Generated</h3>
+                      <p className="text-gray-600">
+                        Add meeting notes and click "Generate Creative Brief" to create a comprehensive campaign brief.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Custom Request Tab - moved to far right */}
+      <TabsContent value="custom">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+          {/* Input Section */}
+          <div className="space-y-4 sm:space-y-6">
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center mb-4">
+                  <Brain className="text-jones-primary mr-3" size={18} />
+                  Custom Request
+                </h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  Request any type of marketing copy or brief. The AI will maintain Jones Road's authentic voice while adapting to your specific format and needs.
+                </p>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                      Your Request
+                    </Label>
+                    <Textarea
+                      placeholder="Describe what you need: social media captions, email copy, product announcements, campaign briefs, PR statements, etc."
+                      value={customRequest}
+                      onChange={(e) => setCustomRequest(e.target.value)}
+                      rows={8}
+                      className="resize-none"
+                    />
+                  </div>
+
+                  {/* Controls */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">Target Audience</Label>
+                      <Select value={concept} onValueChange={setConcept}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select audience" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="lifeJuggler">Life Juggler</SelectItem>
+                          <SelectItem value="cleanBeautyEnthusiast">Clean Beauty Enthusiast</SelectItem>
+                          <SelectItem value="timeConstrainedProfessional">Time-Constrained Professional</SelectItem>
+                          <SelectItem value="naturalBeautySeeker">Natural Beauty Seeker</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">Sub-Persona</Label>
+                      <Select value={subPersona} onValueChange={setSubPersona}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select sub-persona" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="newMom">New Mom</SelectItem>
+                          <SelectItem value="workingMom">Working Mom</SelectItem>
+                          <SelectItem value="busyProfessional">Busy Professional</SelectItem>
+                          <SelectItem value="naturalBeautyLover">Natural Beauty Lover</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Brand/DR Balance */}
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                      Brand vs Direct Response Balance: {brandDrBalance[0]}% Brand
+                    </Label>
+                    <Slider
+                      value={brandDrBalance}
+                      onValueChange={setBrandDrBalance}
+                      max={100}
+                      step={10}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>100% Direct Response</span>
+                      <span>100% Brand Focused</span>
+                    </div>
+                  </div>
+
+                  {/* Generate Button */}
+                  <Button 
+                    onClick={handleGenerateCustomCopy}
+                    disabled={!customRequest.trim() || generateCustomCopyMutation.isPending}
+                    className="w-full bg-jones-primary hover:bg-jones-primary/90"
+                  >
+                    {generateCustomCopyMutation.isPending ? (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4 animate-spin" />
+                        Generating Custom Copy...
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="mr-2 h-4 w-4" />
+                        Generate Custom Copy
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Output Section */}
+          <div className="space-y-4 sm:space-y-6">
+            {generatedCustomResponse ? (
               <Card>
                 <CardContent className="p-6">
-                  <div className="flex flex-col space-y-4 mb-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+                  <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                      <Settings className="text-jones-primary mr-3" size={20} />
-                      AI Training Configuration
+                      <Brain className="text-jones-primary mr-3" size={18} />
+                      Generated Custom Copy
                     </h3>
-                    <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-                      {loadTrainingConfigMutation.isPending && (
-                        <div className="text-sm text-gray-600">Loading configuration...</div>
-                      )}
-                      {editingConfig && (
-                        <Button 
-                          onClick={() => saveTrainingConfigMutation.mutate(editingConfig)}
-                          disabled={saveTrainingConfigMutation.isPending}
-                          size="sm"
-                          className="w-full sm:w-auto"
-                        >
-                          {saveTrainingConfigMutation.isPending ? "Saving..." : "Save Changes"}
-                        </Button>
-                      )}
+                    <div className="flex items-center space-x-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedItemForRevision({ type: 'custom', content: generatedCustomResponse });
+                          setShowRevisionPanel(true);
+                        }}
+                        title="Edit custom copy"
+                      >
+                        <Target size={14} />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => copyToClipboard(generatedCustomResponse, 'custom')}
+                      >
+                        <Copy size={16} />
+                        <span className="ml-1">Copy</span>
+                      </Button>
                     </div>
                   </div>
                   
+                  <div className="prose max-w-none">
+                    <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+                      {generatedCustomResponse}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <Brain className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Custom Copy Generated</h3>
+                  <p className="text-gray-600">
+                    Describe your request and click "Generate Custom Copy" to create tailored marketing content.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
+            {/* Request History */}
+            {customRequestHistory.length > 0 && (
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Request History</h3>
+                  <div className="space-y-4 max-h-64 overflow-y-auto">
+                    {customRequestHistory.slice().reverse().slice(0, 3).map((item, index) => (
+                      <div key={index} className="border rounded-lg p-3 bg-gray-50">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-gray-500">
+                            {item.timestamp.toLocaleDateString()} at {item.timestamp.toLocaleTimeString()}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(item.response, 'custom')}
+                            className="flex items-center space-x-1"
+                          >
+                            <Copy size={12} />
+                            <span className="text-xs">Copy</span>
+                          </Button>
+                        </div>
+                        <p className="text-sm text-gray-700 mb-2 font-medium">Request:</p>
+                        <p className="text-xs text-gray-600 mb-3 line-clamp-2">{item.request}</p>
+                        <p className="text-sm text-gray-700 mb-1 font-medium">Response:</p>
+                        <p className="text-xs text-gray-600 line-clamp-3">{item.response}</p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      </TabsContent>
 
-                  {trainingConfig ? (
+      {/* AI Settings Tab */}
+      <TabsContent value="settings">
+        <div className="space-y-6">
+          {/* Training Configuration Section */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex flex-col space-y-4 mb-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <Settings className="text-jones-primary mr-3" size={20} />
+                  AI Training Configuration
+                </h3>
+                <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+                  {loadTrainingConfigMutation.isPending && (
+                    <div className="text-sm text-gray-600">Loading configuration...</div>
+                  )}
+                  {editingConfig && (
+                    <Button 
+                      onClick={() => saveTrainingConfigMutation.mutate(editingConfig)}
+                      disabled={saveTrainingConfigMutation.isPending}
+                      size="sm"
+                      className="w-full sm:w-auto"
+                    >
+                      {saveTrainingConfigMutation.isPending ? "Saving..." : "Save Changes"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {trainingConfig ? (
                     <Tabs defaultValue="brand-guidelines" className="w-full">
                       <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 p-2 h-auto">
                         <TabsTrigger value="brand-guidelines" className="text-xs sm:text-sm py-2 px-3">Brand Guidelines</TabsTrigger>

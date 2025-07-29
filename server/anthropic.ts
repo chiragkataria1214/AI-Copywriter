@@ -1381,6 +1381,113 @@ IMPORTANT: Use only clean, plain text formatting. Avoid special characters like 
   }
 }
 
+export async function generateCreativeBrief(
+  meetingNotes: string,
+  meetingTranscription: string,
+  concept: string,
+  subPersona: string,
+  brandDrBalance: number,
+  selectedProduct: string,
+  useJonesBrandGuide: boolean,
+  trainingConfig: any
+): Promise<string> {
+  try {
+    const systemPrompt = `You are an expert marketing strategist and creative brief writer specializing in comprehensive campaign planning for beauty brands. Your role is to analyze meeting notes and transcriptions to generate professional creative briefs that serve as the foundation for successful marketing campaigns.
+
+You will receive meeting notes and optional transcriptions from strategy sessions, product launches, or creative planning meetings. Your task is to synthesize this information into a structured, actionable creative brief following the proven holiday kit brief format.
+
+${useJonesBrandGuide ? `
+JONES ROAD BEAUTY BRAND GUIDELINES:
+${trainingConfig.brandGuidelines}
+
+BRAND VOICE: ${trainingConfig.brandVoice}
+` : ''}
+
+CREATIVE BRIEF FORMAT REQUIREMENTS:
+
+The creative brief should follow this comprehensive structure:
+
+**CAMPAIGN OVERVIEW**
+- Campaign name/title
+- Launch timeline and key dates
+- Primary campaign objective
+
+**PRODUCT FOCUS**
+- Featured products and positioning
+- Key product benefits and differentiators
+- Product pricing and availability
+
+**TARGET AUDIENCE**
+- Primary demographic and psychographic profile
+- Customer pain points and motivations
+- Shopping and media consumption behaviors
+
+**CREATIVE STRATEGY**
+- Core creative concept and messaging theme
+- Key messages and value propositions
+- Tone of voice and brand personality expression
+
+**CHANNEL STRATEGY**
+- Marketing channels and platform priorities
+- Budget allocation recommendations
+- Content format requirements by channel
+
+**SUCCESS METRICS**
+- Primary KPIs and measurement goals
+- Attribution and tracking requirements
+- Performance benchmarks and targets
+
+**EXECUTION REQUIREMENTS**
+- Creative asset specifications
+- Timeline and deliverable schedule
+- Team roles and responsibilities
+
+**CAMPAIGN ELEMENTS**
+- Email marketing components
+- Social media content strategy
+- Paid advertising creative direction
+- Website/landing page requirements
+- Influencer partnership opportunities
+
+TONE AND STYLE:
+- Professional marketing industry language
+- Clear, actionable recommendations
+- Strategic depth with tactical specificity
+- Organized with clear section headers
+- Comprehensive yet concise presentation
+
+Generate a complete creative brief that marketing teams can use as their campaign foundation, ensuring all elements work together cohesively while maintaining brand consistency and strategic focus.`;
+
+    const userPrompt = `MEETING NOTES:
+${meetingNotes}
+
+${meetingTranscription ? `MEETING TRANSCRIPTION:
+${meetingTranscription}` : ''}
+
+ADDITIONAL CONTEXT:
+- Target Persona: ${concept}${subPersona ? ` (${subPersona})` : ''}
+- Brand/DR Balance: ${brandDrBalance}% Brand Focus
+${selectedProduct ? `- Product Focus: ${selectedProduct}` : ''}
+
+Generate a comprehensive creative brief following the holiday kit brief format. Synthesize the meeting content into actionable strategic guidance that department leads can use for coordinated campaign execution.`;
+
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      max_tokens: 2000,
+      system: systemPrompt,
+      messages: [
+        { role: 'user', content: userPrompt }
+      ],
+    });
+
+    const content = response.content[0].type === 'text' ? response.content[0].text : '';
+    return content;
+  } catch (error) {
+    console.error('Creative brief generation error:', error);
+    throw new Error('Failed to generate creative brief');
+  }
+}
+
 export async function generateLaunchCopy(
   launchBrief: string,
   selectedDeliverables: string[],

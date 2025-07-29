@@ -5,7 +5,7 @@ import { registerJunipRoutes } from "./routes-junip";
 import { registerAdminRoutes } from "./routes-admin";
 import { storage } from "./storage";
 import multer from "multer";
-import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd, generateLaunchCopy, generateStrategy } from "./anthropic";
+import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd, generateLaunchCopy, generateStrategy, generateCreativeBrief } from "./anthropic";
 import { analyzeInfluencerVoice, generateInfluencerStyleCopy, fetchInstagramContent } from "./influencer-analyzer";
 import { getTrainingConfig } from "./routes-training";
 import { z } from "zod";
@@ -688,6 +688,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Strategy generation error:', error);
       res.status(500).json({ 
         message: error.message || 'Failed to generate strategy planning'
+      });
+    }
+  });
+
+  // Creative brief generation endpoint
+  app.post('/api/generate-creative-brief', requireAuth, async (req, res) => {
+    try {
+      const { meetingNotes, meetingTranscription, concept, subPersona, brandDrBalance, selectedProduct, useJonesBrandGuide } = req.body;
+      
+      const trainingConfig = await getTrainingConfig();
+      const result = await generateCreativeBrief(
+        meetingNotes,
+        meetingTranscription,
+        concept,
+        subPersona,
+        brandDrBalance,
+        selectedProduct,
+        useJonesBrandGuide,
+        trainingConfig
+      );
+      
+      res.json({ creativeBrief: result });
+    } catch (error: any) {
+      console.error('Creative brief generation error:', error);
+      res.status(500).json({ 
+        message: error.message || 'Failed to generate creative brief'
       });
     }
   });

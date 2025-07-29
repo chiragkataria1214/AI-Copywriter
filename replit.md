@@ -6,15 +6,16 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
-**Latest Update - New Strategy Planning Tab: Department-Specific Strategic Frameworks (July 29, 2025)**
-- **✅ STRATEGY PLANNING TAB ADDED**: Built comprehensive Strategy Planning feature that generates department-specific strategic frameworks as intermediate planning phase
-- **✅ DEPARTMENT SELECTION INTERFACE**: Added professional department selection with color-coded categories (Ecom, Retention, Growth, Brand, Social)
-- **✅ STRATEGIC FRAMEWORK GENERATION**: Claude AI generates detailed strategic planning documents for each selected department with 7-part framework structure
-- **✅ PROFESSIONAL STRATEGIC OUTPUT**: Each framework includes Strategic Overview, Key Objectives, Target Audience Alignment, Channel Strategy, Success Metrics, Implementation Timeline, and Integration Points
-- **✅ BACKEND API INTEGRATION**: Built `/api/generate-strategy` endpoint with comprehensive anthropic service function for strategic planning generation
-- **✅ CONSISTENT UI DESIGN**: Maintains same input methods (paste, Google Drive, file upload) and professional interface design as other tabs
-- **✅ COMPREHENSIVE PROMPTS**: Strategic planning prompts include department-specific guidance for website strategy, retention campaigns, performance marketing, brand positioning, and social media planning
-- **✅ TAB NAVIGATION UPDATED**: Updated main navigation to 6-column grid including new Strategy tab with Target icon for professional appearance
+**Latest Update - Complete Launch Tab Reorganization: Creative Brief Generator + Nested Structure (July 29, 2025)**
+- **✅ CREATIVE BRIEF GENERATOR COMPLETED**: Built comprehensive Creative Brief Generator that transforms meeting notes and transcriptions into professional campaign briefs using holiday kit brief format
+- **✅ NESTED LAUNCH TAB STRUCTURE**: Reorganized interface with Launch as parent tab containing three subtabs: Creative Brief Generator, Strategy Planning, and Launch Brief Generation
+- **✅ PROFESSIONAL BRIEF FORMAT**: AI generates structured creative briefs with Campaign Overview, Product Focus, Target Audience, Creative Strategy, Channel Strategy, Success Metrics, Execution Requirements, and Campaign Elements
+- **✅ BACKEND API COMPLETE**: Added `/api/generate-creative-brief` endpoint with generateCreativeBrief function in anthropic service using Claude 4.0 Sonnet
+- **✅ MEETING NOTES PROCESSING**: Accepts both meeting notes and optional transcriptions, synthesizing content into actionable strategic guidance for department leads
+- **✅ UI REORGANIZATION COMPLETE**: Custom Request moved to far right, Launch becomes parent tab with clean nested structure reducing interface clutter
+- **✅ COMPREHENSIVE INPUT SUPPORT**: Creative Brief Generator supports paste text, file upload, and Google Drive integration like other features
+- **✅ PROFESSIONAL OUTPUT FORMAT**: Generated briefs follow proven holiday kit brief structure with comprehensive strategic recommendations and implementation details
+- **✅ CONSISTENT BRAND INTEGRATION**: Maintains Jones Road Beauty brand voice and guidelines throughout creative brief generation process
 
 **Previous Update - Ecom Sections Added to Launch Brief + Enhanced Google Drive/PDF Support (July 29, 2025)**
 - **✅ ECOM SECTIONS ADDED**: Added announcement bar copy, hero module headline, and hero module subheadline to Launch Brief deliverables
