@@ -2823,7 +2823,7 @@ export default function MetaAdGenerator() {
                               className="mt-1 text-gray-900 font-medium"
                               rows={3}
                               placeholder="Your Skin But Better - natural, effortless enhancement..."
-                              disabled={!effectiveUser?.role === 'admin'}
+                              disabled={effectiveUser?.role !== 'admin'}
                             />
                           </div>
                           
@@ -2891,7 +2891,7 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium ${editingConfig?.brandGuidelines?.enabledBrandVoice?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter brand voice rule..."
-                                    disabled={!effectiveUser?.role === 'admin'}
+                                    disabled={effectiveUser?.role !== 'admin'}
                                   />
                                 </div>
                               ))}
@@ -2985,7 +2985,7 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium ${editingConfig?.brandGuidelines?.enabledKeyTerminology?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter key term or phrase..."
-                                    disabled={!effectiveUser?.role === 'admin'}
+                                    disabled={effectiveUser?.role !== 'admin'}
                                   />
                                 </div>
                               ))}
@@ -3084,7 +3084,7 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium border-green-200 focus:border-green-400 ${editingConfig?.brandGuidelines?.enabledApprovedLanguage?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter approved phrase..."
-                                    disabled={!effectiveUser?.role === 'admin'}
+                                    disabled={effectiveUser?.role !== 'admin'}
                                   />
                                 </div>
                               ))}
@@ -3183,7 +3183,7 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium border-red-200 focus:border-red-400 ${editingConfig?.brandGuidelines?.enabledAvoidedLanguage?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter phrase to avoid..."
-                                    disabled={!effectiveUser?.role === 'admin'}
+                                    disabled={effectiveUser?.role !== 'admin'}
                                   />
                                 </div>
                               ))}
@@ -3570,7 +3570,7 @@ export default function MetaAdGenerator() {
                                         }}
                                         className="mt-1"
                                         placeholder="BENEFIT DRIVEN"
-                                        disabled={!effectiveUser?.role === 'admin'}
+                                        disabled={effectiveUser?.role !== 'admin'}
                                       />
                                     </div>
                                     <div>
@@ -3591,7 +3591,7 @@ export default function MetaAdGenerator() {
                                         }}
                                         className="mt-1"
                                         placeholder="[Primary Benefit] + [Outcome]"
-                                        disabled={!effectiveUser?.role === 'admin'}
+                                        disabled={effectiveUser?.role !== 'admin'}
                                       />
                                     </div>
                                   </div>
@@ -3614,7 +3614,7 @@ export default function MetaAdGenerator() {
                                       className="mt-1"
                                       rows={2}
                                       placeholder="Lead with the primary benefit/transformation the product delivers"
-                                      disabled={!effectiveUser?.role === 'admin'}
+                                      disabled={effectiveUser?.role !== 'admin'}
                                     />
                                   </div>
                                   <div className="mt-2">
@@ -3641,7 +3641,7 @@ export default function MetaAdGenerator() {
                                       placeholder="Natural Glow Simplified
 Effortless Beauty Found
 Your Skin But Better"
-                                      disabled={!effectiveUser?.role === 'admin'}
+                                      disabled={effectiveUser?.role !== 'admin'}
                                     />
                                   </div>
                                 </div>
@@ -3665,7 +3665,7 @@ Your Skin But Better"
                               placeholder="Headlines: Maximum 5 words, must fit in 1 line on mobile
 Primary text: 15-25 words optimal for Meta ads
 Keep sentences to 8-12 words for mobile comprehension"
-                              disabled={!effectiveUser?.role === 'admin'}
+                              disabled={effectiveUser?.role !== 'admin'}
                             />
                           </div>
 
@@ -3699,7 +3699,7 @@ Keep sentences to 8-12 words for mobile comprehension"
 4. DEEPER BENEFIT - secondary value that matters
 5. SOCIAL PROOF - real results from real people
 6. NATURAL CONCLUSION - why this makes sense now"
-                                  disabled={!effectiveUser?.role === 'admin'}
+                                  disabled={effectiveUser?.role !== 'admin'}
                                 />
                               </div>
 
@@ -3724,7 +3724,7 @@ Keep sentences to 8-12 words for mobile comprehension"
 - SPECIFIC DETAILS (20-40 words): Numbers, features, proof points
 - NATURAL BENEFIT BRIDGE (15-25 words): What this means practically
 - OPTIONAL SOCIAL PROOF: Real customer quote if natural"
-                                  disabled={!effectiveUser?.role === 'admin'}
+                                  disabled={effectiveUser?.role !== 'admin'}
                                 />
                               </div>
 
@@ -3749,7 +3749,7 @@ Lead with benefits, support with facts - not the other way around
 Use specific details and numbers when possible (like '24dB reduction')
 Keep language clear and direct - avoid flowery marketing speak
 Each reason should stand alone and deliver immediate value"
-                                  disabled={!effectiveUser?.role === 'admin'}
+                                  disabled={effectiveUser?.role !== 'admin'}
                                 />
                               </div>
 
@@ -3773,7 +3773,7 @@ Each reason should stand alone and deliver immediate value"
 Loop: 'Blocks Out The Loudest Tools - 24dB Reduction' - specific benefit + proof
 Create: 'They're made with Creapure®, the highest-quality...' - quality focus
 Tone: Educational but approachable, like explaining to a friend who asked"
-                                  disabled={!effectiveUser?.role === 'admin'}
+                                  disabled={effectiveUser?.role !== 'admin'}
                                 />
                               </div>
                             </div>
@@ -3810,7 +3810,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                       }}
                                       className="flex-1 border-blue-200 focus:border-blue-400"
                                       placeholder="Enter brand-first guideline..."
-                                      disabled={!effectiveUser?.role === 'admin'}
+                                      disabled={effectiveUser?.role !== 'admin'}
                                     />
                                     {effectiveUser?.role === 'admin' && (editingConfig?.copyFrameworks?.brandDrBalance?.brandFirst?.length > 1) && (
                                       <Button
@@ -3892,7 +3892,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                       }}
                                       className="flex-1 border-orange-200 focus:border-orange-400"
                                       placeholder="Enter direct response guideline..."
-                                      disabled={!effectiveUser?.role === 'admin'}
+                                      disabled={effectiveUser?.role !== 'admin'}
                                     />
                                     {effectiveUser?.role === 'admin' && (editingConfig?.copyFrameworks?.brandDrBalance?.directResponse?.length > 1) && (
                                       <Button
@@ -4146,7 +4146,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                           alert('Import failed: ' + result.message);
                                         }
                                       } catch (error) {
-                                        alert('Import error: ' + error.message);
+                                        alert('Import error: ' + (error as Error).message);
                                       }
                                     }}
                                   >
@@ -4160,7 +4160,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                     placeholder="Paste customer reviews here..."
                                     className="mt-2"
                                     rows={4}
-                                    disabled={!effectiveUser?.role === 'admin'}
+                                    disabled={effectiveUser?.role !== 'admin'}
                                   />
                                 </div>
                                 
@@ -4192,7 +4192,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                           alert('Import failed: ' + result.message);
                                         }
                                       } catch (error) {
-                                        alert('Import error: ' + error.message);
+                                        alert('Import error: ' + (error as Error).message);
                                       }
                                     }}
                                   >
@@ -4247,7 +4247,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                         alert('Failed to generate insights: ' + result.message);
                                       }
                                     } catch (error) {
-                                      alert('Error: ' + error.message);
+                                      alert('Error: ' + (error as Error).message);
                                     }
                                   }}
                                 >
