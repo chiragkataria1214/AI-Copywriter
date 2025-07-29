@@ -410,114 +410,288 @@ export default function MetaAdGenerator() {
         </TabsList>
 
         <TabsContent value="ads" className="space-y-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <Label htmlFor="transcription">Video Transcription or Content Brief</Label>
-                  <Textarea
-                    id="transcription"
-                    placeholder="Paste your video transcription or content brief here..."
-                    value={transcription}
-                    onChange={(e) => handleTranscriptionChange(e.target.value)}
-                    className="min-h-[120px] resize-y"
-                  />
-                  {transcription && (
-                    <div className="text-sm text-gray-500">
-                      Preview: {getTranscriptionPreview()}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Column - Input Form */}
+            <div className="space-y-6">
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Content Input</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="airLink">Air Link or Image URL</Label>
+                      <Input
+                        id="airLink"
+                        placeholder="Add an Air.com link or direct image URL to analyze existing ad creatives"
+                        value={airLink}
+                        onChange={(e) => setAirLink(e.target.value)}
+                      />
+                      <p className="text-sm text-gray-500">Add an Air.com link or direct image URL to analyze existing ad creatives</p>
                     </div>
-                  )}
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="concept">Target Persona</Label>
-                    <Select value={concept} onValueChange={setConcept}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(personas).map(([key, persona]) => (
-                          <SelectItem key={key} value={key}>
-                            {persona.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                    <div className="text-center text-sm text-gray-500">OR</div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="subPersona">Sub-Persona</Label>
-                    <Select value={subPersona} onValueChange={setSubPersona}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {concept && personas[concept as keyof typeof personas]?.subPersonas && 
-                          Object.entries(personas[concept as keyof typeof personas].subPersonas).map(([key, subPers]) => (
-                            <SelectItem key={key} value={key}>
-                              {(subPers as any).label}
-                            </SelectItem>
-                          ))
-                        }
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="customBrief">Custom Brief (Optional)</Label>
+                      <Textarea
+                        id="customBrief"
+                        placeholder="These instructions will be included in the AI prompt for this specific generation"
+                        value={customBrief}
+                        onChange={(e) => setCustomBrief(e.target.value)}
+                        className="min-h-[100px]"
+                      />
+                      <p className="text-sm text-gray-500">These instructions will be included in the AI prompt for this specific generation</p>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label>Brand/DR Balance: {brandDrBalance[0]}% Brand / {100 - brandDrBalance[0]}% Direct Response</Label>
-                  <Slider
-                    value={brandDrBalance}
-                    onValueChange={setBrandDrBalance}
-                    max={100}
-                    step={1}
-                    className="w-full"
-                  />
-                </div>
-
-                <ProductSelection 
-                  selectedProduct={selectedProduct}
-                  onProductChange={setSelectedProduct}
-                />
-
-                <Button 
-                  className="w-full"
-                  size="lg"
-                  onClick={() => generateAdCopyMutation.mutate()}
-                  disabled={generateAdCopyMutation.isPending}
-                >
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  {generateAdCopyMutation.isPending ? 'Generating...' : 'Generate Ad Copy'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {generatedHeadlines.length > 0 && (
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Generated Headlines</h3>
-                <div className="space-y-3">
-                  {generatedHeadlines.map((headline, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex-1">
-                        <Badge variant="outline" className="mr-2">{headline.framework}</Badge>
-                        <span>{headline.copy}</span>
-                      </div>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => copyToClipboard(headline.copy, 'Headline')}
-                      >
-                        {copiedHeadlines ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button variant="outline" className="flex items-center gap-2">
+                        <Upload className="h-4 w-4" />
+                        Upload Text
+                      </Button>
+                      <Button variant="outline" className="flex items-center gap-2">
+                        <Camera className="h-4 w-4" />
+                        Upload Image
                       </Button>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Target Persona</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Primary Persona</Label>
+                      <Select value={concept} onValueChange={setConcept}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(personas).map(([key, persona]) => (
+                            <SelectItem key={key} value={key}>
+                              {persona.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Sub-Persona</Label>
+                      <Select value={subPersona} onValueChange={setSubPersona}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {concept && personas[concept as keyof typeof personas]?.subPersonas && 
+                            Object.entries(personas[concept as keyof typeof personas].subPersonas).map(([key, subPers]) => (
+                              <SelectItem key={key} value={key}>
+                                {(subPers as any).label}
+                              </SelectItem>
+                            ))
+                          }
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="landingPageUrl">Landing Page URL (Optional)</Label>
+                      <Input
+                        id="landingPageUrl"
+                        placeholder="Provide your existing landing page URL to ensure ad copy aligns with your landing page messaging"
+                        value={landingPageUrl}
+                        onChange={(e) => setLandingPageUrl(e.target.value)}
+                      />
+                      <p className="text-sm text-gray-500">Provide your existing landing page URL to ensure ad copy aligns with your landing page messaging</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Partnership Ads</h3>
+                  <p className="text-sm text-gray-500 mb-4">Generate copy in the influencer's authentic voice while respecting brand guidelines</p>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch id="influencer-mode" />
+                    <Label htmlFor="influencer-mode">Enable Influencer Mode</Label>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Settings</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Switch 
+                        id="jones-brand-guide" 
+                        checked={useJonesBrandGuide}
+                        onCheckedChange={setUseJonesBrandGuide}
+                      />
+                      <Label htmlFor="jones-brand-guide">Use Jones Brand Guide</Label>
+                    </div>
+                    <p className="text-sm text-gray-500">Apply Jones Road Beauty brand voice and guidelines</p>
+
+                    <div className="space-y-2">
+                      <Label>Brand/DR Balance</Label>
+                      <div className="text-sm text-gray-600 mb-2">
+                        {brandDrBalance[0]}% Brand / {100 - brandDrBalance[0]}% DR
+                      </div>
+                      <Slider
+                        value={brandDrBalance}
+                        onValueChange={setBrandDrBalance}
+                        max={100}
+                        step={1}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>All DR</span>
+                        <span>Balanced</span>
+                        <span>All Brand</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Product Focus</h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-sm font-medium">Quick Select - Top Products</Label>
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <Button 
+                          variant={selectedProduct === 'miracle-balm' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSelectedProduct('miracle-balm')}
+                        >
+                          Miracle Balm
+                        </Button>
+                        <Button 
+                          variant={selectedProduct === 'what-the-foundation' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSelectedProduct('what-the-foundation')}
+                        >
+                          What The Foundation
+                        </Button>
+                        <Button 
+                          variant={selectedProduct === 'just-enough' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSelectedProduct('just-enough')}
+                        >
+                          Just Enough
+                        </Button>
+                        <Button 
+                          variant={selectedProduct === 'hero-kit' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSelectedProduct('hero-kit')}
+                        >
+                          The Hero Kit
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm">Or choose from all products</Label>
+                      <ProductSelection 
+                        selectedProduct={selectedProduct}
+                        onProductChange={setSelectedProduct}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Button 
+                className="w-full"
+                size="lg"
+                onClick={() => generateAdCopyMutation.mutate()}
+                disabled={generateAdCopyMutation.isPending}
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                {generateAdCopyMutation.isPending ? 'Generating...' : 'Generate Ad Copy'}
+              </Button>
+            </div>
+
+            {/* Right Column - Generated Content */}
+            <div className="space-y-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Generated Headlines</h3>
+                    {generatedHeadlines.length > 0 && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => copyToClipboard(generatedHeadlines.map(h => h.copy).join('\n'), 'All Headlines')}
+                      >
+                        Copy All
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {generatedHeadlines.length > 0 ? (
+                    <div className="space-y-3">
+                      {generatedHeadlines.map((headline, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex-1">
+                            <Badge variant="outline" className="mr-2 text-xs">{headline.framework}</Badge>
+                            <span className="text-sm">{headline.copy}</span>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => copyToClipboard(headline.copy, 'Headline')}
+                          >
+                            {copiedHeadlines ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No headlines generated yet. Click "Generate Ad Copy" to create headlines.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Primary Text</h3>
+                    {generatedPrimaryText && (
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm">
+                          Improve
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => copyToClipboard(generatedPrimaryText, 'Primary Text')}
+                        >
+                          Copy
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {generatedPrimaryText ? (
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <p className="text-sm whitespace-pre-wrap">{generatedPrimaryText}</p>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No primary text generated yet. Click "Generate Ad Copy" to create primary text.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="landing" className="space-y-6">
