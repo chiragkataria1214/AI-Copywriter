@@ -3658,7 +3658,6 @@ export default function MetaAdGenerator() {
                   </Card>
                 )}
               </div>
-              </div>
             </div>
           </TabsContent>
 
