@@ -666,6 +666,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Google Drive brief fetch endpoint
+  app.post('/api/fetch-drive-brief', requireAuth, async (req, res) => {
+    try {
+      const { driveUrl } = req.body;
+      
+      if (!driveUrl) {
+        return res.status(400).json({ message: 'Drive URL is required' });
+      }
+      
+      // Convert Google Docs share URL to export URL
+      let exportUrl = driveUrl;
+      
+      // Handle different Google Drive URL formats
+      const docIdMatch = driveUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      if (docIdMatch) {
+        const docId = docIdMatch[1];
+        exportUrl = `https://docs.google.com/document/d/${docId}/export?format=txt`;
+      } else {
+        return res.status(400).json({ message: 'Invalid Google Drive URL format' });
+      }
+      
+      // Fetch the document content
+      const response = await fetch(exportUrl);
+      
+      if (!response.ok) {
+        console.error('Drive fetch error:', response.status, response.statusText);
+        return res.status(400).json({ 
+          message: 'Could not access document. Please ensure it is shared with "Anyone with the link can view" permission.' 
+        });
+      }
+      
+      const content = await response.text();
+      
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({ 
+          message: 'Document appears to be empty or could not be read.' 
+        });
+      }
+      
+      res.json({ 
+        content: content.trim(),
+        success: true 
+      });
+    } catch (error) {
+      console.error('Google Drive fetch error:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch document from Google Drive. Please check the link and try again.' 
+      });
+    }
+  });
+
   // Generate custom copy endpoint (protected)
   app.post('/api/generate-custom-copy', requireAuth, async (req, res) => {
     try {

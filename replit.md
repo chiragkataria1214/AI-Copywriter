@@ -6,7 +6,18 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
-**Latest Update - CRITICAL PRODUCTION FREEZE RESOLVED: Direct Textarea Implementation (July 29, 2025)**
+**Latest Update - Launch Brief Google Drive Integration (July 29, 2025)**
+- **✅ GOOGLE DRIVE INTEGRATION**: Added seamless Google Drive document fetching for creative briefs stored in Drive
+- **✅ THREE INPUT OPTIONS**: Users can now paste text, upload files, or connect Google Drive links for brief input
+- **✅ DRIVE API ENDPOINT**: Built `/api/fetch-drive-brief` endpoint that converts share links to export URLs and fetches document content
+- **✅ SMART URL PARSING**: Automatically extracts document ID from various Google Drive URL formats and converts to text export format
+- **✅ PERMISSION HANDLING**: Clear instructions for users to set "Anyone with the link can view" permissions for access
+- **✅ LIVE PREVIEW**: Real-time preview of loaded Google Drive document content with truncation for better UX
+- **✅ ERROR HANDLING**: Comprehensive error handling for invalid URLs, permission issues, and empty documents
+- **✅ UI ENHANCEMENT**: Clean tabbed interface for selecting input method (paste, Drive link, or file upload)
+- **✅ WORKFLOW OPTIMIZATION**: Streamlines creative brief workflow by connecting directly to existing Google Drive storage
+
+**Previous Update - CRITICAL PRODUCTION FREEZE RESOLVED: Direct Textarea Implementation (July 29, 2025)**
 - **✅ FREEZE ISSUE COMPLETELY RESOLVED**: User confirmed transcription functionality works perfectly in production after cache clearing
 - **✅ CACHE ISSUE IDENTIFIED**: Problem was browser cache serving old component version - incognito mode confirmed fix works
 - **✅ DIRECT TEXTAREA IMPLEMENTATION**: Embedded raw HTML textarea directly in main component to eliminate all deployment sync issues
