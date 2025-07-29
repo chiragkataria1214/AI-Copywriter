@@ -2935,41 +2935,84 @@ export default function MetaAdGenerator() {
                       Select Deliverables
                     </h3>
                     
-                    <div className="space-y-3">
+                    <div className="space-y-6">
+                      {/* Deliverables organized by department */}
                       {[
-                        { id: 'email-subject', label: 'Email Subject Lines', desc: 'Launch announcement email subjects' },
-                        { id: 'email-body', label: 'Email Copy', desc: 'Full launch announcement email body' },
-                        { id: 'social-captions', label: 'Social Media Captions', desc: 'Instagram, Facebook, TikTok posts' },
-                        { id: 'ad-headlines', label: 'Meta Ad Headlines', desc: 'Facebook/Instagram ad headlines' },
-                        { id: 'ad-copy', label: 'Meta Ad Copy', desc: 'Complete Meta social ad copy' },
-                        { id: 'product-descriptions', label: 'Product Descriptions', desc: 'Website and marketplace copy' },
-                        { id: 'announcement-bar', label: 'Announcement Bar Copy', desc: 'Website banner and notification text' },
-                        { id: 'hero-headline', label: 'Hero Module Headline', desc: 'Main homepage/product page headline' },
-                        { id: 'hero-subheadline', label: 'Hero Module Subheadline', desc: 'Supporting headline for hero section' },
-                        { id: 'press-release', label: 'Press Release', desc: 'Media announcement copy' },
-                        { id: 'landing-page', label: 'Landing Page Copy', desc: 'Complete page copy structure' },
-                        { id: 'sms-copy', label: 'SMS Campaign Copy', desc: 'Text message marketing copy' },
-                        { id: 'influencer-talking-points', label: 'Influencer Talking Points', desc: 'Key messages for partnerships' }
-                      ].map((deliverable) => (
-                        <div key={deliverable.id} className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                          <input
-                            type="checkbox"
-                            id={deliverable.id}
-                            checked={selectedDeliverables.includes(deliverable.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedDeliverables([...selectedDeliverables, deliverable.id]);
-                              } else {
-                                setSelectedDeliverables(selectedDeliverables.filter(id => id !== deliverable.id));
-                              }
-                            }}
-                            className="mt-1 w-4 h-4 text-blue-600"
-                          />
-                          <div className="flex-1">
-                            <Label htmlFor={deliverable.id} className="text-sm font-medium text-gray-700 cursor-pointer">
-                              {deliverable.label}
-                            </Label>
-                            <p className="text-xs text-gray-500 mt-1">{deliverable.desc}</p>
+                        {
+                          department: 'Ecom',
+                          color: 'blue',
+                          deliverables: [
+                            { id: 'product-descriptions', label: 'Product Descriptions', desc: 'Website and marketplace copy' },
+                            { id: 'announcement-bar', label: 'Announcement Bar Copy', desc: 'Website banner and notification text' },
+                            { id: 'hero-headline', label: 'Hero Module Headline', desc: 'Main homepage/product page headline' },
+                            { id: 'hero-subheadline', label: 'Hero Module Subheadline', desc: 'Supporting headline for hero section' },
+                            { id: 'landing-page', label: 'Landing Page Copy', desc: 'Complete page copy structure' }
+                          ]
+                        },
+                        {
+                          department: 'Retention',
+                          color: 'green',
+                          deliverables: [
+                            { id: 'email-subject', label: 'Email Subject Lines', desc: 'Launch announcement email subjects' },
+                            { id: 'email-body', label: 'Email Copy', desc: 'Full launch announcement email body' },
+                            { id: 'sms-copy', label: 'SMS Campaign Copy', desc: 'Text message marketing copy' }
+                          ]
+                        },
+                        {
+                          department: 'Growth',
+                          color: 'purple',
+                          deliverables: [
+                            { id: 'ad-headlines', label: 'Meta Ad Headlines', desc: 'Facebook/Instagram ad headlines' },
+                            { id: 'ad-copy', label: 'Meta Ad Copy', desc: 'Complete Meta social ad copy' }
+                          ]
+                        },
+                        {
+                          department: 'Brand',
+                          color: 'amber',
+                          deliverables: [
+                            { id: 'press-release', label: 'Press Release', desc: 'Media announcement copy' },
+                            { id: 'influencer-talking-points', label: 'Influencer Talking Points', desc: 'Key messages for partnerships' }
+                          ]
+                        },
+                        {
+                          department: 'Social',
+                          color: 'pink',
+                          deliverables: [
+                            { id: 'social-captions', label: 'Social Media Captions', desc: 'Instagram, Facebook, TikTok posts' }
+                          ]
+                        }
+                      ].map((section) => (
+                        <div key={section.department} className="space-y-3">
+                          <div className="flex items-center space-x-2">
+                            <div className={`w-3 h-3 rounded-full bg-${section.color}-500`}></div>
+                            <h4 className="text-sm font-semibold text-gray-800 uppercase tracking-wide">
+                              {section.department}
+                            </h4>
+                          </div>
+                          <div className="pl-5 space-y-2">
+                            {section.deliverables.map((deliverable) => (
+                              <div key={deliverable.id} className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                                <input
+                                  type="checkbox"
+                                  id={deliverable.id}
+                                  checked={selectedDeliverables.includes(deliverable.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedDeliverables([...selectedDeliverables, deliverable.id]);
+                                    } else {
+                                      setSelectedDeliverables(selectedDeliverables.filter(id => id !== deliverable.id));
+                                    }
+                                  }}
+                                  className="mt-1 w-4 h-4 text-blue-600"
+                                />
+                                <div className="flex-1">
+                                  <Label htmlFor={deliverable.id} className="text-sm font-medium text-gray-700 cursor-pointer">
+                                    {deliverable.label}
+                                  </Label>
+                                  <p className="text-xs text-gray-500 mt-1">{deliverable.desc}</p>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       ))}
