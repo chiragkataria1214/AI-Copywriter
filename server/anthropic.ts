@@ -1200,3 +1200,152 @@ Create copy that fulfills this request while maintaining Jones Road Beauty's aut
     throw new Error('Failed to generate custom copy');
   }
 }
+
+export async function generateRetentionCopy(request: {
+  keyMessage: string;
+  platform: string;
+  tone?: string;
+  audience?: string;
+  goal?: string;
+  campaignType?: string;
+  cta?: string;
+  urgencyLevel?: string;
+  contentLength?: string;
+  keywordsToInclude?: string[];
+  wordsToAvoid?: string[];
+  concept?: string;
+  subPersona?: string;
+  brandDrBalance?: number;
+  selectedProduct?: string;
+  useJonesBrandGuide?: boolean;
+}) {
+  const anthropic = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY!,
+  });
+
+  // Get training configuration
+  const trainingConfig = await import('./routes-training').then(m => m.getTrainingConfig());
+  
+  // Build system prompt for retention copy generation
+  const systemPrompt = `You are an expert ${request.platform?.toLowerCase() || 'email'} marketing copywriter specializing in customer retention and engagement campaigns for Jones Road Beauty.
+
+Jones Road Beauty Brand Guidelines:
+- "Your Skin But Better" philosophy - enhancing natural beauty, not masking it
+- Clean, non-toxic ingredients with effective results
+- Authentic, approachable, and effortless beauty solutions
+- Founded by makeup artist Bobbi Brown
+- Premium quality without pretension
+- Empowering customers to feel confident in their natural skin
+
+${request.platform === 'SMS' ? 'SMS' : 'Email'} Copy Specifications:
+- Platform: ${request.platform || 'Email'}
+- Tone: ${request.tone || 'Friendly'}
+- Target Audience: ${request.audience || 'General audience'}
+- Goal: ${request.goal || 'Drive Sales'}
+- Campaign Type: ${request.campaignType || 'Promo'}
+- Call to Action: ${request.cta || 'Shop Now'}
+- Urgency Level: ${request.urgencyLevel || 'Medium'}
+- Content Length: ${request.contentLength || 'Short'}
+
+${request.keywordsToInclude && request.keywordsToInclude.length > 0 ? `
+Keywords to Include: ${request.keywordsToInclude.join(', ')}
+` : ''}
+
+${request.wordsToAvoid && request.wordsToAvoid.length > 0 ? `
+Words to Avoid: ${request.wordsToAvoid.join(', ')}
+` : ''}
+
+${request.platform === 'SMS' ? `
+SMS-Specific Guidelines:
+- Keep total message under 160 characters when possible for single SMS
+- Use clear, direct language with immediate impact
+- Include clear CTA with link or store direction
+- Create urgency without being pushy
+- Use emojis sparingly and only if they add value
+- Personalize when possible
+` : `
+Email-Specific Guidelines:
+- Create compelling subject lines that drive opens
+- Structure: Subject Line + Preview Text + Body Copy + Clear CTA
+- Maintain Jones Road's authentic voice throughout
+- Use social proof and customer testimonials when relevant
+- Balance promotional content with value-driven messaging
+- Ensure mobile-friendly formatting
+`}
+
+Content Length Specifications:
+- Short: ${request.platform === 'SMS' ? '50-100 words' : '75-150 words'}
+- Medium: ${request.platform === 'SMS' ? '100-160 characters total' : '150-300 words'}
+- Long: ${request.platform === 'SMS' ? 'Multiple messages (2-3 parts)' : '300-500 words'}
+
+Tone Guidelines:
+- Friendly: Warm, conversational, approachable
+- Bold: Confident, direct, statement-making
+- Urgent: Time-sensitive, compelling, action-driving
+- Playful: Fun, lighthearted, engaging
+- Professional: Polished, authoritative, trustworthy
+
+Campaign Type Focus:
+- Welcome: Introduce brand values and first-purchase incentives
+- Promo: Feature specific offers, discounts, or limited-time deals
+- Product Drop: Announce new products with excitement and exclusivity
+- Cart Recovery: Gentle reminders with added incentives
+- Winback: Re-engage lapsed customers with special offers
+
+Create ${request.platform?.toLowerCase() || 'email'} copy that authentically represents Jones Road Beauty while achieving the specified campaign goals.`;
+
+  const userPrompt = `Create ${request.platform?.toLowerCase() || 'email'} retention copy based on this key message:
+
+"${request.keyMessage}"
+
+Requirements:
+1. Follow the ${request.platform === 'SMS' ? 'SMS' : 'email'} format and character/word limits for ${request.contentLength?.toLowerCase() || 'short'} content
+2. Use ${request.tone?.toLowerCase() || 'friendly'} tone throughout
+3. Target ${request.audience || 'general audience'} specifically
+4. Focus on ${request.goal?.toLowerCase() || 'driving sales'} as the primary goal
+5. Structure as ${request.campaignType?.toLowerCase() || 'promo'} campaign type
+6. Include clear "${request.cta || 'Shop Now'}" call-to-action
+7. Apply ${request.urgencyLevel?.toLowerCase() || 'medium'} urgency level
+${request.keywordsToInclude && request.keywordsToInclude.length > 0 ? `8. Naturally incorporate these keywords: ${request.keywordsToInclude.join(', ')}` : ''}
+${request.wordsToAvoid && request.wordsToAvoid.length > 0 ? `9. Avoid using these words: ${request.wordsToAvoid.join(', ')}` : ''}
+
+${request.platform === 'SMS' ? `
+Format your response as SMS copy only (no additional explanations):
+- Single message if under 160 characters
+- Multiple parts if longer, clearly marked as "Part 1:", "Part 2:", etc.
+` : `
+Format your response as complete email copy:
+SUBJECT: [Compelling subject line]
+PREVIEW: [Preview text that appears after subject]
+
+[Email body copy]
+
+[Clear call-to-action]
+`}
+
+Make it authentic to Jones Road Beauty's "Your Skin But Better" philosophy while being highly effective for customer retention.`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      system: systemPrompt,
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: userPrompt }],
+    });
+
+    const content = response.content[0].type === 'text' ? response.content[0].text : '';
+    
+    return {
+      response: content.trim(),
+      debugInfo: {
+        systemPrompt,
+        userPrompt,
+        requestPayload: request,
+        rawResponse: content
+      }
+    };
+  } catch (error) {
+    console.error('Retention copy generation error:', error);
+    throw new Error('Failed to generate retention copy');
+  }
+}

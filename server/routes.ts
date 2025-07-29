@@ -5,7 +5,7 @@ import { registerJunipRoutes } from "./routes-junip";
 import { registerAdminRoutes } from "./routes-admin";
 import { storage } from "./storage";
 import multer from "multer";
-import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd } from "./anthropic";
+import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd, generateRetentionCopy } from "./anthropic";
 import { analyzeInfluencerVoice, generateInfluencerStyleCopy, fetchInstagramContent } from "./influencer-analyzer";
 import { getTrainingConfig } from "./routes-training";
 import { z } from "zod";
@@ -671,6 +671,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Custom copy generation error:', error);
       res.status(500).json({ error: 'Failed to generate custom copy' });
+    }
+  });
+
+  // Generate retention copy endpoint (protected)
+  app.post('/api/generate-retention-copy', requireAuth, async (req, res) => {
+    try {
+      const { 
+        keyMessage, 
+        platform, 
+        tone, 
+        audience, 
+        goal, 
+        campaignType, 
+        cta, 
+        urgencyLevel, 
+        contentLength, 
+        keywordsToInclude, 
+        wordsToAvoid,
+        concept,
+        subPersona,
+        brandDrBalance,
+        selectedProduct,
+        useJonesBrandGuide
+      } = req.body;
+      
+      console.log('Retention copy request:', { keyMessage, platform, tone, audience, goal, campaignType, cta, urgencyLevel, contentLength });
+      
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(400).json({ message: 'Anthropic API key not configured' });
+      }
+      
+      if (!keyMessage || !keyMessage.trim()) {
+        return res.status(400).json({ message: 'Key message is required' });
+      }
+      
+      const result = await generateRetentionCopy({
+        keyMessage: keyMessage.trim(),
+        platform,
+        tone,
+        audience,
+        goal,
+        campaignType,
+        cta,
+        urgencyLevel,
+        contentLength,
+        keywordsToInclude,
+        wordsToAvoid,
+        concept,
+        subPersona,
+        brandDrBalance,
+        selectedProduct,
+        useJonesBrandGuide
+      });
+      
+      res.json({
+        response: result.response,
+        debugInfo: result.debugInfo
+      });
+    } catch (error) {
+      console.error('Retention copy generation error:', error);
+      res.status(500).json({ error: 'Failed to generate retention copy' });
     }
   });
 

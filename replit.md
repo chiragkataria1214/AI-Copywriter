@@ -2,9 +2,22 @@
 
 ## Overview
 
-This is a full-stack AI-powered copywriting platform built for generating advertising copy and landing pages across multiple platforms, specifically tailored for Jones Road Beauty brand guidelines. The application uses Claude AI (via Anthropic SDK) for authentic copywriting generation, with a modern React frontend, Node.js/Express backend, and is designed for deployment on Replit. The system features sophisticated persona targeting, Brand/DR balance controls, and professional UI built with shadcn/ui components.
+This is a full-stack AI-powered copywriting platform built for generating advertising copy and landing pages across multiple platforms, specifically tailored for Jones Road Beauty brand guidelines. The application uses Claude AI (via Anthropic SDK) for authentic copywriting generation, with a modern React frontend, Node.js/Express backend, and is designed for deployment on Replit. The system features sophisticated persona targeting, Brand/DR balance controls, professional UI built with shadcn/ui components, and specialized retention marketing for Email & SMS campaigns.
 
 ## Recent Changes (July 2025)
+
+**Latest Update - Retention Tab for Email & SMS Copy Generation (July 29, 2025)**
+- **✅ NEW RETENTION TAB**: Added comprehensive Email & SMS copy generation tab for customer retention campaigns
+- **✅ PLATFORM-SPECIFIC GENERATION**: Specialized AI prompts for Email vs SMS with appropriate formatting and length constraints
+- **✅ COMPREHENSIVE FIELD SYSTEM**: Required fields (Key Message, Platform) plus 8 optional configuration fields with sensible defaults
+- **✅ ADVANCED CHIP INPUT**: Keywords to Include and Words to Avoid with dynamic chip management and removal functionality
+- **✅ CAMPAIGN CUSTOMIZATION**: Full control over Tone, Audience, Goal, Campaign Type, CTA, Urgency Level, and Content Length
+- **✅ BACKEND INTEGRATION**: New `/api/generate-retention-copy` endpoint with proper authentication and error handling
+- **✅ AI ENHANCEMENT**: Specialized `generateRetentionCopy` function with Jones Road Beauty brand guidelines and retention best practices
+- **✅ RESPONSIVE UI**: Professional form layout with grid system, proper spacing, and mobile-optimized design
+- **✅ COPY HISTORY**: Retention-specific history tracking with platform indicators and easy copy-to-clipboard functionality
+- **✅ 5-TAB LAYOUT**: Updated tab grid from 4 to 5 columns to accommodate new Retention tab alongside existing tabs
+- **✅ ICON INTEGRATION**: Mail and MessageSquare icons for Email/SMS differentiation throughout the interface
 
 **Latest Update - CRITICAL PRODUCTION FREEZE RESOLVED: Direct Textarea Implementation (July 29, 2025)**
 - **✅ FREEZE ISSUE COMPLETELY RESOLVED**: User confirmed transcription functionality works perfectly in production after cache clearing
