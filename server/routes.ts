@@ -684,6 +684,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const patterns = [
         /\/d\/([a-zA-Z0-9-_]+)/, // Standard format: /d/docId/
         /\/document\/d\/([a-zA-Z0-9-_]+)/, // Alternative format
+        /\/presentation\/d\/([a-zA-Z0-9-_]+)/, // Presentation format
+        /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/, // Spreadsheet format
         /id=([a-zA-Z0-9-_]+)/, // Query parameter format
         /\/open\?id=([a-zA-Z0-9-_]+)/, // Open format
         /\/file\/d\/([a-zA-Z0-9-_]+)/ // File format
@@ -705,12 +707,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Extracted document ID:', docId);
       
-      // Try multiple export methods with proper headers
-      const exportUrls = [
-        `https://docs.google.com/document/d/${docId}/export?format=txt`,
-        `https://docs.google.com/document/export?format=txt&id=${docId}`,
-        `https://docs.google.com/document/d/${docId}/export?format=txt&exportFormat=txt`,
-      ];
+      // Detect document type from URL and use appropriate export methods
+      let exportUrls = [];
+      if (driveUrl.includes('/presentation/')) {
+        exportUrls = [
+          `https://docs.google.com/presentation/d/${docId}/export/txt`,
+          `https://docs.google.com/presentation/d/${docId}/export?format=txt`,
+          `https://docs.google.com/presentation/export?format=txt&id=${docId}`,
+        ];
+      } else if (driveUrl.includes('/spreadsheets/')) {
+        exportUrls = [
+          `https://docs.google.com/spreadsheets/d/${docId}/export?format=txt`,
+          `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv`,
+          `https://docs.google.com/spreadsheets/export?format=txt&id=${docId}`,
+        ];
+      } else {
+        // Default to document format
+        exportUrls = [
+          `https://docs.google.com/document/d/${docId}/export?format=txt`,
+          `https://docs.google.com/document/export?format=txt&id=${docId}`,
+          `https://docs.google.com/document/d/${docId}/export?format=txt&exportFormat=txt`,
+        ];
+      }
       
       let content = '';
       let lastError = '';
@@ -755,8 +773,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (!content || content.trim().length === 0 || content.includes('<!DOCTYPE html>')) {
+        const docType = driveUrl.includes('/presentation/') ? 'Presentation' : 
+                        driveUrl.includes('/spreadsheets/') ? 'Spreadsheet' : 'Document';
         return res.status(400).json({ 
-          message: `Could not access document content. Please ensure:\n• Document is shared with "Anyone with the link can view"\n• Document is not empty\n• You're using a Google Docs URL (not Sheets or Slides)\n• The document is publicly accessible\n\nError: ${lastError}`
+          message: `Could not access ${docType.toLowerCase()} content. Please ensure:\n• ${docType} is shared with "Anyone with the link can view"\n• ${docType} is not empty\n• The ${docType.toLowerCase()} is publicly accessible\n• Link permissions are set correctly\n\nError: ${lastError}`
         });
       }
       
@@ -769,6 +789,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Google Drive fetch error:', error);
       res.status(500).json({ 
         message: 'Failed to fetch document from Google Drive. Please check the link and try again.' 
+      });
+    }
+  });
+
+  // PDF parsing endpoint
+  app.post('/api/parse-pdf', requireAuth, async (req, res) => {
+    try {
+      const multer = require('multer');
+      const pdfParse = require('pdf-parse');
+      
+      // Configure multer for memory storage
+      const upload = multer({ storage: multer.memoryStorage() });
+      
+      // Use multer middleware
+      upload.single('file')(req, res, async (err: any) => {
+        if (err) {
+          return res.status(400).json({ message: 'File upload error' });
+        }
+        
+        if (!req.file) {
+          return res.status(400).json({ message: 'No file provided' });
+        }
+        
+        try {
+          const data = await pdfParse(req.file.buffer);
+          res.json({ 
+            content: data.text,
+            success: true,
+            pages: data.numpages
+          });
+        } catch (parseError) {
+          console.error('PDF parse error:', parseError);
+          res.status(400).json({ 
+            message: 'Failed to parse PDF. Please ensure it contains readable text.' 
+          });
+        }
+      });
+    } catch (error) {
+      console.error('PDF endpoint error:', error);
+      res.status(500).json({ 
+        message: 'PDF processing failed. Please try again.' 
       });
     }
   });

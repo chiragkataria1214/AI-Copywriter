@@ -776,7 +776,7 @@ export default function MetaAdGenerator() {
   });
 
   // File upload handler
-  const handleFileUpload = (file: File) => {
+  const handleFileUpload = async (file: File) => {
     if (file.type === 'text/plain') {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -788,10 +788,38 @@ export default function MetaAdGenerator() {
         });
       };
       reader.readAsText(file);
+    } else if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+      // Handle PDF upload
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      try {
+        const response = await fetch('/api/parse-pdf', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setLaunchBrief(data.content);
+          toast({
+            title: "PDF Loaded Successfully",
+            description: `${file.name} has been parsed and loaded into the editor.`,
+          });
+        } else {
+          throw new Error('Failed to parse PDF');
+        }
+      } catch (error) {
+        toast({
+          title: "PDF Parse Error",
+          description: "Failed to parse PDF file. Please try a text file instead.",
+          variant: "destructive"
+        });
+      }
     } else {
       toast({
-        title: "File Upload",
-        description: "Currently only .txt files are supported. Word/PDF support coming soon.",
+        title: "Unsupported File Type",
+        description: "Currently supports .txt and .pdf files. Word document support coming soon.",
         variant: "destructive"
       });
     }
@@ -2771,7 +2799,7 @@ export default function MetaAdGenerator() {
                             }`}
                           >
                             <div className="text-sm font-medium">File Upload</div>
-                            <div className="text-xs text-gray-500 mt-1">.txt files</div>
+                            <div className="text-xs text-gray-500 mt-1">.txt/.pdf</div>
                           </button>
                         </div>
                       </div>
@@ -2830,7 +2858,7 @@ export default function MetaAdGenerator() {
                             <p>1. Click "Share" in your Google Doc</p>
                             <p>2. Change to "Anyone with the link can view"</p>
                             <p>3. Copy and paste the share link here</p>
-                            <p>4. Make sure it's a Google Docs link (not Sheets or Slides)</p>
+                            <p>4. Works with Google Docs, Slides, and Sheets</p>
                           </div>
                           
                           {launchBrief && (
@@ -2858,7 +2886,7 @@ export default function MetaAdGenerator() {
                           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
                             <input
                               type="file"
-                              accept=".txt"
+                              accept=".txt,.pdf"
                               className="hidden"
                               id="brief-upload"
                               onChange={(e) => {
@@ -2874,7 +2902,7 @@ export default function MetaAdGenerator() {
                                 Click to upload a brief file
                               </p>
                               <p className="text-xs text-gray-500 mt-1">
-                                Currently supports .txt files only
+                                Supports .txt and .pdf files
                               </p>
                             </label>
                           </div>
