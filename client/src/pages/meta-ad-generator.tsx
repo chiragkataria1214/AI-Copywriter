@@ -227,9 +227,10 @@ export default function MetaAdGenerator() {
   
   // Launch Brief state
   const [launchBrief, setLaunchBrief] = useState('');
+  const [driveLink, setDriveLink] = useState('');
   const [selectedDeliverables, setSelectedDeliverables] = useState<string[]>([]);
   const [generatedLaunchCopy, setGeneratedLaunchCopy] = useState<{[key: string]: string}>({});
-  const [briefSource, setBriefSource] = useState<'paste' | 'upload'>('paste');
+  const [briefSource, setBriefSource] = useState<'paste' | 'upload' | 'drive'>('paste');
   const [generatedCustomResponse, setGeneratedCustomResponse] = useState('');
   const [influencerHandle, setInfluencerHandle] = useState('');
   const [voiceAnalysisMethod, setVoiceAnalysisMethod] = useState('combined');
@@ -439,7 +440,7 @@ export default function MetaAdGenerator() {
     setGeneratedLandingCopy(landingCopy);
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTranscriptionFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -749,7 +750,52 @@ export default function MetaAdGenerator() {
     }
   });
 
+  // Google Drive fetch mutation
+  const fetchDriveBriefMutation = useMutation({
+    mutationFn: async (driveUrl: string) => {
+      return await apiRequest('/api/fetch-drive-brief', {
+        method: 'POST',
+        body: { driveUrl }
+      });
+    },
+    onSuccess: (data) => {
+      setLaunchBrief(data.content || '');
+      toast({
+        title: "Brief Loaded Successfully",
+        description: "Google Drive brief has been loaded into the editor.",
+      });
+    },
+    onError: (error) => {
+      console.error('Drive fetch error:', error);
+      toast({
+        title: "Failed to Load Brief",
+        description: "Could not access the Google Drive document. Please check the link and permissions.",
+        variant: "destructive"
+      });
+    }
+  });
 
+  // File upload handler
+  const handleFileUpload = (file: File) => {
+    if (file.type === 'text/plain') {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        setLaunchBrief(content);
+        toast({
+          title: "File Loaded Successfully",
+          description: `${file.name} has been loaded into the editor.`,
+        });
+      };
+      reader.readAsText(file);
+    } else {
+      toast({
+        title: "File Upload",
+        description: "Currently only .txt files are supported. Word/PDF support coming soon.",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Static ad analysis mutation
   const analyzeStaticAdMutation = useMutation({
@@ -1116,7 +1162,7 @@ export default function MetaAdGenerator() {
                             type="file" 
                             className="sr-only" 
                             accept=".txt,.doc,.docx" 
-                            onChange={handleFileUpload} 
+                            onChange={handleTranscriptionFileUpload} 
                           />
                           
                           <Label htmlFor="image-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
@@ -2693,7 +2739,7 @@ export default function MetaAdGenerator() {
                         <Label className="text-sm font-medium text-gray-700 mb-3 block">
                           How would you like to add your brief?
                         </Label>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                           <button
                             onClick={() => setBriefSource('paste')}
                             className={`p-3 rounded-lg border text-center transition-colors ${
@@ -2706,6 +2752,17 @@ export default function MetaAdGenerator() {
                             <div className="text-xs text-gray-500 mt-1">Type or paste</div>
                           </button>
                           <button
+                            onClick={() => setBriefSource('drive')}
+                            className={`p-3 rounded-lg border text-center transition-colors ${
+                              briefSource === 'drive' 
+                                ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <div className="text-sm font-medium">Google Drive</div>
+                            <div className="text-xs text-gray-500 mt-1">Share link</div>
+                          </button>
+                          <button
                             onClick={() => setBriefSource('upload')}
                             className={`p-3 rounded-lg border text-center transition-colors ${
                               briefSource === 'upload' 
@@ -2714,7 +2771,7 @@ export default function MetaAdGenerator() {
                             }`}
                           >
                             <div className="text-sm font-medium">File Upload</div>
-                            <div className="text-xs text-gray-500 mt-1">Word/PDF</div>
+                            <div className="text-xs text-gray-500 mt-1">.txt files</div>
                           </button>
                         </div>
                       </div>
@@ -2741,6 +2798,57 @@ export default function MetaAdGenerator() {
                         </div>
                       )}
 
+                      {/* Google Drive Option */}
+                      {briefSource === 'drive' && (
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                            Google Drive Share Link
+                          </Label>
+                          <div className="flex space-x-2">
+                            <input
+                              type="url"
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                              placeholder="https://docs.google.com/document/d/..."
+                              value={driveLink}
+                              onChange={(e) => setDriveLink(e.target.value)}
+                            />
+                            <Button
+                              onClick={() => driveLink && fetchDriveBriefMutation.mutate(driveLink)}
+                              disabled={!driveLink || fetchDriveBriefMutation.isPending}
+                              className="text-white"
+                              style={{ backgroundColor: '#004182' }}
+                            >
+                              {fetchDriveBriefMutation.isPending ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              ) : (
+                                'Load'
+                              )}
+                            </Button>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-2 space-y-1">
+                            <p><strong>To share your Google Doc:</strong></p>
+                            <p>1. Click "Share" in your Google Doc</p>
+                            <p>2. Change to "Anyone with the link can view"</p>
+                            <p>3. Copy and paste the share link here</p>
+                            <p>4. Make sure it's a Google Docs link (not Sheets or Slides)</p>
+                          </div>
+                          
+                          {launchBrief && (
+                            <div className="mt-4">
+                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                Loaded Brief Preview
+                              </Label>
+                              <div className="bg-gray-50 rounded-lg p-3 max-h-32 overflow-y-auto">
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                                  {launchBrief.substring(0, 500)}
+                                  {launchBrief.length > 500 && '...'}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* File Upload Option */}
                       {briefSource === 'upload' && (
                         <div>
@@ -2750,17 +2858,13 @@ export default function MetaAdGenerator() {
                           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
                             <input
                               type="file"
-                              accept=".doc,.docx,.pdf,.txt"
+                              accept=".txt"
                               className="hidden"
                               id="brief-upload"
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  // TODO: Implement file upload processing
-                                  toast({
-                                    title: "File Upload",
-                                    description: "File upload feature coming soon. Please use paste text for now.",
-                                  });
+                                  handleFileUpload(file);
                                 }
                               }}
                             />
@@ -2770,7 +2874,7 @@ export default function MetaAdGenerator() {
                                 Click to upload a brief file
                               </p>
                               <p className="text-xs text-gray-500 mt-1">
-                                Supports Word documents, PDFs, and text files
+                                Currently supports .txt files only
                               </p>
                             </label>
                           </div>
