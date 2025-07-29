@@ -487,7 +487,7 @@ export default function MetaAdGenerator() {
 
 
   return (
-    <div className="container mx-auto p-6 page-container main-content main-content-container">
+    <div className="container mx-auto p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">AI Copywriter</h1>
         <p className="text-gray-600">Generate professional marketing copy with AI</p>
@@ -529,7 +529,7 @@ export default function MetaAdGenerator() {
           <TabsTrigger value="custom">Custom Request</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="ads" className="space-y-6 tab-content-scrollable">
+        <TabsContent value="ads" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left Column - Input Form */}
             <div className="space-y-6">
