@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { TranscriptionInput } from '@/components/ui/transcription-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -75,11 +76,11 @@ export default function MetaAdGenerator() {
   };
   
   // BYPASS AUTHENTICATION - Direct access mode for all copywriting features
-  const effectiveUser = useMemo(() => ({
+  const effectiveUser = {
     username: 'user@jonesroadbeauty.com',
     role: hasAdminAccess ? 'admin' : 'user',
     isAdmin: hasAdminAccess
-  }), [hasAdminAccess]);
+  };
   
   // Dummy auth functions for compatibility
   const logout = () => {};
@@ -88,11 +89,9 @@ export default function MetaAdGenerator() {
   const isSettingUpAdmin = false;
   const [transcription, setTranscription] = useState('');
   
-  // Memoize transcription preview to prevent infinite re-renders
-  const transcriptionPreview = useMemo(() => {
-    if (!transcription) return '';
-    return transcription.length > 200 ? transcription.substring(0, 200) + '...' : transcription;
-  }, [transcription]);
+  // Simple transcription preview without memoization to test
+  const transcriptionPreview = !transcription ? '' : 
+    transcription.length > 200 ? transcription.substring(0, 200) + '...' : transcription;
 
   const [airLink, setAirLink] = useState('');
   const [uploadedImage, setUploadedImage] = useState<string>('');
@@ -308,7 +307,7 @@ export default function MetaAdGenerator() {
     }
   };
 
-  const generateTemplateAds = useCallback(() => {
+  const generateTemplateAds = () => {
     const selectedPersona = personas[concept as keyof typeof personas];
     const selectedSubPersona = subPersona && selectedPersona?.subPersonas?.[subPersona as keyof typeof selectedPersona.subPersonas] ? selectedPersona.subPersonas[subPersona as keyof typeof selectedPersona.subPersonas] : null;
     const brandPercent = brandDrBalance[0];
@@ -379,7 +378,7 @@ export default function MetaAdGenerator() {
     setGeneratedHeadlines(headlinesWithFrameworks);
     setGeneratedPrimaryText(primaryText);
     setSelectedHeadlineIndex(0); // Reset to first headline when new ones are generated
-  }, [concept, subPersona, brandDrBalance]);
+  };
 
   const generateTemplateLandingPage = () => {
     const selectedPersona = personas[concept as keyof typeof personas];
@@ -1015,14 +1014,9 @@ export default function MetaAdGenerator() {
 
                       <div className="text-center text-sm text-gray-500">OR</div>
 
-                      <Textarea 
-                        rows={6}
-                        className="w-full resize-none text-sm"
-                        placeholder="Paste your video transcription or ad concept here..."
+                      <TranscriptionInput 
                         value={transcription}
-                        onChange={(e) => {
-                          setTranscription(e.target.value);
-                        }}
+                        onChange={setTranscription}
                       />
                       
                       <div>
