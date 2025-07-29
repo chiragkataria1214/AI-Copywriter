@@ -89,15 +89,11 @@ export default function MetaAdGenerator() {
   const isSettingUpAdmin = false;
   const [transcription, setTranscription] = useState('');
   
-  // Debug transcription changes to identify freeze pattern
+  // Ultra-simple transcription handler 
   const handleTranscriptionChange = (value: string) => {
-    console.log('TRANSCRIPTION CHANGE START:', value.length);
-    console.log('Current render count check');
-    requestAnimationFrame(() => {
-      console.log('RAF: Setting transcription');
-      setTranscription(value);
-      console.log('RAF: Transcription set successfully');
-    });
+    console.log('PARENT: Transcription change received, length:', value.length);
+    setTranscription(value);
+    console.log('PARENT: State update completed');
   };
   
   // Completely static transcription preview to eliminate all re-render possibilities
