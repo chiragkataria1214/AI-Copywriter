@@ -93,11 +93,14 @@ export default function MetaAdGenerator() {
     if (!transcription) return '';
     return transcription.length > 200 ? transcription.substring(0, 200) + '...' : transcription;
   }, [transcription]);
+
   const [airLink, setAirLink] = useState('');
   const [uploadedImage, setUploadedImage] = useState<string>('');
   const [customBrief, setCustomBrief] = useState('');
   const [concept, setConcept] = useState('lifeJuggler');
   const [subPersona, setSubPersona] = useState('newMom');
+  
+
   const [targetAudience, setTargetAudience] = useState('');
   const [landingPageUrl, setLandingPageUrl] = useState('');
   const [selectedProduct, setSelectedProduct] = useState('');
@@ -305,7 +308,7 @@ export default function MetaAdGenerator() {
     }
   };
 
-  const generateTemplateAds = () => {
+  const generateTemplateAds = useCallback(() => {
     const selectedPersona = personas[concept as keyof typeof personas];
     const selectedSubPersona = subPersona && selectedPersona?.subPersonas?.[subPersona as keyof typeof selectedPersona.subPersonas] ? selectedPersona.subPersonas[subPersona as keyof typeof selectedPersona.subPersonas] : null;
     const brandPercent = brandDrBalance[0];
@@ -376,7 +379,7 @@ export default function MetaAdGenerator() {
     setGeneratedHeadlines(headlinesWithFrameworks);
     setGeneratedPrimaryText(primaryText);
     setSelectedHeadlineIndex(0); // Reset to first headline when new ones are generated
-  };
+  }, [concept, subPersona, brandDrBalance]);
 
   const generateTemplateLandingPage = () => {
     const selectedPersona = personas[concept as keyof typeof personas];
@@ -1018,12 +1021,7 @@ export default function MetaAdGenerator() {
                         placeholder="Paste your video transcription or ad concept here..."
                         value={transcription}
                         onChange={(e) => {
-                          try {
-                            console.log('Transcription change triggered');
-                            setTranscription(e.target.value);
-                          } catch (error) {
-                            console.error('Error setting transcription:', error);
-                          }
+                          setTranscription(e.target.value);
                         }}
                       />
                       
