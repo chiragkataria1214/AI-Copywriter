@@ -20,6 +20,8 @@ import { ProductSelection } from "@/components/ProductSelection";
 export default function MetaAdGenerator() {
   const [activeTab, setActiveTab] = useState('ads');
   
+
+  
   // Admin key protection for AI Settings
   const [hasAdminAccess, setHasAdminAccess] = useState(false);
   const [showAdminKeyPrompt, setShowAdminKeyPrompt] = useState(false);
@@ -240,7 +242,8 @@ export default function MetaAdGenerator() {
 
   // BYPASS AUTHENTICATION - Direct access mode for all copywriting features
   const effectiveUser = {
-    username: 'user@jonesroadbeauty.com',
+    id: 'demo-user',
+    username: 'demo@jonesroadbeauty.com',
     role: hasAdminAccess ? 'admin' : 'user',
     isAdmin: hasAdminAccess
   };
@@ -275,6 +278,7 @@ export default function MetaAdGenerator() {
 
   // Helper functions for transcription
   const handleTranscriptionChange = (value: string) => {
+    console.log('Transcription changed:', { value, length: value?.length });
     setTranscription(value);
   };
 
@@ -287,32 +291,40 @@ export default function MetaAdGenerator() {
   // API mutations for generating copy
   const generateAdCopyMutation = useMutation({
     mutationFn: async () => {
-      console.log('TRANSCRIPTION DEBUG:', { transcription, length: transcription?.length });
-      const payload = {
-        transcription,
-        customBrief,
-        concept,
-        subPersona,
-        targetAudience,
-        landingPageUrl,
-        brandDrBalance: brandDrBalance[0],
-        useJonesBrandGuide,
-        airLink,
-        uploadedImage,
-        selectedProduct,
-        partnershipAds,
-        influencerHandle,
-        voiceAnalysisMethod,
-        influencerBrandBalance: influencerBrandBalance[0]
-      };
-      
-      console.log('API PAYLOAD:', payload);
-      const result = await apiRequest('/api/generate-ad-copy', {
-        method: 'POST',
-        body: payload
-      });
-      
-      return result;
+      try {
+        console.log('TRANSCRIPTION DEBUG:', { transcription, length: transcription?.length });
+        const payload = {
+          transcription,
+          customBrief,
+          concept,
+          subPersona,
+          targetAudience,
+          landingPageUrl,
+          brandDrBalance: brandDrBalance[0],
+          useJonesBrandGuide,
+          airLink,
+          uploadedImage,
+          selectedProduct,
+          partnershipAds,
+          influencerHandle,
+          voiceAnalysisMethod,
+          influencerBrandBalance: influencerBrandBalance[0]
+        };
+        
+        console.log('API PAYLOAD:', payload);
+        
+        // Fix: Ensure we only pass 2 arguments to apiRequest
+        const result = await apiRequest('/api/generate-ad-copy', {
+          method: 'POST',
+          body: payload
+        });
+        
+        console.log('API RESULT:', result);
+        return result;
+      } catch (error) {
+        console.error('API Call Error:', error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
       setGeneratedHeadlines(data.headlines || []);
