@@ -128,20 +128,45 @@
   }
 }
 
-/* Remove problematic hover effects that interfere with functionality */
-@layer utilities {
-  /* Disable hover effects on interactive elements */
-  button, a, [role="button"], .cursor-pointer {
-    transition: none !important;
+/* Dropdown and Select component fixes */
+@layer components {
+  /* Fix dropdown positioning and hover issues */
+  [data-radix-select-content],
+  [data-radix-dropdown-menu-content] {
+    position: fixed !important;
+    z-index: 50 !important;
   }
   
-  /* Ensure pointer events work properly */
-  * {
+  /* Prevent jittering on dropdown items */
+  [data-radix-select-item],
+  [data-radix-dropdown-menu-item] {
+    transition: background-color 150ms ease-in-out, color 150ms ease-in-out !important;
+    transform: none !important;
+  }
+  
+  /* Ensure dropdown content stays positioned correctly */
+  [data-radix-select-content]:hover,
+  [data-radix-dropdown-menu-content]:hover {
+    transform: none !important;
+  }
+  
+  /* Fix select trigger positioning */
+  [data-radix-select-trigger] {
+    position: relative !important;
+  }
+  
+  /* Ensure proper pointer events for radix components */
+  [data-radix-popper-content-wrapper] {
     pointer-events: auto !important;
   }
   
-  /* Remove any hover transforms or effects that break clicking */
-  *:hover {
+  /* Stabilize viewport positioning */
+  [data-radix-select-viewport] {
     transform: none !important;
+  }
+  
+  /* Fix any transform-origin issues */
+  [data-radix-select-content] {
+    transform-origin: var(--radix-select-content-transform-origin) !important;
   }
 }
