@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { TranscriptionInput } from '@/components/ui/transcription-input';
+// Direct textarea implementation to avoid deployment sync issues
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -1024,9 +1024,21 @@ export default function MetaAdGenerator() {
 
                       <div className="text-center text-sm text-gray-500">OR</div>
 
-                      <TranscriptionInput 
+                      <textarea 
+                        rows={6}
+                        className="w-full resize-none text-sm"
+                        placeholder="Paste your video transcription or ad concept here..."
                         value={transcription}
-                        onChange={handleTranscriptionChange}
+                        onChange={(e) => {
+                          console.log('RAW TEXTAREA DIRECT: Input detected, length:', e.target.value.length);
+                          handleTranscriptionChange(e.target.value);
+                        }}
+                        style={{
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          padding: '8px',
+                          fontFamily: 'inherit'
+                        }}
                       />
                       
                       <div>
