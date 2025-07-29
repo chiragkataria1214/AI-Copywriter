@@ -521,11 +521,10 @@ export default function MetaAdGenerator() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="ads">Ad Copy</TabsTrigger>
           <TabsTrigger value="landing">Landing Pages</TabsTrigger>
           <TabsTrigger value="static">Static Ad</TabsTrigger>
-          <TabsTrigger value="launch">Launch</TabsTrigger>
           <TabsTrigger value="custom">Custom Request</TabsTrigger>
         </TabsList>
 
@@ -1197,95 +1196,7 @@ export default function MetaAdGenerator() {
           </div>
         </TabsContent>
 
-        <TabsContent value="launch" className="space-y-6">
-          <Card>
-            <CardContent className="p-6">
-              <Tabs value={launchSubTab} onValueChange={setLaunchSubTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="creative-brief">Creative Brief Generator</TabsTrigger>
-                  <TabsTrigger value="strategy">Strategy Planning</TabsTrigger>
-                  <TabsTrigger value="launch-brief">Launch Brief Generation</TabsTrigger>
-                </TabsList>
 
-                <TabsContent value="creative-brief" className="space-y-4">
-                  <h3 className="text-lg font-semibold">Creative Brief Generator</h3>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="meetingNotes">Meeting Notes</Label>
-                    <Textarea
-                      id="meetingNotes"
-                      placeholder="Paste your meeting notes here..."
-                      value={meetingNotes}
-                      onChange={(e) => setMeetingNotes(e.target.value)}
-                      className="min-h-[120px]"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="meetingTranscription">Meeting Transcription (Optional)</Label>
-                    <Textarea
-                      id="meetingTranscription"
-                      placeholder="Paste meeting transcription for additional context..."
-                      value={meetingTranscription}
-                      onChange={(e) => setMeetingTranscription(e.target.value)}
-                      className="min-h-[100px]"
-                    />
-                  </div>
-
-                  <Button 
-                    className="w-full" 
-                    size="lg"
-                    onClick={() => generateCreativeBriefMutation.mutate()}
-                    disabled={generateCreativeBriefMutation.isPending}
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    {generateCreativeBriefMutation.isPending ? 'Generating...' : 'Generate Creative Brief'}
-                  </Button>
-                </TabsContent>
-
-                <TabsContent value="strategy" className="space-y-4">
-                  <h3 className="text-lg font-semibold">Strategy Planning</h3>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="strategyBrief">Strategy Brief</Label>
-                    <Textarea
-                      id="strategyBrief"
-                      placeholder="Paste your strategic brief or planning document..."
-                      value={strategyBrief}
-                      onChange={(e) => setStrategyBrief(e.target.value)}
-                      className="min-h-[120px]"
-                    />
-                  </div>
-
-                  <Button className="w-full" size="lg">
-                    <Target className="mr-2 h-4 w-4" />
-                    Generate Strategy
-                  </Button>
-                </TabsContent>
-
-                <TabsContent value="launch-brief" className="space-y-4">
-                  <h3 className="text-lg font-semibold">Launch Brief Generation</h3>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="launchBrief">Launch Brief</Label>
-                    <Textarea
-                      id="launchBrief"
-                      placeholder="Paste your launch brief or campaign document..."
-                      value={launchBrief}
-                      onChange={(e) => setLaunchBrief(e.target.value)}
-                      className="min-h-[120px]"
-                    />
-                  </div>
-
-                  <Button className="w-full" size="lg">
-                    <Zap className="mr-2 h-4 w-4" />
-                    Generate Launch Copy
-                  </Button>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="static" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
