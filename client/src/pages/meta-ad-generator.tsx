@@ -731,7 +731,8 @@ export default function MetaAdGenerator() {
       const chosenAdsContent = useAdsForLanding && selectedHeadline ? {
         headline: selectedHeadline.copy,
         framework: selectedHeadline.framework,
-        primaryText: generatedPrimaryText
+        primaryText: generatedPrimaryText,
+        transcription: transcription // Include transcription for consistency
       } : adsContent;
 
       return await apiRequest('/api/generate-landing-copy', {
@@ -745,7 +746,8 @@ export default function MetaAdGenerator() {
           adsContent: chosenAdsContent,
           brandDrBalance: brandDrBalance[0],
           selectedProduct: landingPageType === 'multiProduct' ? selectedProducts.join(',') : selectedProduct,
-          mainAngle
+          mainAngle,
+          transcription: useAdsForLanding ? transcription : undefined // Include transcription when using ads content
         }
       });
     },
@@ -2088,7 +2090,7 @@ export default function MetaAdGenerator() {
                                     <SelectItem key={index} value={index.toString()}>
                                       <div className="flex flex-col py-1">
                                         <span className="font-medium text-sm">{headline.framework}</span>
-                                        <span className="text-xs text-gray-500">{headline.copy}</span>
+                                        <span className="text-xs text-gray-500 truncate max-w-xs">{headline.copy}</span>
                                       </div>
                                     </SelectItem>
                                   ))}
@@ -2098,10 +2100,22 @@ export default function MetaAdGenerator() {
                             
                             {generatedPrimaryText && (
                               <div>
-                                <Label className="text-xs font-medium text-gray-600 mb-2 block">Primary Text Preview</Label>
+                                <Label className="text-xs font-medium text-gray-600 mb-2 block">Selected Primary Text</Label>
                                 <div className="p-3 bg-white rounded border text-sm text-gray-700">
                                   {generatedPrimaryText}
                                 </div>
+                              </div>
+                            )}
+                            
+                            {transcription && (
+                              <div>
+                                <Label className="text-xs font-medium text-gray-600 mb-2 block">Source Transcription</Label>
+                                <div className="p-3 bg-gray-50 rounded border text-xs text-gray-600 max-h-24 overflow-y-auto">
+                                  {transcription.substring(0, 200)}{transcription.length > 200 ? '...' : ''}
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  This transcription content will be included in the landing page generation for consistency
+                                </p>
                               </div>
                             )}
                           </div>

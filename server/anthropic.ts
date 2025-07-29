@@ -74,6 +74,7 @@ export interface LandingPageRequest {
   brandDrBalance: number;
   selectedProduct?: string;
   mainAngle?: string;
+  transcription?: string;
 }
 
 export interface CustomCopyRequest {
@@ -363,7 +364,7 @@ Analyze the uploaded ad creative image to extract key visual elements, text over
 }
 
 export async function generateLandingPageCopy(request: LandingPageRequest) {
-  const { landingPageType, productBrief, concept, subPersona, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle } = request;
+  const { landingPageType, productBrief, concept, subPersona, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle, transcription } = request;
   
   const brandPercent = brandDrBalance;
   const drPercent = 100 - brandPercent;
@@ -637,6 +638,13 @@ ${productBrief}
 ${useAdsContent && adsContent ? `
 EXISTING AD COPY TO REFERENCE (ensure message consistency):
 ${adsContent}
+` : ''}
+
+${transcription ? `
+VIDEO TRANSCRIPTION CONTENT (key messaging to incorporate):
+${transcription}
+
+Use the video transcription content to understand the authentic messaging approach, tone, and key product benefits being communicated. Incorporate similar language patterns and messaging themes in the landing page copy while maintaining consistency with the Jones Road Beauty brand voice.
 ` : ''}
 
 CONVERSION REQUIREMENTS:
