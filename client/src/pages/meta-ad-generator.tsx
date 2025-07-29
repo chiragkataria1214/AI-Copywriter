@@ -2750,6 +2750,17 @@ export default function MetaAdGenerator() {
 
           {/* Launch Brief Tab */}
           <TabsContent value="launch">
+            {/* Beta Banner */}
+            <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded">BETA</span>
+                <span className="text-orange-800 text-sm font-medium">Launch Brief Generation</span>
+              </div>
+              <p className="text-orange-700 text-sm mt-2">
+                This feature is under active development. Please test thoroughly and report any issues to the team.
+              </p>
+            </div>
+            
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
               {/* Input Section */}
               <div className="space-y-4 sm:space-y-6">
