@@ -127,3 +127,21 @@
     min-height: 3rem !important;
   }
 }
+
+/* Remove problematic hover effects that interfere with functionality */
+@layer utilities {
+  /* Disable hover effects on interactive elements */
+  button, a, [role="button"], .cursor-pointer {
+    transition: none !important;
+  }
+  
+  /* Ensure pointer events work properly */
+  * {
+    pointer-events: auto !important;
+  }
+  
+  /* Remove any hover transforms or effects that break clicking */
+  *:hover {
+    transform: none !important;
+  }
+}
