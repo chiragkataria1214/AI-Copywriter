@@ -2886,6 +2886,8 @@ export default function MetaAdGenerator() {
                 </div>
               </div>
 
+              {/* Launch Content Wrapper */}
+              <div>
               {/* Creative Brief Generator */}
               {launchSubTab === 'creative-brief' && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
@@ -3656,8 +3658,6 @@ export default function MetaAdGenerator() {
                   </Card>
                 )}
               </div>
-                </div>
-              )}
             </div>
           </TabsContent>
 
@@ -4014,11 +4014,9 @@ export default function MetaAdGenerator() {
               </div>
             </div>
           </TabsContent>
-        </Tabs>
-      </div>
 
-      {/* Custom Request Tab - moved to far right */}
-      <TabsContent value="custom">
+          {/* Custom Request Tab - moved to far right */}
+          <TabsContent value="custom">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Input Section */}
           <div className="space-y-4 sm:space-y-6">
@@ -6042,6 +6040,8 @@ TRANSCRIPTION/CONTENT:
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </Tabs>
+      </div>
     </div>
   );
 }
