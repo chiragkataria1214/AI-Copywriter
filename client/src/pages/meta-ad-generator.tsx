@@ -534,6 +534,33 @@ export default function MetaAdGenerator() {
             <div className="space-y-6">
               <Card>
                 <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Video Transcription or Content Input</h3>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="transcription">Video Transcription or Content Input</Label>
+                    <textarea
+                      id="transcription"
+                      placeholder="Paste your video transcription, content brief, or any additional context here..."
+                      value={transcription}
+                      onChange={(e) => {
+                        console.log('🔥 Direct onChange triggered:', e.target.value.length);
+                        handleTranscriptionChange(e.target.value);
+                      }}
+                      onFocus={() => console.log('🎯 Transcription textarea focused')}
+                      onBlur={() => console.log('🎯 Transcription textarea blurred')}
+                      className="w-full min-h-[120px] p-3 border border-gray-300 rounded-md resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {transcription && (
+                      <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                        <strong>Preview:</strong> {getTranscriptionPreview()}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
                   <h3 className="text-lg font-semibold mb-4">Content Input</h3>
                   
                   <div className="space-y-4">
