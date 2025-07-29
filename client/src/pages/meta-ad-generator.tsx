@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Upload, Copy, Check, Target, Sparkles, Video, FileText, Zap, ThumbsUp, ThumbsDown, Star, Globe, List, AlertCircle, Palette, Users, Settings, LogOut, User, Database, Brain, BarChart3, Camera, Lock } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -87,6 +87,12 @@ export default function MetaAdGenerator() {
   const setupAdmin = () => {};
   const isSettingUpAdmin = false;
   const [transcription, setTranscription] = useState('');
+  
+  // Memoize transcription preview to prevent infinite re-renders
+  const transcriptionPreview = useMemo(() => {
+    if (!transcription) return '';
+    return transcription.length > 200 ? transcription.substring(0, 200) + '...' : transcription;
+  }, [transcription]);
   const [airLink, setAirLink] = useState('');
   const [uploadedImage, setUploadedImage] = useState<string>('');
   const [customBrief, setCustomBrief] = useState('');
@@ -2119,7 +2125,7 @@ export default function MetaAdGenerator() {
                               <div>
                                 <Label className="text-xs font-medium text-gray-600 mb-2 block">Source Transcription</Label>
                                 <div className="p-3 bg-gray-50 rounded border text-xs text-gray-600 max-h-24 overflow-y-auto">
-                                  {transcription.substring(0, 200)}{transcription.length > 200 ? '...' : ''}
+                                  {transcriptionPreview}
                                 </div>
                                 <p className="text-xs text-gray-500 mt-1">
                                   This transcription content will be included in the landing page generation for consistency
