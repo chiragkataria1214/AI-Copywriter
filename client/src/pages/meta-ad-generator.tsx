@@ -890,22 +890,7 @@ export default function MetaAdGenerator() {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>Select Product Focus</Label>
-                      <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose a product to focus on" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="miracle-balm">Miracle Balm</SelectItem>
-                          <SelectItem value="what-the-foundation">What The Foundation</SelectItem>
-                          <SelectItem value="just-enough">Just Enough</SelectItem>
-                          <SelectItem value="hero-kit">The Hero Kit</SelectItem>
-                          <SelectItem value="sunscreen">Like Butter Sunscreen</SelectItem>
-                          <SelectItem value="mascara">Lash Sculpt Mascara</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+
                   </div>
                 </CardContent>
               </Card>
