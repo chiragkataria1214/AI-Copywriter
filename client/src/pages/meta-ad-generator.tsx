@@ -224,6 +224,11 @@ export default function MetaAdGenerator() {
     response: string;
     timestamp: Date;
   }>>([]);
+  
+  // Launch Brief state
+  const [launchBrief, setLaunchBrief] = useState('');
+  const [selectedDeliverables, setSelectedDeliverables] = useState<string[]>([]);
+  const [generatedLaunchCopy, setGeneratedLaunchCopy] = useState<{[key: string]: string}>({});
   const [generatedCustomResponse, setGeneratedCustomResponse] = useState('');
   const [influencerHandle, setInfluencerHandle] = useState('');
   const [voiceAnalysisMethod, setVoiceAnalysisMethod] = useState('combined');
@@ -710,6 +715,39 @@ export default function MetaAdGenerator() {
     }
   });
 
+  // Launch copy generation mutation
+  const generateLaunchCopyMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/generate-launch-copy', {
+        method: 'POST',
+        body: {
+          launchBrief,
+          selectedDeliverables,
+          concept,
+          subPersona,
+          brandDrBalance: brandDrBalance[0],
+          selectedProduct,
+          useJonesBrandGuide
+        }
+      });
+    },
+    onSuccess: (data) => {
+      setGeneratedLaunchCopy(data.deliverables || {});
+      toast({
+        title: "Launch Copy Generated Successfully",
+        description: `Generated ${selectedDeliverables.length} deliverables for your product launch.`,
+      });
+    },
+    onError: (error) => {
+      console.error('Launch generation error:', error);
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate launch copy. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
   // Static ad analysis mutation
   const analyzeStaticAdMutation = useMutation({
     mutationFn: async () => {
@@ -930,7 +968,7 @@ export default function MetaAdGenerator() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="flex w-full mb-6 sm:mb-8">
-            <TabsList className="grid grid-cols-4 flex-1">
+            <TabsList className="grid grid-cols-5 flex-1">
               <TabsTrigger value="ads" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
                 <Sparkles size={16} />
                 <span className="text-xs sm:text-sm">Ad Copy</span>
@@ -949,6 +987,11 @@ export default function MetaAdGenerator() {
               <TabsTrigger value="custom" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
                 <Brain size={16} />
                 <span className="text-xs sm:text-sm">Custom Request</span>
+              </TabsTrigger>
+              
+              <TabsTrigger value="launch" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
+                <List size={16} />
+                <span className="text-xs sm:text-sm">Launch Brief</span>
               </TabsTrigger>
             </TabsList>
             <Button
@@ -2620,6 +2663,169 @@ export default function MetaAdGenerator() {
                             </Button>
                           </div>
                         ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Launch Brief Tab */}
+          <TabsContent value="launch">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+              {/* Input Section */}
+              <div className="space-y-4 sm:space-y-6">
+                {/* Launch Brief Input */}
+                <Card>
+                  <CardContent className="p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <List className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                      Creative Brief Upload
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                          Paste Your Launch Brief
+                        </Label>
+                        <textarea
+                          rows={12}
+                          className="w-full resize-none text-sm"
+                          placeholder="Paste your complete creative brief here including product details, target audience, key messages, positioning, launch timeline, etc..."
+                          value={launchBrief}
+                          onChange={(e) => setLaunchBrief(e.target.value)}
+                          style={{
+                            border: '1px solid #d1d5db',
+                            borderRadius: '6px',
+                            padding: '12px',
+                            fontFamily: 'inherit'
+                          }}
+                        />
+                        <p className="text-xs text-gray-500 mt-2">
+                          Include all relevant information: product details, positioning, target audience, key messages, launch goals, timeline, budget considerations, etc.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Deliverables Selection */}
+                <Card>
+                  <CardContent className="p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <FileText className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                      Select Deliverables
+                    </h3>
+                    
+                    <div className="space-y-3">
+                      {[
+                        { id: 'email-subject', label: 'Email Subject Lines', desc: 'Launch announcement email subjects' },
+                        { id: 'email-body', label: 'Email Copy', desc: 'Full launch announcement email body' },
+                        { id: 'social-captions', label: 'Social Media Captions', desc: 'Instagram, Facebook, TikTok posts' },
+                        { id: 'ad-headlines', label: 'Paid Ad Headlines', desc: 'Facebook/Instagram ad headlines' },
+                        { id: 'ad-copy', label: 'Paid Ad Copy', desc: 'Complete paid social ad copy' },
+                        { id: 'product-descriptions', label: 'Product Descriptions', desc: 'Website and marketplace copy' },
+                        { id: 'press-release', label: 'Press Release', desc: 'Media announcement copy' },
+                        { id: 'landing-page', label: 'Landing Page Copy', desc: 'Complete page copy structure' },
+                        { id: 'sms-copy', label: 'SMS Campaign Copy', desc: 'Text message marketing copy' },
+                        { id: 'influencer-talking-points', label: 'Influencer Talking Points', desc: 'Key messages for partnerships' }
+                      ].map((deliverable) => (
+                        <div key={deliverable.id} className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            id={deliverable.id}
+                            checked={selectedDeliverables.includes(deliverable.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedDeliverables([...selectedDeliverables, deliverable.id]);
+                              } else {
+                                setSelectedDeliverables(selectedDeliverables.filter(id => id !== deliverable.id));
+                              }
+                            }}
+                            className="mt-1 w-4 h-4 text-blue-600"
+                          />
+                          <div className="flex-1">
+                            <Label htmlFor={deliverable.id} className="text-sm font-medium text-gray-700 cursor-pointer">
+                              {deliverable.label}
+                            </Label>
+                            <p className="text-xs text-gray-500 mt-1">{deliverable.desc}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {selectedDeliverables.length > 0 && (
+                      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-700">
+                          <strong>{selectedDeliverables.length}</strong> deliverables selected for generation
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Button 
+                  onClick={() => generateLaunchCopyMutation.mutate()}
+                  className="w-full text-white"
+                  style={{ backgroundColor: '#004182' }}
+                  disabled={!launchBrief.trim() || selectedDeliverables.length === 0 || generateLaunchCopyMutation.isPending}
+                >
+                  {generateLaunchCopyMutation.isPending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Generating Launch Copy...
+                    </>
+                  ) : (
+                    <>
+                      <List className="mr-2" size={16} />
+                      Generate Launch Copy
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Output Section */}
+              <div className="space-y-4 sm:space-y-6">
+                {Object.keys(generatedLaunchCopy).length > 0 ? (
+                  Object.entries(generatedLaunchCopy).map(([deliverableId, content]) => (
+                    <Card key={deliverableId}>
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 capitalize">
+                            {deliverableId.replace(/-/g, ' ')}
+                          </h3>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(content, 'launch')}
+                            className="flex items-center space-x-1"
+                          >
+                            <Copy size={12} />
+                            <span>Copy</span>
+                          </Button>
+                        </div>
+                        
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans">
+                            {content}
+                          </pre>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <Card>
+                    <CardContent className="p-4 sm:p-6 text-center">
+                      <List className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Launch Copy Deliverables</h3>
+                      <p className="text-gray-600 mb-4">
+                        Upload your creative brief and select deliverables to generate comprehensive launch copy.
+                      </p>
+                      <div className="text-sm text-gray-500 space-y-1">
+                        <p>• Paste your complete creative brief</p>
+                        <p>• Select the deliverables you need</p>
+                        <p>• Get professional copy for your entire launch</p>
                       </div>
                     </CardContent>
                   </Card>

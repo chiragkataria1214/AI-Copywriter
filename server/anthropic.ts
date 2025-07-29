@@ -1200,3 +1200,183 @@ Create copy that fulfills this request while maintaining Jones Road Beauty's aut
     throw new Error('Failed to generate custom copy');
   }
 }
+
+export async function generateLaunchCopy(
+  launchBrief: string,
+  selectedDeliverables: string[],
+  concept: string,
+  subPersona: string | undefined,
+  brandDrBalance: number,
+  selectedProduct: string | undefined,
+  useJonesBrandGuide: boolean,
+  trainingConfig: TrainingConfig
+) {
+  const systemPrompt = `You are a world-class copywriter and launch strategist specializing in comprehensive product launch campaigns for Jones Road Beauty. You excel at creating authentic, brand-aligned copy across all marketing channels and deliverables.
+
+JONES ROAD BEAUTY BRAND VOICE:
+- Educational tone like Bobbi Brown, warm and approachable
+- "Make up, Simplified" philosophy - clean, uncomplicated messaging
+- Authentic and genuine, never pushy or aggressive
+- Focus on enhancing natural beauty, not covering it up
+- Speak to real women with real lives
+- Professional yet relatable expertise
+
+AUDIENCE PERSONAS:
+Life Juggler: Busy women managing multiple responsibilities who want simple, effective beauty solutions
+Clean Beauty Enthusiast: Health-conscious consumers seeking natural, safe beauty products
+Time-Constrained Professional: Career-focused women needing quick, polished looks
+Natural Beauty Seeker: Women wanting to enhance rather than mask their natural features
+
+DELIVERABLE SPECIFICATIONS:
+
+EMAIL SUBJECT LINES: 3-5 compelling subject lines that create urgency and curiosity while maintaining brand voice. Focus on benefit-driven messaging.
+
+EMAIL COPY: Complete launch announcement email including subject line, preview text, greeting, product introduction, key benefits, social proof elements, clear CTA, and signature. Structure for easy scanning with short paragraphs.
+
+SOCIAL MEDIA CAPTIONS: Platform-specific captions for Instagram, Facebook, and TikTok. Include relevant hashtags, call-to-action, and engagement hooks. Maintain authentic brand voice while optimizing for each platform.
+
+PAID AD HEADLINES: 3-5 Facebook/Instagram ad headlines that capture attention and drive clicks. Balance benefit-driven and curiosity-driven approaches.
+
+PAID AD COPY: Complete Facebook/Instagram ad copy including headline, primary text, and description. Optimized for conversion with clear value proposition and strong CTA.
+
+PRODUCT DESCRIPTIONS: Comprehensive product descriptions for website and marketplace use. Include features, benefits, usage instructions, and key selling points in scannable format.
+
+PRESS RELEASE: Professional press release format with headline, dateline, compelling lead paragraph, body paragraphs with quotes and details, boilerplate company information, and media contact details.
+
+LANDING PAGE COPY: Complete landing page structure including headline, subheadline, hero section, benefit sections, social proof, product details, pricing, guarantees, and multiple CTAs throughout.
+
+SMS CAMPAIGN COPY: Short, impactful text messages (160 characters max) that drive action. Include clear value proposition and strong CTA optimized for mobile.
+
+INFLUENCER TALKING POINTS: Key messages, benefits, and authentic selling points that influencers can use naturally in their content. Focus on genuine experiences and relatable benefits.
+
+OUTPUT FORMATTING:
+- Use clean, readable formatting without special characters
+- Structure each deliverable with clear headers
+- Provide multiple variations where appropriate
+- Include implementation notes for each deliverable
+- Maintain authentic Jones Road voice throughout all copy
+- Focus on benefits that matter to the target audience`;
+
+  // Define audience context
+  const getAudienceDescription = (concept: string, subPersona?: string) => {
+    const baseDescriptions = {
+      lifeJuggler: "Busy women managing multiple responsibilities who want simple, effective beauty solutions",
+      cleanBeautyEnthusiast: "Health-conscious consumers seeking natural, safe beauty products with clean ingredients",
+      timeConstrainedProfessional: "Career-focused women needing quick, polished looks that transition seamlessly",
+      naturalBeautySeeker: "Women wanting to enhance rather than mask their natural features"
+    };
+    
+    let description = baseDescriptions[concept as keyof typeof baseDescriptions] || baseDescriptions.lifeJuggler;
+    
+    if (subPersona === 'newMom') {
+      description += ". Specifically new mothers dealing with changing skin, limited time, and needing beauty solutions that work with their new lifestyle demands";
+    }
+    
+    return description;
+  };
+
+  const audienceDescription = getAudienceDescription(concept, subPersona);
+  
+  const productContext = selectedProduct 
+    ? `PRODUCT FOCUS: ${selectedProduct} - Ensure all copy highlights the specific benefits and features of this product.`
+    : "";
+
+  const brandBalance = brandDrBalance;
+  const balanceGuidance = brandBalance > 70 
+    ? "Emphasize Jones Road's authentic voice and educational approach" 
+    : brandBalance < 30 
+    ? "Focus on direct benefits and conversion-driven messaging"
+    : "Balance brand voice with clear benefits and strong calls-to-action";
+
+  const userPrompt = `LAUNCH BRIEF:
+${launchBrief}
+
+SELECTED DELIVERABLES: ${selectedDeliverables.join(', ')}
+
+TARGET AUDIENCE: ${audienceDescription}
+${productContext}
+
+BRAND/DR BALANCE: ${brandBalance}% brand voice - ${balanceGuidance}
+
+INSTRUCTIONS:
+Create comprehensive launch copy for each selected deliverable. Analyze the launch brief thoroughly and ensure all generated copy aligns with the product positioning, target audience, and launch goals outlined in the brief.
+
+For each deliverable:
+1. Follow the specification requirements outlined in the system prompt
+2. Maintain Jones Road Beauty's authentic brand voice
+3. Address the specific target audience effectively
+4. Include relevant product benefits and features from the brief
+5. Ensure consistency across all deliverables
+6. Optimize for the intended platform/channel
+
+OUTPUT FORMAT:
+Structure your response with clear headers for each deliverable using this format:
+
+DELIVERABLE: [Name]
+[Generated copy content]
+
+IMPORTANT: Use only clean, plain text formatting. Avoid special characters like asterisks (*), hashtags (#), brackets [], or other markdown formatting. Use simple numbered lists and bullet points with dashes for clean, readable output.`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      system: systemPrompt,
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: userPrompt }],
+    });
+
+    const content = response.content[0].type === 'text' ? response.content[0].text : '';
+    
+    // Parse the response to extract individual deliverables
+    const deliverables: Record<string, string> = {};
+    
+    // Split content by deliverable headers
+    const deliverablePattern = /DELIVERABLE:\s*([^\n]+)\n([\s\S]*?)(?=DELIVERABLE:|$)/gi;
+    const matches = content.matchAll(deliverablePattern);
+    
+    for (const match of matches) {
+      const deliverableName = match[1].trim().toLowerCase().replace(/\s+/g, '-');
+      const deliverableContent = match[2].trim();
+      
+      // Map to our deliverable IDs
+      const deliverableMap: Record<string, string> = {
+        'email-subject-lines': 'email-subject',
+        'email-copy': 'email-body',
+        'social-media-captions': 'social-captions',
+        'paid-ad-headlines': 'ad-headlines',
+        'paid-ad-copy': 'ad-copy',
+        'product-descriptions': 'product-descriptions',
+        'press-release': 'press-release',
+        'landing-page-copy': 'landing-page',
+        'sms-campaign-copy': 'sms-copy',
+        'influencer-talking-points': 'influencer-talking-points'
+      };
+      
+      const mappedId = deliverableMap[deliverableName] || deliverableName;
+      if (selectedDeliverables.includes(mappedId)) {
+        deliverables[mappedId] = deliverableContent;
+      }
+    }
+    
+    // If parsing failed, create a fallback structure
+    if (Object.keys(deliverables).length === 0) {
+      for (const deliverableId of selectedDeliverables) {
+        deliverables[deliverableId] = `Generated content for ${deliverableId.replace(/-/g, ' ')} based on your launch brief. Please regenerate for more specific content.`;
+      }
+    }
+    
+    return {
+      deliverables,
+      rawResponse: content,
+      debugInfo: {
+        systemPrompt,
+        userPrompt,
+        selectedDeliverables,
+        parsedCount: Object.keys(deliverables).length
+      }
+    };
+  } catch (error) {
+    console.error('Launch copy generation error:', error);
+    throw new Error('Failed to generate launch copy');
+  }
+}

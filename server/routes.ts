@@ -5,7 +5,7 @@ import { registerJunipRoutes } from "./routes-junip";
 import { registerAdminRoutes } from "./routes-admin";
 import { storage } from "./storage";
 import multer from "multer";
-import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd } from "./anthropic";
+import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd, generateLaunchCopy } from "./anthropic";
 import { analyzeInfluencerVoice, generateInfluencerStyleCopy, fetchInstagramContent } from "./influencer-analyzer";
 import { getTrainingConfig } from "./routes-training";
 import { z } from "zod";
@@ -637,6 +637,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error recording feedback:', error);
       res.status(500).json({ error: 'Failed to record feedback' });
+    }
+  });
+
+  // Launch copy generation endpoint  
+  app.post('/api/generate-launch-copy', requireAuth, async (req, res) => {
+    try {
+      const { launchBrief, selectedDeliverables, concept, subPersona, brandDrBalance, selectedProduct, useJonesBrandGuide } = req.body;
+      
+      const trainingConfig = await getTrainingConfig();
+      const result = await generateLaunchCopy(
+        launchBrief,
+        selectedDeliverables,
+        concept,
+        subPersona,
+        brandDrBalance,
+        selectedProduct,
+        useJonesBrandGuide,
+        trainingConfig
+      );
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error('Launch copy generation error:', error);
+      res.status(500).json({ 
+        message: error.message || 'Failed to generate launch copy'
+      });
     }
   });
 
