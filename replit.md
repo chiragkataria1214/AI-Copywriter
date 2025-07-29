@@ -6,7 +6,16 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
-**Latest Update - Complete Launch Brief Integration: Google Drive + File Upload + Meta Ads Terminology (July 29, 2025)**
+**Latest Update - Ecom Sections Added to Launch Brief + Enhanced Google Drive/PDF Support (July 29, 2025)**
+- **✅ ECOM SECTIONS ADDED**: Added announcement bar copy, hero module headline, and hero module subheadline to Launch Brief deliverables
+- **✅ COMPREHENSIVE WEBSITE COPY**: Launch Brief now generates complete ecommerce sections alongside existing marketing deliverables  
+- **✅ GOOGLE DRIVE PRESENTATIONS FIXED**: Enhanced Google Drive integration to properly handle Presentations and Spreadsheets with smart document type detection
+- **✅ PDF UPLOAD SUPPORT**: Added full PDF parsing functionality using pdf-parse library for extracting text from PDF briefs
+- **✅ ENHANCED FILE SUPPORT**: File upload now supports both .txt and .pdf files with proper error handling and user feedback
+- **✅ THREE INPUT METHODS PERFECTED**: All brief input methods (paste, file upload, Google Drive) now work flawlessly for maximum user flexibility
+- **✅ ECOM COPY SPECIFICATIONS**: Added proper specifications for announcement bar (50-80 chars), hero headline (5-10 words), and hero subheadline (10-15 words)
+
+**Previous Update - Complete Launch Brief Integration: Google Drive + File Upload + Meta Ads Terminology (July 29, 2025)**
 - **✅ GOOGLE DRIVE INTEGRATION RESTORED**: Re-implemented Google Drive document fetching with enhanced error handling and multiple URL format support
 - **✅ FILE UPLOAD FUNCTIONALITY**: Added working file upload for .txt files with drag-and-drop interface and real-time content loading
 - **✅ THREE INPUT METHODS**: Users can now paste text, upload .txt files, or connect Google Drive links for maximum flexibility

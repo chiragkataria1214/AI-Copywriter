@@ -1241,6 +1241,12 @@ META AD COPY: Complete Facebook/Instagram ad copy including headline, primary te
 
 PRODUCT DESCRIPTIONS: Comprehensive product descriptions for website and marketplace use. Include features, benefits, usage instructions, and key selling points in scannable format.
 
+ANNOUNCEMENT BAR COPY: Short, impactful website banner text (50-80 characters max) that appears at the top of pages. Focus on key launch message, promotion, or call-to-action. Should create urgency or highlight main benefit.
+
+HERO MODULE HEADLINE: Primary headline for homepage or product page hero section (5-10 words max). Must be compelling, benefit-focused, and capture attention immediately. Should align with launch positioning.
+
+HERO MODULE SUBHEADLINE: Supporting headline that appears below main headline (10-15 words max). Provides additional context, benefits, or urgency to complement the main headline and drive action.
+
 PRESS RELEASE: Professional press release format with headline, dateline, compelling lead paragraph, body paragraphs with quotes and details, boilerplate company information, and media contact details.
 
 LANDING PAGE COPY: Complete landing page structure including headline, subheadline, hero section, benefit sections, social proof, product details, pricing, guarantees, and multiple CTAs throughout.
@@ -1346,6 +1352,9 @@ IMPORTANT: Use only clean, plain text formatting. Avoid special characters like 
         'meta-ad-headlines': 'ad-headlines',
         'meta-ad-copy': 'ad-copy',
         'product-descriptions': 'product-descriptions',
+        'announcement-bar-copy': 'announcement-bar',
+        'hero-module-headline': 'hero-headline',
+        'hero-module-subheadline': 'hero-subheadline',
         'press-release': 'press-release',
         'landing-page-copy': 'landing-page',
         'sms-campaign-copy': 'sms-copy',
