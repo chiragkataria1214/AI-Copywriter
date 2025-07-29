@@ -1413,24 +1413,17 @@ export default function MetaAdGenerator() {
                                 </div>
                               </div>
                               <div className="flex items-center space-x-1">
-                                <FeatureTooltip
-                                  title="AI Revision Engine"
-                                  description="Get intelligent suggestions to improve this headline using AI feedback. Perfect for A/B testing and optimization."
-                                  feature="ai"
-                                  placement="top"
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                                  onClick={() => {
+                                    setSelectedItemForRevision({ type: 'headline', index });
+                                    setShowRevisionPanel(true);
+                                  }}
                                 >
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm"
-                                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                                    onClick={() => {
-                                      setSelectedItemForRevision({ type: 'headline', index });
-                                      setShowRevisionPanel(true);
-                                    }}
-                                  >
-                                    <Target size={14} />
-                                  </Button>
-                                </FeatureTooltip>
+                                  <Target size={14} />
+                                </Button>
                                 <Button 
                                   variant="ghost" 
                                   size="sm"
