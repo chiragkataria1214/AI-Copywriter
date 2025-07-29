@@ -2469,9 +2469,11 @@ export default function MetaAdGenerator() {
                         <div>
                           <Label className="text-sm font-medium text-gray-700">Product Context</Label>
                           <ProductSelection
-                            value={selectedProduct}
-                            onChange={setSelectedProduct}
-                            placeholder="Optional: Select product if relevant"
+                            landingPageType="single"
+                            selectedProduct={selectedProduct}
+                            setSelectedProduct={setSelectedProduct}
+                            selectedProducts={[]}
+                            setSelectedProducts={() => {}}
                           />
                         </div>
 
