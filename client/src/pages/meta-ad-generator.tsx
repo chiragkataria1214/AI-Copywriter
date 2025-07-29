@@ -2984,7 +2984,16 @@ export default function MetaAdGenerator() {
                       ].map((section) => (
                         <div key={section.department} className="space-y-3">
                           <div className="flex items-center space-x-2">
-                            <div className={`w-3 h-3 rounded-full bg-${section.color}-500`}></div>
+                            <div 
+                              className="w-3 h-3 rounded-full"
+                              style={{
+                                backgroundColor: section.color === 'blue' ? '#3b82f6' :
+                                               section.color === 'green' ? '#10b981' :
+                                               section.color === 'purple' ? '#8b5cf6' :
+                                               section.color === 'amber' ? '#f59e0b' :
+                                               section.color === 'pink' ? '#ec4899' : '#6b7280'
+                              }}
+                            ></div>
                             <h4 className="text-sm font-semibold text-gray-800 uppercase tracking-wide">
                               {section.department}
                             </h4>
