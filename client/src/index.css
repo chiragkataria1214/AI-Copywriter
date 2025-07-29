@@ -73,6 +73,20 @@
   }
 }
 
+/* Fix scrolling for main content containers */
+.main-content-container {
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  padding-bottom: 3rem;
+}
+
+/* Fix for tab content scrolling - ensure Generate button is accessible */
+.tab-content-scrollable {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  padding-bottom: 4rem;
+}
+
 @layer utilities {
   .jones-primary {
     color: var(--jones-primary);
