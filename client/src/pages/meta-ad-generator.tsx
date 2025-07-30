@@ -1463,6 +1463,11 @@ export default function MetaAdGenerator() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">All products</SelectItem>
+													 {Object.entries(products).map(([key, product]) => (
+														 <SelectItem key={key} value={key}>
+															 {(product as any).displayName || (product as any).name || key}
+														 </SelectItem>
+													 ))}
                             </SelectContent>
                           </Select>
                         </div>

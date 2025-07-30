@@ -420,4 +420,48 @@ router.get('/products', async (req, res) => {
   }
 });
 
+// Brand Guidelines configuration endpoint
+router.get("/api/config/brand-guidelines", async (req, res) => {
+  try {
+    const config = await storage.getTrainingConfiguration();
+    res.json(config.brandGuidelines || {});
+  } catch (error) {
+    console.error("Error fetching brand guidelines:", error);
+    res.status(500).json({ error: "Failed to fetch brand guidelines" });
+  }
+});
+
+// Copy Frameworks configuration endpoint
+router.get("/api/config/copy-frameworks", async (req, res) => {
+  try {
+    const config = await storage.getTrainingConfiguration();
+    res.json(config.copyFrameworks || {});
+  } catch (error) {
+    console.error("Error fetching copy frameworks:", error);
+    res.status(500).json({ error: "Failed to fetch copy frameworks" });
+  }
+});
+
+// Station Prompts configuration endpoint
+router.get("/api/config/station-prompts", async (req, res) => {
+  try {
+    const config = await storage.getTrainingConfiguration();
+    res.json(config.stationPrompts || {});
+  } catch (error) {
+    console.error("Error fetching station prompts:", error);
+    res.status(500).json({ error: "Failed to fetch station prompts" });
+  }
+});
+
+// Model Settings configuration endpoint
+router.get("/api/config/model-settings", async (req, res) => {
+  try {
+    const config = await storage.getTrainingConfiguration();
+    res.json(config.modelSettings || {});
+  } catch (error) {
+    console.error("Error fetching model settings:", error);
+    res.status(500).json({ error: "Failed to fetch model settings" });
+  }
+});
+
 export default router;
