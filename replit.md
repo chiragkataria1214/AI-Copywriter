@@ -6,7 +6,15 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
-**Latest Update - CRITICAL PRODUCTION FREEZE RESOLVED: Direct Textarea Implementation (July 29, 2025)**
+**Latest Update - Navigation Restructure: Separate Paid & Organic Social Tabs (July 30, 2025)**
+- **✅ NAVIGATION RESTRUCTURED**: Changed from 3 main tabs to 4 main tabs for clearer content organization
+- **✅ PAID SOCIAL TAB**: Contains sub-tabs for Ad Copy (existing functionality) and Static Ad (placeholder)
+- **✅ ORGANIC SOCIAL TAB**: Separate main tab for social media captions and story sequences (addresses user feedback that social content is organic, not paid)
+- **✅ LOGICAL SEPARATION**: Clear distinction between paid advertising content and organic social media content
+- **✅ IMPROVED UX**: More intuitive navigation structure matching user mental model of marketing content types
+- **✅ SCALABLE STRUCTURE**: Sub-tabs under Paid Social allow for future expansion of paid advertising features
+
+**Previous Update - CRITICAL PRODUCTION FREEZE RESOLVED: Direct Textarea Implementation (July 29, 2025)**
 - **✅ FREEZE ISSUE COMPLETELY RESOLVED**: User confirmed transcription functionality works perfectly in production after cache clearing
 - **✅ CACHE ISSUE IDENTIFIED**: Problem was browser cache serving old component version - incognito mode confirmed fix works
 - **✅ DIRECT TEXTAREA IMPLEMENTATION**: Embedded raw HTML textarea directly in main component to eliminate all deployment sync issues
