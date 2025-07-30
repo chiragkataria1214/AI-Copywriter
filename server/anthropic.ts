@@ -105,8 +105,8 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
   const safeTargetAudience = targetAudience || 'busy modern women';
   const safeSubPersona = subPersona || '';
   
-  // Safe access to system prompt with fallback
-  const baseSystemPrompt = trainingConfig?.systemPrompts?.adCopyGeneration || 
+  // Safe access to station prompt with fallback
+  const baseSystemPrompt = trainingConfig?.stationPrompts?.adCopy?.systemPrompt || 
     `You are an expert Meta ad copywriter specializing in Jones Road Beauty's brand voice. 
      Create authentic, engaging ad copy that balances brand storytelling ({brandPercent}%) with direct response ({drPercent}%).
      Target audience: {targetAudience}. Concept: {concept}{subPersona}.`;
@@ -194,7 +194,7 @@ EXISTING AD CREATIVE ANALYSIS:
 Analyze the uploaded ad creative image to extract key visual elements, text overlay, color scheme, brand elements, and overall messaging strategy. Use insights from this existing creative to inform your new ad copy generation while maintaining brand consistency.`;
   }
 
-  const userPrompt = trainingConfig.userPromptTemplates.adCopy
+  const userPrompt = trainingConfig.stationPrompts.adCopy.userPromptTemplate
     .replace('{transcription}', transcription)
     .replace('{landingPageContext}', landingPageContext) + momTargetingSection + customBriefSection + imageAnalysisSection;
 
@@ -972,7 +972,7 @@ Please revise the content applying the improvement instructions while maintainin
   }
 }
 
-export async function analyzeStaticAd(request: StaticAdAnalysisRequest, trainingConfig: TrainingConfig = defaultTrainingConfig) {
+export async function analyzeStaticAd(request: StaticAdAnalysisRequest, _trainingConfig: TrainingConfig = defaultTrainingConfig) {
   const { staticAdImage, concept, subPersona, brandDrBalance, selectedProduct } = request;
   
   const brandPercent = brandDrBalance;
@@ -988,7 +988,11 @@ export async function analyzeStaticAd(request: StaticAdAnalysisRequest, training
     hasDataPrefix: staticAdImage.startsWith('data:')
   });
 
-  const systemPrompt = `You are an expert marketing analyst and copywriter specializing in competitive analysis and adaptation for Jones Road Beauty.
+  // Get training configuration
+  const config = await import('./routes-training').then(m => m.getTrainingConfig());
+  
+  const systemPrompt = config?.stationPrompts?.staticAd?.systemPrompt || 
+    `You are an expert marketing analyst and copywriter specializing in competitive analysis and adaptation for Jones Road Beauty.
 
 JONES ROAD BEAUTY BRAND VOICE:
 - Core positioning: "Your Skin But Better" - natural, effortless enhancement
@@ -1086,7 +1090,11 @@ INSTRUCTIONS:
 }
 
 export async function generateCustomCopy(request: CustomCopyRequest) {
-  const systemPrompt = `You are a world-class copywriter and marketing strategist specializing in Jones Road Beauty's brand voice. You excel at creating detailed, strategic marketing briefs and copy that matches professional industry standards.
+  // Get training configuration
+  const config = await import('./routes-training').then(m => m.getTrainingConfig());
+  
+  const systemPrompt = config?.stationPrompts?.customRequest?.systemPrompt || 
+    `You are a world-class copywriter and marketing strategist specializing in Jones Road Beauty's brand voice. You excel at creating detailed, strategic marketing briefs and copy that matches professional industry standards.
 
 JONES ROAD BEAUTY BRAND VOICE:
 - Educational tone like Bobbi Brown, warm and approachable
@@ -1221,11 +1229,12 @@ export async function generateRetentionCopy(request: {
     apiKey: process.env.ANTHROPIC_API_KEY!,
   });
 
-  // Get training configuration
-  const trainingConfig = await import('./routes-training').then(m => m.getTrainingConfig());
+  // Get training configuration and use station prompts
+  const config = await import('./routes-training').then(m => m.getTrainingConfig());
   
   // Build system prompt for retention copy generation
-  const systemPrompt = `You are an expert ${request.platform?.toLowerCase() || 'email'} marketing copywriter specializing in customer retention and engagement campaigns for Jones Road Beauty.
+  const systemPrompt = config?.stationPrompts?.emailSmsRetention?.systemPrompt || 
+    `You are an expert ${request.platform?.toLowerCase() || 'email'} marketing copywriter specializing in customer retention and engagement campaigns for Jones Road Beauty.
 
 Jones Road Beauty Brand Guidelines:
 - "Your Skin But Better" philosophy - enhancing natural beauty, not masking it

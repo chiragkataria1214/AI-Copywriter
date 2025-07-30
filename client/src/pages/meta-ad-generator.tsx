@@ -3229,14 +3229,13 @@ export default function MetaAdGenerator() {
 
                   {trainingConfig ? (
                     <Tabs defaultValue="brand-guidelines" className="w-full">
-                      <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 p-2 h-auto">
+                      <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 p-2 h-auto">
                         <TabsTrigger value="brand-guidelines" className="text-xs sm:text-sm py-2 px-3">Brand Guidelines</TabsTrigger>
                         <TabsTrigger value="product-claims" className="text-xs sm:text-sm py-2 px-3">Product Claims</TabsTrigger>
                         <TabsTrigger value="personas" className="text-xs sm:text-sm py-2 px-3">Personas</TabsTrigger>
                         <TabsTrigger value="frameworks" className="text-xs sm:text-sm py-2 px-3">Copy Frameworks</TabsTrigger>
                         <TabsTrigger value="reviews" className="text-xs sm:text-sm py-2 px-3">Customer Reviews</TabsTrigger>
                         <TabsTrigger value="station-prompts" className="text-xs sm:text-sm py-2 px-3">Station Prompts</TabsTrigger>
-                        <TabsTrigger value="prompts" className="text-xs sm:text-sm py-2 px-3">System Prompts</TabsTrigger>
                         <TabsTrigger value="model" className="text-xs sm:text-sm py-2 px-3">Model Settings</TabsTrigger>
                       </TabsList>
 
@@ -4692,67 +4691,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                         </div>
                       </TabsContent>
 
-                      <TabsContent value="prompts" className="mt-4">
-                        <div className="space-y-6">
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <p className="text-sm text-blue-800 font-medium">System & User Prompts</p>
-                            <p className="text-sm text-blue-700 mt-1">
-                              These are the core instructions sent to Claude AI. Edit them to fine-tune how the AI generates copy.
-                            </p>
-                          </div>
-                          
-                          <div>
-                            <Label className="text-sm font-medium text-gray-900 mb-3 block">
-                              <span className="inline-flex items-center">
-                                <span className="w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
-                                System Prompt - Main Instructions
-                              </span>
-                            </Label>
-                            <p className="text-xs text-gray-600 mb-3">This tells Claude what role to play and what guidelines to follow</p>
-                            <Textarea 
-                              value={editingConfig?.systemPrompts?.adCopyGeneration || ''}
-                              onChange={(e) => setEditingConfig({
-                                ...editingConfig,
-                                systemPrompts: {
-                                  ...editingConfig.systemPrompts,
-                                  adCopyGeneration: e.target.value
-                                }
-                              })}
-                              className="text-gray-900 font-medium border-purple-200 focus:border-purple-400"
-                              rows={15}
-                              placeholder="You are an expert Meta ad copywriter specializing in Jones Road Beauty..."
-                              disabled={false}
-                            />
-                          </div>
-                          
-                          <div>
-                            <Label className="text-sm font-medium text-gray-900 mb-3 block">
-                              <span className="inline-flex items-center">
-                                <span className="w-3 h-3 bg-indigo-500 rounded-full mr-2"></span>
-                                User Prompt Template - Task Instructions
-                              </span>
-                            </Label>
-                            <p className="text-xs text-gray-600 mb-3">This template defines the specific task and format for each request</p>
-                            <Textarea 
-                              value={editingConfig?.userPromptTemplates?.adCopy || ''}
-                              onChange={(e) => setEditingConfig({
-                                ...editingConfig,
-                                userPromptTemplates: {
-                                  ...editingConfig.userPromptTemplates,
-                                  adCopy: e.target.value
-                                }
-                              })}
-                              className="text-gray-900 font-medium border-indigo-200 focus:border-indigo-400"
-                              rows={12}
-                              placeholder="Generate Meta ad copy based on this content:
 
-TRANSCRIPTION/CONTENT:
-{transcription}..."
-                              disabled={false}
-                            />
-                          </div>
-                        </div>
-                      </TabsContent>
 
                       <TabsContent value="model" className="mt-4">
                         <div className="space-y-6">
