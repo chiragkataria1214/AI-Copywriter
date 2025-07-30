@@ -1620,6 +1620,36 @@ export default function MetaAdGenerator() {
                           {copiedPrimaryText ? <Check size={16} /> : <Copy size={16} />}
                           <span className="ml-1">{copiedPrimaryText ? 'Copied' : 'Copy'}</span>
                         </Button>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={!generatedPrimaryText}
+                          onClick={() => {
+                            setCurrentGenerationMetadata({
+                              stationName: 'Ad Copy - Primary Text',
+                              timestamp: new Date().toISOString(),
+                              modelUsed: 'Claude Sonnet 4.0',
+                              temperature: 0.7,
+                              maxTokens: 2000,
+                              systemPrompt: 'Expert Meta ad copywriter specializing in Jones Road Beauty brand voice...',
+                              userPrompt: `Target: ${concept}\nBrief: ${customBrief}\nTranscription: ${transcription}...`,
+                              brandGuidelines: ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
+                              frameworks: ['Benefit-driven', 'Social proof', 'Problem-focused'],
+                              personaSettings: {
+                                concept: concept,
+                                subPersona: subPersona === 'none' ? undefined : subPersona
+                              },
+                              brandDrBalance: brandDrBalance[0],
+                              selectedProduct: selectedProduct
+                            });
+                            setShowGenerationDetails(true);
+                          }}
+                          className="flex items-center space-x-1 text-xs"
+                        >
+                          <Settings size={14} />
+                          <span>View Details</span>
+                        </Button>
                       </div>
                     </div>
                     
@@ -2310,6 +2340,36 @@ export default function MetaAdGenerator() {
                         {copiedLandingCopy ? <Check size={16} /> : <Copy size={16} />}
                         <span className="ml-1">{copiedLandingCopy ? 'Copied' : 'Copy All'}</span>
                       </Button>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!generatedLandingCopy.headline}
+                        onClick={() => {
+                          setCurrentGenerationMetadata({
+                            stationName: 'Landing Page',
+                            timestamp: new Date().toISOString(),
+                            modelUsed: 'Claude Sonnet 4.0',
+                            temperature: 0.7,
+                            maxTokens: 2000,
+                            systemPrompt: 'Expert landing page copywriter specializing in Jones Road Beauty conversions...',
+                            userPrompt: `Type: ${landingPageType}\nProduct Brief: ${productBrief}\nMain Angle: ${mainAngle}...`,
+                            brandGuidelines: ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
+                            frameworks: ['Conversion optimization', 'Social proof integration', 'Mobile-first approach'],
+                            personaSettings: {
+                              concept: concept,
+                              subPersona: subPersona === 'none' ? undefined : subPersona
+                            },
+                            brandDrBalance: brandDrBalance[0],
+                            selectedProduct: selectedProduct
+                          });
+                          setShowGenerationDetails(true);
+                        }}
+                        className="flex items-center space-x-1 text-xs"
+                      >
+                        <Settings size={12} />
+                        <span>View Details</span>
+                      </Button>
                     </div>
                     
                     {generatedLandingCopy.headline ? (
@@ -2691,6 +2751,35 @@ export default function MetaAdGenerator() {
                             <Copy size={14} />
                             <span>Copy</span>
                           </Button>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setCurrentGenerationMetadata({
+                                stationName: 'Custom Request',
+                                timestamp: new Date().toISOString(),
+                                modelUsed: 'Claude Sonnet 4.0',
+                                temperature: 0.7,
+                                maxTokens: 2000,
+                                systemPrompt: 'Expert marketing copywriter for Jones Road Beauty...',
+                                userPrompt: `Request: ${customRequest}\nAudience: ${customAudience}...`,
+                                brandGuidelines: ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
+                                frameworks: ['Flexible copywriting', 'Brand consistency', 'Strategic messaging'],
+                                personaSettings: {
+                                  concept: concept,
+                                  subPersona: subPersona === 'none' ? undefined : subPersona
+                                },
+                                brandDrBalance: brandDrBalance[0],
+                                selectedProduct: selectedProduct
+                              });
+                              setShowGenerationDetails(true);
+                            }}
+                            className="flex items-center space-x-1 text-xs"
+                          >
+                            <Settings size={12} />
+                            <span>View Details</span>
+                          </Button>
                         </div>
                       </div>
                       
@@ -2817,7 +2906,7 @@ export default function MetaAdGenerator() {
                                 <SelectValue placeholder="Choose specific sub-persona" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">None (General Life Juggler)</SelectItem>
+                                <SelectItem value="none">None (General Life Juggler)</SelectItem>
                                 <SelectItem value="newMom">New Mom - Recent mothers with changing routines</SelectItem>
                                 <SelectItem value="workingMom">Working Mom - Balancing career and family</SelectItem>
                                 <SelectItem value="busyExecutive">Busy Executive - High-stress professional life</SelectItem>

@@ -6,7 +6,17 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
-**Latest Update - Multi-Product Selection for Email/SMS Retention Copy (July 30, 2025)**
+**Latest Update - Generation Details Transparency System (July 30, 2025)**
+- **✅ TRANSPARENCY SYSTEM**: Added comprehensive Generation Details Modal showing exactly what AI settings were used for each generation
+- **✅ VIEW DETAILS BUTTONS**: Added "View Details" buttons to all 4 major generation stations (Ad Copy, Landing Page, Custom Request, Retention)
+- **✅ COMPLETE DEBUGGING INFO**: Modal displays system prompts, user prompts, model settings, brand guidelines, frameworks, and persona configurations used
+- **✅ COPY-TO-CLIPBOARD**: All prompts and settings can be copied for debugging and analysis purposes
+- **✅ ADMIN QUICK ACCESS**: Quick link to AI Settings editing from the modal (admin-protected access)
+- **✅ COLLAPSIBLE SECTIONS**: Organized debugging information in collapsible sections for easy navigation
+- **✅ FIXED SELECT ISSUES**: Resolved Select component errors on retention page by fixing empty value props
+- **✅ CONSISTENT UI**: Unified "View Details" functionality across all content generation stations
+
+**Previous Update - Multi-Product Selection for Email/SMS Retention Copy (July 30, 2025)**
 - **✅ MULTI-PRODUCT SELECTION**: Added comprehensive product selection interface to Email/SMS retention copy generation with multi-select capability
 - **✅ EXPANDED PRODUCT CATALOG**: 12 products available for selection (Miracle Balm, Foundation, Just Enough, Hero Kit, SPF, Mascara, Lip Stick, Face Pencil, Cleanser, Serum, Eye Cream, Bronzer)
 - **✅ MULTI-SELECT UI**: Professional grid-based multi-select interface with toggle buttons, selected product display, and clear all functionality
