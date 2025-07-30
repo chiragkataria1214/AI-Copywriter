@@ -151,6 +151,25 @@ export default function MetaAdGenerator() {
         .catch(err => console.error('Failed to load review stats:', err));
     }
   }, [effectiveUser]);
+
+  // Reset sub-persona when primary persona changes (fixes buggy dropdown behavior)
+  useEffect(() => {
+    const selectedPersona = personas[concept as keyof typeof personas];
+    if (selectedPersona?.subPersonas) {
+      const availableSubPersonas = Object.keys(selectedPersona.subPersonas);
+      if (availableSubPersonas.length > 0) {
+        // Set to first available sub-persona if current one is invalid
+        if (!availableSubPersonas.includes(subPersona)) {
+          setSubPersona(availableSubPersonas[0]);
+        }
+      } else {
+        // Reset sub-persona if no sub-personas available for this persona
+        setSubPersona('');
+      }
+    } else {
+      setSubPersona('');
+    }
+  }, [concept]);
   
   // Landing Page States
   const [landingPageType, setLandingPageType] = useState('listicle');

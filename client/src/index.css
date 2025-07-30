@@ -165,4 +165,28 @@
   *:hover {
     transform: none !important;
   }
+  
+  /* ADDITIONAL PERSONA SELECTION FIXES - Target specific buggy dropdowns */
+  /* Prevent any state conflicts in persona dropdowns */
+  .space-y-4 select,
+  .space-y-4 [data-radix-select-trigger],
+  .space-y-4 [data-radix-select-content],
+  .space-y-4 [data-radix-select-item] {
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
+  }
+  
+  /* Force stable states for persona selection */
+  [data-radix-select-trigger][aria-expanded="true"],
+  [data-radix-select-trigger][aria-expanded="false"] {
+    transition: none !important;
+    transform: none !important;
+  }
+  
+  /* Prevent visual flickering on persona dropdowns */
+  [role="combobox"][aria-expanded] {
+    transition: none !important;
+    animation: none !important;
+  }
 }
