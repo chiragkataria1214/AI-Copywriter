@@ -6,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SimpleSelect, SimpleSelectContent, SimpleSelectItem, SimpleSelectTrigger, SimpleSelectValue } from '@/components/ui/simple-select';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -19,6 +18,7 @@ import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'wouter';
 import { ProductSelection } from "@/components/ProductSelection";
+import { PersonaSelect, SubPersonaSelect } from "@/components/PersonaSelect";
 
 export default function MetaAdGenerator() {
   const [activeTab, setActiveTab] = useState('paid-social');
@@ -1196,31 +1196,31 @@ export default function MetaAdGenerator() {
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="concept" className="block text-sm font-medium text-gray-700 mb-2">Primary Persona</Label>
-                        <Select value={concept} onValueChange={setConcept}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
+                        <SimpleSelect value={concept} onValueChange={setConcept}>
+                          <SimpleSelectTrigger>
+                            <SimpleSelectValue />
+                          </SimpleSelectTrigger>
+                          <SimpleSelectContent>
                             {Object.entries(personas).map(([key, persona]) => (
-                              <SelectItem key={key} value={key}>{persona.label}</SelectItem>
+                              <SimpleSelectItem key={key} value={key}>{persona.label}</SimpleSelectItem>
                             ))}
-                          </SelectContent>
-                        </Select>
+                          </SimpleSelectContent>
+                        </SimpleSelect>
                       </div>
                       
                       {personas[concept as keyof typeof personas]?.subPersonas && Object.keys(personas[concept as keyof typeof personas].subPersonas).length > 0 && (
                         <div>
                           <Label htmlFor="subPersona" className="block text-sm font-medium text-gray-700 mb-2">Sub-Persona</Label>
-                          <Select value={subPersona} onValueChange={setSubPersona}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
+                          <SimpleSelect value={subPersona} onValueChange={setSubPersona}>
+                            <SimpleSelectTrigger>
+                              <SimpleSelectValue />
+                            </SimpleSelectTrigger>
+                            <SimpleSelectContent>
                               {Object.entries(personas[concept as keyof typeof personas].subPersonas).map(([key, subPersona]) => (
-                                <SelectItem key={key} value={key}>{(subPersona as any).label}</SelectItem>
+                                <SimpleSelectItem key={key} value={key}>{(subPersona as any).label}</SimpleSelectItem>
                               ))}
-                            </SelectContent>
-                          </Select>
+                            </SimpleSelectContent>
+                          </SimpleSelect>
                         </div>
                       )}
                       
@@ -1434,22 +1434,22 @@ export default function MetaAdGenerator() {
                           <Label className="text-sm font-medium text-gray-700">
                             Or choose from all products
                           </Label>
-                          <Select value={selectedProduct || "all"} onValueChange={(value) => setSelectedProduct(value === "all" ? "" : value)}>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="All products (no filtering)" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All products</SelectItem>
-                              <SelectItem value="miracle balm">Miracle Balm</SelectItem>
-                              <SelectItem value="foundation">What The Foundation</SelectItem>
-                              <SelectItem value="tinted moisturizer">Just Enough Tinted Moisturizer</SelectItem>
-                              <SelectItem value="hero kit">The Hero Kit</SelectItem>
-                              <SelectItem value="sunscreen">Everyday Sunscreen</SelectItem>
-                              <SelectItem value="mascara">What The Mascara</SelectItem>
-                              <SelectItem value="lip stick">Lip & Cheek Stick</SelectItem>
-                              <SelectItem value="face pencil">The Face Pencil</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <SimpleSelect value={selectedProduct || "all"} onValueChange={(value) => setSelectedProduct(value === "all" ? "" : value)}>
+                            <SimpleSelectTrigger className="w-full">
+                              <SimpleSelectValue placeholder="All products (no filtering)" />
+                            </SimpleSelectTrigger>
+                            <SimpleSelectContent>
+                              <SimpleSelectItem value="all">All products</SimpleSelectItem>
+                              <SimpleSelectItem value="miracle balm">Miracle Balm</SimpleSelectItem>
+                              <SimpleSelectItem value="foundation">What The Foundation</SimpleSelectItem>
+                              <SimpleSelectItem value="tinted moisturizer">Just Enough Tinted Moisturizer</SimpleSelectItem>
+                              <SimpleSelectItem value="hero kit">The Hero Kit</SimpleSelectItem>
+                              <SimpleSelectItem value="sunscreen">Everyday Sunscreen</SimpleSelectItem>
+                              <SimpleSelectItem value="mascara">What The Mascara</SimpleSelectItem>
+                              <SimpleSelectItem value="lip stick">Lip & Cheek Stick</SimpleSelectItem>
+                              <SimpleSelectItem value="face pencil">The Face Pencil</SimpleSelectItem>
+                            </SimpleSelectContent>
+                          </SimpleSelect>
                         </div>
                         
                         {selectedProduct && (
@@ -1731,21 +1731,21 @@ export default function MetaAdGenerator() {
                           {generatedHeadlines.length > 1 && (
                             <div className="flex items-center space-x-2">
                               <Label className="text-sm text-gray-600">Headline:</Label>
-                              <Select value={selectedHeadlineIndex.toString()} onValueChange={(value) => setSelectedHeadlineIndex(parseInt(value))}>
-                                <SelectTrigger className="w-48">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
+                              <SimpleSelect value={selectedHeadlineIndex.toString()} onValueChange={(value) => setSelectedHeadlineIndex(parseInt(value))}>
+                                <SimpleSelectTrigger className="w-48">
+                                  <SimpleSelectValue />
+                                </SimpleSelectTrigger>
+                                <SimpleSelectContent>
                                   {generatedHeadlines.map((headline, index) => (
-                                    <SelectItem key={index} value={index.toString()}>
+                                    <SimpleSelectItem key={index} value={index.toString()}>
                                       <div className="flex flex-col py-1">
                                         <span className="font-medium text-sm">{headline.framework}</span>
                                         <span className="text-xs text-gray-500 truncate">{headline.copy.substring(0, 35)}...</span>
                                       </div>
-                                    </SelectItem>
+                                    </SimpleSelectItem>
                                   ))}
-                                </SelectContent>
-                              </Select>
+                                </SimpleSelectContent>
+                              </SimpleSelect>
                             </div>
                           )}
                           <Badge variant="secondary" style={{ backgroundColor: '#f0f4ff', color: '#004182' }} className="text-sm font-medium px-3 py-1.5 border border-blue-200">
@@ -2210,63 +2210,63 @@ export default function MetaAdGenerator() {
                         <div className="space-y-4">
                           <div>
                             <Label className="text-sm font-medium text-gray-700">Platform</Label>
-                            <Select value={organicPlatform} onValueChange={setOrganicPlatform}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="instagram">Instagram</SelectItem>
-                                <SelectItem value="facebook">Facebook</SelectItem>
-                                <SelectItem value="tiktok">TikTok</SelectItem>
-                                <SelectItem value="multi-platform">Multi-Platform</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <SimpleSelect value={organicPlatform} onValueChange={setOrganicPlatform}>
+                              <SimpleSelectTrigger>
+                                <SimpleSelectValue />
+                              </SimpleSelectTrigger>
+                              <SimpleSelectContent>
+                                <SimpleSelectItem value="instagram">Instagram</SimpleSelectItem>
+                                <SimpleSelectItem value="facebook">Facebook</SimpleSelectItem>
+                                <SimpleSelectItem value="tiktok">TikTok</SimpleSelectItem>
+                                <SimpleSelectItem value="multi-platform">Multi-Platform</SimpleSelectItem>
+                              </SimpleSelectContent>
+                            </SimpleSelect>
                           </div>
                           
                           <div>
                             <Label className="text-sm font-medium text-gray-700">Content Goal</Label>
-                            <Select value={organicGoal} onValueChange={setOrganicGoal}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="product-education">Product Education</SelectItem>
-                                <SelectItem value="brand-awareness">Brand Awareness</SelectItem>
-                                <SelectItem value="community-building">Community Building</SelectItem>
-                                <SelectItem value="behind-scenes">Behind the Scenes</SelectItem>
-                                <SelectItem value="user-generated">User Generated Content</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <SimpleSelect value={organicGoal} onValueChange={setOrganicGoal}>
+                              <SimpleSelectTrigger>
+                                <SimpleSelectValue />
+                              </SimpleSelectTrigger>
+                              <SimpleSelectContent>
+                                <SimpleSelectItem value="product-education">Product Education</SimpleSelectItem>
+                                <SimpleSelectItem value="brand-awareness">Brand Awareness</SimpleSelectItem>
+                                <SimpleSelectItem value="community-building">Community Building</SimpleSelectItem>
+                                <SimpleSelectItem value="behind-scenes">Behind the Scenes</SimpleSelectItem>
+                                <SimpleSelectItem value="user-generated">User Generated Content</SimpleSelectItem>
+                              </SimpleSelectContent>
+                            </SimpleSelect>
                           </div>
 
                           <div>
                             <Label className="text-sm font-medium text-gray-700">Tone & Voice</Label>
-                            <Select value={organicTone} onValueChange={setOrganicTone}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="authentic-personal">Authentic & Personal</SelectItem>
-                                <SelectItem value="educational-expert">Educational & Expert</SelectItem>
-                                <SelectItem value="fun-playful">Fun & Playful</SelectItem>
-                                <SelectItem value="inspirational">Inspirational</SelectItem>
-                                <SelectItem value="conversational">Conversational</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <SimpleSelect value={organicTone} onValueChange={setOrganicTone}>
+                              <SimpleSelectTrigger>
+                                <SimpleSelectValue />
+                              </SimpleSelectTrigger>
+                              <SimpleSelectContent>
+                                <SimpleSelectItem value="authentic-personal">Authentic & Personal</SimpleSelectItem>
+                                <SimpleSelectItem value="educational-expert">Educational & Expert</SimpleSelectItem>
+                                <SimpleSelectItem value="fun-playful">Fun & Playful</SimpleSelectItem>
+                                <SimpleSelectItem value="inspirational">Inspirational</SimpleSelectItem>
+                                <SimpleSelectItem value="conversational">Conversational</SimpleSelectItem>
+                              </SimpleSelectContent>
+                            </SimpleSelect>
                           </div>
 
                           <div>
                             <Label className="text-sm font-medium text-gray-700">Number of Variations</Label>
-                            <Select value={captionVariations.toString()} onValueChange={(value) => setCaptionVariations(Number(value))}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="3">3 variations</SelectItem>
-                                <SelectItem value="5">5 variations</SelectItem>
-                                <SelectItem value="7">7 variations</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <SimpleSelect value={captionVariations.toString()} onValueChange={(value) => setCaptionVariations(Number(value))}>
+                              <SimpleSelectTrigger>
+                                <SimpleSelectValue />
+                              </SimpleSelectTrigger>
+                              <SimpleSelectContent>
+                                <SimpleSelectItem value="3">3 variations</SimpleSelectItem>
+                                <SimpleSelectItem value="5">5 variations</SimpleSelectItem>
+                                <SimpleSelectItem value="7">7 variations</SimpleSelectItem>
+                              </SimpleSelectContent>
+                            </SimpleSelect>
                           </div>
                         </div>
                       </CardContent>
@@ -2572,49 +2572,49 @@ export default function MetaAdGenerator() {
                         <div className="space-y-4">
                           <div>
                             <Label className="text-sm font-medium text-gray-700">Sequence Type</Label>
-                            <Select value={storySequenceType} onValueChange={setStorySequenceType}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="product-showcase">Product Showcase</SelectItem>
-                                <SelectItem value="tutorial">Tutorial/How-To</SelectItem>
-                                <SelectItem value="behind-scenes">Behind the Scenes</SelectItem>
-                                <SelectItem value="before-after">Before & After</SelectItem>
-                                <SelectItem value="day-in-life">Day in the Life</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <SimpleSelect value={storySequenceType} onValueChange={setStorySequenceType}>
+                              <SimpleSelectTrigger>
+                                <SimpleSelectValue />
+                              </SimpleSelectTrigger>
+                              <SimpleSelectContent>
+                                <SimpleSelectItem value="product-showcase">Product Showcase</SimpleSelectItem>
+                                <SimpleSelectItem value="tutorial">Tutorial/How-To</SimpleSelectItem>
+                                <SimpleSelectItem value="behind-scenes">Behind the Scenes</SimpleSelectItem>
+                                <SimpleSelectItem value="before-after">Before & After</SimpleSelectItem>
+                                <SimpleSelectItem value="day-in-life">Day in the Life</SimpleSelectItem>
+                              </SimpleSelectContent>
+                            </SimpleSelect>
                           </div>
                           
                           <div>
                             <Label className="text-sm font-medium text-gray-700">Story Length</Label>
-                            <Select value={storyLength.toString()} onValueChange={(value) => setStoryLength(Number(value))}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="3">3 slides</SelectItem>
-                                <SelectItem value="5">5 slides</SelectItem>
-                                <SelectItem value="7">7 slides</SelectItem>
-                                <SelectItem value="10">10 slides</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <SimpleSelect value={storyLength.toString()} onValueChange={(value) => setStoryLength(Number(value))}>
+                              <SimpleSelectTrigger>
+                                <SimpleSelectValue />
+                              </SimpleSelectTrigger>
+                              <SimpleSelectContent>
+                                <SimpleSelectItem value="3">3 slides</SimpleSelectItem>
+                                <SimpleSelectItem value="5">5 slides</SimpleSelectItem>
+                                <SimpleSelectItem value="7">7 slides</SimpleSelectItem>
+                                <SimpleSelectItem value="10">10 slides</SimpleSelectItem>
+                              </SimpleSelectContent>
+                            </SimpleSelect>
                           </div>
 
                           <div>
                             <Label className="text-sm font-medium text-gray-700">Tone & Voice</Label>
-                            <Select value={storyTone} onValueChange={setStoryTone}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="authentic-personal">Authentic & Personal</SelectItem>
-                                <SelectItem value="educational-expert">Educational & Expert</SelectItem>
-                                <SelectItem value="fun-playful">Fun & Playful</SelectItem>
-                                <SelectItem value="inspirational">Inspirational</SelectItem>
-                                <SelectItem value="conversational">Conversational</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <SimpleSelect value={storyTone} onValueChange={setStoryTone}>
+                              <SimpleSelectTrigger>
+                                <SimpleSelectValue />
+                              </SimpleSelectTrigger>
+                              <SimpleSelectContent>
+                                <SimpleSelectItem value="authentic-personal">Authentic & Personal</SimpleSelectItem>
+                                <SimpleSelectItem value="educational-expert">Educational & Expert</SimpleSelectItem>
+                                <SimpleSelectItem value="fun-playful">Fun & Playful</SimpleSelectItem>
+                                <SimpleSelectItem value="inspirational">Inspirational</SimpleSelectItem>
+                                <SimpleSelectItem value="conversational">Conversational</SimpleSelectItem>
+                              </SimpleSelectContent>
+                            </SimpleSelect>
                           </div>
                         </div>
                       </CardContent>
@@ -2824,31 +2824,31 @@ export default function MetaAdGenerator() {
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="concept" className="block text-sm font-medium text-gray-700 mb-2">Primary Persona</Label>
-                        <Select value={concept} onValueChange={setConcept}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
+                        <SimpleSelect value={concept} onValueChange={setConcept}>
+                          <SimpleSelectTrigger>
+                            <SimpleSelectValue />
+                          </SimpleSelectTrigger>
+                          <SimpleSelectContent>
                             {Object.entries(personas).map(([key, persona]) => (
-                              <SelectItem key={key} value={key}>{persona.label}</SelectItem>
+                              <SimpleSelectItem key={key} value={key}>{persona.label}</SimpleSelectItem>
                             ))}
-                          </SelectContent>
-                        </Select>
+                          </SimpleSelectContent>
+                        </SimpleSelect>
                       </div>
                       
                       {personas[concept as keyof typeof personas]?.subPersonas && Object.keys(personas[concept as keyof typeof personas].subPersonas).length > 0 && (
                         <div>
                           <Label htmlFor="subPersona" className="block text-sm font-medium text-gray-700 mb-2">Sub-Persona</Label>
-                          <Select value={subPersona} onValueChange={setSubPersona}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
+                          <SimpleSelect value={subPersona} onValueChange={setSubPersona}>
+                            <SimpleSelectTrigger>
+                              <SimpleSelectValue />
+                            </SimpleSelectTrigger>
+                            <SimpleSelectContent>
                               {Object.entries(personas[concept as keyof typeof personas].subPersonas).map(([key, subPersona]) => (
-                                <SelectItem key={key} value={key}>{(subPersona as any).label}</SelectItem>
+                                <SimpleSelectItem key={key} value={key}>{(subPersona as any).label}</SimpleSelectItem>
                               ))}
-                            </SelectContent>
-                          </Select>
+                            </SimpleSelectContent>
+                          </SimpleSelect>
                         </div>
                       )}
                     </div>
@@ -2934,22 +2934,22 @@ export default function MetaAdGenerator() {
                           <Label className="text-sm font-medium text-gray-700">
                             Or choose from all products
                           </Label>
-                          <Select value={selectedProduct || "all"} onValueChange={(value) => setSelectedProduct(value === "all" ? "" : value)}>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="All products (no filtering)" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All products</SelectItem>
-                              <SelectItem value="miracle balm">Miracle Balm</SelectItem>
-                              <SelectItem value="foundation">What The Foundation</SelectItem>
-                              <SelectItem value="tinted moisturizer">Just Enough Tinted Moisturizer</SelectItem>
-                              <SelectItem value="hero kit">The Hero Kit</SelectItem>
-                              <SelectItem value="sunscreen">Everyday Sunscreen</SelectItem>
-                              <SelectItem value="mascara">What The Mascara</SelectItem>
-                              <SelectItem value="lip stick">Lip & Cheek Stick</SelectItem>
-                              <SelectItem value="face pencil">The Face Pencil</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <SimpleSelect value={selectedProduct || "all"} onValueChange={(value) => setSelectedProduct(value === "all" ? "" : value)}>
+                            <SimpleSelectTrigger className="w-full">
+                              <SimpleSelectValue placeholder="All products (no filtering)" />
+                            </SimpleSelectTrigger>
+                            <SimpleSelectContent>
+                              <SimpleSelectItem value="all">All products</SimpleSelectItem>
+                              <SimpleSelectItem value="miracle balm">Miracle Balm</SimpleSelectItem>
+                              <SimpleSelectItem value="foundation">What The Foundation</SimpleSelectItem>
+                              <SimpleSelectItem value="tinted moisturizer">Just Enough Tinted Moisturizer</SimpleSelectItem>
+                              <SimpleSelectItem value="hero kit">The Hero Kit</SimpleSelectItem>
+                              <SimpleSelectItem value="sunscreen">Everyday Sunscreen</SimpleSelectItem>
+                              <SimpleSelectItem value="mascara">What The Mascara</SimpleSelectItem>
+                              <SimpleSelectItem value="lip stick">Lip & Cheek Stick</SimpleSelectItem>
+                              <SimpleSelectItem value="face pencil">The Face Pencil</SimpleSelectItem>
+                            </SimpleSelectContent>
+                          </SimpleSelect>
                         </div>
                         
                         {selectedProduct && (
@@ -3067,21 +3067,21 @@ export default function MetaAdGenerator() {
                           <div className="space-y-3">
                             <div>
                               <Label className="text-xs font-medium text-gray-600 mb-2 block">Chosen Headline</Label>
-                              <Select value={selectedHeadlineIndex.toString()} onValueChange={(value) => setSelectedHeadlineIndex(parseInt(value))}>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
+                              <SimpleSelect value={selectedHeadlineIndex.toString()} onValueChange={(value) => setSelectedHeadlineIndex(parseInt(value))}>
+                                <SimpleSelectTrigger className="w-full">
+                                  <SimpleSelectValue />
+                                </SimpleSelectTrigger>
+                                <SimpleSelectContent>
                                   {generatedHeadlines.map((headline, index) => (
-                                    <SelectItem key={index} value={index.toString()}>
+                                    <SimpleSelectItem key={index} value={index.toString()}>
                                       <div className="flex flex-col py-1">
                                         <span className="font-medium text-sm">{headline.framework}</span>
                                         <span className="text-xs text-gray-500">{headline.copy}</span>
                                       </div>
-                                    </SelectItem>
+                                    </SimpleSelectItem>
                                   ))}
-                                </SelectContent>
-                              </Select>
+                                </SimpleSelectContent>
+                              </SimpleSelect>
                             </div>
                             
                             {generatedPrimaryText && (
@@ -3443,17 +3443,17 @@ export default function MetaAdGenerator() {
                       <div className="space-y-3">
                         <div>
                           <Label className="text-sm font-medium text-gray-700">Audience</Label>
-                          <Select value={concept} onValueChange={setConcept}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="lifeJuggler">Life Juggler</SelectItem>
-                              <SelectItem value="cleanBeautyEnthusiast">Clean Beauty Enthusiast</SelectItem>
-                              <SelectItem value="timeConstrainedProfessional">Time-Constrained Professional</SelectItem>
-                              <SelectItem value="naturalBeautySeeker">Natural Beauty Seeker</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <SimpleSelect value={concept} onValueChange={setConcept}>
+                            <SimpleSelectTrigger>
+                              <SimpleSelectValue />
+                            </SimpleSelectTrigger>
+                            <SimpleSelectContent>
+                              <SimpleSelectItem value="lifeJuggler">Life Juggler</SimpleSelectItem>
+                              <SimpleSelectItem value="cleanBeautyEnthusiast">Clean Beauty Enthusiast</SimpleSelectItem>
+                              <SimpleSelectItem value="timeConstrainedProfessional">Time-Constrained Professional</SimpleSelectItem>
+                              <SimpleSelectItem value="naturalBeautySeeker">Natural Beauty Seeker</SimpleSelectItem>
+                            </SimpleSelectContent>
+                          </SimpleSelect>
                         </div>
 
                         <div>
@@ -3668,32 +3668,32 @@ export default function MetaAdGenerator() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label className="text-sm font-medium text-gray-700">Target Audience</Label>
-                        <Select value={concept} onValueChange={setConcept}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select audience" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="lifeJuggler">Life Juggler</SelectItem>
-                            <SelectItem value="cleanBeautyEnthusiast">Clean Beauty Enthusiast</SelectItem>
-                            <SelectItem value="timeConstrainedProfessional">Time-Constrained Professional</SelectItem>
-                            <SelectItem value="naturalBeautySeeker">Natural Beauty Seeker</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <SimpleSelect value={concept} onValueChange={setConcept}>
+                          <SimpleSelectTrigger>
+                            <SimpleSelectValue placeholder="Select audience" />
+                          </SimpleSelectTrigger>
+                          <SimpleSelectContent>
+                            <SimpleSelectItem value="lifeJuggler">Life Juggler</SimpleSelectItem>
+                            <SimpleSelectItem value="cleanBeautyEnthusiast">Clean Beauty Enthusiast</SimpleSelectItem>
+                            <SimpleSelectItem value="timeConstrainedProfessional">Time-Constrained Professional</SimpleSelectItem>
+                            <SimpleSelectItem value="naturalBeautySeeker">Natural Beauty Seeker</SimpleSelectItem>
+                          </SimpleSelectContent>
+                        </SimpleSelect>
                       </div>
 
                       <div>
                         <Label className="text-sm font-medium text-gray-700">Sub-Persona</Label>
-                        <Select value={subPersona} onValueChange={setSubPersona}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select sub-persona" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="newMom">New Mom</SelectItem>
-                            <SelectItem value="workingMom">Working Mom</SelectItem>
-                            <SelectItem value="busyProfessional">Busy Professional</SelectItem>
-                            <SelectItem value="naturalBeautyLover">Natural Beauty Lover</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <SimpleSelect value={subPersona} onValueChange={setSubPersona}>
+                          <SimpleSelectTrigger>
+                            <SimpleSelectValue placeholder="Select sub-persona" />
+                          </SimpleSelectTrigger>
+                          <SimpleSelectContent>
+                            <SimpleSelectItem value="newMom">New Mom</SimpleSelectItem>
+                            <SimpleSelectItem value="workingMom">Working Mom</SimpleSelectItem>
+                            <SimpleSelectItem value="busyProfessional">Busy Professional</SimpleSelectItem>
+                            <SimpleSelectItem value="naturalBeautyLover">Natural Beauty Lover</SimpleSelectItem>
+                          </SimpleSelectContent>
+                        </SimpleSelect>
                       </div>
                     </div>
 
@@ -5009,18 +5009,18 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                 </div>
                                 <div className="w-48">
                                   <Label htmlFor="product-filter">Filter by Product</Label>
-                                  <Select>
-                                    <SelectTrigger className="mt-1">
-                                      <SelectValue placeholder="All Products" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="all">All Products</SelectItem>
-                                      <SelectItem value="mascara">What The Mascara (5,659 reviews)</SelectItem>
-                                      <SelectItem value="foundation">What The Foundation (5,654 reviews)</SelectItem>
-                                      <SelectItem value="sunscreen">What The SPF (4,933 reviews)</SelectItem>
-                                      <SelectItem value="miracle-balm">Miracle Balm (4,923 reviews)</SelectItem>
-                                    </SelectContent>
-                                  </Select>
+                                  <SimpleSelect>
+                                    <SimpleSelectTrigger className="mt-1">
+                                      <SimpleSelectValue placeholder="All Products" />
+                                    </SimpleSelectTrigger>
+                                    <SimpleSelectContent>
+                                      <SimpleSelectItem value="all">All Products</SimpleSelectItem>
+                                      <SimpleSelectItem value="mascara">What The Mascara (5,659 reviews)</SimpleSelectItem>
+                                      <SimpleSelectItem value="foundation">What The Foundation (5,654 reviews)</SimpleSelectItem>
+                                      <SimpleSelectItem value="sunscreen">What The SPF (4,933 reviews)</SimpleSelectItem>
+                                      <SimpleSelectItem value="miracle-balm">Miracle Balm (4,923 reviews)</SimpleSelectItem>
+                                    </SimpleSelectContent>
+                                  </SimpleSelect>
                                 </div>
                               </div>
 
