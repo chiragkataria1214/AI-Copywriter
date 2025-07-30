@@ -24,7 +24,21 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
-  return await res.json();
+  
+  // Check if response is JSON by content type
+  const contentType = res.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    return await res.json();
+  } else {
+    // If not JSON, try to parse as text and handle gracefully
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.error('Response is not valid JSON:', text.substring(0, 200));
+      throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}...`);
+    }
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

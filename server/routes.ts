@@ -699,11 +699,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Retention copy request:', { keyMessage, platform, tone, audience, goal, campaignType, cta, urgencyLevel, contentLength });
       
       if (!process.env.ANTHROPIC_API_KEY) {
-        return res.status(400).json({ message: 'Anthropic API key not configured' });
+        console.error('ANTHROPIC_API_KEY missing');
+        return res.status(400).json({ error: 'Anthropic API key not configured' });
       }
       
       if (!keyMessage || !keyMessage.trim()) {
-        return res.status(400).json({ message: 'Key message is required' });
+        console.error('Key message missing');
+        return res.status(400).json({ error: 'Key message is required' });
       }
       
       const result = await generateRetentionCopy({
@@ -725,13 +727,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         useJonesBrandGuide
       });
       
-      res.json({
+      res.status(200).json({
         response: result.response,
         debugInfo: result.debugInfo
       });
     } catch (error) {
       console.error('Retention copy generation error:', error);
-      res.status(500).json({ error: 'Failed to generate retention copy' });
+      // Ensure we always return JSON, never HTML
+      res.status(500).json({ 
+        error: 'Failed to generate retention copy',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

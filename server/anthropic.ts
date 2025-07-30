@@ -1326,6 +1326,10 @@ PREVIEW: [Preview text that appears after subject]
 Make it authentic to Jones Road Beauty's "Your Skin But Better" philosophy while being highly effective for customer retention.`;
 
   try {
+    if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === 'dummy-key') {
+      throw new Error('Anthropic API key not configured properly');
+    }
+
     const response = await anthropic.messages.create({
       model: DEFAULT_MODEL_STR,
       system: systemPrompt,
@@ -1334,6 +1338,10 @@ Make it authentic to Jones Road Beauty's "Your Skin But Better" philosophy while
     });
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
+    
+    if (!content || content.trim().length === 0) {
+      throw new Error('Received empty response from Anthropic API');
+    }
     
     return {
       response: content.trim(),
@@ -1346,6 +1354,20 @@ Make it authentic to Jones Road Beauty's "Your Skin But Better" philosophy while
     };
   } catch (error) {
     console.error('Retention copy generation error:', error);
-    throw new Error('Failed to generate retention copy');
+    
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('API key')) {
+        throw new Error('API key configuration error: ' + error.message);
+      } else if (error.message.includes('rate_limit')) {
+        throw new Error('API rate limit exceeded. Please try again in a moment.');
+      } else if (error.message.includes('quota')) {
+        throw new Error('API quota exceeded. Please check your Anthropic account.');
+      } else {
+        throw new Error('Anthropic API error: ' + error.message);
+      }
+    }
+    
+    throw new Error('Failed to generate retention copy due to an unknown error');
   }
 }
