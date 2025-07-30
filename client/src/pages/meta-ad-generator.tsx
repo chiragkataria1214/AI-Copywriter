@@ -910,7 +910,7 @@ export default function MetaAdGenerator() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="flex w-full mb-6 sm:mb-8">
-            <TabsList className="grid grid-cols-4 flex-1">
+            <TabsList className="grid grid-cols-3 flex-1">
               <TabsTrigger value="paid-social" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
                 <Sparkles size={16} />
                 <span className="text-xs sm:text-sm">Paid Social</span>
@@ -918,10 +918,6 @@ export default function MetaAdGenerator() {
               <TabsTrigger value="landing" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
                 <FileText size={16} />
                 <span className="text-xs sm:text-sm">Landing Page</span>
-              </TabsTrigger>
-              <TabsTrigger value="static-ad" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
-                <Camera size={16} />
-                <span className="text-xs sm:text-sm">Static Ad</span>
               </TabsTrigger>
               <TabsTrigger value="custom" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
                 <Brain size={16} />
@@ -943,10 +939,14 @@ export default function MetaAdGenerator() {
             {/* Sub-tabs for different types of paid social content */}
             <Tabs value={paidSocialSubTab} onValueChange={setPaidSocialSubTab} className="w-full">
               <div className="flex justify-center mb-6">
-                <TabsList className="grid grid-cols-2 w-80">
+                <TabsList className="grid grid-cols-3 w-auto">
                   <TabsTrigger value="ad-copy" className="flex items-center space-x-2">
                     <Sparkles size={16} />
                     <span>Ad Copy</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="static-ad" className="flex items-center space-x-2">
+                    <Camera size={16} />
+                    <span>Static Ad</span>
                   </TabsTrigger>
                   <TabsTrigger value="social-content" className="flex items-center space-x-2">
                     <Users size={16} />
@@ -1772,6 +1772,15 @@ export default function MetaAdGenerator() {
 
               </div>
             </div>
+              </TabsContent>
+
+              {/* Static Ad Sub-Tab */}
+              <TabsContent value="static-ad">
+                <div className="text-center py-16">
+                  <Camera size={64} className="mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-600 mb-2">Static Ad Analyzer</h3>
+                  <p className="text-gray-500">Coming soon - Upload and analyze static ad creatives</p>
+                </div>
               </TabsContent>
 
               {/* Social Content Sub-Tab */}
