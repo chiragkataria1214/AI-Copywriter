@@ -1212,6 +1212,7 @@ Create copy that fulfills this request while maintaining Jones Road Beauty's aut
 export async function generateRetentionCopy(request: {
   keyMessage: string;
   platform: string;
+  selectedProducts?: string[];
   audience?: string;
   goal?: string;
   campaignType?: string;

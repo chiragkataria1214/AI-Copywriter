@@ -680,6 +680,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { 
         keyMessage, 
         platform, 
+        selectedProducts,
         audience, 
         goal, 
         campaignType, 
@@ -709,6 +710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await generateRetentionCopy({
         keyMessage: keyMessage.trim(),
         platform,
+        selectedProducts,
         audience,
         goal,
         campaignType,

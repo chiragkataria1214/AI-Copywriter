@@ -221,6 +221,7 @@ export default function MetaAdGenerator() {
   // Retention Tab States
   const [retentionKeyMessage, setRetentionKeyMessage] = useState('');
   const [retentionPlatform, setRetentionPlatform] = useState('Email');
+  const [retentionSelectedProducts, setRetentionSelectedProducts] = useState<string[]>([]);
   const [retentionAudience, setRetentionAudience] = useState('General audience');
   const [retentionGoal, setRetentionGoal] = useState('Drive Sales');
   const [retentionCampaignType, setRetentionCampaignType] = useState('Promo');
@@ -736,6 +737,7 @@ export default function MetaAdGenerator() {
         body: {
           keyMessage: retentionKeyMessage,
           platform: retentionPlatform,
+          selectedProducts: retentionSelectedProducts,
           audience: retentionAudience,
           goal: retentionGoal,
           campaignType: retentionCampaignType,
@@ -2763,6 +2765,101 @@ export default function MetaAdGenerator() {
                             <SelectItem value="SMS">SMS</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+
+                      {/* Product Selection for Retention */}
+                      <div>
+                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                          Products to Feature (Multi-Select)
+                        </Label>
+                        <p className="text-xs text-gray-500 mb-3">
+                          Select products to mention in your {retentionPlatform.toLowerCase()} copy. Email/SMS campaigns often feature multiple products.
+                        </p>
+                        
+                        {/* Quick Select Buttons */}
+                        <div className="grid grid-cols-2 gap-2 mb-4">
+                          {[
+                            { value: 'miracle-balm', label: 'Miracle Balm' },
+                            { value: 'foundation', label: 'What The Foundation' },
+                            { value: 'tinted-moisturizer', label: 'Just Enough' },
+                            { value: 'hero-kit', label: 'The Hero Kit' },
+                            { value: 'sunscreen', label: 'What The SPF' },
+                            { value: 'mascara', label: 'What The Mascara' },
+                            { value: 'lip-stick', label: 'Lip & Cheek Stick' },
+                            { value: 'face-pencil', label: 'The Face Pencil' },
+                            { value: 'cleanser', label: 'What The Cleanser' },
+                            { value: 'serum', label: 'Vitamin C Serum' },
+                            { value: 'eye-cream', label: 'Under Eye Rescue' },
+                            { value: 'bronzer', label: 'Cool Bronzer' }
+                          ].map((product) => (
+                            <Button
+                              key={product.value}
+                              variant={retentionSelectedProducts.includes(product.value) ? "default" : "outline"}
+                              size="sm"
+                              className={`text-xs px-2 py-2 h-auto justify-start ${
+                                retentionSelectedProducts.includes(product.value)
+                                  ? 'bg-[#004182] text-white border-[#004182]' 
+                                  : 'hover:bg-gray-50'
+                              }`}
+                              onClick={() => {
+                                if (retentionSelectedProducts.includes(product.value)) {
+                                  setRetentionSelectedProducts(retentionSelectedProducts.filter(p => p !== product.value));
+                                } else {
+                                  setRetentionSelectedProducts([...retentionSelectedProducts, product.value]);
+                                }
+                              }}
+                            >
+                              {product.label}
+                            </Button>
+                          ))}
+                        </div>
+                        
+                        {/* Selected Products Display */}
+                        {retentionSelectedProducts.length > 0 && (
+                          <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                            <p className="text-xs font-medium text-blue-900 mb-2">
+                              Selected Products ({retentionSelectedProducts.length}):
+                            </p>
+                            <div className="flex flex-wrap gap-1">
+                              {retentionSelectedProducts.map((productValue) => {
+                                const productLabel = {
+                                  'miracle-balm': 'Miracle Balm',
+                                  'foundation': 'What The Foundation',
+                                  'tinted-moisturizer': 'Just Enough',
+                                  'hero-kit': 'The Hero Kit',
+                                  'sunscreen': 'What The SPF',
+                                  'mascara': 'What The Mascara',
+                                  'lip-stick': 'Lip & Cheek Stick',
+                                  'face-pencil': 'The Face Pencil',
+                                  'cleanser': 'What The Cleanser',
+                                  'serum': 'Vitamin C Serum',
+                                  'eye-cream': 'Under Eye Rescue',
+                                  'bronzer': 'Cool Bronzer'
+                                }[productValue] || productValue;
+                                
+                                return (
+                                  <Badge key={productValue} variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                                    {productLabel}
+                                  </Badge>
+                                );
+                              })}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs text-blue-700 hover:text-blue-900 mt-2 h-6 p-0"
+                              onClick={() => setRetentionSelectedProducts([])}
+                            >
+                              Clear all selections
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {retentionSelectedProducts.length === 0 && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            No products selected - AI will generate general copy without specific product focus
+                          </p>
+                        )}
                       </div>
 
                       {/* Optional Fields */}
