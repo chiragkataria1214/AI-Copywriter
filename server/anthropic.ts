@@ -105,18 +105,26 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
   const safeTargetAudience = targetAudience || 'busy modern women';
   const safeSubPersona = subPersona || '';
   
-  // Safe access to station prompt with fallback
+  // Build comprehensive AI Settings context
+  const aiSettingsContext = buildAISettingsContext(trainingConfig, {
+    concept: safeConcept,
+    subPersona: safeSubPersona,
+    selectedProduct,
+    brandDrBalance: safeBrandDrBalance,
+    useJonesBrandGuide
+  });
+
+  // Safe access to station prompt with AI Settings integration
   const baseSystemPrompt = trainingConfig?.stationPrompts?.adCopy?.systemPrompt || 
     `You are an expert Meta ad copywriter specializing in Jones Road Beauty's brand voice. 
-     Create authentic, engaging ad copy that balances brand storytelling ({brandPercent}%) with direct response ({drPercent}%).
-     Target audience: {targetAudience}. Concept: {concept}{subPersona}.`;
+     Create authentic, engaging ad copy that balances brand storytelling with direct response tactics.
+     Target audience: {targetAudience}.`;
   
-  const systemPrompt = baseSystemPrompt
-    .replace('{brandPercent}', brandPercent.toString())
-    .replace('{drPercent}', drPercent.toString())
-    .replace('{targetAudience}', safeTargetAudience)
-    .replace('{concept}', safeConcept)
-    .replace('{subPersona}', safeSubPersona ? ` (${safeSubPersona})` : '');
+  const systemPrompt = `${baseSystemPrompt}
+
+${aiSettingsContext}
+
+TARGET AUDIENCE: ${safeTargetAudience}`;
 
   // Fetch landing page content if URL is provided
   let landingPageContent = '';
@@ -363,21 +371,21 @@ Analyze the uploaded ad creative image to extract key visual elements, text over
   }
 }
 
-export async function generateLandingPageCopy(request: LandingPageRequest) {
+export async function generateLandingPageCopy(request: LandingPageRequest, trainingConfig: TrainingConfig = defaultTrainingConfig) {
   const { landingPageType, productBrief, concept, subPersona, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle, transcription } = request;
   
-  const brandPercent = brandDrBalance;
-  const drPercent = 100 - brandPercent;
+  const safeBrandDrBalance = brandDrBalance || 50;
+  const safeConcept = concept || 'lifeJuggler';
+  const safeSubPersona = subPersona || '';
   
-  // Get training configuration
-  let config = null;
-  try {
-    const { getTrainingConfig } = await import('./routes-training');
-    config = await getTrainingConfig();
-  } catch (error) {
-    console.log('Using default training config for landing pages');
-    config = null;
-  }
+  // Build comprehensive AI Settings context
+  const aiSettingsContext = buildAISettingsContext(trainingConfig, {
+    concept: safeConcept,
+    subPersona: safeSubPersona,
+    selectedProduct,
+    brandDrBalance: safeBrandDrBalance,
+    useJonesBrandGuide: true
+  });
   
   // Get customer review insights if product is selected
   let reviewInsights = '';
@@ -1106,51 +1114,36 @@ INSTRUCTIONS:
   }
 }
 
-export async function generateCustomCopy(request: CustomCopyRequest) {
-  // Get training configuration
-  const config = await import('./routes-training').then(m => m.getTrainingConfig());
+export async function generateCustomCopy(request: CustomCopyRequest, trainingConfig: TrainingConfig = defaultTrainingConfig) {
+  const { customRequest, concept, subPersona, brandDrBalance, selectedProduct, useJonesBrandGuide } = request;
   
-  const systemPrompt = config?.stationPrompts?.customRequest?.systemPrompt || 
-    `You are a world-class copywriter and marketing strategist specializing in Jones Road Beauty's brand voice. You excel at creating detailed, strategic marketing briefs and copy that matches professional industry standards.
+  const safeBrandDrBalance = brandDrBalance || 50;
+  const safeConcept = concept || 'lifeJuggler';
+  const safeSubPersona = subPersona || '';
+  
+  // Build comprehensive AI Settings context
+  const aiSettingsContext = buildAISettingsContext(trainingConfig, {
+    concept: safeConcept,
+    subPersona: safeSubPersona,
+    selectedProduct,
+    brandDrBalance: safeBrandDrBalance,
+    useJonesBrandGuide
+  });
+  
+  const systemPrompt = `${trainingConfig?.stationPrompts?.customRequest?.systemPrompt || 
+    'You are a world-class copywriter and marketing strategist specializing in Jones Road Beauty brand voice.'}
 
-JONES ROAD BEAUTY BRAND VOICE:
-- Educational tone like Bobbi Brown, warm and approachable
-- "Make up, Simplified" philosophy - clean, uncomplicated messaging
-- Authentic and genuine, never pushy or aggressive
-- Focus on enhancing natural beauty, not covering it up
-- Speak to real women with real lives
-- Professional yet relatable expertise
-
-AUDIENCE PERSONAS:
-Life Juggler: Busy women managing multiple responsibilities who want simple, effective beauty solutions
-Clean Beauty Enthusiast: Health-conscious consumers seeking natural, safe beauty products
-Time-Constrained Professional: Career-focused women needing quick, polished looks
-Natural Beauty Seeker: Women wanting to enhance rather than mask their natural features
+${aiSettingsContext}
 
 OUTPUT FORMATTING GUIDELINES:
 - Use clean, readable formatting without special characters like asterisks, hashtags, or markdown
 - Structure content with clear section headers using plain text
-- Use numbered lists and bullet points with simple dashes or numbers
-- Include specific examples and references (like competitor analysis)
-- Provide comprehensive strategic recommendations
-- Use professional marketing terminology and structure
-- Include actionable implementation details
-- Break down complex concepts into clear, organized sections
-- Reference specific design elements, copy blocks, and user experience details
-- Maintain the strategic depth and professional format of marketing briefs
+- Provide comprehensive strategic recommendations with clear implementation details
+- Match the detailed formatting and strategic depth of professional marketing briefs
 - Output should be clean plain text that displays properly without formatting characters
 
 YOUR TASK:
-Create copy that fulfills the user's specific request while maintaining Jones Road Beauty's authentic brand voice AND matching the detailed, professional format style they prefer. Structure your response to match the comprehensive, strategic format of their input.
-
-GUIDELINES:
-- Always maintain Jones Road's warm, educational tone
-- Focus on benefits that matter to the target audience
-- Use natural, conversational language within professional structure
-- Be specific and helpful, not generic
-- Include authentic touches that feel genuine
-- Match the detailed formatting and strategic depth of the user's style
-- Provide comprehensive recommendations with clear implementation details`;
+Create copy that fulfills the user's specific request while maintaining Jones Road Beauty's authentic brand voice.`;
 
   // Define audience context based on concept
   const getAudienceDescription = (concept: string, subPersona?: string) => {
@@ -1226,6 +1219,160 @@ Create copy that fulfills this request while maintaining Jones Road Beauty's aut
   }
 }
 
+// Helper function to build comprehensive AI Settings context
+export function buildAISettingsContext(trainingConfig: TrainingConfig, request: {
+  concept?: string;
+  subPersona?: string;
+  selectedProduct?: string;
+  selectedProducts?: string[];
+  brandDrBalance?: number;
+  useJonesBrandGuide?: boolean;
+}) {
+  const { concept = 'lifeJuggler', subPersona = '', selectedProduct = '', selectedProducts = [], brandDrBalance = 50, useJonesBrandGuide = true } = request;
+  
+  let context = '';
+  
+  if (useJonesBrandGuide && trainingConfig) {
+    // Brand Guidelines
+    if (trainingConfig.brandGuidelines) {
+      context += '\nJONES ROAD BEAUTY BRAND GUIDELINES:\n';
+      context += `Core Positioning: ${trainingConfig.brandGuidelines.corePositioning}\n\n`;
+      
+      // Brand Voice (only enabled ones)
+      if (trainingConfig.brandGuidelines.brandVoice) {
+        context += 'Brand Voice Rules:\n';
+        trainingConfig.brandGuidelines.brandVoice.forEach((rule, index) => {
+          if (trainingConfig.brandGuidelines.enabledBrandVoice?.[index] !== false) {
+            context += `- ${rule}\n`;
+          }
+        });
+        context += '\n';
+      }
+      
+      // Key Terminology (only enabled ones)
+      if (trainingConfig.brandGuidelines.keyTerminology) {
+        context += 'Key Brand Terminology:\n';
+        trainingConfig.brandGuidelines.keyTerminology.forEach((term, index) => {
+          if (trainingConfig.brandGuidelines.enabledKeyTerminology?.[index] !== false) {
+            context += `- ${term}\n`;
+          }
+        });
+        context += '\n';
+      }
+      
+      // Approved Language (only enabled ones)
+      if (trainingConfig.brandGuidelines.approvedLanguage) {
+        context += 'Approved Language:\n';
+        trainingConfig.brandGuidelines.approvedLanguage.forEach((phrase, index) => {
+          if (trainingConfig.brandGuidelines.enabledApprovedLanguage?.[index] !== false) {
+            context += `- ${phrase}\n`;
+          }
+        });
+        context += '\n';
+      }
+      
+      // Avoided Language (only enabled ones)
+      if (trainingConfig.brandGuidelines.avoidedLanguage) {
+        context += 'Avoid These Phrases:\n';
+        trainingConfig.brandGuidelines.avoidedLanguage.forEach((phrase, index) => {
+          if (trainingConfig.brandGuidelines.enabledAvoidedLanguage?.[index] !== false) {
+            context += `- ${phrase}\n`;
+          }
+        });
+        context += '\n';
+      }
+    }
+    
+    // Product Claims
+    if (selectedProduct && trainingConfig.productClaims && trainingConfig.productClaims[selectedProduct]) {
+      const productClaims = trainingConfig.productClaims[selectedProduct];
+      context += `PRODUCT-SPECIFIC CLAIMS FOR ${selectedProduct.toUpperCase()}:\n`;
+      
+      if (productClaims.approvedClaims) {
+        context += 'Approved Claims:\n';
+        productClaims.approvedClaims.forEach((claim, index) => {
+          if (productClaims.enabledApproved?.[index] !== false) {
+            context += `- ${claim}\n`;
+          }
+        });
+      }
+      
+      if (productClaims.prohibitedClaims) {
+        context += 'Prohibited Claims (Never Use):\n';
+        productClaims.prohibitedClaims.forEach((claim, index) => {
+          if (productClaims.enabledProhibited?.[index] !== false) {
+            context += `- ${claim}\n`;
+          }
+        });
+      }
+      context += '\n';
+    }
+    
+    // Multi-Product Claims for retention
+    if (selectedProducts && selectedProducts.length > 0 && trainingConfig.productClaims) {
+      context += 'MULTI-PRODUCT CLAIMS:\n';
+      selectedProducts.forEach(product => {
+        if (trainingConfig.productClaims[product]) {
+          context += `${product.toUpperCase()}:\n`;
+          const productClaims = trainingConfig.productClaims[product];
+          if (productClaims.approvedClaims) {
+            productClaims.approvedClaims.forEach((claim, index) => {
+              if (productClaims.enabledApproved?.[index] !== false) {
+                context += `  - ${claim}\n`;
+              }
+            });
+          }
+        }
+      });
+      context += '\n';
+    }
+    
+    // Persona Pillars
+    if (concept && trainingConfig.personaPillars && trainingConfig.personaPillars[concept]) {
+      const persona = trainingConfig.personaPillars[concept];
+      context += `TARGET PERSONA - ${concept.toUpperCase()}:\n`;
+      if (persona.description) {
+        context += `Description: ${persona.description}\n`;
+      }
+      if (persona.pillars) {
+        context += 'Key Pillars:\n';
+        persona.pillars.forEach((pillar, index) => {
+          if (persona.enabledPillars?.[index] !== false) {
+            context += `- ${pillar}\n`;
+          }
+        });
+      }
+      if (subPersona) {
+        context += `Sub-Persona: ${subPersona}\n`;
+      }
+      context += '\n';
+    }
+    
+    // Copy Frameworks
+    if (trainingConfig.copyFrameworks) {
+      context += 'COPY FRAMEWORKS:\n';
+      if (trainingConfig.copyFrameworks.headlineFrameworks) {
+        context += 'Available Headline Frameworks:\n';
+        trainingConfig.copyFrameworks.headlineFrameworks.forEach(framework => {
+          context += `- ${framework.name}: ${framework.description}\n`;
+          context += `  Template: ${framework.template}\n`;
+          if (framework.examples && framework.examples.length > 0) {
+            context += `  Examples: ${framework.examples.slice(0, 2).join(', ')}\n`;
+          }
+        });
+      }
+      context += '\n';
+    }
+  }
+  
+  // Brand/DR Balance
+  const brandPercent = brandDrBalance;
+  const drPercent = 100 - brandPercent;
+  context += `BRAND/DR BALANCE: ${brandPercent}% Brand Voice, ${drPercent}% Direct Response\n\n`;
+  
+  return context;
+}
+
 export async function generateRetentionCopy(request: {
   keyMessage: string;
   platform: string;
@@ -1242,27 +1389,23 @@ export async function generateRetentionCopy(request: {
   brandDrBalance?: number;
   selectedProduct?: string;
   useJonesBrandGuide?: boolean;
-}) {
+}, trainingConfig: TrainingConfig = defaultTrainingConfig) {
   console.log('generateRetentionCopy called with selectedProducts:', request.selectedProducts);
   
   const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY!,
   });
 
-  // Get training configuration and use station prompts
-  const config = await import('./routes-training').then(m => m.getTrainingConfig());
+  // Build comprehensive AI Settings context
+  const aiSettingsContext = buildAISettingsContext(trainingConfig, request);
   
-  // Build system prompt for retention copy generation
-  const systemPrompt = config?.stationPrompts?.emailSmsRetention?.systemPrompt || 
-    `You are an expert ${request.platform?.toLowerCase() || 'email'} marketing copywriter specializing in customer retention and engagement campaigns for Jones Road Beauty.
+  // Get station-specific system prompt with AI Settings integration
+  const baseSystemPrompt = trainingConfig?.stationPrompts?.emailSmsRetention?.systemPrompt || 
+    `You are an expert ${request.platform?.toLowerCase() || 'email'} marketing copywriter specializing in customer retention and engagement campaigns for Jones Road Beauty.`;
+  
+  const systemPrompt = `${baseSystemPrompt}
 
-Jones Road Beauty Brand Guidelines:
-- "Your Skin But Better" philosophy - enhancing natural beauty, not masking it
-- Clean, non-toxic ingredients with effective results
-- Authentic, approachable, and effortless beauty solutions
-- Founded by makeup artist Bobbi Brown
-- Premium quality without pretension
-- Empowering customers to feel confident in their natural skin
+${aiSettingsContext}
 
 ${request.platform === 'SMS' ? 'SMS' : 'Email'} Copy Specifications:
 - Platform: ${request.platform || 'Email'}

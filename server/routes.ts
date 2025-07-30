@@ -655,6 +655,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Custom request is required' });
       }
       
+      // Get current training config
+      const trainingConfig = await getTrainingConfig();
+      
       const result = await generateCustomCopy({
         customRequest: customRequest.trim(),
         concept,
@@ -662,7 +665,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         brandDrBalance,
         selectedProduct,
         useJonesBrandGuide
-      });
+      }, trainingConfig);
       
       res.json({
         response: result.response,
@@ -707,6 +710,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Key message is required' });
       }
       
+      // Get current training config
+      const trainingConfig = await getTrainingConfig();
+      
       const result = await generateRetentionCopy({
         keyMessage: keyMessage.trim(),
         platform,
@@ -723,7 +729,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         brandDrBalance,
         selectedProduct,
         useJonesBrandGuide
-      });
+      }, trainingConfig);
       
       res.status(200).json({
         response: result.response,
@@ -783,6 +789,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
       }
       
+      // Get current training config
+      const trainingConfig = await getTrainingConfig();
+      
       const result = await generateLandingPageCopy({
         landingPageType,
         productBrief,
@@ -794,7 +803,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         selectedProduct,
         mainAngle,
         transcription
-      });
+      }, trainingConfig);
       
       // Calculate performance metrics based on copy structure
       const headlineWords = result.headline ? result.headline.split(/\s+/).length : 0;

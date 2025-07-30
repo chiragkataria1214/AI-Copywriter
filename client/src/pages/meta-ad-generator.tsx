@@ -2781,6 +2781,47 @@ export default function MetaAdGenerator() {
                         </Select>
                       </div>
 
+                      {/* Target Persona Section */}
+                      <div>
+                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                          Target Persona
+                        </Label>
+                        <p className="text-xs text-gray-500 mb-3">
+                          Choose the primary audience for this retention campaign
+                        </p>
+                        <Select value={concept} onValueChange={setConcept}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select target persona" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="lifeJuggler">Life Juggler - Busy women managing multiple responsibilities</SelectItem>
+                            <SelectItem value="cleanBeautyEnthusiast">Clean Beauty Enthusiast - Health-conscious consumers</SelectItem>
+                            <SelectItem value="timeConstrainedProfessional">Time-Constrained Professional - Career-focused women</SelectItem>
+                            <SelectItem value="naturalBeautySeeker">Natural Beauty Seeker - Enhance don't mask approach</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        
+                        {/* Sub-Persona Selection */}
+                        {concept === 'lifeJuggler' && (
+                          <div className="mt-3">
+                            <Label className="block text-sm font-medium text-gray-700 mb-2">
+                              Sub-Persona (Optional)
+                            </Label>
+                            <Select value={subPersona} onValueChange={setSubPersona}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Choose specific sub-persona" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">None (General Life Juggler)</SelectItem>
+                                <SelectItem value="newMom">New Mom - Recent mothers with changing routines</SelectItem>
+                                <SelectItem value="workingMom">Working Mom - Balancing career and family</SelectItem>
+                                <SelectItem value="busyExecutive">Busy Executive - High-stress professional life</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </div>
+
                       {/* Product Selection for Retention */}
                       <div>
                         <Label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2961,6 +3002,55 @@ export default function MetaAdGenerator() {
                             <SelectItem value="Short">Short</SelectItem>
                             <SelectItem value="Medium">Medium</SelectItem>
                             <SelectItem value="Long">Long</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Brand/DR Balance Section */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-sm font-medium text-gray-700">Brand/DR Balance</Label>
+                          <span className="text-sm text-gray-500">{getBrandDrLabel()}</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-3">
+                          Balance between brand storytelling and direct response tactics
+                        </p>
+                        <Slider
+                          value={brandDrBalance}
+                          onValueChange={setBrandDrBalance}
+                          max={100}
+                          step={1}
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>All DR</span>
+                          <span>Balanced</span>
+                          <span>All Brand</span>
+                        </div>
+                      </div>
+
+                      {/* Product Focus Section */}
+                      <div>
+                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                          Additional Product Focus (Optional)
+                        </Label>
+                        <p className="text-xs text-gray-500 mb-3">
+                          Choose a single product for detailed claims and messaging (separate from multi-product selection above)
+                        </p>
+                        <Select value={selectedProduct || "all"} onValueChange={(value) => setSelectedProduct(value === "all" ? "" : value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="No specific product focus" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">No specific focus</SelectItem>
+                            <SelectItem value="miracle balm">Miracle Balm</SelectItem>
+                            <SelectItem value="foundation">What The Foundation</SelectItem>
+                            <SelectItem value="tinted moisturizer">Just Enough Tinted Moisturizer</SelectItem>
+                            <SelectItem value="hero kit">The Hero Kit</SelectItem>
+                            <SelectItem value="sunscreen">Everyday Sunscreen</SelectItem>
+                            <SelectItem value="mascara">What The Mascara</SelectItem>
+                            <SelectItem value="lip stick">Lip & Cheek Stick</SelectItem>
+                            <SelectItem value="face pencil">The Face Pencil</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
