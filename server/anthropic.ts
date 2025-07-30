@@ -881,7 +881,7 @@ CTA: [Main call-to-action]
 export interface RevisionRequest {
   originalContent: string;
   revisionInstructions: string;
-  contentType: 'headline' | 'primaryText' | 'landingCopy' | 'custom';
+  contentType: 'headline' | 'primaryText' | 'landingCopy' | 'custom' | 'retention';
   context?: {
     transcription?: string;
     customBrief?: string;
@@ -890,6 +890,7 @@ export interface RevisionRequest {
     targetAudience?: string;
     brandDrBalance?: number;
     selectedProduct?: string;
+    selectedProducts?: string[];
     field?: string;
     customRequest?: string;
   };
@@ -918,6 +919,22 @@ SPECIAL NOTES FOR CUSTOM COPY REVISION:
 - Keep the educational, helpful tone that matches Jones Road's approach
 - Use clean, plain text formatting without special characters like asterisks, hashtags, or markdown
 - Output should be clean and readable without formatting symbols
+` : ''}
+
+${contentType === 'retention' ? `
+SPECIAL NOTES FOR RETENTION COPY REVISION:
+- This is ${context?.field === 'retention' ? 'email/SMS retention copy' : 'retention marketing content'}
+- Maintain platform-appropriate length and formatting (Email vs SMS)
+- Focus on customer retention and engagement principles
+- Keep Jones Road's "Your Skin But Better" philosophy and authentic voice
+- Use personalized, relationship-building language appropriate for existing customers
+- Balance promotional content with value-driven messaging
+- Include relevant product mentions if specific products were selected
+- Ensure mobile-friendly formatting for both email and SMS
+- Use clean, plain text formatting without markdown or special characters
+${context?.selectedProducts && context.selectedProducts.length > 0 ? `
+- Feature these selected products appropriately: ${context.selectedProducts.join(', ')}
+` : ''}
 ` : ''}
 
 REVISION PRINCIPLES:
@@ -1259,6 +1276,13 @@ Keywords to Include: ${request.keywordsToInclude.join(', ')}
 
 ${request.wordsToAvoid && request.wordsToAvoid.length > 0 ? `
 Words to Avoid: ${request.wordsToAvoid.join(', ')}
+` : ''}
+
+${request.selectedProducts && request.selectedProducts.length > 0 ? `
+Products to Feature: ${request.selectedProducts.join(', ')}
+- Include these products naturally in the copy where relevant
+- Highlight benefits and unique selling points of selected products
+- Create product-specific calls to action when appropriate
 ` : ''}
 
 ${request.platform === 'SMS' ? `

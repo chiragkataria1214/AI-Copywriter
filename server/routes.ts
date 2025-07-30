@@ -852,7 +852,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const revisionSchema = z.object({
         originalContent: z.string(),
         revisionInstructions: z.string(),
-        contentType: z.enum(['headline', 'primaryText', 'landingCopy']),
+        contentType: z.enum(['headline', 'primaryText', 'landingCopy', 'custom', 'retention']),
         context: z.object({
           transcription: z.string().optional(),
           customBrief: z.string().optional(),
@@ -861,7 +861,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           targetAudience: z.string().optional(),
           brandDrBalance: z.number().optional(),
           selectedProduct: z.string().optional(),
-          field: z.string().optional()
+          selectedProducts: z.array(z.string()).optional(),
+          field: z.string().optional(),
+          customRequest: z.string().optional()
         }).optional()
       });
 

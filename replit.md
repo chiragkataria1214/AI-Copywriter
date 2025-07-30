@@ -6,7 +6,18 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
-**Latest Update - Station Prompts Tab & Retention Copy Enhancement (July 30, 2025)**
+**Latest Update - Multi-Product Selection for Email/SMS Retention Copy (July 30, 2025)**
+- **✅ MULTI-PRODUCT SELECTION**: Added comprehensive product selection interface to Email/SMS retention copy generation with multi-select capability
+- **✅ EXPANDED PRODUCT CATALOG**: 12 products available for selection (Miracle Balm, Foundation, Just Enough, Hero Kit, SPF, Mascara, Lip Stick, Face Pencil, Cleanser, Serum, Eye Cream, Bronzer)
+- **✅ MULTI-SELECT UI**: Professional grid-based multi-select interface with toggle buttons, selected product display, and clear all functionality
+- **✅ BACKEND INTEGRATION**: Updated `/api/generate-retention-copy` endpoint to handle `selectedProducts` array parameter
+- **✅ AI ENHANCEMENT**: Enhanced `generateRetentionCopy` function to incorporate selected products into copy generation with natural product mentions
+- **✅ REVISION SYSTEM**: Fixed revision/edit functionality for retention copy with proper content type handling ('retention' type added)
+- **✅ PRODUCT-SPECIFIC COPY**: AI generates tailored copy that naturally incorporates selected products with benefits and calls-to-action
+- **✅ VISUAL FEEDBACK**: Selected products displayed in organized badges with count indicator and easy removal options
+- **✅ EMAIL/SMS OPTIMIZED**: Product selection designed for multi-product email/SMS campaigns common in retention marketing
+
+**Previous Update - Station Prompts Tab & Retention Copy Enhancement (July 30, 2025)**
 - **✅ REMOVED UNNECESSARY FIELDS**: Removed Tone and CTA fields from retention copy interface - now handled in general AI settings
 - **✅ NEW STATION PROMPTS TAB**: Added comprehensive Station Prompts tab to AI Training Configuration with 5 specialized stations
 - **✅ AD COPY STATION**: Complete prompt configuration with system prompts, user templates, headline frameworks, copy rules, brand-first and DR guidelines

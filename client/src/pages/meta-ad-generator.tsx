@@ -129,7 +129,7 @@ export default function MetaAdGenerator() {
   const [showRevisionPanel, setShowRevisionPanel] = useState(false);
   const [revisionInstructions, setRevisionInstructions] = useState('');
   const [selectedItemForRevision, setSelectedItemForRevision] = useState<{
-    type: 'headline' | 'primaryText' | 'landingCopy' | 'custom';
+    type: 'headline' | 'primaryText' | 'landingCopy' | 'custom' | 'retention';
     index?: number;
     field?: string;
   } | null>(null);
@@ -596,7 +596,7 @@ export default function MetaAdGenerator() {
   const reviseContentMutation = useMutation({
     mutationFn: async ({ instructions, type, index, field }: {
       instructions: string;
-      type: 'headline' | 'primaryText' | 'landingCopy' | 'custom';
+      type: 'headline' | 'primaryText' | 'landingCopy' | 'custom' | 'retention';
       index?: number;
       field?: string;
     }) => {
@@ -604,7 +604,8 @@ export default function MetaAdGenerator() {
         originalContent: type === 'headline' ? generatedHeadlines[index || 0].copy :
                         type === 'primaryText' ? generatedPrimaryText :
                         type === 'landingCopy' && field ? (generatedLandingCopy as any)[field] :
-                        type === 'custom' ? generatedCustomResponse : '',
+                        type === 'custom' ? generatedCustomResponse :
+                        type === 'retention' ? generatedRetentionCopy : '',
         revisionInstructions: instructions,
         contentType: type,
         context: {
@@ -615,6 +616,7 @@ export default function MetaAdGenerator() {
           targetAudience,
           brandDrBalance: brandDrBalance[0],
           selectedProduct,
+          selectedProducts: retentionSelectedProducts,
           field: field || undefined,
           customRequest: type === 'custom' ? customRequest : undefined
         }
@@ -643,6 +645,8 @@ export default function MetaAdGenerator() {
           }));
         } else if (type === 'custom') {
           setGeneratedCustomResponse(data.revisedContent);
+        } else if (type === 'retention') {
+          setGeneratedRetentionCopy(data.revisedContent);
         }
       }
       
@@ -3071,7 +3075,7 @@ export default function MetaAdGenerator() {
                             variant="outline"
                             onClick={() => {
                               setSelectedItemForRevision({
-                                type: 'custom',
+                                type: 'retention',
                                 field: 'retention'
                               });
                               setRevisionInstructions('');
