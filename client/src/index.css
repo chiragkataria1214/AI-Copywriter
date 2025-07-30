@@ -189,4 +189,57 @@
     transition: none !important;
     animation: none !important;
   }
+  
+  /* COMPREHENSIVE GLOBAL DROPDOWN FIX - Apply to ALL Select components app-wide */
+  
+  /* Target all Radix Select components */
+  [data-radix-select-trigger],
+  [data-radix-select-content],
+  [data-radix-select-item],
+  [data-radix-select-viewport],
+  [data-radix-select-icon] {
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
+  }
+  
+  /* Remove hover effects on ALL dropdown elements */
+  [data-radix-select-trigger]:hover,
+  [data-radix-select-content]:hover,
+  [data-radix-select-item]:hover,
+  [data-radix-select-viewport]:hover {
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
+  }
+  
+  /* Force stable states for all dropdown interactions */
+  [data-radix-select-trigger][data-state="open"],
+  [data-radix-select-trigger][data-state="closed"],
+  [data-radix-select-content][data-state="open"],
+  [data-radix-select-content][data-state="closed"] {
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
+  }
+  
+  /* Prevent any dropdown animations globally */
+  [data-radix-select-content][data-side="top"],
+  [data-radix-select-content][data-side="bottom"],
+  [data-radix-select-content][data-side="left"],
+  [data-radix-select-content][data-side="right"] {
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
+  }
+  
+  /* Additional safety for any remaining Select components */
+  .select-none,
+  [role="listbox"],
+  [role="option"],
+  [aria-haspopup="listbox"] {
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
+  }
 }
