@@ -1200,3 +1200,115 @@ Create copy that fulfills this request while maintaining Jones Road Beauty's aut
     throw new Error('Failed to generate custom copy');
   }
 }
+
+// Generate social media captions for organic content
+export async function generateSocialCaptions(request: {
+  contentType: string;
+  transcription?: string;
+  platform: string;
+  goal: string;
+  tone: string;
+  variations: number;
+  selectedProduct?: string;
+}) {
+  const { contentType, transcription, platform, goal, tone, variations, selectedProduct } = request;
+
+  // Build platform-specific guidelines
+  const platformGuidelines = {
+    instagram: "Instagram captions: Hook within first line, use line breaks for readability, include 5-10 relevant hashtags, encourage engagement",
+    facebook: "Facebook posts: Conversational tone, longer format allowed, focus on storytelling, use emojis sparingly",
+    tiktok: "TikTok captions: Short, catchy, trend-aware, use relevant hashtags, encourage interaction",
+    'multi-platform': "Multi-platform: Adaptable format that works across Instagram, Facebook, and TikTok"
+  };
+
+  const goalGuidelines = {
+    'product-education': "Focus on teaching product benefits, usage tips, and key features",
+    'brand-awareness': "Emphasize Jones Road Beauty brand values, philosophy, and unique positioning",
+    'community-building': "Encourage conversation, ask questions, build relationships with followers",
+    'behind-scenes': "Show authentic, behind-the-scenes moments and brand personality",
+    'user-generated': "Celebrate customer experiences and encourage user-generated content"
+  };
+
+  const toneGuidelines = {
+    'authentic-personal': "Authentic, personal, relatable - like talking to a close friend",
+    'educational-expert': "Knowledgeable, helpful, educational - establishing expertise",
+    'fun-playful': "Light-hearted, playful, energetic - creating joy and excitement",
+    'inspirational': "Uplifting, motivating, empowering - inspiring confidence",
+    'conversational': "Natural, conversational, approachable - encouraging dialogue"
+  };
+
+  const systemPrompt = `You are an expert social media copywriter specializing in organic content for Jones Road Beauty. Your task is to create engaging, authentic social media captions that align with the brand's voice and values.
+
+BRAND VOICE & VALUES:
+- "Makeup, Simplified" - Easy, effortless beauty
+- Authentic, real, approachable - not overly polished
+- Empowering women to feel confident in their natural beauty
+- Quality products that enhance rather than mask
+- Clean, minimal, effective formulations
+
+JONES ROAD BEAUTY TONE:
+- Warm and encouraging, never intimidating
+- Educational but not preachy
+- Inclusive and body-positive
+- Honest about product benefits
+- Celebrates natural beauty and self-expression
+
+PLATFORM: ${platformGuidelines[platform as keyof typeof platformGuidelines] || platformGuidelines['multi-platform']}
+
+CONTENT GOAL: ${goalGuidelines[goal as keyof typeof goalGuidelines]}
+
+TONE: ${toneGuidelines[tone as keyof typeof toneGuidelines]}
+
+${selectedProduct ? `PRODUCT FOCUS: ${selectedProduct} - ensure captions highlight this product appropriately` : ''}
+
+CAPTION REQUIREMENTS:
+1. Hook readers in the first line
+2. Provide value (education, inspiration, or entertainment)
+3. Include a clear call-to-action when appropriate
+4. Use line breaks for readability
+5. Include relevant hashtags (platform-appropriate quantity)
+6. Maintain Jones Road Beauty's authentic voice
+7. Encourage genuine engagement
+
+Generate ${variations} distinct caption variations, each optimized for the platform and goals specified.`;
+
+  const contentDescription = contentType === 'video' 
+    ? `Based on this video transcription: "${transcription}"`
+    : 'Based on product imagery';
+
+  const userPrompt = `${contentDescription}
+
+Create ${variations} engaging social media captions that:
+- Align with Jones Road Beauty's brand voice
+- Are optimized for ${platform}
+- Focus on ${goal.replace('-', ' ')}
+- Use a ${tone.replace('-', ' ')} tone
+${selectedProduct ? `- Highlight ${selectedProduct}` : ''}
+
+Each caption should be unique and provide different angles or approaches while maintaining brand consistency.
+
+Format each caption clearly numbered (1., 2., 3.) with hashtags included at the end of each caption.`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      system: systemPrompt,
+      max_tokens: 1500,
+      messages: [{ role: 'user', content: userPrompt }],
+    });
+
+    const content = response.content[0].type === 'text' ? response.content[0].text : '';
+    
+    // Parse the response into individual captions
+    const captions = content
+      .split(/\d+\./)
+      .slice(1)
+      .map(caption => caption.trim())
+      .filter(caption => caption.length > 0);
+
+    return captions;
+  } catch (error) {
+    console.error('Social captions generation error:', error);
+    throw new Error('Failed to generate social captions');
+  }
+}

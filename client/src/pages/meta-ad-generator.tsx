@@ -22,6 +22,7 @@ import { ProductSelection } from "@/components/ProductSelection";
 export default function MetaAdGenerator() {
   const [activeTab, setActiveTab] = useState('paid-social');
   const [paidSocialSubTab, setPaidSocialSubTab] = useState('ad-copy');
+  const [organicSocialType, setOrganicSocialType] = useState('captions');
   
   // Admin key protection for AI Settings
   const [hasAdminAccess, setHasAdminAccess] = useState(false);
@@ -215,6 +216,18 @@ export default function MetaAdGenerator() {
   const [staticAdImage, setStaticAdImage] = useState('');
   const [staticAdImagePreview, setStaticAdImagePreview] = useState('');
   const [staticAdAnalysis, setStaticAdAnalysis] = useState('');
+
+  // Organic Social States
+  const [organicContentType, setOrganicContentType] = useState('video'); // 'video' or 'image'
+  const [organicVideoFile, setOrganicVideoFile] = useState<File | null>(null);
+  const [organicVideoTranscription, setOrganicVideoTranscription] = useState('');
+  const [organicImageFile, setOrganicImageFile] = useState<File | null>(null);
+  const [organicImagePreview, setOrganicImagePreview] = useState('');
+  const [organicPlatform, setOrganicPlatform] = useState('instagram');
+  const [organicGoal, setOrganicGoal] = useState('product-education');
+  const [organicTone, setOrganicTone] = useState('authentic-personal');
+  const [generatedCaptions, setGeneratedCaptions] = useState<string[]>([]);
+  const [captionVariations, setCaptionVariations] = useState(3);
 
   // Define personas
   const personas = {
@@ -1892,149 +1905,360 @@ export default function MetaAdGenerator() {
           </TabsContent>
 
           <TabsContent value="organic-social">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-              {/* Input Section */}
-              <div className="space-y-4 sm:space-y-6">
-                {/* Content Type Selection */}
-                <Card>
-                  <CardContent className="p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Users className="text-jones-primary mr-2 sm:mr-3" size={18} />
-                      Organic Social Content Type
-                    </h3>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="relative border-2 rounded-lg p-4 cursor-pointer transition-colors border-gray-300 hover:border-jones-primary">
-                        <div className="flex items-center justify-between mb-2">
-                          <Camera className="text-gray-400" size={24} />
-                          <div className="w-4 h-4 border-2 rounded-full border-gray-300"></div>
-                        </div>
-                        <h4 className="font-semibold text-gray-900">Social Captions</h4>
-                        <p className="text-xs text-gray-500 mt-1">Instagram, Facebook, TikTok captions</p>
-                      </div>
-                      
-                      <div className="relative border-2 rounded-lg p-4 cursor-pointer transition-colors border-gray-300 hover:border-jones-primary">
-                        <div className="flex items-center justify-between mb-2">
-                          <FileText className="text-gray-400" size={24} />
-                          <div className="w-4 h-4 border-2 rounded-full border-gray-300"></div>
-                        </div>
-                        <h4 className="font-semibold text-gray-900">Story Sequences</h4>
-                        <p className="text-xs text-gray-500 mt-1">Multi-slide Instagram stories</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Asset Upload */}
-                <Card>
-                  <CardContent className="p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Upload className="text-jones-primary mr-2 sm:mr-3" size={18} />
-                      Upload Assets
-                    </h3>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                          Product Images/Videos
-                        </Label>
-                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                          <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                          <p className="text-sm text-gray-600">
-                            Upload product images or videos
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            JPG, PNG, MP4 - Max 10MB each
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Targeting Options */}
-                <Card>
-                  <CardContent className="p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Target className="text-jones-primary mr-2 sm:mr-3" size={18} />
-                      Content Strategy
-                    </h3>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">Platform</Label>
-                        <select className="w-full mt-1 p-2 border border-gray-300 rounded-md">
-                          <option>Instagram</option>
-                          <option>Facebook</option>
-                          <option>TikTok</option>
-                          <option>Multi-Platform</option>
-                        </select>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">Content Goal</Label>
-                        <select className="w-full mt-1 p-2 border border-gray-300 rounded-md">
-                          <option>Product Education</option>
-                          <option>Brand Awareness</option>
-                          <option>Community Building</option>
-                          <option>Behind the Scenes</option>
-                          <option>User Generated Content</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">Tone & Voice</Label>
-                        <select className="w-full mt-1 p-2 border border-gray-300 rounded-md">
-                          <option>Authentic & Personal</option>
-                          <option>Educational & Expert</option>
-                          <option>Fun & Playful</option>
-                          <option>Inspirational</option>
-                          <option>Conversational</option>
-                        </select>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Button className="w-full flex items-center justify-center space-x-2" disabled>
-                  <Sparkles size={16} />
-                  <span>Generate Social Content (Coming Soon)</span>
-                </Button>
+            {/* Sub-tabs for different types of organic social content */}
+            <Tabs value={organicSocialType} onValueChange={setOrganicSocialType} className="w-full">
+              <div className="flex justify-center mb-6">
+                <TabsList className="grid grid-cols-2 w-auto">
+                  <TabsTrigger value="captions" className="flex items-center space-x-2">
+                    <Camera size={16} />
+                    <span>Social Captions</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="stories" className="flex items-center space-x-2">
+                    <FileText size={16} />
+                    <span>Story Sequences</span>
+                  </TabsTrigger>
+                </TabsList>
               </div>
 
-              {/* Preview Section */}
-              <div className="space-y-4 sm:space-y-6">
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="text-center py-16">
-                      <Users size={64} className="mx-auto text-gray-400 mb-4" />
-                      <h3 className="text-xl font-semibold text-gray-600 mb-2">Organic Social Preview</h3>
-                      <p className="text-gray-500">
-                        Generate authentic social media content that builds community and showcases your products naturally
-                      </p>
-                      <div className="mt-6 text-left space-y-3">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Check size={16} className="mr-2 text-green-500" />
-                          Platform-optimized captions
+              {/* Social Captions Sub-Tab */}
+              <TabsContent value="captions">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                  {/* Input Section */}
+                  <div className="space-y-4 sm:space-y-6">
+                    {/* Content Type Selection */}
+                    <Card>
+                      <CardContent className="p-4 sm:p-6">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <Upload className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                          Creative Asset
+                        </h3>
+                        
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-3">
+                            <button
+                              onClick={() => setOrganicContentType('video')}
+                              className={`p-3 border-2 rounded-lg text-center transition-colors ${
+                                organicContentType === 'video' 
+                                  ? 'border-jones-primary bg-jones-light text-jones-primary' 
+                                  : 'border-gray-300 hover:border-jones-primary'
+                              }`}
+                            >
+                              <Camera size={20} className="mx-auto mb-2" />
+                              <span className="text-sm font-medium">Video</span>
+                            </button>
+                            <button
+                              onClick={() => setOrganicContentType('image')}
+                              className={`p-3 border-2 rounded-lg text-center transition-colors ${
+                                organicContentType === 'image' 
+                                  ? 'border-jones-primary bg-jones-light text-jones-primary' 
+                                  : 'border-gray-300 hover:border-jones-primary'
+                              }`}
+                            >
+                              <FileText size={20} className="mx-auto mb-2" />
+                              <span className="text-sm font-medium">Image</span>
+                            </button>
+                          </div>
+
+                          {organicContentType === 'video' && (
+                            <div className="space-y-4">
+                              <div>
+                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Upload Video or Enter Transcription
+                                </Label>
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                                  <input
+                                    type="file"
+                                    accept="video/*"
+                                    className="hidden"
+                                    id="organic-video-upload"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        setOrganicVideoFile(file);
+                                      }
+                                    }}
+                                  />
+                                  <label htmlFor="organic-video-upload" className="cursor-pointer">
+                                    <Camera className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                                    <p className="text-sm text-gray-600">
+                                      Upload video file or enter transcription below
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      MP4, MOV - Max 50MB
+                                    </p>
+                                  </label>
+                                </div>
+                              </div>
+                              
+                              {organicVideoFile && (
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                  <p className="text-sm text-green-800">
+                                    ✓ Video uploaded: {organicVideoFile.name}
+                                  </p>
+                                </div>
+                              )}
+
+                              <div>
+                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Video Transcription
+                                </Label>
+                                <textarea
+                                  value={organicVideoTranscription}
+                                  onChange={(e) => setOrganicVideoTranscription(e.target.value)}
+                                  className="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none"
+                                  placeholder="Enter or paste video transcription here..."
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {organicContentType === 'image' && (
+                            <div className="space-y-4">
+                              <div>
+                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Upload Product Image
+                                </Label>
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    id="organic-image-upload"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        setOrganicImageFile(file);
+                                        const reader = new FileReader();
+                                        reader.onload = (e) => {
+                                          setOrganicImagePreview(e.target?.result as string);
+                                        };
+                                        reader.readAsDataURL(file);
+                                      }
+                                    }}
+                                  />
+                                  <label htmlFor="organic-image-upload" className="cursor-pointer">
+                                    <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                                    <p className="text-sm text-gray-600">
+                                      Upload product image
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      JPG, PNG - Max 10MB
+                                    </p>
+                                  </label>
+                                </div>
+                              </div>
+                              
+                              {organicImagePreview && (
+                                <div className="relative">
+                                  <img 
+                                    src={organicImagePreview}
+                                    alt="Uploaded product"
+                                    className="w-full max-w-xs mx-auto rounded-lg shadow-md"
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      setOrganicImageFile(null);
+                                      setOrganicImagePreview('');
+                                    }}
+                                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Check size={16} className="mr-2 text-green-500" />
-                          Story sequence frameworks
+                      </CardContent>
+                    </Card>
+
+                    {/* Platform & Strategy Settings */}
+                    <Card>
+                      <CardContent className="p-4 sm:p-6">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <Target className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                          Content Strategy
+                        </h3>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">Platform</Label>
+                            <Select value={organicPlatform} onValueChange={setOrganicPlatform}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="instagram">Instagram</SelectItem>
+                                <SelectItem value="facebook">Facebook</SelectItem>
+                                <SelectItem value="tiktok">TikTok</SelectItem>
+                                <SelectItem value="multi-platform">Multi-Platform</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">Content Goal</Label>
+                            <Select value={organicGoal} onValueChange={setOrganicGoal}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="product-education">Product Education</SelectItem>
+                                <SelectItem value="brand-awareness">Brand Awareness</SelectItem>
+                                <SelectItem value="community-building">Community Building</SelectItem>
+                                <SelectItem value="behind-scenes">Behind the Scenes</SelectItem>
+                                <SelectItem value="user-generated">User Generated Content</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">Tone & Voice</Label>
+                            <Select value={organicTone} onValueChange={setOrganicTone}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="authentic-personal">Authentic & Personal</SelectItem>
+                                <SelectItem value="educational-expert">Educational & Expert</SelectItem>
+                                <SelectItem value="fun-playful">Fun & Playful</SelectItem>
+                                <SelectItem value="inspirational">Inspirational</SelectItem>
+                                <SelectItem value="conversational">Conversational</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">Number of Variations</Label>
+                            <Select value={captionVariations.toString()} onValueChange={(value) => setCaptionVariations(Number(value))}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="3">3 variations</SelectItem>
+                                <SelectItem value="5">5 variations</SelectItem>
+                                <SelectItem value="7">7 variations</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Check size={16} className="mr-2 text-green-500" />
-                          Hashtag recommendations
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Check size={16} className="mr-2 text-green-500" />
-                          Engagement-focused copy
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+                      </CardContent>
+                    </Card>
+
+                    <Button 
+                      className="w-full flex items-center justify-center space-x-2" 
+                      disabled={!organicVideoTranscription && !organicImageFile}
+                      onClick={async () => {
+                        if (!organicVideoTranscription && !organicImageFile) return;
+                        
+                        try {
+                          const response = await fetch('/api/generate-social-captions', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                              contentType: organicContentType,
+                              transcription: organicVideoTranscription,
+                              platform: organicPlatform,
+                              goal: organicGoal,
+                              tone: organicTone,
+                              variations: captionVariations,
+                              selectedProduct: selectedProduct
+                            })
+                          });
+                          
+                          if (!response.ok) {
+                            throw new Error('Failed to generate captions');
+                          }
+                          
+                          const data = await response.json();
+                          setGeneratedCaptions(data.captions);
+                        } catch (error) {
+                          console.error('Error generating captions:', error);
+                        }
+                      }}
+                    >
+                      <Sparkles size={16} />
+                      <span>
+                        {(!organicVideoTranscription && !organicImageFile) 
+                          ? 'Upload Asset or Enter Transcription' 
+                          : 'Generate Social Captions'}
+                      </span>
+                    </Button>
+                  </div>
+
+                  {/* Preview Section */}
+                  <div className="space-y-4 sm:space-y-6">
+                    <Card>
+                      <CardContent className="p-6">
+                        {generatedCaptions.length > 0 ? (
+                          <div>
+                            <h3 className="text-xl font-semibold text-gray-900 mb-4">Generated Social Captions</h3>
+                            <div className="space-y-4">
+                              {generatedCaptions.map((caption, index) => (
+                                <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <span className="text-sm font-medium text-gray-600">
+                                      Caption {index + 1} ({organicPlatform})
+                                    </span>
+                                    <button
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(caption);
+                                      }}
+                                      className="text-jones-primary hover:text-jones-secondary text-sm"
+                                    >
+                                      <Copy size={16} />
+                                    </button>
+                                  </div>
+                                  <div className="text-gray-900 whitespace-pre-wrap">
+                                    {caption}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-16">
+                            <Camera size={64} className="mx-auto text-gray-400 mb-4" />
+                            <h3 className="text-xl font-semibold text-gray-600 mb-2">Social Caption Preview</h3>
+                            <p className="text-gray-500">
+                              Upload creative assets to generate platform-optimized social media captions
+                            </p>
+                            <div className="mt-6 text-left space-y-3">
+                              <div className="flex items-center text-sm text-gray-600">
+                                <Check size={16} className="mr-2 text-green-500" />
+                                Platform-optimized copy
+                              </div>
+                              <div className="flex items-center text-sm text-gray-600">
+                                <Check size={16} className="mr-2 text-green-500" />
+                                Hashtag recommendations
+                              </div>
+                              <div className="flex items-center text-sm text-gray-600">
+                                <Check size={16} className="mr-2 text-green-500" />
+                                Engagement hooks
+                              </div>
+                              <div className="flex items-center text-sm text-gray-600">
+                                <Check size={16} className="mr-2 text-green-500" />
+                                Multiple variations
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Story Sequences Sub-Tab */}
+              <TabsContent value="stories">
+                <div className="text-center py-16">
+                  <FileText size={64} className="mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-600 mb-2">Story Sequences</h3>
+                  <p className="text-gray-500">Coming soon - Generate multi-slide Instagram story sequences</p>
+                </div>
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           <TabsContent value="landing">

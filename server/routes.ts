@@ -5,7 +5,7 @@ import { registerJunipRoutes } from "./routes-junip";
 import { registerAdminRoutes } from "./routes-admin";
 import { storage } from "./storage";
 import multer from "multer";
-import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd } from "./anthropic";
+import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd, generateSocialCaptions } from "./anthropic";
 import { analyzeInfluencerVoice, generateInfluencerStyleCopy, fetchInstagramContent } from "./influencer-analyzer";
 import { getTrainingConfig } from "./routes-training";
 import { z } from "zod";
@@ -511,6 +511,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Upload error:', error);
       res.status(500).json({ message: 'Failed to upload file' });
+    }
+  });
+
+  // Generate organic social captions
+  app.post('/api/generate-social-captions', requireAuth, async (req, res) => {
+    try {
+      const { 
+        contentType, 
+        transcription, 
+        platform, 
+        goal, 
+        tone, 
+        variations,
+        selectedProduct 
+      } = req.body;
+
+      console.log('Social captions request:', { contentType, platform, goal, tone, variations, selectedProduct });
+
+      if (!transcription && contentType !== 'image') {
+        return res.status(400).json({ error: 'Transcription is required for video content' });
+      }
+
+      const captions = await generateSocialCaptions({
+        contentType,
+        transcription,
+        platform,
+        goal,
+        tone,
+        variations: parseInt(variations) || 3,
+        selectedProduct
+      });
+
+      res.json({ captions });
+    } catch (error) {
+      console.error('Error generating social captions:', error);
+      res.status(500).json({ error: 'Failed to generate social captions' });
     }
   });
 
