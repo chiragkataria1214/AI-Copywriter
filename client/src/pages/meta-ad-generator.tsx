@@ -217,7 +217,8 @@ export default function MetaAdGenerator() {
   const [staticAdImagePreview, setStaticAdImagePreview] = useState('');
   const [staticAdAnalysis, setStaticAdAnalysis] = useState('');
 
-  // Organic Social States
+  // Content Type States (for both paid and organic)
+  const [contentType, setContentType] = useState('video'); // 'video' or 'image'
   const [organicContentType, setOrganicContentType] = useState('video'); // 'video' or 'image'
   const [organicVideoFile, setOrganicVideoFile] = useState<File | null>(null);
   const [organicVideoTranscription, setOrganicVideoTranscription] = useState('');
@@ -982,19 +983,117 @@ export default function MetaAdGenerator() {
                     </h3>
                     
                     <div className="space-y-4">
-                      <div>
-                        <Label className="block text-sm font-medium text-gray-700 mb-2">Air Link or Image URL</Label>
-                        <Input 
-                          type="url" 
-                          placeholder="Paste Air.com link or image URL..."
-                          value={airLink}
-                          onChange={(e) => setAirLink(e.target.value)}
-                          className="mb-2"
-                        />
-                        <p className="text-xs text-gray-500">
-                          Add an Air.com link or direct image URL to analyze existing ad creatives
-                        </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          onClick={() => setContentType('video')}
+                          className={`p-3 border-2 rounded-lg text-center transition-colors ${
+                            contentType === 'video' 
+                              ? 'border-jones-primary bg-jones-light text-jones-primary' 
+                              : 'border-gray-300 hover:border-jones-primary'
+                          }`}
+                        >
+                          <Camera size={20} className="mx-auto mb-2" />
+                          <span className="text-sm font-medium">Video/Transcription</span>
+                        </button>
+                        <button
+                          onClick={() => setContentType('image')}
+                          className={`p-3 border-2 rounded-lg text-center transition-colors ${
+                            contentType === 'image' 
+                              ? 'border-jones-primary bg-jones-light text-jones-primary' 
+                              : 'border-gray-300 hover:border-jones-primary'
+                          }`}
+                        >
+                          <FileText size={20} className="mx-auto mb-2" />
+                          <span className="text-sm font-medium">Image/URL</span>
+                        </button>
                       </div>
+
+                      {contentType === 'video' && (
+                        <div className="space-y-4">
+                          <Textarea 
+                            rows={6}
+                            className="w-full resize-none text-sm"
+                            placeholder="Paste your video transcription or ad concept here..."
+                            value={transcription}
+                            onChange={(e) => setTranscription(e.target.value)}
+                          />
+                          
+                          <div className="text-center text-sm text-gray-500">OR</div>
+                          
+                          <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                            <div className="flex items-center space-x-2">
+                              <Label htmlFor="file-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
+                                <Upload size={14} />
+                                <span className="hidden sm:inline">Upload Text</span>
+                                <span className="sm:hidden">Text</span>
+                              </Label>
+                              <Input 
+                                id="file-upload" 
+                                type="file" 
+                                className="sr-only" 
+                                accept=".txt,.doc,.docx" 
+                                onChange={handleFileUpload} 
+                              />
+                              
+                              <Label htmlFor="video-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
+                                <Camera size={14} />
+                                <span className="hidden sm:inline">Upload Video</span>
+                                <span className="sm:hidden">Video</span>
+                              </Label>
+                              <Input 
+                                id="video-upload" 
+                                type="file" 
+                                className="sr-only" 
+                                accept="video/*" 
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    // Handle video file upload
+                                    console.log('Video uploaded:', file.name);
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {contentType === 'image' && (
+                        <div className="space-y-4">
+                          <div>
+                            <Label className="block text-sm font-medium text-gray-700 mb-2">Air Link or Image URL</Label>
+                            <Input 
+                              type="url" 
+                              placeholder="Paste Air.com link or image URL..."
+                              value={airLink}
+                              onChange={(e) => setAirLink(e.target.value)}
+                              className="mb-2"
+                            />
+                            <p className="text-xs text-gray-500">
+                              Add an Air.com link or direct image URL to analyze existing ad creatives
+                            </p>
+                          </div>
+
+                          <div className="text-center text-sm text-gray-500">OR</div>
+
+                          <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                            <div className="flex items-center space-x-2">
+                              <Label htmlFor="image-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
+                                <Upload size={14} />
+                                <span className="hidden sm:inline">Upload Image</span>
+                                <span className="sm:hidden">Image</span>
+                              </Label>
+                              <Input 
+                                id="image-upload" 
+                                type="file" 
+                                className="sr-only" 
+                                accept=".jpg,.jpeg,.png,.gif,.webp" 
+                                onChange={handleImageUpload} 
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {(airLink || uploadedImage) && (
                         <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
@@ -1028,16 +1127,6 @@ export default function MetaAdGenerator() {
                           )}
                         </div>
                       )}
-
-                      <div className="text-center text-sm text-gray-500">OR</div>
-
-                      <Textarea 
-                        rows={6}
-                        className="w-full resize-none text-sm"
-                        placeholder="Paste your video transcription or ad concept here..."
-                        value={transcription}
-                        onChange={(e) => setTranscription(e.target.value)}
-                      />
                       
                       <div>
                         <Label htmlFor="customBrief" className="block text-sm font-medium text-gray-700 mb-2">
@@ -1054,37 +1143,6 @@ export default function MetaAdGenerator() {
                         <p className="text-xs text-gray-500 mt-1">
                           These instructions will be included in the AI prompt for this specific generation
                         </p>
-                      </div>
-                      
-                      <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-                        <div className="flex items-center space-x-2">
-                          <Label htmlFor="file-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
-                            <Upload size={14} />
-                            <span className="hidden sm:inline">Upload Text</span>
-                            <span className="sm:hidden">Text</span>
-                          </Label>
-                          <Input 
-                            id="file-upload" 
-                            type="file" 
-                            className="sr-only" 
-                            accept=".txt,.doc,.docx" 
-                            onChange={handleFileUpload} 
-                          />
-                          
-                          <Label htmlFor="image-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
-                            <Upload size={14} />
-                            <span className="hidden sm:inline">Upload Image</span>
-                            <span className="sm:hidden">Image</span>
-                          </Label>
-                          <Input 
-                            id="image-upload" 
-                            type="file" 
-                            className="sr-only" 
-                            accept=".jpg,.jpeg,.png,.gif,.webp" 
-                            onChange={handleImageUpload} 
-                          />
-                        </div>
-
                       </div>
                     </div>
                   </CardContent>
@@ -1934,138 +1992,109 @@ export default function MetaAdGenerator() {
                         </h3>
                         
                         <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-3">
-                            <button
-                              onClick={() => setOrganicContentType('video')}
-                              className={`p-3 border-2 rounded-lg text-center transition-colors ${
-                                organicContentType === 'video' 
-                                  ? 'border-jones-primary bg-jones-light text-jones-primary' 
-                                  : 'border-gray-300 hover:border-jones-primary'
-                              }`}
-                            >
-                              <Camera size={20} className="mx-auto mb-2" />
-                              <span className="text-sm font-medium">Video</span>
-                            </button>
-                            <button
-                              onClick={() => setOrganicContentType('image')}
-                              className={`p-3 border-2 rounded-lg text-center transition-colors ${
-                                organicContentType === 'image' 
-                                  ? 'border-jones-primary bg-jones-light text-jones-primary' 
-                                  : 'border-gray-300 hover:border-jones-primary'
-                              }`}
-                            >
-                              <FileText size={20} className="mx-auto mb-2" />
-                              <span className="text-sm font-medium">Image</span>
-                            </button>
+                          <Textarea 
+                            rows={6}
+                            className="w-full resize-none text-sm"
+                            placeholder="Paste your video transcription or describe the content here..."
+                            value={organicVideoTranscription}
+                            onChange={(e) => setOrganicVideoTranscription(e.target.value)}
+                          />
+                          
+                          <div className="text-center text-sm text-gray-500">OR</div>
+                          
+                          <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                            <div className="flex items-center space-x-2">
+                              <Label htmlFor="organic-video-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
+                                <Camera size={14} />
+                                <span className="hidden sm:inline">Upload Video</span>
+                                <span className="sm:hidden">Video</span>
+                              </Label>
+                              <Input 
+                                id="organic-video-upload" 
+                                type="file" 
+                                className="sr-only" 
+                                accept="video/*" 
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    setOrganicVideoFile(file);
+                                  }
+                                }}
+                              />
+                              
+                              <Label htmlFor="organic-image-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
+                                <Upload size={14} />
+                                <span className="hidden sm:inline">Upload Image</span>
+                                <span className="sm:hidden">Image</span>
+                              </Label>
+                              <Input 
+                                id="organic-image-upload" 
+                                type="file" 
+                                className="sr-only" 
+                                accept="image/*" 
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    setOrganicImageFile(file);
+                                    const reader = new FileReader();
+                                    reader.onload = (e) => {
+                                      setOrganicImagePreview(e.target?.result as string);
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                              />
+                            </div>
                           </div>
 
-                          {organicContentType === 'video' && (
-                            <div className="space-y-4">
-                              <div>
-                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                  Upload Video or Enter Transcription
-                                </Label>
-                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                                  <input
-                                    type="file"
-                                    accept="video/*"
-                                    className="hidden"
-                                    id="organic-video-upload"
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (file) {
-                                        setOrganicVideoFile(file);
-                                      }
-                                    }}
-                                  />
-                                  <label htmlFor="organic-video-upload" className="cursor-pointer">
-                                    <Camera className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                                    <p className="text-sm text-gray-600">
-                                      Upload video file or enter transcription below
-                                    </p>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                      MP4, MOV - Max 50MB
-                                    </p>
-                                  </label>
-                                </div>
-                              </div>
-                              
+                          {(organicVideoFile || organicImageFile) && (
+                            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
                               {organicVideoFile && (
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                                  <p className="text-sm text-green-800">
-                                    ✓ Video uploaded: {organicVideoFile.name}
-                                  </p>
+                                <div className="flex items-center text-sm text-blue-700">
+                                  <span className="font-medium">Video:</span>
+                                  <span className="ml-2 truncate">{organicVideoFile.name}</span>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => setOrganicVideoFile(null)}
+                                    className="ml-2 h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                                  >
+                                    ×
+                                  </Button>
                                 </div>
                               )}
-
-                              <div>
-                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                  Video Transcription
-                                </Label>
-                                <textarea
-                                  value={organicVideoTranscription}
-                                  onChange={(e) => setOrganicVideoTranscription(e.target.value)}
-                                  className="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none"
-                                  placeholder="Enter or paste video transcription here..."
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {organicContentType === 'image' && (
-                            <div className="space-y-4">
-                              <div>
-                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                  Upload Product Image
-                                </Label>
-                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    id="organic-image-upload"
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (file) {
-                                        setOrganicImageFile(file);
-                                        const reader = new FileReader();
-                                        reader.onload = (e) => {
-                                          setOrganicImagePreview(e.target?.result as string);
-                                        };
-                                        reader.readAsDataURL(file);
-                                      }
-                                    }}
-                                  />
-                                  <label htmlFor="organic-image-upload" className="cursor-pointer">
-                                    <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                                    <p className="text-sm text-gray-600">
-                                      Upload product image
-                                    </p>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                      JPG, PNG - Max 10MB
-                                    </p>
-                                  </label>
-                                </div>
-                              </div>
-                              
-                              {organicImagePreview && (
-                                <div className="relative">
-                                  <img 
-                                    src={organicImagePreview}
-                                    alt="Uploaded product"
-                                    className="w-full max-w-xs mx-auto rounded-lg shadow-md"
-                                  />
-                                  <button
+                              {organicImageFile && (
+                                <div className="flex items-center text-sm text-blue-700">
+                                  <span className="font-medium">Image:</span>
+                                  <span className="ml-2">{organicImageFile.name}</span>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
                                     onClick={() => {
                                       setOrganicImageFile(null);
                                       setOrganicImagePreview('');
                                     }}
-                                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                    className="ml-2 h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
                                   >
                                     ×
-                                  </button>
+                                  </Button>
                                 </div>
                               )}
+                            </div>
+                          )}
+
+                          {organicImagePreview && (
+                            <div className="mt-4">
+                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                Image Preview
+                              </Label>
+                              <div className="border border-gray-300 rounded-lg overflow-hidden">
+                                <img 
+                                  src={organicImagePreview} 
+                                  alt="Preview" 
+                                  className="w-full h-48 object-cover"
+                                />
+                              </div>
                             </div>
                           )}
                         </div>
