@@ -230,6 +230,23 @@ export default function MetaAdGenerator() {
   const [generatedCaptions, setGeneratedCaptions] = useState<string[]>([]);
   const [captionVariations, setCaptionVariations] = useState(3);
 
+  // Story Sequence States
+  const [storyContentType, setStoryContentType] = useState('video');
+  const [storyVideoTranscription, setStoryVideoTranscription] = useState('');
+  const [storyVideoFile, setStoryVideoFile] = useState<File | null>(null);
+  const [storyImageFile, setStoryImageFile] = useState<File | null>(null);
+  const [storyImagePreview, setStoryImagePreview] = useState('');
+  const [storySequenceType, setStorySequenceType] = useState('product-showcase');
+  const [storyLength, setStoryLength] = useState(5);
+  const [storyTone, setStoryTone] = useState('authentic-personal');
+  const [generatedStorySequence, setGeneratedStorySequence] = useState<Array<{
+    slide: number;
+    type: string;
+    title: string;
+    content: string;
+    visualDirection: string;
+  }>>([]);
+
   // Define personas
   const personas = {
     innovators: {
@@ -2342,10 +2359,368 @@ export default function MetaAdGenerator() {
 
               {/* Story Sequences Sub-Tab */}
               <TabsContent value="stories">
-                <div className="text-center py-16">
-                  <FileText size={64} className="mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-600 mb-2">Story Sequences</h3>
-                  <p className="text-gray-500">Coming soon - Generate multi-slide Instagram story sequences</p>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                  {/* Input Section */}
+                  <div className="space-y-4 sm:space-y-6">
+                    {/* Content Type Selection */}
+                    <Card>
+                      <CardContent className="p-4 sm:p-6">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <Upload className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                          Creative Asset
+                        </h3>
+                        
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-3">
+                            <button
+                              onClick={() => setStoryContentType('video')}
+                              className={`p-3 border-2 rounded-lg text-center transition-colors ${
+                                storyContentType === 'video' 
+                                  ? 'border-jones-primary bg-jones-light text-jones-primary' 
+                                  : 'border-gray-300 hover:border-jones-primary'
+                              }`}
+                            >
+                              <Camera size={20} className="mx-auto mb-2" />
+                              <span className="text-sm font-medium">Video/Transcription</span>
+                            </button>
+                            <button
+                              onClick={() => setStoryContentType('image')}
+                              className={`p-3 border-2 rounded-lg text-center transition-colors ${
+                                storyContentType === 'image' 
+                                  ? 'border-jones-primary bg-jones-light text-jones-primary' 
+                                  : 'border-gray-300 hover:border-jones-primary'
+                              }`}
+                            >
+                              <FileText size={20} className="mx-auto mb-2" />
+                              <span className="text-sm font-medium">Image</span>
+                            </button>
+                          </div>
+
+                          {storyContentType === 'video' && (
+                            <div className="space-y-4">
+                              <Textarea 
+                                rows={6}
+                                className="w-full resize-none text-sm"
+                                placeholder="Paste your video transcription or describe the story concept here..."
+                                value={storyVideoTranscription}
+                                onChange={(e) => setStoryVideoTranscription(e.target.value)}
+                              />
+                              
+                              <div className="text-center text-sm text-gray-500">OR</div>
+                              
+                              <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                                <div className="flex items-center space-x-2">
+                                  <Label htmlFor="story-video-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
+                                    <Camera size={14} />
+                                    <span className="hidden sm:inline">Upload Video</span>
+                                    <span className="sm:hidden">Video</span>
+                                  </Label>
+                                  <Input 
+                                    id="story-video-upload" 
+                                    type="file" 
+                                    className="sr-only" 
+                                    accept="video/*" 
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        setStoryVideoFile(file);
+                                      }
+                                    }}
+                                  />
+                                  
+                                  <Label htmlFor="story-text-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
+                                    <Upload size={14} />
+                                    <span className="hidden sm:inline">Upload Text</span>
+                                    <span className="sm:hidden">Text</span>
+                                  </Label>
+                                  <Input 
+                                    id="story-text-upload" 
+                                    type="file" 
+                                    className="sr-only" 
+                                    accept=".txt,.doc,.docx" 
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const reader = new FileReader();
+                                        reader.onload = (e) => {
+                                          setStoryVideoTranscription(e.target?.result as string);
+                                        };
+                                        reader.readAsText(file);
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {storyContentType === 'image' && (
+                            <div className="space-y-4">
+                              <div className="text-center text-sm text-gray-500">Upload a product image to generate story sequence</div>
+                              
+                              <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                                <div className="flex items-center space-x-2">
+                                  <Label htmlFor="story-image-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
+                                    <Upload size={14} />
+                                    <span className="hidden sm:inline">Upload Image</span>
+                                    <span className="sm:hidden">Image</span>
+                                  </Label>
+                                  <Input 
+                                    id="story-image-upload" 
+                                    type="file" 
+                                    className="sr-only" 
+                                    accept="image/*" 
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        setStoryImageFile(file);
+                                        const reader = new FileReader();
+                                        reader.onload = (e) => {
+                                          setStoryImagePreview(e.target?.result as string);
+                                        };
+                                        reader.readAsDataURL(file);
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {(storyVideoFile || storyImageFile) && (
+                            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                              {storyVideoFile && (
+                                <div className="flex items-center text-sm text-blue-700">
+                                  <span className="font-medium">Video:</span>
+                                  <span className="ml-2 truncate">{storyVideoFile.name}</span>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => setStoryVideoFile(null)}
+                                    className="ml-2 h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                                  >
+                                    ×
+                                  </Button>
+                                </div>
+                              )}
+                              {storyImageFile && (
+                                <div className="flex items-center text-sm text-blue-700">
+                                  <span className="font-medium">Image:</span>
+                                  <span className="ml-2">{storyImageFile.name}</span>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => {
+                                      setStoryImageFile(null);
+                                      setStoryImagePreview('');
+                                    }}
+                                    className="ml-2 h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                                  >
+                                    ×
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {storyImagePreview && (
+                            <div className="mt-4">
+                              <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                                Image Preview
+                              </Label>
+                              <div className="border border-gray-300 rounded-lg overflow-hidden">
+                                <img 
+                                  src={storyImagePreview} 
+                                  alt="Preview" 
+                                  className="w-full h-48 object-cover"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Story Configuration */}
+                    <Card>
+                      <CardContent className="p-4 sm:p-6">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <Target className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                          Story Configuration
+                        </h3>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">Sequence Type</Label>
+                            <Select value={storySequenceType} onValueChange={setStorySequenceType}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="product-showcase">Product Showcase</SelectItem>
+                                <SelectItem value="tutorial">Tutorial/How-To</SelectItem>
+                                <SelectItem value="behind-scenes">Behind the Scenes</SelectItem>
+                                <SelectItem value="before-after">Before & After</SelectItem>
+                                <SelectItem value="day-in-life">Day in the Life</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">Story Length</Label>
+                            <Select value={storyLength.toString()} onValueChange={(value) => setStoryLength(Number(value))}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="3">3 slides</SelectItem>
+                                <SelectItem value="5">5 slides</SelectItem>
+                                <SelectItem value="7">7 slides</SelectItem>
+                                <SelectItem value="10">10 slides</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">Tone & Voice</Label>
+                            <Select value={storyTone} onValueChange={setStoryTone}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="authentic-personal">Authentic & Personal</SelectItem>
+                                <SelectItem value="educational-expert">Educational & Expert</SelectItem>
+                                <SelectItem value="fun-playful">Fun & Playful</SelectItem>
+                                <SelectItem value="inspirational">Inspirational</SelectItem>
+                                <SelectItem value="conversational">Conversational</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Button 
+                      className="w-full flex items-center justify-center space-x-2" 
+                      disabled={!storyVideoTranscription && !storyImageFile}
+                      onClick={async () => {
+                        if (!storyVideoTranscription && !storyImageFile) return;
+                        
+                        try {
+                          const response = await fetch('/api/generate-story-sequence', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                              contentType: storyContentType,
+                              transcription: storyVideoTranscription,
+                              sequenceType: storySequenceType,
+                              length: storyLength,
+                              tone: storyTone,
+                              selectedProduct: selectedProduct
+                            })
+                          });
+                          
+                          if (!response.ok) {
+                            throw new Error('Failed to generate story sequence');
+                          }
+                          
+                          const data = await response.json();
+                          setGeneratedStorySequence(data.sequence);
+                        } catch (error) {
+                          console.error('Error generating story sequence:', error);
+                        }
+                      }}
+                    >
+                      <Sparkles size={16} />
+                      <span>
+                        {(!storyVideoTranscription && !storyImageFile) 
+                          ? 'Upload Asset or Enter Content' 
+                          : 'Generate Story Sequence'}
+                      </span>
+                    </Button>
+                  </div>
+
+                  {/* Preview Section */}
+                  <div className="space-y-4 sm:space-y-6">
+                    <Card>
+                      <CardContent className="p-6">
+                        {generatedStorySequence.length > 0 ? (
+                          <div>
+                            <h3 className="text-xl font-semibold text-gray-900 mb-4">Generated Story Sequence</h3>
+                            <div className="space-y-4">
+                              {generatedStorySequence.map((slide, index) => (
+                                <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="bg-jones-primary text-white text-xs px-2 py-1 rounded">
+                                        Slide {slide.slide}
+                                      </span>
+                                      <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded border">
+                                        {slide.type}
+                                      </span>
+                                    </div>
+                                    <button
+                                      onClick={() => {
+                                        const slideContent = `${slide.title}\n\n${slide.content}\n\nVisual: ${slide.visualDirection}`;
+                                        navigator.clipboard.writeText(slideContent);
+                                      }}
+                                      className="text-jones-primary hover:text-jones-secondary text-sm"
+                                    >
+                                      <Copy size={16} />
+                                    </button>
+                                  </div>
+                                  
+                                  {slide.title && (
+                                    <div className="mb-2">
+                                      <h4 className="font-semibold text-gray-900">{slide.title}</h4>
+                                    </div>
+                                  )}
+                                  
+                                  <div className="text-gray-900 text-sm mb-3 whitespace-pre-wrap">
+                                    {slide.content}
+                                  </div>
+                                  
+                                  {slide.visualDirection && (
+                                    <div className="bg-blue-50 border border-blue-200 rounded p-2">
+                                      <span className="text-xs font-medium text-blue-800">Visual Direction:</span>
+                                      <p className="text-xs text-blue-700 mt-1">{slide.visualDirection}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-16">
+                            <FileText size={64} className="mx-auto text-gray-400 mb-4" />
+                            <h3 className="text-xl font-semibold text-gray-600 mb-2">Story Sequence Preview</h3>
+                            <p className="text-gray-500">
+                              Upload creative assets to generate Instagram story sequences
+                            </p>
+                            <div className="mt-6 text-left space-y-3">
+                              <div className="flex items-center text-sm text-gray-600">
+                                <Check size={16} className="mr-2 text-green-500" />
+                                Multi-slide story planning
+                              </div>
+                              <div className="flex items-center text-sm text-gray-600">
+                                <Check size={16} className="mr-2 text-green-500" />
+                                Visual direction guidance
+                              </div>
+                              <div className="flex items-center text-sm text-gray-600">
+                                <Check size={16} className="mr-2 text-green-500" />
+                                Engagement optimization
+                              </div>
+                              <div className="flex items-center text-sm text-gray-600">
+                                <Check size={16} className="mr-2 text-green-500" />
+                                Brand-consistent messaging
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>

@@ -135,6 +135,27 @@
     transition: none !important;
   }
   
+  /* Fix Select component clicker/flickering issues */
+  [data-radix-select-trigger], 
+  [data-radix-select-content], 
+  [data-radix-select-item],
+  [role="combobox"],
+  [role="option"],
+  [aria-haspopup="listbox"] {
+    transition: none !important;
+    transform: none !important;
+  }
+  
+  [data-radix-select-trigger]:hover,
+  [data-radix-select-content]:hover,
+  [data-radix-select-item]:hover,
+  [role="combobox"]:hover,
+  [role="option"]:hover,
+  [aria-haspopup="listbox"]:hover {
+    transition: none !important;
+    transform: none !important;
+  }
+  
   /* Ensure pointer events work properly */
   * {
     pointer-events: auto !important;

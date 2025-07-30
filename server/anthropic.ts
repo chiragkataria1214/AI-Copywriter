@@ -1312,3 +1312,148 @@ Format each caption clearly numbered (1., 2., 3.) with hashtags included at the 
     throw new Error('Failed to generate social captions');
   }
 }
+
+// Generate Instagram story sequences
+export async function generateStorySequence(request: {
+  contentType: string;
+  transcription?: string;
+  sequenceType: string;
+  length: number;
+  tone: string;
+  selectedProduct?: string;
+}) {
+  const { contentType, transcription, sequenceType, length, tone, selectedProduct } = request;
+
+  // Build sequence type guidelines
+  const sequenceGuidelines = {
+    'product-showcase': "Product showcase: Feature the product in different contexts, show benefits, demonstrate usage, include before/after if applicable",
+    'tutorial': "Tutorial/How-to: Break down application steps, provide tips and tricks, educate on techniques, show real application",
+    'behind-scenes': "Behind the scenes: Show authentic moments, brand personality, product creation, team insights, real environments",
+    'before-after': "Before & after: Demonstrate transformation, show realistic results, highlight product effectiveness, build credibility",
+    'day-in-life': "Day in the life: Show product integration in daily routine, relatable moments, authentic usage scenarios"
+  };
+
+  const toneGuidelines = {
+    'authentic-personal': "Authentic, personal, relatable - like sharing with a close friend",
+    'educational-expert': "Knowledgeable, helpful, educational - teaching with expertise",
+    'fun-playful': "Light-hearted, playful, energetic - creating joy and excitement",
+    'inspirational': "Uplifting, motivating, empowering - inspiring confidence",
+    'conversational': "Natural, conversational, approachable - encouraging interaction"
+  };
+
+  const systemPrompt = `You are an expert Instagram story content strategist specializing in Jones Road Beauty. Your task is to create engaging, multi-slide story sequences that align with the brand's voice and values.
+
+BRAND VOICE & VALUES:
+- "Makeup, Simplified" - Easy, effortless beauty
+- Authentic, real, approachable - not overly polished
+- Empowering women to feel confident in their natural beauty
+- Quality products that enhance rather than mask
+- Clean, minimal, effective formulations
+
+JONES ROAD BEAUTY TONE:
+- Warm and encouraging, never intimidating
+- Educational but not preachy
+- Inclusive and body-positive
+- Honest about product benefits
+- Celebrates natural beauty and self-expression
+
+SEQUENCE TYPE: ${sequenceGuidelines[sequenceType as keyof typeof sequenceGuidelines]}
+
+TONE: ${toneGuidelines[tone as keyof typeof toneGuidelines]}
+
+${selectedProduct ? `PRODUCT FOCUS: ${selectedProduct} - ensure story highlights this product throughout the sequence` : ''}
+
+STORY SEQUENCE REQUIREMENTS:
+1. Create exactly ${length} slides that flow naturally together
+2. Each slide should have engaging content and clear visual direction
+3. Mix content types (text overlays, product shots, lifestyle moments, tips)
+4. Include interactive elements where appropriate (polls, questions, swipe ups)
+5. Maintain Jones Road Beauty's authentic voice throughout
+6. End with a clear call-to-action or engagement prompt
+7. Provide specific visual direction for each slide
+
+Generate a ${length}-slide Instagram story sequence optimized for engagement and brand alignment.`;
+
+  const contentDescription = contentType === 'video' 
+    ? `Based on this video transcription: "${transcription}"`
+    : 'Based on product imagery';
+
+  const userPrompt = `${contentDescription}
+
+Create a ${length}-slide Instagram story sequence that:
+- Follows the ${sequenceType.replace('-', ' ')} format
+- Uses a ${tone.replace('-', ' ')} tone
+- Aligns with Jones Road Beauty's brand voice
+${selectedProduct ? `- Features ${selectedProduct} prominently` : ''}
+- Flows naturally from slide to slide
+- Includes specific visual directions for each slide
+
+For each slide, provide:
+- Slide number
+- Content type (text overlay, product shot, boomerang, etc.)
+- Main title/headline
+- Body content/text overlay
+- Visual direction (camera angle, styling, props, etc.)
+- Any interactive elements (polls, questions, stickers)
+
+Format as:
+SLIDE 1: [Content Type]
+TITLE: [Main headline]
+CONTENT: [Body text/overlay content]
+VISUAL: [Detailed visual direction]
+
+Continue this format for all ${length} slides.`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      system: systemPrompt,
+      max_tokens: 2000,
+      messages: [{ role: 'user', content: userPrompt }],
+    });
+
+    const content = response.content[0].type === 'text' ? response.content[0].text : '';
+    
+    // Parse the response into individual slides
+    const slidePattern = /SLIDE (\d+):\s*(.+?)\nTITLE:\s*(.+?)\nCONTENT:\s*([\s\S]*?)(?=VISUAL:)\nVISUAL:\s*([\s\S]*?)(?=SLIDE \d+:|$)/gi;
+    const slides = [];
+    let match;
+    
+    while ((match = slidePattern.exec(content)) !== null) {
+      slides.push({
+        slide: parseInt(match[1]),
+        type: match[2].trim(),
+        title: match[3].trim(),
+        content: match[4].trim(),
+        visualDirection: match[5].trim()
+      });
+    }
+
+    // If parsing fails, try simpler approach
+    if (slides.length === 0) {
+      const simpleSlidePattern = /SLIDE (\d+):([\s\S]*?)(?=SLIDE \d+:|$)/gi;
+      let simpleMatch;
+      
+      while ((simpleMatch = simpleSlidePattern.exec(content)) !== null) {
+        const slideContent = simpleMatch[2].trim();
+        const titleMatch = slideContent.match(/TITLE:\s*(.+)/);
+        const contentMatch = slideContent.match(/CONTENT:\s*([\s\S]*?)(?=VISUAL:|$)/);
+        const visualMatch = slideContent.match(/VISUAL:\s*([\s\S]*?)$/);
+        const typeMatch = slideContent.match(/^(.+?)(?=\n|TITLE:)/);
+        
+        slides.push({
+          slide: parseInt(simpleMatch[1]),
+          type: typeMatch ? typeMatch[1].trim() : 'Story Slide',
+          title: titleMatch ? titleMatch[1].trim() : '',
+          content: contentMatch ? contentMatch[1].trim() : slideContent.substring(0, 100) + '...',
+          visualDirection: visualMatch ? visualMatch[1].trim() : 'Standard story format'
+        });
+      }
+    }
+
+    return slides;
+  } catch (error) {
+    console.error('Story sequence generation error:', error);
+    throw new Error('Failed to generate story sequence');
+  }
+}

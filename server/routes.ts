@@ -5,7 +5,7 @@ import { registerJunipRoutes } from "./routes-junip";
 import { registerAdminRoutes } from "./routes-admin";
 import { storage } from "./storage";
 import multer from "multer";
-import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd, generateSocialCaptions } from "./anthropic";
+import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd, generateSocialCaptions, generateStorySequence } from "./anthropic";
 import { analyzeInfluencerVoice, generateInfluencerStyleCopy, fetchInstagramContent } from "./influencer-analyzer";
 import { getTrainingConfig } from "./routes-training";
 import { z } from "zod";
@@ -547,6 +547,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error generating social captions:', error);
       res.status(500).json({ error: 'Failed to generate social captions' });
+    }
+  });
+
+  // Generate Instagram story sequences
+  app.post('/api/generate-story-sequence', requireAuth, async (req, res) => {
+    try {
+      const { 
+        contentType, 
+        transcription, 
+        sequenceType, 
+        length, 
+        tone,
+        selectedProduct 
+      } = req.body;
+
+      console.log('Story sequence request:', { contentType, sequenceType, length, tone, selectedProduct });
+
+      if (!transcription && contentType !== 'image') {
+        return res.status(400).json({ error: 'Transcription is required for video content' });
+      }
+
+      const sequence = await generateStorySequence({
+        contentType,
+        transcription,
+        sequenceType,
+        length: parseInt(length) || 5,
+        tone,
+        selectedProduct
+      });
+
+      res.json({ sequence });
+    } catch (error) {
+      console.error('Error generating story sequence:', error);
+      res.status(500).json({ error: 'Failed to generate story sequence' });
     }
   });
 
