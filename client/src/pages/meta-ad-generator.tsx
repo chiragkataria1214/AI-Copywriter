@@ -1992,60 +1992,121 @@ export default function MetaAdGenerator() {
                         </h3>
                         
                         <div className="space-y-4">
-                          <Textarea 
-                            rows={6}
-                            className="w-full resize-none text-sm"
-                            placeholder="Paste your video transcription or describe the content here..."
-                            value={organicVideoTranscription}
-                            onChange={(e) => setOrganicVideoTranscription(e.target.value)}
-                          />
-                          
-                          <div className="text-center text-sm text-gray-500">OR</div>
-                          
-                          <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-                            <div className="flex items-center space-x-2">
-                              <Label htmlFor="organic-video-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
-                                <Camera size={14} />
-                                <span className="hidden sm:inline">Upload Video</span>
-                                <span className="sm:hidden">Video</span>
-                              </Label>
-                              <Input 
-                                id="organic-video-upload" 
-                                type="file" 
-                                className="sr-only" 
-                                accept="video/*" 
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    setOrganicVideoFile(file);
-                                  }
-                                }}
+                          <div className="grid grid-cols-2 gap-3">
+                            <button
+                              onClick={() => setOrganicContentType('video')}
+                              className={`p-3 border-2 rounded-lg text-center transition-colors ${
+                                organicContentType === 'video' 
+                                  ? 'border-jones-primary bg-jones-light text-jones-primary' 
+                                  : 'border-gray-300 hover:border-jones-primary'
+                              }`}
+                            >
+                              <Camera size={20} className="mx-auto mb-2" />
+                              <span className="text-sm font-medium">Video/Transcription</span>
+                            </button>
+                            <button
+                              onClick={() => setOrganicContentType('image')}
+                              className={`p-3 border-2 rounded-lg text-center transition-colors ${
+                                organicContentType === 'image' 
+                                  ? 'border-jones-primary bg-jones-light text-jones-primary' 
+                                  : 'border-gray-300 hover:border-jones-primary'
+                              }`}
+                            >
+                              <FileText size={20} className="mx-auto mb-2" />
+                              <span className="text-sm font-medium">Image</span>
+                            </button>
+                          </div>
+
+                          {organicContentType === 'video' && (
+                            <div className="space-y-4">
+                              <Textarea 
+                                rows={6}
+                                className="w-full resize-none text-sm"
+                                placeholder="Paste your video transcription or describe the content here..."
+                                value={organicVideoTranscription}
+                                onChange={(e) => setOrganicVideoTranscription(e.target.value)}
                               />
                               
-                              <Label htmlFor="organic-image-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
-                                <Upload size={14} />
-                                <span className="hidden sm:inline">Upload Image</span>
-                                <span className="sm:hidden">Image</span>
-                              </Label>
-                              <Input 
-                                id="organic-image-upload" 
-                                type="file" 
-                                className="sr-only" 
-                                accept="image/*" 
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    setOrganicImageFile(file);
-                                    const reader = new FileReader();
-                                    reader.onload = (e) => {
-                                      setOrganicImagePreview(e.target?.result as string);
-                                    };
-                                    reader.readAsDataURL(file);
-                                  }
-                                }}
-                              />
+                              <div className="text-center text-sm text-gray-500">OR</div>
+                              
+                              <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                                <div className="flex items-center space-x-2">
+                                  <Label htmlFor="organic-video-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
+                                    <Camera size={14} />
+                                    <span className="hidden sm:inline">Upload Video</span>
+                                    <span className="sm:hidden">Video</span>
+                                  </Label>
+                                  <Input 
+                                    id="organic-video-upload" 
+                                    type="file" 
+                                    className="sr-only" 
+                                    accept="video/*" 
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        setOrganicVideoFile(file);
+                                      }
+                                    }}
+                                  />
+                                  
+                                  <Label htmlFor="organic-text-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
+                                    <Upload size={14} />
+                                    <span className="hidden sm:inline">Upload Text</span>
+                                    <span className="sm:hidden">Text</span>
+                                  </Label>
+                                  <Input 
+                                    id="organic-text-upload" 
+                                    type="file" 
+                                    className="sr-only" 
+                                    accept=".txt,.doc,.docx" 
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const reader = new FileReader();
+                                        reader.onload = (e) => {
+                                          setOrganicVideoTranscription(e.target?.result as string);
+                                        };
+                                        reader.readAsText(file);
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              </div>
                             </div>
-                          </div>
+                          )}
+
+                          {organicContentType === 'image' && (
+                            <div className="space-y-4">
+                              <div className="text-center text-sm text-gray-500">Upload a product image to generate captions</div>
+                              
+                              <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                                <div className="flex items-center space-x-2">
+                                  <Label htmlFor="organic-image-upload" className="cursor-pointer flex items-center space-x-2 px-3 sm:px-4 py-2 bg-jones-light hover:bg-jones-secondary text-jones-primary rounded-md transition-colors text-sm">
+                                    <Upload size={14} />
+                                    <span className="hidden sm:inline">Upload Image</span>
+                                    <span className="sm:hidden">Image</span>
+                                  </Label>
+                                  <Input 
+                                    id="organic-image-upload" 
+                                    type="file" 
+                                    className="sr-only" 
+                                    accept="image/*" 
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        setOrganicImageFile(file);
+                                        const reader = new FileReader();
+                                        reader.onload = (e) => {
+                                          setOrganicImagePreview(e.target?.result as string);
+                                        };
+                                        reader.readAsDataURL(file);
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
 
                           {(organicVideoFile || organicImageFile) && (
                             <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
