@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Upload, Copy, Check, Target, Sparkles, Video, FileText, Zap, ThumbsUp, ThumbsDown, Star, Globe, List, AlertCircle, Palette, Users, Settings, LogOut, User, Database, Brain, BarChart3, Camera, Lock } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+// Direct textarea implementation to avoid deployment sync issues
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -18,6 +19,7 @@ import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'wouter';
 import { ProductSelection } from "@/components/ProductSelection";
+
 
 export default function MetaAdGenerator() {
   const [activeTab, setActiveTab] = useState('paid-social');
@@ -87,11 +89,28 @@ export default function MetaAdGenerator() {
   const setupAdmin = () => {};
   const isSettingUpAdmin = false;
   const [transcription, setTranscription] = useState('');
+  
+  // Ultra-simple transcription handler 
+  const handleTranscriptionChange = (value: string) => {
+    console.log('PARENT: Transcription change received, length:', value.length);
+    setTranscription(value);
+    console.log('PARENT: State update completed');
+  };
+  
+  // Completely static transcription preview to eliminate all re-render possibilities
+  const getTranscriptionPreview = () => {
+    if (!transcription) return '';
+    if (transcription.length <= 200) return transcription;
+    return transcription.substring(0, 200) + '...';
+  };
+
   const [airLink, setAirLink] = useState('');
   const [uploadedImage, setUploadedImage] = useState<string>('');
   const [customBrief, setCustomBrief] = useState('');
   const [concept, setConcept] = useState('lifeJuggler');
   const [subPersona, setSubPersona] = useState('newMom');
+  
+
   const [targetAudience, setTargetAudience] = useState('');
   const [landingPageUrl, setLandingPageUrl] = useState('');
   const [selectedProduct, setSelectedProduct] = useState('');
@@ -116,16 +135,10 @@ export default function MetaAdGenerator() {
     field?: string;
   } | null>(null);
   
-  // Debug States
-  const [debugInfo, setDebugInfo] = useState<{
-    systemPrompt: string;
-    userPrompt: string;
-    requestPayload: any;
-    rawResponse: string;
-  } | null>(null);
-  
   // Training Configuration States
   const [trainingConfig, setTrainingConfig] = useState<any>(null);
+  
+
   const [editingConfig, setEditingConfig] = useState<any>(null);
   const [configLoading, setConfigLoading] = useState(false);
   // Admin state managed through useAuth hook
@@ -143,13 +156,11 @@ export default function MetaAdGenerator() {
   
   // Load review stats
   useEffect(() => {
-    if (effectiveUser) {
-      fetch('/api/reviews/stats')
-        .then(res => res.json())
-        .then(data => setReviewStats(data))
-        .catch(err => console.error('Failed to load review stats:', err));
-    }
-  }, [effectiveUser]);
+    fetch('/api/reviews/stats')
+      .then(res => res.json())
+      .then(data => setReviewStats(data))
+      .catch(err => console.error('Failed to load review stats:', err));
+  }, []); // Remove effectiveUser dependency to prevent infinite loop
   
   // Landing Page States
   const [landingPageType, setLandingPageType] = useState('listicle');
@@ -207,6 +218,30 @@ export default function MetaAdGenerator() {
     timestamp: Date;
   }>>([]);
   const [generatedCustomResponse, setGeneratedCustomResponse] = useState('');
+  
+  // Social Content States
+  const [socialContentType, setSocialContentType] = useState('captions'); // 'captions' or 'stories'
+  const [socialAirLink, setSocialAirLink] = useState('');
+  const [socialAssets, setSocialAssets] = useState<string[]>([]);
+  const [socialPlatform, setSocialPlatform] = useState('instagram');
+  const [socialCampaignType, setSocialCampaignType] = useState('product-spotlight');
+  const [socialTone, setSocialTone] = useState('authentic');
+  const [socialCaptionLength, setSocialCaptionLength] = useState('medium');
+  const [numberOfStories, setNumberOfStories] = useState(3);
+  const [storySequenceTheme, setStorySequenceTheme] = useState('tutorial');
+  const [generatedSocialContent, setGeneratedSocialContent] = useState<{
+    captions?: Array<{ content: string; hashtags: string; hook: string }>;
+    stories?: Array<{ slide: number; content: string; cta: string; visual_suggestion: string }>;
+  }>({});
+  const [copiedSocial, setCopiedSocial] = useState(false);
+  
+  // Debug States
+  const [debugInfo, setDebugInfo] = useState<{
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null>(null);
   const [influencerHandle, setInfluencerHandle] = useState('');
   const [voiceAnalysisMethod, setVoiceAnalysisMethod] = useState('combined');
   const [influencerBrandBalance, setInfluencerBrandBalance] = useState([50]);
@@ -723,6 +758,47 @@ export default function MetaAdGenerator() {
     }
   });
 
+  // Social content generation mutations
+  const generateSocialContentMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/generate-social-content', {
+        method: 'POST',
+        body: {
+          contentType: socialContentType,
+          assets: socialAssets.length > 0 ? socialAssets : [socialAirLink].filter(Boolean),
+          platform: socialPlatform,
+          campaignType: socialCampaignType,
+          tone: socialTone,
+          captionLength: socialCaptionLength,
+          numberOfStories,
+          storyTheme: storySequenceTheme,
+          concept,
+          subPersona,
+          brandDrBalance: brandDrBalance[0],
+          selectedProduct,
+          transcription: transcription || undefined
+        }
+      });
+    },
+    onSuccess: (data) => {
+      setGeneratedSocialContent(data);
+      toast({
+        title: "Social Content Generated",
+        description: socialContentType === 'captions' 
+          ? "Instagram captions generated successfully"
+          : `Story sequence with ${numberOfStories} slides created`,
+      });
+    },
+    onError: (error) => {
+      console.error('Social generation error:', error);
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate social content. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
   const generateLandingCopyMutation = useMutation({
     mutationFn: async () => {
       // When using ads content, include the selected headline and primary text
@@ -730,7 +806,8 @@ export default function MetaAdGenerator() {
       const chosenAdsContent = useAdsForLanding && selectedHeadline ? {
         headline: selectedHeadline.copy,
         framework: selectedHeadline.framework,
-        primaryText: generatedPrimaryText
+        primaryText: generatedPrimaryText,
+        transcription: transcription // Include transcription for consistency
       } : adsContent;
 
       return await apiRequest('/api/generate-landing-copy', {
@@ -744,7 +821,8 @@ export default function MetaAdGenerator() {
           adsContent: chosenAdsContent,
           brandDrBalance: brandDrBalance[0],
           selectedProduct: landingPageType === 'multiProduct' ? selectedProducts.join(',') : selectedProduct,
-          mainAngle
+          mainAngle,
+          transcription: useAdsForLanding ? transcription : undefined // Include transcription when using ads content
         }
       });
     },
@@ -915,14 +993,17 @@ export default function MetaAdGenerator() {
                 <Sparkles size={16} />
                 <span className="text-xs sm:text-sm">Paid Social</span>
               </TabsTrigger>
+              
               <TabsTrigger value="landing" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
                 <FileText size={16} />
                 <span className="text-xs sm:text-sm">Landing Page</span>
               </TabsTrigger>
+              
               <TabsTrigger value="static-ad" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
                 <Camera size={16} />
                 <span className="text-xs sm:text-sm">Static Ad</span>
               </TabsTrigger>
+              
               <TabsTrigger value="custom" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
                 <Brain size={16} />
                 <span className="text-xs sm:text-sm">Custom Request</span>
@@ -957,10 +1038,10 @@ export default function MetaAdGenerator() {
 
               {/* Ad Copy Sub-Tab */}
               <TabsContent value="ad-copy">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-              {/* Input Section */}
-              <div className="space-y-4 sm:space-y-6">
-                {/* Content Input Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                  {/* Input Section */}
+                  <div className="space-y-4 sm:space-y-6">
+                    {/* Content Input Section */}
                 <Card>
                   <CardContent className="p-4 sm:p-6">
                     <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -1018,12 +1099,21 @@ export default function MetaAdGenerator() {
 
                       <div className="text-center text-sm text-gray-500">OR</div>
 
-                      <Textarea 
+                      <textarea 
                         rows={6}
                         className="w-full resize-none text-sm"
                         placeholder="Paste your video transcription or ad concept here..."
                         value={transcription}
-                        onChange={(e) => setTranscription(e.target.value)}
+                        onChange={(e) => {
+                          console.log('RAW TEXTAREA DIRECT: Input detected, length:', e.target.value.length);
+                          handleTranscriptionChange(e.target.value);
+                        }}
+                        style={{
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          padding: '8px',
+                          fontFamily: 'inherit'
+                        }}
                       />
                       
                       <div>
@@ -1366,7 +1456,7 @@ export default function MetaAdGenerator() {
 
                 <Button 
                   onClick={generateAdCopy} 
-                  className="w-full text-white hover:opacity-90"
+                  className="w-full text-white"
                   style={{ backgroundColor: '#004182' }}
                   disabled={generateAdCopyMutation.isPending}
                 >
@@ -1431,7 +1521,6 @@ export default function MetaAdGenerator() {
                                     setSelectedItemForRevision({ type: 'headline', index });
                                     setShowRevisionPanel(true);
                                   }}
-                                  title="Suggest improvements"
                                 >
                                   <Target size={14} />
                                 </Button>
@@ -2115,7 +2204,7 @@ export default function MetaAdGenerator() {
                                     <SelectItem key={index} value={index.toString()}>
                                       <div className="flex flex-col py-1">
                                         <span className="font-medium text-sm">{headline.framework}</span>
-                                        <span className="text-xs text-gray-500">{headline.copy}</span>
+                                        <span className="text-xs text-gray-500 truncate max-w-xs">{headline.copy}</span>
                                       </div>
                                     </SelectItem>
                                   ))}
@@ -2125,10 +2214,22 @@ export default function MetaAdGenerator() {
                             
                             {generatedPrimaryText && (
                               <div>
-                                <Label className="text-xs font-medium text-gray-600 mb-2 block">Primary Text Preview</Label>
+                                <Label className="text-xs font-medium text-gray-600 mb-2 block">Selected Primary Text</Label>
                                 <div className="p-3 bg-white rounded border text-sm text-gray-700">
                                   {generatedPrimaryText}
                                 </div>
+                              </div>
+                            )}
+                            
+                            {transcription && (
+                              <div>
+                                <Label className="text-xs font-medium text-gray-600 mb-2 block">Source Transcription</Label>
+                                <div className="p-3 bg-gray-50 rounded border text-xs text-gray-600 max-h-24 overflow-y-auto">
+                                  {getTranscriptionPreview()}
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  This transcription content will be included in the landing page generation for consistency
+                                </p>
                               </div>
                             )}
                           </div>
@@ -2203,31 +2304,12 @@ export default function MetaAdGenerator() {
                           </div>
                         </div>
                         
-                        <div className="border-l-4 border-gray-300 pl-4 group">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-gray-900 mb-2">Introduction</h4>
-                              <p className="text-gray-700">{generatedLandingCopy.introduction}</p>
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity ml-2"
-                              onClick={() => {
-                                setSelectedItemForRevision({ type: 'landingCopy', field: 'introduction' });
-                                setShowRevisionPanel(true);
-                              }}
-                              title="Suggest improvements"
-                            >
-                              <Target size={14} />
-                            </Button>
-                          </div>
-                        </div>
+
                         
                         {generatedLandingCopy.sections.length > 0 && (
                           <div className="space-y-4">
                             <h4 className="font-semibold text-gray-900 flex items-center">
-                              Strategic Reasons 
+                              5 reasons
                               <Badge variant="secondary" className="ml-2 text-xs">
                                 {generatedLandingCopy.sections.length}/5
                               </Badge>
@@ -2498,9 +2580,11 @@ export default function MetaAdGenerator() {
                         <div>
                           <Label className="text-sm font-medium text-gray-700">Product Context</Label>
                           <ProductSelection
-                            value={selectedProduct}
-                            onChange={setSelectedProduct}
-                            placeholder="Optional: Select product if relevant"
+                            landingPageType="single"
+                            selectedProduct={selectedProduct}
+                            setSelectedProduct={setSelectedProduct}
+                            selectedProducts={[]}
+                            setSelectedProducts={() => {}}
                           />
                         </div>
 
@@ -2620,6 +2704,352 @@ export default function MetaAdGenerator() {
                               <Copy size={12} />
                               <span>Copy</span>
                             </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Static Ad Analysis Tab */}
+          <TabsContent value="static-ad">
+            <div className="text-center py-16">
+              <Camera size={64} className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-xl font-semibold text-gray-600 mb-2">Static Ad Analysis</h3>
+              <p className="text-gray-500">Coming soon - Upload and analyze static ad creatives</p>
+            </div>
+          </TabsContent>
+
+          {/* AI Settings Tab */}
+          <TabsContent value="settings">
+                        </TabsTrigger>
+                        <TabsTrigger value="stories" className="flex items-center space-x-2">
+                          <span>Story Sequences</span>
+                        </TabsTrigger>
+                      </TabsList>
+                      
+                      <div className="mt-4">
+                        {socialContentType === 'captions' && (
+                          <div className="space-y-4">
+                            {/* Assets Input for Captions */}
+                            <div>
+                              <Label className="block text-sm font-medium text-gray-700 mb-2">Air Link or Asset URLs</Label>
+                              <Input 
+                                type="url" 
+                                placeholder="Paste Air.com link or image/video URLs..."
+                                value={socialAirLink}
+                                onChange={(e) => setSocialAirLink(e.target.value)}
+                                className="mb-2"
+                              />
+                              <p className="text-xs text-gray-500">
+                                Add links to images or videos to create social captions based on your assets
+                              </p>
+                            </div>
+                            
+                            {/* Platform Selection */}
+                            <div>
+                              <Label className="block text-sm font-medium text-gray-700 mb-2">Platform</Label>
+                              <Select value={socialPlatform} onValueChange={setSocialPlatform}>
+                                <SelectTrigger className="mt-1">
+                                  <SelectValue placeholder="Select platform" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="instagram">Instagram</SelectItem>
+                                  <SelectItem value="facebook">Facebook</SelectItem>
+                                  <SelectItem value="tiktok">TikTok</SelectItem>
+                                  <SelectItem value="twitter">Twitter/X</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            {/* Campaign Type */}
+                            <div>
+                              <Label className="block text-sm font-medium text-gray-700 mb-2">Campaign Type</Label>
+                              <Select value={socialCampaignType} onValueChange={setSocialCampaignType}>
+                                <SelectTrigger className="mt-1">
+                                  <SelectValue placeholder="Select campaign type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="product-spotlight">Product Spotlight</SelectItem>
+                                  <SelectItem value="tutorial">Tutorial/How-To</SelectItem>
+                                  <SelectItem value="lifestyle">Lifestyle Content</SelectItem>
+                                  <SelectItem value="behind-scenes">Behind the Scenes</SelectItem>
+                                  <SelectItem value="user-generated">User Generated Content</SelectItem>
+                                  <SelectItem value="promotion">Promotional</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            {/* Tone */}
+                            <div>
+                              <Label className="block text-sm font-medium text-gray-700 mb-2">Tone</Label>
+                              <Select value={socialTone} onValueChange={setSocialTone}>
+                                <SelectTrigger className="mt-1">
+                                  <SelectValue placeholder="Select tone" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="authentic">Authentic & Natural</SelectItem>
+                                  <SelectItem value="aspirational">Aspirational</SelectItem>
+                                  <SelectItem value="educational">Educational</SelectItem>
+                                  <SelectItem value="playful">Playful & Fun</SelectItem>
+                                  <SelectItem value="confident">Confident</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            {/* Caption Length */}
+                            <div>
+                              <Label className="block text-sm font-medium text-gray-700 mb-2">Caption Length</Label>
+                              <Select value={socialCaptionLength} onValueChange={setSocialCaptionLength}>
+                                <SelectTrigger className="mt-1">
+                                  <SelectValue placeholder="Select length" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="short">Short (1-2 sentences)</SelectItem>
+                                  <SelectItem value="medium">Medium (3-5 sentences)</SelectItem>
+                                  <SelectItem value="long">Long (6+ sentences)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {socialContentType === 'stories' && (
+                          <div className="space-y-4">
+                            {/* Multiple Assets Input for Stories */}
+                            <div>
+                              <Label className="block text-sm font-medium text-gray-700 mb-2">Asset Collection</Label>
+                              <Input 
+                                type="url" 
+                                placeholder="Paste Air.com collection link or individual asset URLs..."
+                                value={socialAirLink}
+                                onChange={(e) => setSocialAirLink(e.target.value)}
+                                className="mb-2"
+                              />
+                              <p className="text-xs text-gray-500">
+                                Add collection of images/videos for Instagram story sequence creation
+                              </p>
+                            </div>
+                            
+                            {/* Number of Stories */}
+                            <div>
+                              <Label className="block text-sm font-medium text-gray-700 mb-2">Number of Stories</Label>
+                              <Select value={numberOfStories.toString()} onValueChange={(value) => setNumberOfStories(parseInt(value))}>
+                                <SelectTrigger className="mt-1">
+                                  <SelectValue placeholder="Select number" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="3">3 Stories</SelectItem>
+                                  <SelectItem value="4">4 Stories</SelectItem>
+                                  <SelectItem value="5">5 Stories</SelectItem>
+                                  <SelectItem value="6">6 Stories</SelectItem>
+                                  <SelectItem value="7">7 Stories</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            {/* Story Theme */}
+                            <div>
+                              <Label className="block text-sm font-medium text-gray-700 mb-2">Story Sequence Theme</Label>
+                              <Select value={storySequenceTheme} onValueChange={setStorySequenceTheme}>
+                                <SelectTrigger className="mt-1">
+                                  <SelectValue placeholder="Select theme" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="tutorial">Step-by-Step Tutorial</SelectItem>
+                                  <SelectItem value="before-after">Before & After</SelectItem>
+                                  <SelectItem value="day-in-life">Day in the Life</SelectItem>
+                                  <SelectItem value="product-journey">Product Journey</SelectItem>
+                                  <SelectItem value="tips-series">Tips & Tricks Series</SelectItem>
+                                  <SelectItem value="brand-story">Brand Story</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+
+                {/* Product Selection */}
+                <ProductSelection 
+                  selectedProduct={selectedProduct}
+                  onProductChange={setSelectedProduct}
+                  title="Target Product"
+                  description="Select the Jones Road product to feature in your social content"
+                />
+
+                {/* Brand/DR Balance and Generation */}
+                <Card>
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="space-y-4 sm:space-y-6">
+                      {/* Brand/DR Balance */}
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                          Brand vs Direct Response Balance: {brandDrBalance[0]}%
+                        </Label>
+                        <div className="px-2">
+                          <Slider
+                            value={brandDrBalance}
+                            onValueChange={setBrandDrBalance}
+                            max={100}
+                            min={0}
+                            step={10}
+                            className="mt-2"
+                          />
+                          <div className="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>Direct Response</span>
+                            <span>Brand Focused</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button 
+                        onClick={() => generateSocialContentMutation.mutate()}
+                        disabled={!socialAirLink.trim() || generateSocialContentMutation.isPending}
+                        className="w-full flex items-center justify-center space-x-2"
+                      >
+                        {generateSocialContentMutation.isPending ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>Generating...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Users size={16} />
+                            <span>Generate {socialContentType === 'captions' ? 'Social Captions' : 'Story Sequence'}</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Output Section */}
+              <div className="space-y-4 sm:space-y-6">
+                {socialContentType === 'captions' && generatedSocialContent.captions && generatedSocialContent.captions.length > 0 && (
+                  <Card>
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
+                          <Sparkles className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                          Generated Social Captions
+                        </h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard(
+                            generatedSocialContent.captions?.map(caption => 
+                              `${caption.content}\n\n${caption.hashtags}`
+                            ).join('\n\n---\n\n') || '', 
+                            'social'
+                          )}
+                          className="flex items-center space-x-1"
+                        >
+                          {copiedSocial ? <Check size={14} /> : <Copy size={14} />}
+                          <span>{copiedSocial ? 'Copied!' : 'Copy All'}</span>
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        {generatedSocialContent.captions.map((caption, index) => (
+                          <div key={index} className="border border-gray-200 rounded-lg p-4">
+                            <div className="mb-3">
+                              <Badge variant="outline" className="mb-2">Caption {index + 1}</Badge>
+                              <div className="bg-gray-50 rounded-lg p-3">
+                                <p className="text-sm text-gray-900 whitespace-pre-wrap">{caption.content}</p>
+                              </div>
+                            </div>
+                            
+                            {caption.hashtags && (
+                              <div className="mb-3">
+                                <Label className="text-xs font-medium text-gray-600">Hashtags</Label>
+                                <div className="mt-1 text-sm text-blue-600">
+                                  {caption.hashtags}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {caption.hook && (
+                              <div>
+                                <Label className="text-xs font-medium text-gray-600">Hook/Opening</Label>
+                                <div className="mt-1 text-sm text-gray-700 font-medium">
+                                  {caption.hook}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {socialContentType === 'stories' && generatedSocialContent.stories && generatedSocialContent.stories.length > 0 && (
+                  <Card>
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
+                          <Sparkles className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                          Instagram Story Sequence
+                        </h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard(
+                            generatedSocialContent.stories?.map(story => 
+                              `Story ${story.slide}:\n${story.content}\n\nCTA: ${story.cta}\nVisual: ${story.visual_suggestion}`
+                            ).join('\n\n---\n\n') || '', 
+                            'social'
+                          )}
+                          className="flex items-center space-x-1"
+                        >
+                          {copiedSocial ? <Check size={14} /> : <Copy size={14} />}
+                          <span>{copiedSocial ? 'Copied!' : 'Copy All'}</span>
+                        </Button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {generatedSocialContent.stories.map((story, index) => (
+                          <div key={index} className="border border-gray-200 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <Badge variant="outline">Story {story.slide}</Badge>
+                              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white text-xs font-bold">
+                                {story.slide}
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-3">
+                              <div>
+                                <Label className="text-xs font-medium text-gray-600">Content</Label>
+                                <div className="mt-1 bg-gray-50 rounded-lg p-3">
+                                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{story.content}</p>
+                                </div>
+                              </div>
+                              
+                              {story.cta && (
+                                <div>
+                                  <Label className="text-xs font-medium text-gray-600">Call to Action</Label>
+                                  <div className="mt-1 text-sm font-medium text-jones-primary">
+                                    {story.cta}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {story.visual_suggestion && (
+                                <div>
+                                  <Label className="text-xs font-medium text-gray-600">Visual Suggestion</Label>
+                                  <div className="mt-1 text-sm text-gray-700 italic">
+                                    {story.visual_suggestion}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -2826,13 +3256,14 @@ export default function MetaAdGenerator() {
 
                   {trainingConfig ? (
                     <Tabs defaultValue="brand-guidelines" className="w-full">
-                      <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 gap-1">
-                        <TabsTrigger value="brand-guidelines" className="text-xs sm:text-sm">Brand Guidelines</TabsTrigger>
-                        <TabsTrigger value="personas" className="text-xs sm:text-sm">Personas</TabsTrigger>
-                        <TabsTrigger value="frameworks" className="text-xs sm:text-sm">Copy Frameworks</TabsTrigger>
-                        <TabsTrigger value="reviews" className="text-xs sm:text-sm">Customer Reviews</TabsTrigger>
-                        <TabsTrigger value="prompts" className="text-xs sm:text-sm">System Prompts</TabsTrigger>
-                        <TabsTrigger value="model" className="text-xs sm:text-sm">Model Settings</TabsTrigger>
+                      <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 p-2 h-auto">
+                        <TabsTrigger value="brand-guidelines" className="text-xs sm:text-sm py-2 px-3">Brand Guidelines</TabsTrigger>
+                        <TabsTrigger value="product-claims" className="text-xs sm:text-sm py-2 px-3">Product Claims</TabsTrigger>
+                        <TabsTrigger value="personas" className="text-xs sm:text-sm py-2 px-3">Personas</TabsTrigger>
+                        <TabsTrigger value="frameworks" className="text-xs sm:text-sm py-2 px-3">Copy Frameworks</TabsTrigger>
+                        <TabsTrigger value="reviews" className="text-xs sm:text-sm py-2 px-3">Customer Reviews</TabsTrigger>
+                        <TabsTrigger value="prompts" className="text-xs sm:text-sm py-2 px-3">System Prompts</TabsTrigger>
+                        <TabsTrigger value="model" className="text-xs sm:text-sm py-2 px-3">Model Settings</TabsTrigger>
                       </TabsList>
 
                       <TabsContent value="brand-guidelines" className="mt-4">
@@ -2851,7 +3282,7 @@ export default function MetaAdGenerator() {
                               className="mt-1 text-gray-900 font-medium"
                               rows={3}
                               placeholder="Your Skin But Better - natural, effortless enhancement..."
-                              disabled={!effectiveUser?.role === 'admin'}
+                              disabled={effectiveUser?.role !== 'admin'}
                             />
                           </div>
                           
@@ -2906,7 +3337,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={rule}
                                     onChange={(e) => {
-                                      if (!effectiveUser?.role === 'admin') return;
+                                      if (effectiveUser?.role !== 'admin') return;
                                       const rules = [...(editingConfig.brandGuidelines.brandVoice || [])];
                                       rules[index] = e.target.value;
                                       setEditingConfig({
@@ -2919,7 +3350,7 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium ${editingConfig?.brandGuidelines?.enabledBrandVoice?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter brand voice rule..."
-                                    disabled={!effectiveUser?.role === 'admin'}
+                                    disabled={effectiveUser?.role !== 'admin'}
                                   />
                                 </div>
                               ))}
@@ -3000,7 +3431,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={term}
                                     onChange={(e) => {
-                                      if (!effectiveUser?.role === 'admin') return;
+                                      if (effectiveUser?.role !== 'admin') return;
                                       const terms = [...(editingConfig.brandGuidelines.keyTerminology || [])];
                                       terms[index] = e.target.value;
                                       setEditingConfig({
@@ -3013,7 +3444,7 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium ${editingConfig?.brandGuidelines?.enabledKeyTerminology?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter key term or phrase..."
-                                    disabled={!effectiveUser?.role === 'admin'}
+                                    disabled={effectiveUser?.role !== 'admin'}
                                   />
                                 </div>
                               ))}
@@ -3099,7 +3530,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={phrase}
                                     onChange={(e) => {
-                                      if (!effectiveUser?.role === 'admin') return;
+                                      if (effectiveUser?.role !== 'admin') return;
                                       const phrases = [...(editingConfig.brandGuidelines.approvedLanguage || [])];
                                       phrases[index] = e.target.value;
                                       setEditingConfig({
@@ -3112,7 +3543,7 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium border-green-200 focus:border-green-400 ${editingConfig?.brandGuidelines?.enabledApprovedLanguage?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter approved phrase..."
-                                    disabled={!effectiveUser?.role === 'admin'}
+                                    disabled={effectiveUser?.role !== 'admin'}
                                   />
                                 </div>
                               ))}
@@ -3198,7 +3629,7 @@ export default function MetaAdGenerator() {
                                   <Input
                                     value={phrase}
                                     onChange={(e) => {
-                                      if (!effectiveUser?.role === 'admin') return;
+                                      if (effectiveUser?.role !== 'admin') return;
                                       const phrases = [...(editingConfig.brandGuidelines.avoidedLanguage || [])];
                                       phrases[index] = e.target.value;
                                       setEditingConfig({
@@ -3211,7 +3642,7 @@ export default function MetaAdGenerator() {
                                     }}
                                     className={`w-full ml-0 text-gray-900 font-medium border-red-200 focus:border-red-400 ${editingConfig?.brandGuidelines?.enabledAvoidedLanguage?.[index] === false ? 'opacity-50' : ''}`}
                                     placeholder="Enter phrase to avoid..."
-                                    disabled={!effectiveUser?.role === 'admin'}
+                                    disabled={effectiveUser?.role !== 'admin'}
                                   />
                                 </div>
                               ))}
@@ -3239,6 +3670,80 @@ export default function MetaAdGenerator() {
                                 </Button>
                               )}
                             </div>
+                          </div>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="product-claims" className="mt-4">
+                        <div className="space-y-6">
+                          <div className="space-y-8">
+                            {editingConfig?.productClaims && Object.entries(editingConfig.productClaims).map(([productName, claimsData]: [string, any]) => (
+                              <div key={productName} className="border border-gray-200 rounded-lg p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                  <h4 className="text-lg font-semibold text-gray-900">
+                                    {productName === 'foundation' ? 'What the Foundation' : 
+                                     productName === 'mascara' ? 'Like A Mother Mascara' :
+                                     productName === 'sunscreen' ? 'Under Eye Rescue SPF 30' :
+                                     productName === 'miracleBalm' ? 'Miracle Balm' : productName}
+                                  </h4>
+                                  <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                    {claimsData.approvedClaims?.length || 0} Approved Claims
+                                  </Badge>
+                                </div>
+                                
+                                <div>
+                                  <Label className="text-sm font-medium text-green-800 mb-3 block">✓ Approved Claims</Label>
+                                  <div className="space-y-3">
+                                    {claimsData.approvedClaims?.map((claim: string, index: number) => (
+                                      <div key={index} className="space-y-2">
+                                        <div className="flex items-center space-x-3">
+                                          <Switch 
+                                            checked={claimsData.enabledApproved?.[index] !== false}
+                                            onCheckedChange={(checked) => {
+                                              const enabled = [...(claimsData.enabledApproved || [])];
+                                              enabled[index] = checked;
+                                              setEditingConfig({
+                                                ...editingConfig,
+                                                productClaims: {
+                                                  ...editingConfig.productClaims,
+                                                  [productName]: {
+                                                    ...claimsData,
+                                                    enabledApproved: enabled
+                                                  }
+                                                }
+                                              });
+                                            }}
+                                            className="flex-shrink-0"
+                                          />
+                                          <span className="text-green-500 text-sm font-bold flex-shrink-0">✓</span>
+                                        </div>
+                                        <Textarea
+                                          value={claim}
+                                          onChange={(e) => {
+                                            if (effectiveUser?.role === 'admin') {
+                                              const claims = [...(claimsData.approvedClaims || [])];
+                                              claims[index] = e.target.value;
+                                              setEditingConfig({
+                                                ...editingConfig,
+                                                productClaims: {
+                                                  ...editingConfig.productClaims,
+                                                  [productName]: {
+                                                    ...claimsData,
+                                                    approvedClaims: claims
+                                                  }
+                                                }
+                                              });
+                                            }
+                                          }}
+                                          className="mt-2 text-sm resize-none min-h-[60px] border-green-200 focus:border-green-400"
+                                          disabled={effectiveUser?.role !== 'admin'}
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </TabsContent>
@@ -3511,7 +4016,7 @@ export default function MetaAdGenerator() {
                                       <Input 
                                         value={framework.name}
                                         onChange={(e) => {
-                                          if (!effectiveUser?.role === 'admin') return;
+                                          if (effectiveUser?.role !== 'admin') return;
                                           const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                           updated[index] = { ...updated[index], name: e.target.value };
                                           setEditingConfig({
@@ -3524,7 +4029,7 @@ export default function MetaAdGenerator() {
                                         }}
                                         className="mt-1"
                                         placeholder="BENEFIT DRIVEN"
-                                        disabled={!effectiveUser?.role === 'admin'}
+                                        disabled={effectiveUser?.role !== 'admin'}
                                       />
                                     </div>
                                     <div>
@@ -3532,7 +4037,7 @@ export default function MetaAdGenerator() {
                                       <Input 
                                         value={framework.template}
                                         onChange={(e) => {
-                                          if (!effectiveUser?.role === 'admin') return;
+                                          if (effectiveUser?.role !== 'admin') return;
                                           const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                           updated[index] = { ...updated[index], template: e.target.value };
                                           setEditingConfig({
@@ -3545,7 +4050,7 @@ export default function MetaAdGenerator() {
                                         }}
                                         className="mt-1"
                                         placeholder="[Primary Benefit] + [Outcome]"
-                                        disabled={!effectiveUser?.role === 'admin'}
+                                        disabled={effectiveUser?.role !== 'admin'}
                                       />
                                     </div>
                                   </div>
@@ -3554,7 +4059,7 @@ export default function MetaAdGenerator() {
                                     <Textarea 
                                       value={framework.description}
                                       onChange={(e) => {
-                                        if (!effectiveUser?.role === 'admin') return;
+                                        if (effectiveUser?.role !== 'admin') return;
                                         const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                         updated[index] = { ...updated[index], description: e.target.value };
                                         setEditingConfig({
@@ -3568,7 +4073,7 @@ export default function MetaAdGenerator() {
                                       className="mt-1"
                                       rows={2}
                                       placeholder="Lead with the primary benefit/transformation the product delivers"
-                                      disabled={!effectiveUser?.role === 'admin'}
+                                      disabled={effectiveUser?.role !== 'admin'}
                                     />
                                   </div>
                                   <div className="mt-2">
@@ -3576,7 +4081,7 @@ export default function MetaAdGenerator() {
                                     <Textarea 
                                       value={framework.examples?.join('\n') || ''}
                                       onChange={(e) => {
-                                        if (!effectiveUser?.role === 'admin') return;
+                                        if (effectiveUser?.role !== 'admin') return;
                                         const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
                                         updated[index] = { 
                                           ...updated[index], 
@@ -3595,7 +4100,7 @@ export default function MetaAdGenerator() {
                                       placeholder="Natural Glow Simplified
 Effortless Beauty Found
 Your Skin But Better"
-                                      disabled={!effectiveUser?.role === 'admin'}
+                                      disabled={effectiveUser?.role !== 'admin'}
                                     />
                                   </div>
                                 </div>
@@ -3619,7 +4124,7 @@ Your Skin But Better"
                               placeholder="Headlines: Maximum 5 words, must fit in 1 line on mobile
 Primary text: 15-25 words optimal for Meta ads
 Keep sentences to 8-12 words for mobile comprehension"
-                              disabled={!effectiveUser?.role === 'admin'}
+                              disabled={effectiveUser?.role !== 'admin'}
                             />
                           </div>
 
@@ -3653,7 +4158,7 @@ Keep sentences to 8-12 words for mobile comprehension"
 4. DEEPER BENEFIT - secondary value that matters
 5. SOCIAL PROOF - real results from real people
 6. NATURAL CONCLUSION - why this makes sense now"
-                                  disabled={!effectiveUser?.role === 'admin'}
+                                  disabled={effectiveUser?.role !== 'admin'}
                                 />
                               </div>
 
@@ -3678,7 +4183,7 @@ Keep sentences to 8-12 words for mobile comprehension"
 - SPECIFIC DETAILS (20-40 words): Numbers, features, proof points
 - NATURAL BENEFIT BRIDGE (15-25 words): What this means practically
 - OPTIONAL SOCIAL PROOF: Real customer quote if natural"
-                                  disabled={!effectiveUser?.role === 'admin'}
+                                  disabled={effectiveUser?.role !== 'admin'}
                                 />
                               </div>
 
@@ -3703,7 +4208,7 @@ Lead with benefits, support with facts - not the other way around
 Use specific details and numbers when possible (like '24dB reduction')
 Keep language clear and direct - avoid flowery marketing speak
 Each reason should stand alone and deliver immediate value"
-                                  disabled={!effectiveUser?.role === 'admin'}
+                                  disabled={effectiveUser?.role !== 'admin'}
                                 />
                               </div>
 
@@ -3727,7 +4232,7 @@ Each reason should stand alone and deliver immediate value"
 Loop: 'Blocks Out The Loudest Tools - 24dB Reduction' - specific benefit + proof
 Create: 'They're made with Creapure®, the highest-quality...' - quality focus
 Tone: Educational but approachable, like explaining to a friend who asked"
-                                  disabled={!effectiveUser?.role === 'admin'}
+                                  disabled={effectiveUser?.role !== 'admin'}
                                 />
                               </div>
                             </div>
@@ -3748,7 +4253,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                     <Input
                                       value={guideline}
                                       onChange={(e) => {
-                                        if (!effectiveUser?.role === 'admin') return;
+                                        if (effectiveUser?.role !== 'admin') return;
                                         const guidelines = [...(editingConfig.copyFrameworks.brandDrBalance.brandFirst || [])];
                                         guidelines[index] = e.target.value;
                                         setEditingConfig({
@@ -3764,7 +4269,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                       }}
                                       className="flex-1 border-blue-200 focus:border-blue-400"
                                       placeholder="Enter brand-first guideline..."
-                                      disabled={!effectiveUser?.role === 'admin'}
+                                      disabled={effectiveUser?.role !== 'admin'}
                                     />
                                     {effectiveUser?.role === 'admin' && (editingConfig?.copyFrameworks?.brandDrBalance?.brandFirst?.length > 1) && (
                                       <Button
@@ -3830,7 +4335,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                     <Input
                                       value={guideline}
                                       onChange={(e) => {
-                                        if (!effectiveUser?.role === 'admin') return;
+                                        if (effectiveUser?.role !== 'admin') return;
                                         const guidelines = [...(editingConfig.copyFrameworks.brandDrBalance.directResponse || [])];
                                         guidelines[index] = e.target.value;
                                         setEditingConfig({
@@ -3846,7 +4351,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                       }}
                                       className="flex-1 border-orange-200 focus:border-orange-400"
                                       placeholder="Enter direct response guideline..."
-                                      disabled={!effectiveUser?.role === 'admin'}
+                                      disabled={effectiveUser?.role !== 'admin'}
                                     />
                                     {effectiveUser?.role === 'admin' && (editingConfig?.copyFrameworks?.brandDrBalance?.directResponse?.length > 1) && (
                                       <Button
@@ -4100,7 +4605,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                           alert('Import failed: ' + result.message);
                                         }
                                       } catch (error) {
-                                        alert('Import error: ' + error.message);
+                                        alert('Import error: ' + (error as Error).message);
                                       }
                                     }}
                                   >
@@ -4114,7 +4619,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                     placeholder="Paste customer reviews here..."
                                     className="mt-2"
                                     rows={4}
-                                    disabled={!effectiveUser?.role === 'admin'}
+                                    disabled={effectiveUser?.role !== 'admin'}
                                   />
                                 </div>
                                 
@@ -4146,7 +4651,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                           alert('Import failed: ' + result.message);
                                         }
                                       } catch (error) {
-                                        alert('Import error: ' + error.message);
+                                        alert('Import error: ' + (error as Error).message);
                                       }
                                     }}
                                   >
@@ -4201,7 +4706,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                         alert('Failed to generate insights: ' + result.message);
                                       }
                                     } catch (error) {
-                                      alert('Error: ' + error.message);
+                                      alert('Error: ' + (error as Error).message);
                                     }
                                   }}
                                 >
