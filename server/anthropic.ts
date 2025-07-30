@@ -1204,11 +1204,9 @@ Create copy that fulfills this request while maintaining Jones Road Beauty's aut
 export async function generateRetentionCopy(request: {
   keyMessage: string;
   platform: string;
-  tone?: string;
   audience?: string;
   goal?: string;
   campaignType?: string;
-  cta?: string;
   urgencyLevel?: string;
   contentLength?: string;
   keywordsToInclude?: string[];
@@ -1239,11 +1237,9 @@ Jones Road Beauty Brand Guidelines:
 
 ${request.platform === 'SMS' ? 'SMS' : 'Email'} Copy Specifications:
 - Platform: ${request.platform || 'Email'}
-- Tone: ${request.tone || 'Friendly'}
 - Target Audience: ${request.audience || 'General audience'}
 - Goal: ${request.goal || 'Drive Sales'}
 - Campaign Type: ${request.campaignType || 'Promo'}
-- Call to Action: ${request.cta || 'Shop Now'}
 - Urgency Level: ${request.urgencyLevel || 'Medium'}
 - Content Length: ${request.contentLength || 'Short'}
 
@@ -1300,11 +1296,11 @@ Create ${request.platform?.toLowerCase() || 'email'} copy that authentically rep
 
 Requirements:
 1. Follow the ${request.platform === 'SMS' ? 'SMS' : 'email'} format and character/word limits for ${request.contentLength?.toLowerCase() || 'short'} content
-2. Use ${request.tone?.toLowerCase() || 'friendly'} tone throughout
+2. Use Jones Road Beauty's authentic, friendly tone throughout
 3. Target ${request.audience || 'general audience'} specifically
 4. Focus on ${request.goal?.toLowerCase() || 'driving sales'} as the primary goal
 5. Structure as ${request.campaignType?.toLowerCase() || 'promo'} campaign type
-6. Include clear "${request.cta || 'Shop Now'}" call-to-action
+6. Include clear, compelling call-to-action appropriate for the campaign
 7. Apply ${request.urgencyLevel?.toLowerCase() || 'medium'} urgency level
 ${request.keywordsToInclude && request.keywordsToInclude.length > 0 ? `8. Naturally incorporate these keywords: ${request.keywordsToInclude.join(', ')}` : ''}
 ${request.wordsToAvoid && request.wordsToAvoid.length > 0 ? `9. Avoid using these words: ${request.wordsToAvoid.join(', ')}` : ''}

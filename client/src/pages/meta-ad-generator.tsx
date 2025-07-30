@@ -221,11 +221,9 @@ export default function MetaAdGenerator() {
   // Retention Tab States
   const [retentionKeyMessage, setRetentionKeyMessage] = useState('');
   const [retentionPlatform, setRetentionPlatform] = useState('Email');
-  const [retentionTone, setRetentionTone] = useState('Friendly');
   const [retentionAudience, setRetentionAudience] = useState('General audience');
   const [retentionGoal, setRetentionGoal] = useState('Drive Sales');
   const [retentionCampaignType, setRetentionCampaignType] = useState('Promo');
-  const [retentionCTA, setRetentionCTA] = useState('Shop Now');
   const [retentionUrgencyLevel, setRetentionUrgencyLevel] = useState('Medium');
   const [retentionContentLength, setRetentionContentLength] = useState('Short');
   const [retentionKeywordsToInclude, setRetentionKeywordsToInclude] = useState<string[]>([]);
@@ -738,11 +736,9 @@ export default function MetaAdGenerator() {
         body: {
           keyMessage: retentionKeyMessage,
           platform: retentionPlatform,
-          tone: retentionTone,
           audience: retentionAudience,
           goal: retentionGoal,
           campaignType: retentionCampaignType,
-          cta: retentionCTA,
           urgencyLevel: retentionUrgencyLevel,
           contentLength: retentionContentLength,
           keywordsToInclude: retentionKeywordsToInclude,
@@ -2770,42 +2766,22 @@ export default function MetaAdGenerator() {
                       </div>
 
                       {/* Optional Fields */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label className="block text-sm font-medium text-gray-700 mb-2">
-                            Tone
-                          </Label>
-                          <Select value={retentionTone} onValueChange={setRetentionTone}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Friendly">Friendly</SelectItem>
-                              <SelectItem value="Bold">Bold</SelectItem>
-                              <SelectItem value="Urgent">Urgent</SelectItem>
-                              <SelectItem value="Playful">Playful</SelectItem>
-                              <SelectItem value="Professional">Professional</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label className="block text-sm font-medium text-gray-700 mb-2">
-                            Audience
-                          </Label>
-                          <Select value={retentionAudience} onValueChange={setRetentionAudience}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="General audience">General audience</SelectItem>
-                              <SelectItem value="New Customers">New Customers</SelectItem>
-                              <SelectItem value="Returning Customers">Returning Customers</SelectItem>
-                              <SelectItem value="Lapsed Users">Lapsed Users</SelectItem>
-                              <SelectItem value="VIPs">VIPs</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                      <div>
+                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                          Audience
+                        </Label>
+                        <Select value={retentionAudience} onValueChange={setRetentionAudience}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="General audience">General audience</SelectItem>
+                            <SelectItem value="New Customers">New Customers</SelectItem>
+                            <SelectItem value="Returning Customers">Returning Customers</SelectItem>
+                            <SelectItem value="Lapsed Users">Lapsed Users</SelectItem>
+                            <SelectItem value="VIPs">VIPs</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2845,40 +2821,21 @@ export default function MetaAdGenerator() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label className="block text-sm font-medium text-gray-700 mb-2">
-                            CTA (Call to Action)
-                          </Label>
-                          <Select value={retentionCTA} onValueChange={setRetentionCTA}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Shop Now">Shop Now</SelectItem>
-                              <SelectItem value="See the Collection">See the Collection</SelectItem>
-                              <SelectItem value="Grab Yours">Grab Yours</SelectItem>
-                              <SelectItem value="Don't Miss Out">Don't Miss Out</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label className="block text-sm font-medium text-gray-700 mb-2">
-                            Urgency Level
-                          </Label>
-                          <Select value={retentionUrgencyLevel} onValueChange={setRetentionUrgencyLevel}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="None">None</SelectItem>
-                              <SelectItem value="Low">Low</SelectItem>
-                              <SelectItem value="Medium">Medium</SelectItem>
-                              <SelectItem value="High">High</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                      <div>
+                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                          Urgency Level
+                        </Label>
+                        <Select value={retentionUrgencyLevel} onValueChange={setRetentionUrgencyLevel}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="None">None</SelectItem>
+                            <SelectItem value="Low">Low</SelectItem>
+                            <SelectItem value="Medium">Medium</SelectItem>
+                            <SelectItem value="High">High</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div>
@@ -3272,12 +3229,13 @@ export default function MetaAdGenerator() {
 
                   {trainingConfig ? (
                     <Tabs defaultValue="brand-guidelines" className="w-full">
-                      <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 p-2 h-auto">
+                      <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 p-2 h-auto">
                         <TabsTrigger value="brand-guidelines" className="text-xs sm:text-sm py-2 px-3">Brand Guidelines</TabsTrigger>
                         <TabsTrigger value="product-claims" className="text-xs sm:text-sm py-2 px-3">Product Claims</TabsTrigger>
                         <TabsTrigger value="personas" className="text-xs sm:text-sm py-2 px-3">Personas</TabsTrigger>
                         <TabsTrigger value="frameworks" className="text-xs sm:text-sm py-2 px-3">Copy Frameworks</TabsTrigger>
                         <TabsTrigger value="reviews" className="text-xs sm:text-sm py-2 px-3">Customer Reviews</TabsTrigger>
+                        <TabsTrigger value="station-prompts" className="text-xs sm:text-sm py-2 px-3">Station Prompts</TabsTrigger>
                         <TabsTrigger value="prompts" className="text-xs sm:text-sm py-2 px-3">System Prompts</TabsTrigger>
                         <TabsTrigger value="model" className="text-xs sm:text-sm py-2 px-3">Model Settings</TabsTrigger>
                       </TabsList>
@@ -4850,6 +4808,687 @@ TRANSCRIPTION/CONTENT:
                                 disabled={false}
                               />
                               <p className="text-xs text-gray-600 mt-1">Maximum response length (1024-4000 recommended)</p>
+                            </div>
+                          </div>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="station-prompts" className="mt-4">
+                        <div className="space-y-8">
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <p className="text-sm text-blue-800 font-medium">🎯 Station Prompts Configuration</p>
+                            <p className="text-sm text-blue-700 mt-1">
+                              Configure specialized AI prompts and guidelines for each content generation station.
+                            </p>
+                          </div>
+
+                          {/* Ad Copy Station */}
+                          <div className="border border-gray-200 rounded-lg">
+                            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                                🎯 Ad Copy Station
+                              </h3>
+                            </div>
+                            <div className="p-6 space-y-6">
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">System Prompt</Label>
+                                <Textarea 
+                                  value={editingConfig?.stationPrompts?.adCopy?.systemPrompt || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    stationPrompts: {
+                                      ...editingConfig?.stationPrompts,
+                                      adCopy: {
+                                        ...editingConfig?.stationPrompts?.adCopy,
+                                        systemPrompt: e.target.value
+                                      }
+                                    }
+                                  })}
+                                  className="text-gray-900"
+                                  rows={4}
+                                  placeholder="You are an expert Meta advertising copywriter specializing in short-form direct response ads..."
+                                  disabled={effectiveUser?.role !== 'admin'}
+                                />
+                              </div>
+                              
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">User Prompt Template</Label>
+                                <Textarea 
+                                  value={editingConfig?.stationPrompts?.adCopy?.userPromptTemplate || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    stationPrompts: {
+                                      ...editingConfig?.stationPrompts,
+                                      adCopy: {
+                                        ...editingConfig?.stationPrompts?.adCopy,
+                                        userPromptTemplate: e.target.value
+                                      }
+                                    }
+                                  })}
+                                  className="text-gray-900"
+                                  rows={3}
+                                  placeholder="Generate Meta advertising copy for: [PRODUCT] targeting [AUDIENCE]..."
+                                  disabled={effectiveUser?.role !== 'admin'}
+                                />
+                              </div>
+
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">Headline Frameworks</Label>
+                                <div className="space-y-2">
+                                  {(editingConfig?.stationPrompts?.adCopy?.headlineFrameworks || ['', '', '']).map((framework: string, index: number) => (
+                                    <div key={index} className="flex items-center space-x-3">
+                                      <Switch 
+                                        checked={editingConfig?.stationPrompts?.adCopy?.enabledHeadlineFrameworks?.[index] !== false}
+                                        onCheckedChange={(checked) => {
+                                          if (effectiveUser?.role !== 'admin') return;
+                                          const enabled = [...(editingConfig?.stationPrompts?.adCopy?.enabledHeadlineFrameworks || [])];
+                                          enabled[index] = checked;
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            stationPrompts: {
+                                              ...editingConfig?.stationPrompts,
+                                              adCopy: {
+                                                ...editingConfig?.stationPrompts?.adCopy,
+                                                enabledHeadlineFrameworks: enabled
+                                              }
+                                            }
+                                          });
+                                        }}
+                                        disabled={effectiveUser?.role !== 'admin'}
+                                      />
+                                      <Input 
+                                        value={framework}
+                                        onChange={(e) => {
+                                          if (effectiveUser?.role !== 'admin') return;
+                                          const updated = [...(editingConfig?.stationPrompts?.adCopy?.headlineFrameworks || [])];
+                                          updated[index] = e.target.value;
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            stationPrompts: {
+                                              ...editingConfig?.stationPrompts,
+                                              adCopy: {
+                                                ...editingConfig?.stationPrompts?.adCopy,
+                                                headlineFrameworks: updated
+                                              }
+                                            }
+                                          });
+                                        }}
+                                        placeholder="▶ Benefit-driven headlines (5-7 words max)"
+                                        disabled={effectiveUser?.role !== 'admin'}
+                                        className="flex-1"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">Copy Writing Rules</Label>
+                                <Textarea 
+                                  value={editingConfig?.stationPrompts?.adCopy?.copyWritingRules?.join('\n') || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    stationPrompts: {
+                                      ...editingConfig?.stationPrompts,
+                                      adCopy: {
+                                        ...editingConfig?.stationPrompts?.adCopy,
+                                        copyWritingRules: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                      }
+                                    }
+                                  })}
+                                  className="text-gray-900"
+                                  rows={4}
+                                  placeholder="Headlines: Maximum 5 words, must fit in 1 line on mobile&#10;Primary text: 15-25 words optimal for Meta ads&#10;Keep sentences to 8-12 words for mobile comprehension"
+                                  disabled={effectiveUser?.role !== 'admin'}
+                                />
+                              </div>
+
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">Brand-First Guidelines</Label>
+                                <div className="space-y-2">
+                                  {(editingConfig?.stationPrompts?.adCopy?.brandFirstGuidelines || ['', '', '']).map((guideline: string, index: number) => (
+                                    <div key={index} className="flex items-center space-x-3">
+                                      <Switch 
+                                        checked={editingConfig?.stationPrompts?.adCopy?.enabledBrandFirstGuidelines?.[index] !== false}
+                                        onCheckedChange={(checked) => {
+                                          if (effectiveUser?.role !== 'admin') return;
+                                          const enabled = [...(editingConfig?.stationPrompts?.adCopy?.enabledBrandFirstGuidelines || [])];
+                                          enabled[index] = checked;
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            stationPrompts: {
+                                              ...editingConfig?.stationPrompts,
+                                              adCopy: {
+                                                ...editingConfig?.stationPrompts?.adCopy,
+                                                enabledBrandFirstGuidelines: enabled
+                                              }
+                                            }
+                                          });
+                                        }}
+                                        disabled={effectiveUser?.role !== 'admin'}
+                                      />
+                                      <Input 
+                                        value={guideline}
+                                        onChange={(e) => {
+                                          if (effectiveUser?.role !== 'admin') return;
+                                          const updated = [...(editingConfig?.stationPrompts?.adCopy?.brandFirstGuidelines || [])];
+                                          updated[index] = e.target.value;
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            stationPrompts: {
+                                              ...editingConfig?.stationPrompts,
+                                              adCopy: {
+                                                ...editingConfig?.stationPrompts?.adCopy,
+                                                brandFirstGuidelines: updated
+                                              }
+                                            }
+                                          });
+                                        }}
+                                        placeholder="▶ Focus on brand values and emotional connection"
+                                        disabled={effectiveUser?.role !== 'admin'}
+                                        className="flex-1"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">Direct Response Guidelines</Label>
+                                <div className="space-y-2">
+                                  {(editingConfig?.stationPrompts?.adCopy?.directResponseGuidelines || ['', '', '']).map((guideline: string, index: number) => (
+                                    <div key={index} className="flex items-center space-x-3">
+                                      <Switch 
+                                        checked={editingConfig?.stationPrompts?.adCopy?.enabledDirectResponseGuidelines?.[index] !== false}
+                                        onCheckedChange={(checked) => {
+                                          if (effectiveUser?.role !== 'admin') return;
+                                          const enabled = [...(editingConfig?.stationPrompts?.adCopy?.enabledDirectResponseGuidelines || [])];
+                                          enabled[index] = checked;
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            stationPrompts: {
+                                              ...editingConfig?.stationPrompts,
+                                              adCopy: {
+                                                ...editingConfig?.stationPrompts?.adCopy,
+                                                enabledDirectResponseGuidelines: enabled
+                                              }
+                                            }
+                                          });
+                                        }}
+                                        disabled={effectiveUser?.role !== 'admin'}
+                                      />
+                                      <Input 
+                                        value={guideline}
+                                        onChange={(e) => {
+                                          if (effectiveUser?.role !== 'admin') return;
+                                          const updated = [...(editingConfig?.stationPrompts?.adCopy?.directResponseGuidelines || [])];
+                                          updated[index] = e.target.value;
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            stationPrompts: {
+                                              ...editingConfig?.stationPrompts,
+                                              adCopy: {
+                                                ...editingConfig?.stationPrompts?.adCopy,
+                                                directResponseGuidelines: updated
+                                              }
+                                            }
+                                          });
+                                        }}
+                                        placeholder="⚡ Use urgency and scarcity tactics effectively"
+                                        disabled={effectiveUser?.role !== 'admin'}
+                                        className="flex-1"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Landing Page Station */}
+                          <div className="border border-gray-200 rounded-lg">
+                            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                                📄 Landing Page Station
+                              </h3>
+                            </div>
+                            <div className="p-6 space-y-6">
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">System Prompt</Label>
+                                <Textarea 
+                                  value={editingConfig?.stationPrompts?.landingPage?.systemPrompt || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    stationPrompts: {
+                                      ...editingConfig?.stationPrompts,
+                                      landingPage: {
+                                        ...editingConfig?.stationPrompts?.landingPage,
+                                        systemPrompt: e.target.value
+                                      }
+                                    }
+                                  })}
+                                  className="text-gray-900"
+                                  rows={4}
+                                  placeholder="You are an expert landing page copywriter specializing in conversion-optimized pages..."
+                                  disabled={effectiveUser?.role !== 'admin'}
+                                />
+                              </div>
+                              
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">User Prompt Template</Label>
+                                <Textarea 
+                                  value={editingConfig?.stationPrompts?.landingPage?.userPromptTemplate || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    stationPrompts: {
+                                      ...editingConfig?.stationPrompts,
+                                      landingPage: {
+                                        ...editingConfig?.stationPrompts?.landingPage,
+                                        userPromptTemplate: e.target.value
+                                      }
+                                    }
+                                  })}
+                                  className="text-gray-900"
+                                  rows={3}
+                                  placeholder="Create a high-converting landing page for [PRODUCT] with focus on [BENEFITS]..."
+                                  disabled={effectiveUser?.role !== 'admin'}
+                                />
+                              </div>
+
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">Content Structure Rules</Label>
+                                <Textarea 
+                                  value={editingConfig?.stationPrompts?.landingPage?.contentStructureRules?.join('\n') || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    stationPrompts: {
+                                      ...editingConfig?.stationPrompts,
+                                      landingPage: {
+                                        ...editingConfig?.stationPrompts?.landingPage,
+                                        contentStructureRules: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                      }
+                                    }
+                                  })}
+                                  className="text-gray-900"
+                                  rows={4}
+                                  placeholder="Hero section: Compelling headline + subheading + CTA&#10;Benefits section: 3-5 key benefits with icons&#10;Social proof: Customer testimonials and reviews"
+                                  disabled={effectiveUser?.role !== 'admin'}
+                                />
+                              </div>
+
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">Conversion Guidelines</Label>
+                                <div className="space-y-2">
+                                  {(editingConfig?.stationPrompts?.landingPage?.conversionGuidelines || ['', '', '']).map((guideline: string, index: number) => (
+                                    <div key={index} className="flex items-center space-x-3">
+                                      <Switch 
+                                        checked={editingConfig?.stationPrompts?.landingPage?.enabledConversionGuidelines?.[index] !== false}
+                                        onCheckedChange={(checked) => {
+                                          if (effectiveUser?.role !== 'admin') return;
+                                          const enabled = [...(editingConfig?.stationPrompts?.landingPage?.enabledConversionGuidelines || [])];
+                                          enabled[index] = checked;
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            stationPrompts: {
+                                              ...editingConfig?.stationPrompts,
+                                              landingPage: {
+                                                ...editingConfig?.stationPrompts?.landingPage,
+                                                enabledConversionGuidelines: enabled
+                                              }
+                                            }
+                                          });
+                                        }}
+                                        disabled={effectiveUser?.role !== 'admin'}
+                                      />
+                                      <Input 
+                                        value={guideline}
+                                        onChange={(e) => {
+                                          if (effectiveUser?.role !== 'admin') return;
+                                          const updated = [...(editingConfig?.stationPrompts?.landingPage?.conversionGuidelines || [])];
+                                          updated[index] = e.target.value;
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            stationPrompts: {
+                                              ...editingConfig?.stationPrompts,
+                                              landingPage: {
+                                                ...editingConfig?.stationPrompts?.landingPage,
+                                                conversionGuidelines: updated
+                                              }
+                                            }
+                                          });
+                                        }}
+                                        placeholder="Use multiple CTAs throughout the page"
+                                        disabled={effectiveUser?.role !== 'admin'}
+                                        className="flex-1"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">CTA Guidelines</Label>
+                                <Textarea 
+                                  value={editingConfig?.stationPrompts?.landingPage?.ctaGuidelines?.join('\n') || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    stationPrompts: {
+                                      ...editingConfig?.stationPrompts,
+                                      landingPage: {
+                                        ...editingConfig?.stationPrompts?.landingPage,
+                                        ctaGuidelines: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                      }
+                                    }
+                                  })}
+                                  className="text-gray-900"
+                                  rows={3}
+                                  placeholder="Primary CTA: Action-oriented and benefit-focused&#10;Secondary CTA: Lower commitment alternative&#10;Button text: 2-4 words maximum"
+                                  disabled={effectiveUser?.role !== 'admin'}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Static Ad Station */}
+                          <div className="border border-gray-200 rounded-lg">
+                            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                                📱 Static Ad Station
+                              </h3>
+                            </div>
+                            <div className="p-6 space-y-6">
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">System Prompt</Label>
+                                <Textarea 
+                                  value={editingConfig?.stationPrompts?.staticAd?.systemPrompt || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    stationPrompts: {
+                                      ...editingConfig?.stationPrompts,
+                                      staticAd: {
+                                        ...editingConfig?.stationPrompts?.staticAd,
+                                        systemPrompt: e.target.value
+                                      }
+                                    }
+                                  })}
+                                  className="text-gray-900"
+                                  rows={4}
+                                  placeholder="You are a static ad copywriter specializing in visual-first advertising formats..."
+                                  disabled={effectiveUser?.role !== 'admin'}
+                                />
+                              </div>
+                              
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">User Prompt Template</Label>
+                                <Textarea 
+                                  value={editingConfig?.stationPrompts?.staticAd?.userPromptTemplate || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    stationPrompts: {
+                                      ...editingConfig?.stationPrompts,
+                                      staticAd: {
+                                        ...editingConfig?.stationPrompts?.staticAd,
+                                        userPromptTemplate: e.target.value
+                                      }
+                                    }
+                                  })}
+                                  className="text-gray-900"
+                                  rows={3}
+                                  placeholder="Create static ad copy for [PLATFORM] showcasing [PRODUCT] with visual emphasis on [KEY_FEATURE]..."
+                                  disabled={effectiveUser?.role !== 'admin'}
+                                />
+                              </div>
+
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">Image-Text Balance Rules</Label>
+                                <Textarea 
+                                  value={editingConfig?.stationPrompts?.staticAd?.imageTextBalanceRules?.join('\n') || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    stationPrompts: {
+                                      ...editingConfig?.stationPrompts,
+                                      staticAd: {
+                                        ...editingConfig?.stationPrompts?.staticAd,
+                                        imageTextBalanceRules: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                      }
+                                    }
+                                  })}
+                                  className="text-gray-900"
+                                  rows={4}
+                                  placeholder="Keep text minimal - let visuals tell the story&#10;Text should complement, not compete with imagery&#10;Focus on one key message per visual"
+                                  disabled={effectiveUser?.role !== 'admin'}
+                                />
+                              </div>
+
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">Platform-Specific Guidelines</Label>
+                                <Textarea 
+                                  value={editingConfig?.stationPrompts?.staticAd?.platformGuidelines?.join('\n') || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    stationPrompts: {
+                                      ...editingConfig?.stationPrompts,
+                                      staticAd: {
+                                        ...editingConfig?.stationPrompts?.staticAd,
+                                        platformGuidelines: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                      }
+                                    }
+                                  })}
+                                  className="text-gray-900"
+                                  rows={4}
+                                  placeholder="Instagram: Square format, lifestyle focused&#10;Facebook: More text-friendly, broader demographics&#10;Pinterest: Vertical format, aspirational content"
+                                  disabled={effectiveUser?.role !== 'admin'}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Email & SMS Retention Station */}
+                          <div className="border border-gray-200 rounded-lg">
+                            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                                📧 Email & SMS Retention Station
+                              </h3>
+                            </div>
+                            <div className="p-6 space-y-6">
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">System Prompt</Label>
+                                <Textarea 
+                                  value={editingConfig?.stationPrompts?.emailSmsRetention?.systemPrompt || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    stationPrompts: {
+                                      ...editingConfig?.stationPrompts,
+                                      emailSmsRetention: {
+                                        ...editingConfig?.stationPrompts?.emailSmsRetention,
+                                        systemPrompt: e.target.value
+                                      }
+                                    }
+                                  })}
+                                  className="text-gray-900"
+                                  rows={4}
+                                  placeholder="You are an email and SMS marketing specialist focused on customer retention and engagement..."
+                                  disabled={effectiveUser?.role !== 'admin'}
+                                />
+                              </div>
+                              
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">User Prompt Template</Label>
+                                <Textarea 
+                                  value={editingConfig?.stationPrompts?.emailSmsRetention?.userPromptTemplate || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    stationPrompts: {
+                                      ...editingConfig?.stationPrompts,
+                                      emailSmsRetention: {
+                                        ...editingConfig?.stationPrompts?.emailSmsRetention,
+                                        userPromptTemplate: e.target.value
+                                      }
+                                    }
+                                  })}
+                                  className="text-gray-900"
+                                  rows={3}
+                                  placeholder="Create [EMAIL/SMS] retention copy for [CAMPAIGN_TYPE] targeting [AUDIENCE_SEGMENT]..."
+                                  disabled={effectiveUser?.role !== 'admin'}
+                                />
+                              </div>
+
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">Email Design Integration</Label>
+                                <div className="border border-dashed border-gray-300 rounded-lg p-6 text-center">
+                                  <div className="text-gray-500 mb-2">📁 Upload Email Templates</div>
+                                  <p className="text-sm text-gray-500">
+                                    Upload designed email templates to ensure copy matches visual layout
+                                  </p>
+                                  <Button variant="outline" size="sm" className="mt-3" disabled={effectiveUser?.role !== 'admin'}>
+                                    Browse Files
+                                  </Button>
+                                </div>
+                              </div>
+
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">Subject Line Frameworks</Label>
+                                <div className="space-y-2">
+                                  {(editingConfig?.stationPrompts?.emailSmsRetention?.subjectLineFrameworks || ['', '', '']).map((framework: string, index: number) => (
+                                    <div key={index} className="flex items-center space-x-3">
+                                      <Switch 
+                                        checked={editingConfig?.stationPrompts?.emailSmsRetention?.enabledSubjectLineFrameworks?.[index] !== false}
+                                        onCheckedChange={(checked) => {
+                                          if (effectiveUser?.role !== 'admin') return;
+                                          const enabled = [...(editingConfig?.stationPrompts?.emailSmsRetention?.enabledSubjectLineFrameworks || [])];
+                                          enabled[index] = checked;
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            stationPrompts: {
+                                              ...editingConfig?.stationPrompts,
+                                              emailSmsRetention: {
+                                                ...editingConfig?.stationPrompts?.emailSmsRetention,
+                                                enabledSubjectLineFrameworks: enabled
+                                              }
+                                            }
+                                          });
+                                        }}
+                                        disabled={effectiveUser?.role !== 'admin'}
+                                      />
+                                      <Input 
+                                        value={framework}
+                                        onChange={(e) => {
+                                          if (effectiveUser?.role !== 'admin') return;
+                                          const updated = [...(editingConfig?.stationPrompts?.emailSmsRetention?.subjectLineFrameworks || [])];
+                                          updated[index] = e.target.value;
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            stationPrompts: {
+                                              ...editingConfig?.stationPrompts,
+                                              emailSmsRetention: {
+                                                ...editingConfig?.stationPrompts?.emailSmsRetention,
+                                                subjectLineFrameworks: updated
+                                              }
+                                            }
+                                          });
+                                        }}
+                                        placeholder="Curiosity-driven: 'The secret to...' or 'Why [benefit]?'"
+                                        disabled={effectiveUser?.role !== 'admin'}
+                                        className="flex-1"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">Retention Best Practices</Label>
+                                <Textarea 
+                                  value={editingConfig?.stationPrompts?.emailSmsRetention?.retentionBestPractices?.join('\n') || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    stationPrompts: {
+                                      ...editingConfig?.stationPrompts,
+                                      emailSmsRetention: {
+                                        ...editingConfig?.stationPrompts?.emailSmsRetention,
+                                        retentionBestPractices: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                      }
+                                    }
+                                  })}
+                                  className="text-gray-900"
+                                  rows={4}
+                                  placeholder="Send times: Email 10-11am EST, SMS 2-4pm EST&#10;Frequency: Email 2-3x/week max, SMS 1-2x/week max&#10;Personalization: Use first name and purchase history"
+                                  disabled={effectiveUser?.role !== 'admin'}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Custom Request Station */}
+                          <div className="border border-gray-200 rounded-lg">
+                            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                                ✨ Custom Request Station
+                              </h3>
+                            </div>
+                            <div className="p-6 space-y-6">
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">System Prompt</Label>
+                                <Textarea 
+                                  value={editingConfig?.stationPrompts?.customRequest?.systemPrompt || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    stationPrompts: {
+                                      ...editingConfig?.stationPrompts,
+                                      customRequest: {
+                                        ...editingConfig?.stationPrompts?.customRequest,
+                                        systemPrompt: e.target.value
+                                      }
+                                    }
+                                  })}
+                                  className="text-gray-900"
+                                  rows={4}
+                                  placeholder="You are a versatile copywriter capable of handling any custom marketing request..."
+                                  disabled={effectiveUser?.role !== 'admin'}
+                                />
+                              </div>
+                              
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">User Prompt Template</Label>
+                                <Textarea 
+                                  value={editingConfig?.stationPrompts?.customRequest?.userPromptTemplate || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    stationPrompts: {
+                                      ...editingConfig?.stationPrompts,
+                                      customRequest: {
+                                        ...editingConfig?.stationPrompts?.customRequest,
+                                        userPromptTemplate: e.target.value
+                                      }
+                                    }
+                                  })}
+                                  className="text-gray-900"
+                                  rows={3}
+                                  placeholder="Handle this custom request: [USER_REQUEST] for [BRAND/PRODUCT] with [SPECIFIC_REQUIREMENTS]..."
+                                  disabled={effectiveUser?.role !== 'admin'}
+                                />
+                              </div>
+
+                              <div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">Request Type Guidelines</Label>
+                                <Textarea 
+                                  value={editingConfig?.stationPrompts?.customRequest?.requestTypeGuidelines?.join('\n') || ''}
+                                  onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
+                                    ...editingConfig,
+                                    stationPrompts: {
+                                      ...editingConfig?.stationPrompts,
+                                      customRequest: {
+                                        ...editingConfig?.stationPrompts?.customRequest,
+                                        requestTypeGuidelines: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                      }
+                                    }
+                                  })}
+                                  className="text-gray-900"
+                                  rows={4}
+                                  placeholder="Product descriptions: Focus on benefits and use cases&#10;Social media captions: Platform-appropriate length and tone&#10;Blog posts: SEO-optimized with clear structure"
+                                  disabled={effectiveUser?.role !== 'admin'}
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>

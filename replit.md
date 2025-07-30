@@ -6,7 +6,19 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
-**Latest Update - Retention Tab for Email & SMS Copy Generation (July 29, 2025)**
+**Latest Update - Station Prompts Tab & Retention Copy Enhancement (July 30, 2025)**
+- **✅ REMOVED UNNECESSARY FIELDS**: Removed Tone and CTA fields from retention copy interface - now handled in general AI settings
+- **✅ NEW STATION PROMPTS TAB**: Added comprehensive Station Prompts tab to AI Training Configuration with 5 specialized stations
+- **✅ AD COPY STATION**: Complete prompt configuration with system prompts, user templates, headline frameworks, copy rules, brand-first and DR guidelines
+- **✅ LANDING PAGE STATION**: Specialized prompts for conversion-optimized pages with content structure rules, conversion guidelines, and CTA best practices
+- **✅ STATIC AD STATION**: Visual-first advertising prompts with image-text balance rules and platform-specific guidelines (Instagram, Facebook, Pinterest)
+- **✅ EMAIL & SMS RETENTION STATION**: Dedicated retention marketing prompts with email template integration, subject line frameworks, and deliverability best practices
+- **✅ CUSTOM REQUEST STATION**: Flexible copywriting prompts for handling diverse marketing requests with type-specific guidelines
+- **✅ BACKEND COMPATIBILITY**: Updated retention copy generation endpoints to work without removed fields
+- **✅ ADMIN INTERFACE**: All station prompts fully editable by admins with toggle switches, add/remove functionality, and save changes support
+- **✅ EXTENSIBLE ARCHITECTURE**: Station system designed for easy addition of new specialized copywriting stations
+
+**Previous Update - Retention Tab for Email & SMS Copy Generation (July 29, 2025)**
 - **✅ NEW RETENTION TAB**: Added comprehensive Email & SMS copy generation tab for customer retention campaigns
 - **✅ PLATFORM-SPECIFIC GENERATION**: Specialized AI prompts for Email vs SMS with appropriate formatting and length constraints
 - **✅ COMPREHENSIVE FIELD SYSTEM**: Required fields (Key Message, Platform) plus 8 optional configuration fields with sensible defaults

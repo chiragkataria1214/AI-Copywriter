@@ -680,11 +680,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { 
         keyMessage, 
         platform, 
-        tone, 
         audience, 
         goal, 
         campaignType, 
-        cta, 
         urgencyLevel, 
         contentLength, 
         keywordsToInclude, 
@@ -696,7 +694,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         useJonesBrandGuide
       } = req.body;
       
-      console.log('Retention copy request:', { keyMessage, platform, tone, audience, goal, campaignType, cta, urgencyLevel, contentLength });
+      console.log('Retention copy request:', { keyMessage, platform, audience, goal, campaignType, urgencyLevel, contentLength });
       
       if (!process.env.ANTHROPIC_API_KEY) {
         console.error('ANTHROPIC_API_KEY missing');
@@ -711,11 +709,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await generateRetentionCopy({
         keyMessage: keyMessage.trim(),
         platform,
-        tone,
         audience,
         goal,
         campaignType,
-        cta,
         urgencyLevel,
         contentLength,
         keywordsToInclude,
