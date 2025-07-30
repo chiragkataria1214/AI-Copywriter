@@ -1113,6 +1113,10 @@ Landing Page: ${data.landingPageUrl || 'None provided'}
   // Register admin routes
   registerAdminRoutes(app);
 
+  // Register config routes for database-driven configuration
+  const configRoutes = await import("./routes-config");
+  app.use(configRoutes.default);
+
   const httpServer = createServer(app);
   return httpServer;
 }

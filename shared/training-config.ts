@@ -14,21 +14,6 @@ export interface TrainingConfig {
     enabledApprovedLanguage?: boolean[];
     enabledAvoidedLanguage?: boolean[];
   };
-  productClaims: {
-    [productName: string]: {
-      approvedClaims: string[];
-      prohibitedClaims: string[];
-      enabledApproved?: boolean[];
-      enabledProhibited?: boolean[];
-    };
-  };
-  personaPillars: {
-    [personaName: string]: {
-      description?: string;
-      pillars: string[];
-      enabledPillars?: boolean[];
-    };
-  };
   copyFrameworks: {
     headlineFrameworks: Array<{
       name: string;
@@ -42,27 +27,13 @@ export interface TrainingConfig {
       directResponse: string[];
     };
   };
-  stationPrompts: {
-    adCopy: {
-      systemPrompt: string;
-      userPromptTemplate: string;
-    };
-    landingPage: {
-      systemPrompt: string;
-      userPromptTemplate: string;
-    };
-    staticAd: {
-      systemPrompt: string;
-      userPromptTemplate: string;
-    };
-    customRequest: {
-      systemPrompt: string;
-      userPromptTemplate: string;
-    };
-    emailSmsRetention: {
-      systemPrompt: string;
-      userPromptTemplate: string;
-    };
+  systemPrompts: {
+    adCopyGeneration: string;
+    landingPageGeneration: string;
+  };
+  userPromptTemplates: {
+    adCopy: string;
+    landingPage: string;
   };
   modelParameters: {
     model: string;
@@ -79,7 +50,8 @@ export const defaultTrainingConfig: TrainingConfig = {
       "Focus on enhancement not transformation",
       "Use inclusive, welcoming language",
       "Avoid superlatives and exaggerated claims",
-      "Speak to the authentic self, not aspirational perfection"
+      "Speak to the authentic self, not aspirational perfection",
+      "Demo"
     ],
     "keyTerminology": [
       "no-makeup makeup",
@@ -107,6 +79,7 @@ export const defaultTrainingConfig: TrainingConfig = {
       "pushy language"
     ],
     "enabledBrandVoice": [
+      true,
       true,
       true,
       true,
@@ -228,6 +201,34 @@ export const defaultTrainingConfig: TrainingConfig = {
         "8-hour wear",
         "Stain-resistant",
         "Waterproof formula"
+      ]
+    },
+    "ddd": {
+      "approvedClaims": [
+        ""
+      ],
+      "prohibitedClaims": [
+        ""
+      ],
+      "enabledApproved": [
+        true
+      ],
+      "enabledProhibited": [
+        true
+      ]
+    },
+    "chirag": {
+      "approvedClaims": [
+        ""
+      ],
+      "prohibitedClaims": [
+        ""
+      ],
+      "enabledApproved": [
+        true
+      ],
+      "enabledProhibited": [
+        true
       ]
     }
   },
@@ -365,7 +366,8 @@ export const defaultTrainingConfig: TrainingConfig = {
   "stationPrompts": {
     "adCopy": {
       "systemPrompt": "You are an expert Meta ad copywriter specializing in Jones Road Beauty. You create ad copy that balances brand voice with direct response tactics.\n\nJONES ROAD BEAUTY BRAND GUIDELINES:\n- Core positioning: \"Your Skin But Better\" - natural, effortless enhancement\n- Brand voice: Natural, welcoming, never pushy or aggressive\n- Key concepts: \"no-makeup makeup\", \"one and done\", \"universal shades\"\n- Always use \"moisturizing\" not \"hydrating\" for makeup products\n- Focus on enhancement, not transformation\n- Avoid superlatives and exaggerated claims\n\nCOPY REQUIREMENTS:\n- Headlines: 8-15 words for maximum impact (up to 125 characters on Facebook)\n- Create complete, compelling thoughts rather than short phrases\n- Primary text: 15-25 words optimal\n- Brand/DR Balance: {brandPercent}% brand voice, {drPercent}% direct response\n- Target audience: {targetAudience}\n- Persona: {concept}{subPersona}\n\nPERSONA-SPECIFIC MESSAGING:\nFor Mom personas - ALWAYS include mom-specific language:\n- Use scenarios: \"school pickup\", \"busy mornings\", \"soccer practice\"\n- Mom benefits: \"5-minute face\", \"all-day wear\", \"no touch-ups needed\"\n- Examples: \"The 5-Minute Face Every Busy Mom Needs\"\n\nBRAND-FIRST APPROACH (when brand % > 50):\n- Lead with natural, effortless messaging\n- Use approved language: \"skin-nourishing oils\", \"subtle radiance\", \"glow\", \"effortless\", \"natural\"\n- Social proof should feel natural and brand-aligned\n\nDIRECT RESPONSE APPROACH (when DR % > 50):\n- Focus on specific benefits and outcomes\n- Include stronger calls to action\n- Use urgency/scarcity framework when appropriate\n- Maintain brand voice even with urgency",
-      "userPromptTemplate": "Generate Meta ad copy based on this content:\n\nTRANSCRIPTION/CONTENT:\n{transcription}\n\n{landingPageContext}\n\nCOPYWRITING FRAMEWORK REQUIREMENTS:\nGenerate exactly 5 headlines using these frameworks:\n\n1. BENEFIT DRIVEN: Lead with primary benefit/transformation\n2. SOCIAL PROOF DRIVEN: Incorporate trust signals, reviews, popularity\n3. OFFER DRIVEN: Focus on specific promotion or exclusive access\n4. VALUE PROPS: Highlight unique product attributes\n5. PROBLEM FOCUSED: Address specific pain point\n6. URGENCY/SCARCITY: Create time-sensitive motivation\n\nFRAMEWORK PRINCIPLES:\n- Create complete compelling statements, not short phrases\n- 8-15 words for maximum impact\n- Lead with compelling promise that drives action\n- Use sensory or outcome-oriented language\n- Front-load differentiators early\n- Make headlines persona-specific with relevant lifestyle language\n\nFORMAT YOUR RESPONSE AS JSON:\n{\n  \"headlines\": [\n    {\"framework\": \"BENEFIT DRIVEN\", \"copy\": \"Natural Glow Simplified\"},\n    {\"framework\": \"SOCIAL PROOF\", \"copy\": \"Loved by 50,000+ Women\"}\n  ],\n  \"primaryText\": \"What The Foundation is unlike any foundation you've ever tried...\"\n}"
+      "userPromptTemplate": "Generate Meta ad copy based on this content:\n\nTRANSCRIPTION/CONTENT:\n{transcription}\n\n{landingPageContext}\n\nCOPYWRITING FRAMEWORK REQUIREMENTS:\nGenerate exactly 5 headlines using these frameworks:\n\n1. BENEFIT DRIVEN: Lead with primary benefit/transformation\n2. SOCIAL PROOF DRIVEN: Incorporate trust signals, reviews, popularity\n3. OFFER DRIVEN: Focus on specific promotion or exclusive access\n4. VALUE PROPS: Highlight unique product attributes\n5. PROBLEM FOCUSED: Address specific pain point\n6. URGENCY/SCARCITY: Create time-sensitive motivation\n\nFRAMEWORK PRINCIPLES:\n- Create complete compelling statements, not short phrases\n- 8-15 words for maximum impact\n- Lead with compelling promise that drives action\n- Use sensory or outcome-oriented language\n- Front-load differentiators early\n- Make headlines persona-specific with relevant lifestyle language\n\nFORMAT YOUR RESPONSE AS JSON:\n{\n  \"headlines\": [\n    {\"framework\": \"BENEFIT DRIVEN\", \"copy\": \"Natural Glow Simplified\"},\n    {\"framework\": \"SOCIAL PROOF\", \"copy\": \"Loved by 50,000+ Women\"}\n  ],\n  \"primaryText\": \"What The Foundation is unlike any foundation you've ever tried...\"\n}",
+      "selectedHeadlineFramework": "VALUE PROPS"
     },
     "landingPage": {
       "systemPrompt": "You are an expert landing page copywriter specializing in Jones Road Beauty. Create compelling landing page copy that converts while maintaining brand authenticity.\n\nCRITICAL COPY LENGTH REQUIREMENTS:\nKeep ALL copy extremely concise for mobile optimization:\n\nHEADLINES & TITLES:\n- Main headlines: 3-8 words maximum\n- Section titles: 2-4 words (\"Better Coverage\", \"All-Day Wear\")\n- Product names can be longer but descriptions must be short\n\nBODY COPY CONSTRAINTS:\n- Intro paragraphs: 15-25 words maximum\n- Product descriptions: 20-30 words maximum\n- Benefit descriptions: 15-25 words maximum\n- Bullet points: 2-5 words each\n- Keep paragraphs to 1-3 sentences maximum\n\nSECTION STRUCTURE:\n- Short headline (2-4 words)\n- Brief description (20-30 words max)\n- 3-5 short bullet benefits (2-5 words each)\n\nJONES ROAD BRAND GUIDELINES:\n- \"Your Skin But Better\" philosophy\n- Natural, welcoming, never pushy\n- Focus on enhancement, not transformation\n- Use \"moisturizing\" not \"hydrating\"\n- Avoid superlatives and exaggerated claims\n\nFollow Jones Road's natural, welcoming brand voice but keep everything SHORT and scannable like successful e-commerce landing pages.",
@@ -387,5 +389,6 @@ export const defaultTrainingConfig: TrainingConfig = {
   "modelParameters": {
     "model": "claude-sonnet-4-20250514",
     "maxTokens": 1024
-  }
+  },
+  "adminPassword": ""
 };

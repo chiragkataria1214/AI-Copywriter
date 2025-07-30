@@ -2,48 +2,29 @@ import type { Express } from "express";
 import { defaultTrainingConfig, type TrainingConfig } from '@shared/training-config';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { storage } from './storage';
 
 const TRAINING_CONFIG_PATH = path.join(process.cwd(), 'shared', 'training-config.ts');
 
 // Export function to get training config for use in other routes
 export async function getTrainingConfig(): Promise<TrainingConfig> {
-  return {
-    ...defaultTrainingConfig,
-    brandGuidelines: {
-      ...defaultTrainingConfig.brandGuidelines,
-      enabledBrandVoice: defaultTrainingConfig.brandGuidelines.enabledBrandVoice || 
-        new Array(defaultTrainingConfig.brandGuidelines.brandVoice.length).fill(true),
-      enabledKeyTerminology: defaultTrainingConfig.brandGuidelines.enabledKeyTerminology || 
-        new Array(defaultTrainingConfig.brandGuidelines.keyTerminology.length).fill(true),
-      enabledApprovedLanguage: defaultTrainingConfig.brandGuidelines.enabledApprovedLanguage || 
-        new Array(defaultTrainingConfig.brandGuidelines.approvedLanguage.length).fill(true),
-      enabledAvoidedLanguage: defaultTrainingConfig.brandGuidelines.enabledAvoidedLanguage || 
-        new Array(defaultTrainingConfig.brandGuidelines.avoidedLanguage.length).fill(true),
-    }
-  };
+  try {
+    // Try to get configuration from database first
+    const dbConfig = await storage.getTrainingConfiguration();
+    return dbConfig;
+  } catch (error) {
+    console.warn('Failed to load config from database, falling back to default:', error);
+    return defaultTrainingConfig;
+  }
 }
 
 // Routes for managing training configuration
 export function registerTrainingRoutes(app: Express, requireAdmin: any) {
-  // Get current training configuration
+  // Get current training configuration (now uses database)
   app.get('/api/training-config', requireAdmin, async (req, res) => {
     try {
-      // Ensure enabled arrays are initialized
-      const configWithToggles = {
-        ...defaultTrainingConfig,
-        brandGuidelines: {
-          ...defaultTrainingConfig.brandGuidelines,
-          enabledBrandVoice: defaultTrainingConfig.brandGuidelines.enabledBrandVoice || 
-            new Array(defaultTrainingConfig.brandGuidelines.brandVoice.length).fill(true),
-          enabledKeyTerminology: defaultTrainingConfig.brandGuidelines.enabledKeyTerminology || 
-            new Array(defaultTrainingConfig.brandGuidelines.keyTerminology.length).fill(true),
-          enabledApprovedLanguage: defaultTrainingConfig.brandGuidelines.enabledApprovedLanguage || 
-            new Array(defaultTrainingConfig.brandGuidelines.approvedLanguage.length).fill(true),
-          enabledAvoidedLanguage: defaultTrainingConfig.brandGuidelines.enabledAvoidedLanguage || 
-            new Array(defaultTrainingConfig.brandGuidelines.avoidedLanguage.length).fill(true),
-        }
-      };
-      res.json(configWithToggles);
+      const config = await getTrainingConfig();
+      res.json(config);
     } catch (error) {
       console.error("Error fetching training config:", error);
       res.status(500).json({ message: "Failed to fetch training configuration" });
