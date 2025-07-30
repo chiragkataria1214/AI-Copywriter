@@ -1243,6 +1243,8 @@ export async function generateRetentionCopy(request: {
   selectedProduct?: string;
   useJonesBrandGuide?: boolean;
 }) {
+  console.log('generateRetentionCopy called with selectedProducts:', request.selectedProducts);
+  
   const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY!,
   });
@@ -1336,8 +1338,9 @@ Requirements:
 5. Structure as ${request.campaignType?.toLowerCase() || 'promo'} campaign type
 6. Include clear, compelling call-to-action appropriate for the campaign
 7. Apply ${request.urgencyLevel?.toLowerCase() || 'medium'} urgency level
-${request.keywordsToInclude && request.keywordsToInclude.length > 0 ? `8. Naturally incorporate these keywords: ${request.keywordsToInclude.join(', ')}` : ''}
-${request.wordsToAvoid && request.wordsToAvoid.length > 0 ? `9. Avoid using these words: ${request.wordsToAvoid.join(', ')}` : ''}
+${request.selectedProducts && request.selectedProducts.length > 0 ? `8. FEATURE THESE PRODUCTS: ${request.selectedProducts.join(', ')} - Include these products naturally in the copy with their benefits and create relevant calls-to-action` : ''}
+${request.keywordsToInclude && request.keywordsToInclude.length > 0 ? `9. Naturally incorporate these keywords: ${request.keywordsToInclude.join(', ')}` : ''}
+${request.wordsToAvoid && request.wordsToAvoid.length > 0 ? `10. Avoid using these words: ${request.wordsToAvoid.join(', ')}` : ''}
 
 ${request.platform === 'SMS' ? `
 Format your response as SMS copy only (no additional explanations):

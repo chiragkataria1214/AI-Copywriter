@@ -760,6 +760,16 @@ export default function MetaAdGenerator() {
     onSuccess: (data) => {
       setGeneratedRetentionCopy(data.response || '');
       
+      // Store debug information for retention copy
+      if (data.debugInfo) {
+        setDebugInfo({
+          systemPrompt: data.debugInfo.systemPrompt,
+          userPrompt: data.debugInfo.userPrompt,
+          requestPayload: data.debugInfo.requestPayload,
+          rawResponse: data.debugInfo.rawResponse
+        });
+      }
+      
       // Add to history
       setRetentionCopyHistory(prev => [{
         keyMessage: retentionKeyMessage,
