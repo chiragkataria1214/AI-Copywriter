@@ -378,7 +378,56 @@ router.get('/personas', async (req, res) => {
   }
 });
 
-// Get products from database
+// Products configuration endpoint (for frontend config loading)
+router.get("/api/config/products", async (req, res) => {
+  try {
+    const products = await storage.getAllProducts();
+    const productMap = products.reduce((acc, product) => {
+      // Use name as key for consistency with existing code
+      const key = product.name;
+      acc[key] = {
+        id: product.id,
+        name: product.name,
+        displayName: product.displayName,
+        description: product.description,
+        isActive: product.isActive,
+        sortOrder: product.sortOrder
+      };
+      return acc;
+    }, {} as Record<string, any>);
+    
+    res.json(productMap);
+  } catch (error) {
+    console.error("Error fetching products config:", error);
+    res.status(500).json({ error: "Failed to fetch products configuration" });
+  }
+});
+
+// Personas configuration endpoint (for frontend config loading)
+router.get("/api/config/personas", async (req, res) => {
+  try {
+    const personas = await storage.getAllPersonas();
+    const personaMap = personas.reduce((acc, persona) => {
+      const key = persona.name;
+      acc[key] = {
+        id: persona.id,
+        name: persona.name,
+        displayName: persona.displayName,
+        description: persona.description,
+        isActive: persona.isActive,
+        sortOrder: persona.sortOrder
+      };
+      return acc;
+    }, {} as Record<string, any>);
+    
+    res.json(personaMap);
+  } catch (error) {
+    console.error("Error fetching personas config:", error);
+    res.status(500).json({ error: "Failed to fetch personas configuration" });
+  }
+});
+
+// Get products from database (legacy compatibility)
 router.get('/products', async (req, res) => {
   try {
     const products = await storage.getAllProducts();
@@ -395,28 +444,10 @@ router.get('/products', async (req, res) => {
       return acc;
     }, {} as Record<string, any>);
     
-    // If no products in database, return fallback structure
-    if (Object.keys(productMap).length === 0) {
-      res.json({
-        'miracle-balm': { name: 'Miracle Balm', description: 'Multi-use balm' },
-        'foundation': { name: 'What The Foundation', description: 'Serum foundation' },
-        'tinted-moisturizer': { name: 'Tinted Moisturizer', description: 'Light coverage' },
-        'hero-kit': { name: 'Hero Kit', description: 'Essential products' },
-        'sunscreen': { name: 'What The SPF', description: 'Daily sunscreen' },
-        'mascara': { name: 'What The Mascara', description: 'Natural mascara' },
-        'lip-stick': { name: 'Lip Stick', description: 'Multi-use lip color' },
-        'face-pencil': { name: 'Face Pencil', description: 'Versatile pencil' },
-        'cleanser': { name: 'Cleanser', description: 'Gentle cleanser' },
-        'serum': { name: 'Serum', description: 'Nourishing serum' },
-        'eye-cream': { name: 'Eye Cream', description: 'Eye treatment' },
-        'bronzer': { name: 'Bronzer', description: 'Natural bronzer' }
-      });
-    } else {
-      res.json(productMap);
-    }
+    res.json(productMap);
   } catch (error) {
-    console.error('Error fetching products:', error);
-    res.status(500).json({ error: 'Failed to fetch products' });
+    console.error("Error fetching products:", error);
+    res.status(500).json({ error: "Failed to fetch products" });
   }
 });
 

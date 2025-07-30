@@ -1431,24 +1431,19 @@ export default function MetaAdGenerator() {
                           Quick Select - Top Products
                         </Label>
                         <div className="flex flex-wrap gap-2 mb-4">
-                          {[
-                            { value: 'miracle balm', label: 'Miracle Balm' },
-                            { value: 'foundation', label: 'What The Foundation' },
-                            { value: 'tinted moisturizer', label: 'Just Enough' },
-                            { value: 'hero kit', label: 'The Hero Kit' }
-                          ].map((product) => (
+                          {Object.values(products).slice(0, 4).map((product: any) => (
                             <Button
-                              key={product.value}
-                              variant={selectedProduct === product.value ? "default" : "outline"}
+                              key={product.name}
+                              variant={selectedProduct === product.name ? "default" : "outline"}
                               size="sm"
                               className={`text-xs px-3 py-1 h-8 ${
-                                selectedProduct === product.value 
+                                selectedProduct === product.name 
                                   ? 'bg-[#004182] text-white border-[#004182]' 
                                   : 'hover:bg-gray-50'
                               }`}
-                              onClick={() => setSelectedProduct(product.value)}
+                              onClick={() => setSelectedProduct(product.name)}
                             >
-                              {product.label}
+                              {product.displayName}
                             </Button>
                           ))}
                         </div>
@@ -1463,11 +1458,11 @@ export default function MetaAdGenerator() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">All products</SelectItem>
-													 {Object.entries(products).map(([key, product]) => (
-														 <SelectItem key={key} value={key}>
-															 {(product as any).displayName || (product as any).name || key}
-														 </SelectItem>
-													 ))}
+                              {Object.entries(products).map(([key, product]) => (
+                                <SelectItem key={key} value={key}>
+                                  {(product as any).displayName || (product as any).name || key}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -1475,15 +1470,7 @@ export default function MetaAdGenerator() {
                         {selectedProduct && (
                           <p className="text-xs text-gray-500 mt-2">
                             AI will use customer reviews specific to {
-                              selectedProduct === 'miracle balm' ? 'Miracle Balm' :
-                              selectedProduct === 'foundation' ? 'What The Foundation' :
-                              selectedProduct === 'tinted moisturizer' ? 'Just Enough Tinted Moisturizer' :
-                              selectedProduct === 'hero kit' ? 'The Hero Kit' :
-                              selectedProduct === 'sunscreen' ? 'Everyday Sunscreen' :
-                              selectedProduct === 'mascara' ? 'What The Mascara' :
-                              selectedProduct === 'lip stick' ? 'Lip & Cheek Stick' :
-                              selectedProduct === 'face pencil' ? 'The Face Pencil' :
-                              selectedProduct
+                              products[selectedProduct]?.displayName || selectedProduct
                             } for authentic language patterns
                           </p>
                         )}
@@ -1859,25 +1846,12 @@ export default function MetaAdGenerator() {
                                 <div className="w-28 h-28 bg-white rounded-full shadow-lg flex items-center justify-center mb-3 mx-auto border border-gray-100">
                                   <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #004182 0%, #003366 100%)' }}>
                                     <span className="text-white font-bold text-base">
-                                      {selectedProduct === 'foundation' ? 'WTF' : 
-                                       selectedProduct === 'mascara' ? 'WTM' :
-                                       selectedProduct === 'sunscreen' ? 'SPF' :
-                                       selectedProduct === 'miracle balm' ? 'MB' :
-                                       selectedProduct === 'tinted moisturizer' ? 'JE' :
-                                       selectedProduct === 'hero kit' ? 'HK' : 'JR'}
+                                      {products[selectedProduct]?.displayName?.split(' ').map(word => word.charAt(0)).join('').slice(0, 3) || 'JR'}
                                     </span>
                                   </div>
                                 </div>
                                 <div className="text-gray-500 text-xs font-medium">
-                                  {selectedProduct === 'foundation' ? 'What The Foundation' : 
-                                   selectedProduct === 'mascara' ? 'What The Mascara' :
-                                   selectedProduct === 'sunscreen' ? 'Everyday Sunscreen' :
-                                   selectedProduct === 'miracle balm' ? 'Miracle Balm' :
-                                   selectedProduct === 'tinted moisturizer' ? 'Just Enough' :
-                                   selectedProduct === 'lip stick' ? 'Lip & Cheek Stick' :
-                                   selectedProduct === 'face pencil' ? 'The Face Pencil' :
-                                   selectedProduct === 'hero kit' ? 'The Hero Kit' : 
-                                   'Jones Road Beauty'}
+                                  {products[selectedProduct]?.displayName || 'Jones Road Beauty'}
                                 </div>
                               </div>
                             </>
@@ -2093,24 +2067,19 @@ export default function MetaAdGenerator() {
                           Quick Select - Top Products
                         </Label>
                         <div className="flex flex-wrap gap-2 mb-4">
-                          {[
-                            { value: 'miracle balm', label: 'Miracle Balm' },
-                            { value: 'foundation', label: 'What The Foundation' },
-                            { value: 'tinted moisturizer', label: 'Just Enough' },
-                            { value: 'hero kit', label: 'The Hero Kit' }
-                          ].map((product) => (
+                          {Object.values(products).slice(0, 4).map((product: any) => (
                             <Button
-                              key={product.value}
-                              variant={selectedProduct === product.value ? "default" : "outline"}
+                              key={product.name}
+                              variant={selectedProduct === product.name ? "default" : "outline"}
                               size="sm"
                               className={`text-xs px-3 py-1 h-8 ${
-                                selectedProduct === product.value 
+                                selectedProduct === product.name 
                                   ? 'bg-[#004182] text-white border-[#004182]' 
                                   : 'hover:bg-gray-50'
                               }`}
-                              onClick={() => setSelectedProduct(product.value)}
+                              onClick={() => setSelectedProduct(product.name)}
                             >
-                              {product.label}
+                              {product.displayName}
                             </Button>
                           ))}
                         </div>
@@ -2125,6 +2094,11 @@ export default function MetaAdGenerator() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">All products</SelectItem>
+                              {Object.entries(products).map(([key, product]) => (
+                                <SelectItem key={key} value={key}>
+                                  {(product as any).displayName || (product as any).name || key}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -2132,15 +2106,7 @@ export default function MetaAdGenerator() {
                         {selectedProduct && (
                           <p className="text-xs text-gray-500 mt-2">
                             AI will use customer reviews specific to {
-                              selectedProduct === 'miracle balm' ? 'Miracle Balm' :
-                              selectedProduct === 'foundation' ? 'What The Foundation' :
-                              selectedProduct === 'tinted moisturizer' ? 'Just Enough Tinted Moisturizer' :
-                              selectedProduct === 'hero kit' ? 'The Hero Kit' :
-                              selectedProduct === 'sunscreen' ? 'Everyday Sunscreen' :
-                              selectedProduct === 'mascara' ? 'What The Mascara' :
-                              selectedProduct === 'lip stick' ? 'Lip & Cheek Stick' :
-                              selectedProduct === 'face pencil' ? 'The Face Pencil' :
-                              selectedProduct
+                              products[selectedProduct]?.displayName || selectedProduct
                             } for authentic language patterns
                           </p>
                         )}
@@ -2918,42 +2884,25 @@ export default function MetaAdGenerator() {
                         
                         {/* Quick Select Buttons */}
                         <div className="grid grid-cols-2 gap-2 mb-4">
-                          {[
-                            { value: 'miracle-balm', label: 'Miracle Balm' },
-                            { value: 'foundation', label: 'What The Foundation' },
-                            { value: 'tinted-moisturizer', label: 'Just Enough' },
-                            { value: 'hero-kit', label: 'The Hero Kit' },
-                            { value: 'sunscreen', label: 'What The SPF' },
-                            { value: 'mascara', label: 'What The Mascara' },
-                            { value: 'lip-stick', label: 'Lip & Cheek Stick' },
-                            { value: 'face-pencil', label: 'The Face Pencil' },
-                            { value: 'cleanser', label: 'What The Cleanser' },
-                            { value: 'serum', label: 'Vitamin C Serum' },
-                            { value: 'eye-cream', label: 'Under Eye Rescue' },
-                            { value: 'bronzer', label: 'Cool Bronzer' },
-                            { value: 'lip-gloss', label: 'Lip Gloss' },
-                            { value: 'concealer', label: 'What The Concealer' },
-                            { value: 'blush', label: 'Cheek Color' },
-                            { value: 'highlighter', label: 'Face Highlight' }
-                          ].map((product) => (
+                          {Object.values(products).map((product: any) => (
                             <Button
-                              key={product.value}
-                              variant={retentionSelectedProducts.includes(product.value) ? "default" : "outline"}
+                              key={product.name}
+                              variant={retentionSelectedProducts.includes(product.name) ? "default" : "outline"}
                               size="sm"
                               className={`text-xs px-2 py-2 h-auto justify-start ${
-                                retentionSelectedProducts.includes(product.value)
+                                retentionSelectedProducts.includes(product.name)
                                   ? 'bg-[#004182] text-white border-[#004182]' 
                                   : 'hover:bg-gray-50'
                               }`}
                               onClick={() => {
-                                if (retentionSelectedProducts.includes(product.value)) {
-                                  setRetentionSelectedProducts(retentionSelectedProducts.filter(p => p !== product.value));
+                                if (retentionSelectedProducts.includes(product.name)) {
+                                  setRetentionSelectedProducts(retentionSelectedProducts.filter(p => p !== product.name));
                                 } else {
-                                  setRetentionSelectedProducts([...retentionSelectedProducts, product.value]);
+                                  setRetentionSelectedProducts([...retentionSelectedProducts, product.name]);
                                 }
                               }}
                             >
-                              {product.label}
+                              {product.displayName}
                             </Button>
                           ))}
                         </div>
@@ -2966,24 +2915,7 @@ export default function MetaAdGenerator() {
                             </p>
                             <div className="flex flex-wrap gap-1">
                               {retentionSelectedProducts.map((productValue) => {
-                                const productLabel = {
-                                  'miracle-balm': 'Miracle Balm',
-                                  'foundation': 'What The Foundation',
-                                  'tinted-moisturizer': 'Just Enough',
-                                  'hero-kit': 'The Hero Kit',
-                                  'sunscreen': 'What The SPF',
-                                  'mascara': 'What The Mascara',
-                                  'lip-stick': 'Lip & Cheek Stick',
-                                  'face-pencil': 'The Face Pencil',
-                                  'cleanser': 'What The Cleanser',
-                                  'serum': 'Vitamin C Serum',
-                                  'eye-cream': 'Under Eye Rescue',
-                                  'bronzer': 'Cool Bronzer',
-                                  'lip-gloss': 'Lip Gloss',
-                                  'concealer': 'What The Concealer',
-                                  'blush': 'Cheek Color',
-                                  'highlighter': 'Face Highlight'
-                                }[productValue] || productValue;
+                                const productLabel = products[productValue]?.displayName || productValue;
                                 
                                 return (
                                   <Badge key={productValue} variant="secondary" className="text-xs bg-blue-100 text-blue-800">
@@ -3987,31 +3919,9 @@ export default function MetaAdGenerator() {
                             {/* Show all products from catalog plus existing claims */}
                             {(() => {
                               const allProductKeys = new Set([
-                                'miracle-balm', 'foundation', 'tinted-moisturizer', 'hero-kit', 
-                                'sunscreen', 'mascara', 'lip-stick', 'face-pencil',
-                                'cleanser', 'serum', 'eye-cream', 'bronzer', 
-                                'lip-gloss', 'concealer', 'blush', 'highlighter',
+                                ...Object.keys(products),
                                 ...Object.keys(editingConfig?.productClaims || {})
                               ]);
-
-                              const productDisplayNames: Record<string, string> = {
-                                'miracle-balm': 'Miracle Balm',
-                                'foundation': 'What The Foundation',
-                                'tinted-moisturizer': 'Just Enough',
-                                'hero-kit': 'The Hero Kit',
-                                'sunscreen': 'What The SPF',
-                                'mascara': 'What The Mascara',
-                                'lip-stick': 'Lip & Cheek Stick',
-                                'face-pencil': 'The Face Pencil',
-                                'cleanser': 'What The Cleanser',
-                                'serum': 'Vitamin C Serum',
-                                'eye-cream': 'Under Eye Rescue',
-                                'bronzer': 'Cool Bronzer',
-                                'lip-gloss': 'Lip Gloss',
-                                'concealer': 'What The Concealer',
-                                'blush': 'Cheek Color',
-                                'highlighter': 'Face Highlight'
-                              };
 
                               return Array.from(allProductKeys).map((productKey) => {
                                 const claimsData = editingConfig?.productClaims?.[productKey] || {
@@ -4021,7 +3931,7 @@ export default function MetaAdGenerator() {
                                   enabledProhibited: []
                                 };
 
-                                const displayName = productDisplayNames[productKey] || 
+                                const displayName = products[productKey]?.displayName || 
                                   productKey.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 
                                 return (
@@ -5031,12 +4941,12 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                 </div>
                               ) : (
                                 <div className="space-y-4">
-                                  {[
-                                    { product: 'What The Mascara', count: reviewStats.byProduct?.mascara || 0, color: 'bg-blue-500' },
-                                    { product: 'What The Foundation', count: reviewStats.byProduct?.foundation || 0, color: 'bg-purple-500' },
-                                    { product: 'What The SPF', count: reviewStats.byProduct?.sunscreen || 0, color: 'bg-yellow-500' },
-                                    { product: 'Miracle Balm', count: reviewStats.byProduct?.['miracle balm'] || 0, color: 'bg-green-500' }
-                                  ].map(({ product, count, color }) => {
+                                  {Object.entries(products).slice(0, 4).map(([key, product], index) => {
+                                    const colors = ['bg-blue-500', 'bg-purple-500', 'bg-yellow-500', 'bg-green-500'];
+                                    const count = reviewStats.byProduct?.[key] || 0;
+                                    const color = colors[index % colors.length];
+                                    return { product: (product as any).displayName, count, color, key };
+                                  }).map(({ product, count, color, key }) => {
                                     const percentage = reviewStats.totalReviews > 0 ? Math.round((count / reviewStats.totalReviews) * 100) : 0;
                                     return (
                                       <div key={product} className="space-y-2">
@@ -5089,10 +4999,11 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                     </SelectTrigger>
                                     <SelectContent>
                                       <SelectItem value="all">All Products</SelectItem>
-                                      <SelectItem value="mascara">What The Mascara (5,659 reviews)</SelectItem>
-                                      <SelectItem value="foundation">What The Foundation (5,654 reviews)</SelectItem>
-                                      <SelectItem value="sunscreen">What The SPF (4,933 reviews)</SelectItem>
-                                      <SelectItem value="miracle-balm">Miracle Balm (4,923 reviews)</SelectItem>
+                                      {Object.entries(products).map(([key, product]) => (
+                                        <SelectItem key={key} value={key}>
+                                          {(product as any).displayName} ({reviewStats?.byProduct?.[key] || 0} reviews)
+                                        </SelectItem>
+                                      ))}
                                     </SelectContent>
                                   </Select>
                                 </div>
