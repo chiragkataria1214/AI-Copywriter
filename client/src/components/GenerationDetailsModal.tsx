@@ -166,7 +166,7 @@ export function GenerationDetailsModal({ isOpen, onClose, metadata, onEditSettin
                       <Copy className="h-3 w-3" />
                     </Button>
                   </div>
-                  <div className="bg-gray-50 rounded p-3 text-sm font-mono text-gray-700 max-h-32 overflow-y-auto">
+                  <div className="bg-gray-50 rounded p-3 text-sm font-mono text-gray-700 max-h-64 overflow-y-auto whitespace-pre-wrap">
                     {metadata.systemPrompt}
                   </div>
                 </div>
@@ -182,7 +182,7 @@ export function GenerationDetailsModal({ isOpen, onClose, metadata, onEditSettin
                       <Copy className="h-3 w-3" />
                     </Button>
                   </div>
-                  <div className="bg-gray-50 rounded p-3 text-sm font-mono text-gray-700 max-h-32 overflow-y-auto">
+                  <div className="bg-gray-50 rounded p-3 text-sm font-mono text-gray-700 max-h-64 overflow-y-auto whitespace-pre-wrap">
                     {metadata.userPrompt}
                   </div>
                 </div>

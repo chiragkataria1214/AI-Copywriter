@@ -148,18 +148,61 @@ export default function MetaAdGenerator() {
 
   const [editingConfig, setEditingConfig] = useState<any>(null);
   const [configLoading, setConfigLoading] = useState(false);
+  
+  // Database-driven personas state
+  const [personas, setPersonas] = useState<any>({});
+  
   // Admin state managed through useAuth hook
   const [adminPassword, setAdminPassword] = useState('');
   
   // Review stats state
   const [reviewStats, setReviewStats] = useState<any>(null);
   
-  // Auto-load training config when settings tab is accessed
+  // Auto-load training config and personas when settings tab is accessed
   useEffect(() => {
     if (activeTab === 'settings' && !trainingConfig && !configLoading) {
       loadTrainingConfigMutation.mutate();
     }
   }, [activeTab]);
+  
+  // Load personas from database on component mount
+  useEffect(() => {
+    fetch('/api/config/personas')
+      .then(res => res.json())
+      .then(data => {
+        console.log('Loaded personas from database:', data);
+        // Use database personas if available, otherwise use fallback structure
+        if (Object.keys(data).length === 0) {
+          // Temporary fallback structure until database is fully populated
+          setPersonas({
+            lifeJuggler: {
+              label: 'Life Juggler',
+              description: 'Busy individuals balancing multiple responsibilities',
+              subPersonas: {
+                newMom: { label: 'New Mom', description: 'Recent mothers with changing routines' },
+                workingMom: { label: 'Working Mom', description: 'Balancing career and family' }
+              }
+            },
+            cleanBeautyEnthusiast: {
+              label: 'Clean Beauty Enthusiast',
+              description: 'Health-conscious consumers'
+            }
+          });
+        } else {
+          setPersonas(data);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load personas from database:', err);
+        // Fallback personas structure
+        setPersonas({
+          lifeJuggler: {
+            label: 'Life Juggler',
+            description: 'Busy individuals balancing multiple responsibilities'
+          }
+        });
+      });
+  }, []);
   
   // Load review stats
   useEffect(() => {
@@ -261,75 +304,7 @@ export default function MetaAdGenerator() {
   const [staticAdImagePreview, setStaticAdImagePreview] = useState('');
   const [staticAdAnalysis, setStaticAdAnalysis] = useState('');
 
-  // Define personas
-  const personas = {
-    innovators: {
-      label: 'Innovators',
-      description: 'Early adopters who are always on the lookout for revolutionary products',
-      subPersonas: {}
-    },
-    skinSolutionist: {
-      label: 'Skin Solutionist',
-      description: 'Individuals with specific skin concerns looking for gentle, effective solutions',
-      subPersonas: {}
-    },
-    beautyNovice: {
-      label: 'Beauty Novice',
-      description: 'Those new to makeup or returning after a long hiatus, looking for approachable products',
-      subPersonas: {}
-    },
-    trendSeeker: {
-      label: 'Trend Seeker',
-      description: 'Social media-savvy individuals drawn to viral products and beauty trends',
-      subPersonas: {}
-    },
-    luxuryForLess: {
-      label: 'Luxury for Less',
-      description: 'Shoppers who desire high-quality, premium beauty products at a reasonable price',
-      subPersonas: {}
-    },
-    minimalist: {
-      label: 'Minimalist',
-      description: 'Individuals who prefer a streamlined routine with multi-functional products',
-      subPersonas: {}
-    },
-    skincareEnthusiast: {
-      label: 'Skincare Enthusiast',
-      description: 'Passionate about skin health and prioritizing clean, nourishing products',
-      subPersonas: {}
-    },
-    lifeJuggler: {
-      label: 'Life Juggler',
-      description: 'Busy individuals balancing work, family, and personal life, looking for reliable, time-saving beauty solutions',
-      subPersonas: {
-        newMom: {
-          label: 'New Mom (6 month postpartum)',
-          description: 'First time struggling with guilt, no time for self-care, hormone changes',
-          valueProps: ['No time', 'Guilt about self-care', 'Hormone changes', 'Ingredient focused']
-        },
-        repeatMom: {
-          label: 'Repeat Mom',
-          description: 'Trying to maintain routine, worried about disruption',
-          valueProps: ['Stress', 'Fear of losing established routine', 'Time management', 'Consistency needs']
-        },
-        professionalMom: {
-          label: 'Professional Mom',
-          description: 'Innovative, checking things off checklist, Type A personality',
-          valueProps: ['Busy schedule', 'Guilt about self-care', 'Needs quick solutions', 'Efficiency focused']
-        },
-        wellnessMom: {
-          label: 'Wellness/Stay-at-home Mom',
-          description: 'Aspirational persona focused on clean ingredients for whole family',
-          valueProps: ['Clean ingredients for family', 'Ingredient research', 'Health conscious', 'Quality focused']
-        }
-      }
-    },
-    beautyEnthusiast: {
-      label: 'Beauty Enthusiast',
-      description: 'Passionate about all things beauty, from trying the latest trends to experimenting with new looks',
-      subPersonas: {}
-    }
-  };
+  // Personas now loaded from database in useEffect
 
   const landingPageTypes = {
     listicle: {
@@ -345,8 +320,8 @@ export default function MetaAdGenerator() {
   };
 
   const generateTemplateAds = () => {
-    const selectedPersona = personas[concept as keyof typeof personas];
-    const selectedSubPersona = subPersona && selectedPersona?.subPersonas?.[subPersona as keyof typeof selectedPersona.subPersonas] ? selectedPersona.subPersonas[subPersona as keyof typeof selectedPersona.subPersonas] : null;
+    const selectedPersona = personas[concept];
+    const selectedSubPersona = subPersona && selectedPersona?.subPersonas?.[subPersona] ? selectedPersona.subPersonas[subPersona] : null;
     const brandPercent = brandDrBalance[0];
     const drPercent = 100 - brandPercent;
 
@@ -418,7 +393,7 @@ export default function MetaAdGenerator() {
   };
 
   const generateTemplateLandingPage = () => {
-    const selectedPersona = personas[concept as keyof typeof personas];
+    const selectedPersona = personas[concept];
     const brandPercent = brandDrBalance[0];
     const drPercent = 100 - brandPercent;
 
@@ -2891,10 +2866,11 @@ export default function MetaAdGenerator() {
                             <SelectValue placeholder="Select target persona" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="lifeJuggler">Life Juggler - Busy women managing multiple responsibilities</SelectItem>
-                            <SelectItem value="cleanBeautyEnthusiast">Clean Beauty Enthusiast - Health-conscious consumers</SelectItem>
-                            <SelectItem value="timeConstrainedProfessional">Time-Constrained Professional - Career-focused women</SelectItem>
-                            <SelectItem value="naturalBeautySeeker">Natural Beauty Seeker - Enhance don't mask approach</SelectItem>
+                            {Object.entries(personas).map(([key, persona]) => (
+                              <SelectItem key={key} value={key}>
+                                {(persona as any).label || key.replace(/([A-Z])/g, ' $1').trim()}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         
@@ -2909,10 +2885,12 @@ export default function MetaAdGenerator() {
                                 <SelectValue placeholder="Choose specific sub-persona" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="none">None (General Life Juggler)</SelectItem>
-                                <SelectItem value="newMom">New Mom - Recent mothers with changing routines</SelectItem>
-                                <SelectItem value="workingMom">Working Mom - Balancing career and family</SelectItem>
-                                <SelectItem value="busyExecutive">Busy Executive - High-stress professional life</SelectItem>
+                                <SelectItem value="none">None (General)</SelectItem>
+                                {personas[concept]?.subPersonas && Object.entries(personas[concept].subPersonas).map(([key, subPersona]) => (
+                                  <SelectItem key={key} value={key}>
+                                    {(subPersona as any).label || key.replace(/([A-Z])/g, ' $1').trim()}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </div>
@@ -3409,10 +3387,11 @@ export default function MetaAdGenerator() {
                             <SelectValue placeholder="Select audience" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="lifeJuggler">Life Juggler</SelectItem>
-                            <SelectItem value="cleanBeautyEnthusiast">Clean Beauty Enthusiast</SelectItem>
-                            <SelectItem value="timeConstrainedProfessional">Time-Constrained Professional</SelectItem>
-                            <SelectItem value="naturalBeautySeeker">Natural Beauty Seeker</SelectItem>
+                            {Object.entries(personas).map(([key, persona]) => (
+                              <SelectItem key={key} value={key}>
+                                {(persona as any).label || key.replace(/([A-Z])/g, ' $1').trim()}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -3424,10 +3403,12 @@ export default function MetaAdGenerator() {
                             <SelectValue placeholder="Select sub-persona" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="newMom">New Mom</SelectItem>
-                            <SelectItem value="workingMom">Working Mom</SelectItem>
-                            <SelectItem value="busyProfessional">Busy Professional</SelectItem>
-                            <SelectItem value="naturalBeautyLover">Natural Beauty Lover</SelectItem>
+                            <SelectItem value="none">None (General)</SelectItem>
+                            {personas[concept]?.subPersonas && Object.entries(personas[concept].subPersonas).map(([key, subPersona]) => (
+                              <SelectItem key={key} value={key}>
+                                {(subPersona as any).label || key.replace(/([A-Z])/g, ' $1').trim()}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>

@@ -226,7 +226,10 @@ EXISTING AD CREATIVE ANALYSIS:
 Analyze the uploaded ad creative image to extract key visual elements, text overlay, color scheme, brand elements, and overall messaging strategy. Use insights from this existing creative to inform your new ad copy generation while maintaining brand consistency.`;
   }
 
-  const userPrompt = trainingConfig.stationPrompts.adCopy.userPromptTemplate
+  const userTemplate = trainingConfig.stationPrompts?.adCopy?.userTemplate || 
+    'Generate ad copy for: {transcription} {landingPageContext}';
+  
+  const userPrompt = userTemplate
     .replace('{transcription}', transcription)
     .replace('{landingPageContext}', landingPageContext) + momTargetingSection + customBriefSection + imageAnalysisSection;
 
@@ -438,10 +441,7 @@ export async function generateLandingPageCopy(request: LandingPageRequest, train
         concept: params.concept,
         subPersona: params.subPersona
       } : undefined,
-      productClaims: trainingConfig?.productClaims ? {
-        approved: trainingConfig.productClaims.approved?.approvedClaims || [],
-        prohibited: trainingConfig.productClaims.approved?.prohibitedClaims || []
-      } : undefined,
+      productClaims: trainingConfig?.productClaims || undefined,
       brandDrBalance: params.brandDrBalance,
       selectedProduct: params.selectedProduct,
       settingsVersion: `v${Date.now()}` // Simple versioning

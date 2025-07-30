@@ -366,4 +366,16 @@ router.post("/api/system-configuration", async (req, res) => {
   }
 });
 
+// Get personas from database
+router.get('/personas', async (req, res) => {
+  try {
+    // For now, return empty object - personas will be loaded via main config endpoint
+    // TODO: Add specific personas table/field when database schema is ready
+    res.json({});
+  } catch (error) {
+    console.error('Error fetching personas:', error);
+    res.status(500).json({ error: 'Failed to fetch personas' });
+  }
+});
+
 export default router;
