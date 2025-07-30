@@ -19,10 +19,15 @@ import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'wouter';
 import { ProductSelection } from "@/components/ProductSelection";
+import { GenerationDetailsModal, GenerationMetadata } from '@/components/GenerationDetailsModal';
 
 
 export default function MetaAdGenerator() {
   const [activeTab, setActiveTab] = useState('ads');
+  
+  // Generation Details Modal state
+  const [showGenerationDetails, setShowGenerationDetails] = useState(false);
+  const [currentGenerationMetadata, setCurrentGenerationMetadata] = useState<GenerationMetadata | null>(null);
   
   // Admin key protection for AI Settings
   const [hasAdminAccess, setHasAdminAccess] = useState(false);
@@ -3173,6 +3178,35 @@ export default function MetaAdGenerator() {
                           
                           <Button
                             variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setCurrentGenerationMetadata({
+                                stationName: 'Email & SMS Retention',
+                                timestamp: new Date().toISOString(),
+                                modelUsed: 'Claude Sonnet 4.0',
+                                temperature: 0.7,
+                                maxTokens: 2000,
+                                systemPrompt: 'Expert retention marketing copywriter for Jones Road Beauty...',
+                                userPrompt: `Platform: ${retentionPlatform}\nKey Message: ${retentionKeyMessage}\nProducts: ${retentionSelectedProducts.join(', ')}...`,
+                                brandGuidelines: ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
+                                frameworks: ['Retention marketing', 'Email optimization', 'SMS best practices'],
+                                personaSettings: {
+                                  concept: concept,
+                                  subPersona: subPersona
+                                },
+                                brandDrBalance: brandDrBalance[0],
+                                selectedProduct: selectedProduct
+                              });
+                              setShowGenerationDetails(true);
+                            }}
+                            className="flex items-center space-x-1 text-xs"
+                          >
+                            <Settings size={12} />
+                            <span>View Details</span>
+                          </Button>
+                          
+                          <Button
+                            variant="outline"
                             onClick={() => {
                               setSelectedItemForRevision({
                                 type: 'retention',
@@ -5855,6 +5889,25 @@ Tone: Educational but approachable, like explaining to a friend who asked"
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Generation Details Modal */}
+      <GenerationDetailsModal
+        isOpen={showGenerationDetails}
+        onClose={() => setShowGenerationDetails(false)}
+        metadata={currentGenerationMetadata}
+        onEditSettings={() => {
+          if (hasAdminAccess) {
+            setActiveTab('settings');
+          } else {
+            toast({
+              title: "Access Required",
+              description: "Admin access required to edit AI Settings",
+              variant: "destructive"
+            });
+          }
+        }}
+        userRole={effectiveUser?.role}
+      />
     </div>
   );
 }

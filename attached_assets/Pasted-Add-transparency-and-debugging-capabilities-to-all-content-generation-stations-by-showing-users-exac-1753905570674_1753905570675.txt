@@ -1,0 +1,48 @@
+Add transparency and debugging capabilities to all content generation stations by showing users exactly what AI settings were used for each generation, with quick access to modify those settings.
+
+Requirements
+1. Generation Details Modal
+When copy is generated on any station (Ad Copy, Landing Page, Static Ad, Custom Request, Retention), add a "View Generation Details" link/button next to the results.
+
+Modal Content Should Display:
+
+System Prompt: The exact system instruction sent to the AI model
+User Prompt Template: How the user's input was formatted before sending
+Model Used: Which AI model version (Claude Sonnet 4, etc.)
+Model Settings: Temperature, max tokens, and other parameters
+Brand Guidelines Applied: Which specific brand voice rules were active
+Frameworks Used: Which copywriting frameworks were applied (for ad copy)
+Persona Settings: If persona targeting was used, show which pillars were applied
+Product Claims: Any product-specific approved/avoided language that influenced the generation
+Timestamp: When the generation occurred
+Settings Version: Version/hash of the training config used
+2. Quick Edit Access
+At the top of the modal, include a prominent "Edit AI Settings" button/icon that:
+
+Takes users directly to the AI Settings tab
+If user lacks admin access, shows appropriate permission message
+Optionally highlights the specific settings section most relevant to the current generation
+3. Visual Design
+Modal Title: "Generation Details - [Station Name]"
+Organized Sections: Group related settings (Brand Voice, Prompts, Model Config, etc.)
+Collapsible Sections: Allow users to expand/collapse different setting categories
+Copy-to-Clipboard: Let users copy specific prompts or settings for debugging
+Visual Indicators: Show which settings were "active" vs "available but not used"
+4. Implementation Notes
+Store generation metadata alongside each piece of generated content
+Ensure modal works consistently across all 5 stations
+Consider performance impact of storing detailed generation logs
+Make it easy to compare settings between different generations
+User Benefits
+Transparency: Users understand exactly how their content was generated
+Debugging: Easy to identify why certain copy was produced
+Learning: Users can see the relationship between settings and output
+Optimization: Quick access to modify settings that aren't working well
+Consistency: Ensure all stations are using expected configurations
+Technical Considerations
+Add generation metadata to content history storage
+Create reusable modal component for all stations
+Implement proper access control for AI Settings navigation
+Consider data retention policies for generation logs
+This feature transforms the platform from a "black box" into a transparent, debuggable system that empowers users to understand and optimize their AI-generated content.
+

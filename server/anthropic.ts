@@ -1,6 +1,30 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { defaultTrainingConfig, type TrainingConfig } from '@shared/training-config';
 
+// Generation metadata interface for debugging/transparency
+export interface GenerationMetadata {
+  stationName: string;
+  timestamp: string;
+  modelUsed: string;
+  temperature?: number;
+  maxTokens?: number;
+  systemPrompt: string;
+  userPrompt: string;
+  brandGuidelines?: string[];
+  frameworks?: string[];
+  personaSettings?: {
+    concept: string;
+    subPersona?: string;
+  };
+  productClaims?: {
+    approved: string[];
+    prohibited: string[];
+  };
+  brandDrBalance?: number;
+  selectedProduct?: string;
+  settingsVersion?: string;
+}
+
 /*
 <important_code_snippet_instructions>
 The newest Anthropic model is "claude-sonnet-4-20250514", not "claude-3-7-sonnet-20250219", "claude-3-5-sonnet-20241022" nor "claude-3-sonnet-20240229". 
@@ -386,6 +410,43 @@ export async function generateLandingPageCopy(request: LandingPageRequest, train
     brandDrBalance: safeBrandDrBalance,
     useJonesBrandGuide: true
   });
+
+  // Helper function to create generation metadata
+  function createGenerationMetadata(
+    stationName: string,
+    systemPrompt: string,
+    userPrompt: string,
+    params: {
+      concept?: string;
+      subPersona?: string;
+      selectedProduct?: string;
+      brandDrBalance?: number;
+    },
+    trainingConfig?: TrainingConfig
+  ): GenerationMetadata {
+    return {
+      stationName,
+      timestamp: new Date().toISOString(),
+      modelUsed: DEFAULT_MODEL_STR,
+      temperature: 0.7,
+      maxTokens: 2000,
+      systemPrompt,
+      userPrompt,
+      brandGuidelines: trainingConfig?.brandGuidelines?.brandVoice || [],
+      frameworks: trainingConfig?.copyFrameworks?.headlineFrameworks?.map(f => f.name) || [],
+      personaSettings: params.concept ? {
+        concept: params.concept,
+        subPersona: params.subPersona
+      } : undefined,
+      productClaims: trainingConfig?.productClaims ? {
+        approved: trainingConfig.productClaims.approved?.approvedClaims || [],
+        prohibited: trainingConfig.productClaims.approved?.prohibitedClaims || []
+      } : undefined,
+      brandDrBalance: params.brandDrBalance,
+      selectedProduct: params.selectedProduct,
+      settingsVersion: `v${Date.now()}` // Simple versioning
+    };
+  }
   
   // Get customer review insights if product is selected
   let reviewInsights = '';
@@ -626,7 +687,7 @@ CONVERSION PSYCHOLOGY PRINCIPLES:
 - Create multiple micro-commitments leading to main CTA
 - Use loss aversion appropriately (but avoid aggressive urgency tactics)
 
-BRAND/DR BALANCE: ${brandPercent}% brand voice, ${drPercent}% direct response optimization
+BRAND/DR BALANCE: ${safeBrandDrBalance}% brand voice, ${100 - safeBrandDrBalance}% direct response optimization
 TARGET PERSONA: ${concept}${subPersona ? ` (${subPersona})` : ''}
 COPY PERFORMANCE GOALS: High conversion rate while maintaining brand authenticity
 
@@ -659,7 +720,7 @@ CONVERSION REQUIREMENTS:
 - Primary goal: Drive product purchases
 - Secondary goal: Build email list
 - Audience: ${concept}${subPersona ? ` (specifically ${subPersona})` : ''} who value authentic, natural beauty
-- Tone: ${brandPercent > 50 ? 'Brand-focused with authentic voice' : 'Direct response with natural warmth'}
+- Tone: ${safeBrandDrBalance > 50 ? 'Brand-focused with authentic voice' : 'Direct response with natural warmth'}
 
 SPECIFIC INSTRUCTIONS:
 1. Use customer review insights to create authentic, relatable copy
