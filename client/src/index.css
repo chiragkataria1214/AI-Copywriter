@@ -242,4 +242,33 @@
     transform: none !important;
     animation: none !important;
   }
+  
+  /* NUCLEAR OPTION - Override ALL possible Radix Select animations globally */
+  [data-radix-select-trigger],
+  [data-radix-select-content],
+  [data-radix-select-item],
+  [data-radix-select-viewport],
+  [data-radix-select-icon],
+  [data-radix-select-label],
+  [data-radix-select-group] {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    animation-fill-mode: none !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+  
+  /* Override all Radix states */
+  [data-radix-select-trigger][data-state="open"],
+  [data-radix-select-trigger][data-state="closed"],
+  [data-radix-select-content][data-state="open"],
+  [data-radix-select-content][data-state="closed"],
+  [data-radix-select-item][data-highlighted],
+  [data-radix-select-item][data-selected] {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
 }
