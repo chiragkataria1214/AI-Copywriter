@@ -25,7 +25,15 @@ export function ProductSelection({
     { value: 'sunscreen', label: 'Everyday Sunscreen' },
     { value: 'mascara', label: 'What The Mascara' },
     { value: 'lip stick', label: 'Lip & Cheek Stick' },
-    { value: 'face pencil', label: 'The Face Pencil' }
+    { value: 'face pencil', label: 'The Face Pencil' },
+    { value: 'cleanser', label: 'What The Cleanser' },
+    { value: 'serum', label: 'Vitamin C Serum' },
+    { value: 'eye cream', label: 'Under Eye Rescue' },
+    { value: 'bronzer', label: 'Cool Bronzer' },
+    { value: 'lip gloss', label: 'Lip Gloss' },
+    { value: 'concealer', label: 'What The Concealer' },
+    { value: 'blush', label: 'Cheek Color' },
+    { value: 'highlighter', label: 'Face Highlight' }
   ];
 
   const getProductDisplayName = (value: string) => {

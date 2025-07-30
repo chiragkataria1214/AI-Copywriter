@@ -2939,7 +2939,11 @@ export default function MetaAdGenerator() {
                             { value: 'cleanser', label: 'What The Cleanser' },
                             { value: 'serum', label: 'Vitamin C Serum' },
                             { value: 'eye-cream', label: 'Under Eye Rescue' },
-                            { value: 'bronzer', label: 'Cool Bronzer' }
+                            { value: 'bronzer', label: 'Cool Bronzer' },
+                            { value: 'lip-gloss', label: 'Lip Gloss' },
+                            { value: 'concealer', label: 'What The Concealer' },
+                            { value: 'blush', label: 'Cheek Color' },
+                            { value: 'highlighter', label: 'Face Highlight' }
                           ].map((product) => (
                             <Button
                               key={product.value}
@@ -2983,7 +2987,11 @@ export default function MetaAdGenerator() {
                                   'cleanser': 'What The Cleanser',
                                   'serum': 'Vitamin C Serum',
                                   'eye-cream': 'Under Eye Rescue',
-                                  'bronzer': 'Cool Bronzer'
+                                  'bronzer': 'Cool Bronzer',
+                                  'lip-gloss': 'Lip Gloss',
+                                  'concealer': 'What The Concealer',
+                                  'blush': 'Cheek Color',
+                                  'highlighter': 'Face Highlight'
                                 }[productValue] || productValue;
                                 
                                 return (
