@@ -149,8 +149,9 @@ export default function MetaAdGenerator() {
   const [editingConfig, setEditingConfig] = useState<any>(null);
   const [configLoading, setConfigLoading] = useState(false);
   
-  // Database-driven personas state
+  // Database-driven personas and products state
   const [personas, setPersonas] = useState<any>({});
+  const [products, setProducts] = useState<Record<string, any>>({});
   
   // Admin state managed through useAuth hook
   const [adminPassword, setAdminPassword] = useState('');
@@ -200,6 +201,26 @@ export default function MetaAdGenerator() {
             label: 'Life Juggler',
             description: 'Busy individuals balancing multiple responsibilities'
           }
+        });
+      });
+  }, []);
+
+  // Load products from database on component mount
+  useEffect(() => {
+    fetch('/api/config/products')
+      .then(res => res.json())
+      .then(data => {
+        console.log('Loaded products from database:', data);
+        setProducts(data);
+      })
+      .catch(err => {
+        console.error('Failed to load products from database:', err);
+        // Fallback products structure
+        setProducts({
+          'miracle-balm': { name: 'Miracle Balm', displayName: 'Miracle Balm' },
+          'foundation': { name: 'What The Foundation', displayName: 'What The Foundation' },
+          'mascara': { name: 'What The Mascara', displayName: 'What The Mascara' },
+          'sunscreen': { name: 'What The SPF', displayName: 'What The SPF' }
         });
       });
   }, []);
@@ -1442,14 +1463,6 @@ export default function MetaAdGenerator() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">All products</SelectItem>
-                              <SelectItem value="miracle balm">Miracle Balm</SelectItem>
-                              <SelectItem value="foundation">What The Foundation</SelectItem>
-                              <SelectItem value="tinted moisturizer">Just Enough Tinted Moisturizer</SelectItem>
-                              <SelectItem value="hero kit">The Hero Kit</SelectItem>
-                              <SelectItem value="sunscreen">Everyday Sunscreen</SelectItem>
-                              <SelectItem value="mascara">What The Mascara</SelectItem>
-                              <SelectItem value="lip stick">Lip & Cheek Stick</SelectItem>
-                              <SelectItem value="face pencil">The Face Pencil</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -2107,14 +2120,6 @@ export default function MetaAdGenerator() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">All products</SelectItem>
-                              <SelectItem value="miracle balm">Miracle Balm</SelectItem>
-                              <SelectItem value="foundation">What The Foundation</SelectItem>
-                              <SelectItem value="tinted moisturizer">Just Enough Tinted Moisturizer</SelectItem>
-                              <SelectItem value="hero kit">The Hero Kit</SelectItem>
-                              <SelectItem value="sunscreen">Everyday Sunscreen</SelectItem>
-                              <SelectItem value="mascara">What The Mascara</SelectItem>
-                              <SelectItem value="lip stick">Lip & Cheek Stick</SelectItem>
-                              <SelectItem value="face pencil">The Face Pencil</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>

@@ -378,4 +378,46 @@ router.get('/personas', async (req, res) => {
   }
 });
 
+// Get products from database
+router.get('/products', async (req, res) => {
+  try {
+    const products = await storage.getAllProducts();
+    const productMap = products.reduce((acc, product) => {
+      // Use display name as key, converting to lowercase with hyphens
+      const key = product.displayName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      acc[key] = {
+        id: product.id,
+        name: product.name,
+        displayName: product.displayName,
+        description: product.description,
+        isActive: product.isActive
+      };
+      return acc;
+    }, {} as Record<string, any>);
+    
+    // If no products in database, return fallback structure
+    if (Object.keys(productMap).length === 0) {
+      res.json({
+        'miracle-balm': { name: 'Miracle Balm', description: 'Multi-use balm' },
+        'foundation': { name: 'What The Foundation', description: 'Serum foundation' },
+        'tinted-moisturizer': { name: 'Tinted Moisturizer', description: 'Light coverage' },
+        'hero-kit': { name: 'Hero Kit', description: 'Essential products' },
+        'sunscreen': { name: 'What The SPF', description: 'Daily sunscreen' },
+        'mascara': { name: 'What The Mascara', description: 'Natural mascara' },
+        'lip-stick': { name: 'Lip Stick', description: 'Multi-use lip color' },
+        'face-pencil': { name: 'Face Pencil', description: 'Versatile pencil' },
+        'cleanser': { name: 'Cleanser', description: 'Gentle cleanser' },
+        'serum': { name: 'Serum', description: 'Nourishing serum' },
+        'eye-cream': { name: 'Eye Cream', description: 'Eye treatment' },
+        'bronzer': { name: 'Bronzer', description: 'Natural bronzer' }
+      });
+    } else {
+      res.json(productMap);
+    }
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({ error: 'Failed to fetch products' });
+  }
+});
+
 export default router;
