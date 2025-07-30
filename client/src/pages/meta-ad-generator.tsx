@@ -29,6 +29,9 @@ export default function MetaAdGenerator() {
   const [showGenerationDetails, setShowGenerationDetails] = useState(false);
   const [currentGenerationMetadata, setCurrentGenerationMetadata] = useState<GenerationMetadata | null>(null);
   
+  // New product name for adding products to claims
+  const [newProductName, setNewProductName] = useState('');
+  
   // Admin key protection for AI Settings
   const [hasAdminAccess, setHasAdminAccess] = useState(false);
   const [showAdminKeyPrompt, setShowAdminKeyPrompt] = useState(false);
@@ -3019,24 +3022,7 @@ export default function MetaAdGenerator() {
                         )}
                       </div>
 
-                      {/* Optional Fields */}
-                      <div>
-                        <Label className="block text-sm font-medium text-gray-700 mb-2">
-                          Audience
-                        </Label>
-                        <Select value={retentionAudience} onValueChange={setRetentionAudience}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="General audience">General audience</SelectItem>
-                            <SelectItem value="New Customers">New Customers</SelectItem>
-                            <SelectItem value="Returning Customers">Returning Customers</SelectItem>
-                            <SelectItem value="Lapsed Users">Lapsed Users</SelectItem>
-                            <SelectItem value="VIPs">VIPs</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -3131,31 +3117,7 @@ export default function MetaAdGenerator() {
                         </div>
                       </div>
 
-                      {/* Product Focus Section */}
-                      <div>
-                        <Label className="block text-sm font-medium text-gray-700 mb-2">
-                          Additional Product Focus (Optional)
-                        </Label>
-                        <p className="text-xs text-gray-500 mb-3">
-                          Choose a single product for detailed claims and messaging (separate from multi-product selection above)
-                        </p>
-                        <Select value={selectedProduct || "all"} onValueChange={(value) => setSelectedProduct(value === "all" ? "" : value)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="No specific product focus" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">No specific focus</SelectItem>
-                            <SelectItem value="miracle balm">Miracle Balm</SelectItem>
-                            <SelectItem value="foundation">What The Foundation</SelectItem>
-                            <SelectItem value="tinted moisturizer">Just Enough Tinted Moisturizer</SelectItem>
-                            <SelectItem value="hero kit">The Hero Kit</SelectItem>
-                            <SelectItem value="sunscreen">Everyday Sunscreen</SelectItem>
-                            <SelectItem value="mascara">What The Mascara</SelectItem>
-                            <SelectItem value="lip stick">Lip & Cheek Stick</SelectItem>
-                            <SelectItem value="face pencil">The Face Pencil</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+
 
                       {/* Keywords to Include */}
                       <div>
@@ -3981,74 +3943,346 @@ export default function MetaAdGenerator() {
 
                       <TabsContent value="product-claims" className="mt-4">
                         <div className="space-y-6">
-                          <div className="space-y-8">
-                            {editingConfig?.productClaims && Object.entries(editingConfig.productClaims).map(([productName, claimsData]: [string, any]) => (
-                              <div key={productName} className="border border-gray-200 rounded-lg p-6">
-                                <div className="flex items-center justify-between mb-6">
-                                  <h4 className="text-lg font-semibold text-gray-900">
-                                    {productName === 'foundation' ? 'What the Foundation' : 
-                                     productName === 'mascara' ? 'Like A Mother Mascara' :
-                                     productName === 'sunscreen' ? 'Under Eye Rescue SPF 30' :
-                                     productName === 'miracleBalm' ? 'Miracle Balm' : productName}
-                                  </h4>
-                                  <Badge variant="secondary" className="bg-green-100 text-green-800">
-                                    {claimsData.approvedClaims?.length || 0} Approved Claims
-                                  </Badge>
-                                </div>
-                                
-                                <div>
-                                  <Label className="text-sm font-medium text-green-800 mb-3 block">✓ Approved Claims</Label>
-                                  <div className="space-y-3">
-                                    {claimsData.approvedClaims?.map((claim: string, index: number) => (
-                                      <div key={index} className="space-y-2">
-                                        <div className="flex items-center space-x-3">
-                                          <Switch 
-                                            checked={claimsData.enabledApproved?.[index] !== false}
-                                            onCheckedChange={(checked) => {
-                                              const enabled = [...(claimsData.enabledApproved || [])];
-                                              enabled[index] = checked;
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <p className="text-sm text-green-800 font-medium">Product Claims Management</p>
+                            <p className="text-sm text-green-700 mt-1">
+                              Configure approved and prohibited claims for all products. AI uses these to ensure compliant copy generation.
+                            </p>
+                          </div>
+
+                          {/* Add New Product Section */}
+                          {effectiveUser?.role === 'admin' && (
+                            <div className="border border-dashed border-blue-300 rounded-lg p-4 bg-blue-50">
+                              <h4 className="text-sm font-medium text-blue-800 mb-3">Add New Product</h4>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <Input
+                                  placeholder="Product name (e.g., 'lip-gloss')"
+                                  value={newProductName}
+                                  onChange={(e) => setNewProductName(e.target.value)}
+                                  className="text-sm"
+                                />
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    if (newProductName.trim()) {
+                                      const productKey = newProductName.toLowerCase().replace(/\s+/g, '-');
+                                      setEditingConfig({
+                                        ...editingConfig,
+                                        productClaims: {
+                                          ...editingConfig.productClaims,
+                                          [productKey]: {
+                                            approvedClaims: [''],
+                                            prohibitedClaims: [''],
+                                            enabledApproved: [true],
+                                            enabledProhibited: [true]
+                                          }
+                                        }
+                                      });
+                                      setNewProductName('');
+                                    }
+                                  }}
+                                  disabled={!newProductName.trim()}
+                                  className="bg-blue-600 text-white hover:bg-blue-700"
+                                >
+                                  Add Product
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* All Products List */}
+                          <div className="space-y-6">
+                            {/* Show all products from catalog plus existing claims */}
+                            {(() => {
+                              const allProductKeys = new Set([
+                                'miracle-balm', 'foundation', 'tinted-moisturizer', 'hero-kit', 
+                                'sunscreen', 'mascara', 'lip-stick', 'face-pencil',
+                                'cleanser', 'serum', 'eye-cream', 'bronzer', 
+                                'lip-gloss', 'concealer', 'blush', 'highlighter',
+                                ...Object.keys(editingConfig?.productClaims || {})
+                              ]);
+
+                              const productDisplayNames: Record<string, string> = {
+                                'miracle-balm': 'Miracle Balm',
+                                'foundation': 'What The Foundation',
+                                'tinted-moisturizer': 'Just Enough',
+                                'hero-kit': 'The Hero Kit',
+                                'sunscreen': 'What The SPF',
+                                'mascara': 'What The Mascara',
+                                'lip-stick': 'Lip & Cheek Stick',
+                                'face-pencil': 'The Face Pencil',
+                                'cleanser': 'What The Cleanser',
+                                'serum': 'Vitamin C Serum',
+                                'eye-cream': 'Under Eye Rescue',
+                                'bronzer': 'Cool Bronzer',
+                                'lip-gloss': 'Lip Gloss',
+                                'concealer': 'What The Concealer',
+                                'blush': 'Cheek Color',
+                                'highlighter': 'Face Highlight'
+                              };
+
+                              return Array.from(allProductKeys).map((productKey) => {
+                                const claimsData = editingConfig?.productClaims?.[productKey] || {
+                                  approvedClaims: [],
+                                  prohibitedClaims: [],
+                                  enabledApproved: [],
+                                  enabledProhibited: []
+                                };
+
+                                const displayName = productDisplayNames[productKey] || 
+                                  productKey.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+
+                                return (
+                                  <div key={productKey} className="border border-gray-200 rounded-lg p-6">
+                                    <div className="flex items-center justify-between mb-6">
+                                      <h4 className="text-lg font-semibold text-gray-900 flex items-center">
+                                        {displayName}
+                                        {effectiveUser?.role === 'admin' && (
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="ml-3 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                            onClick={() => {
+                                              const updatedClaims = { ...editingConfig.productClaims };
+                                              delete updatedClaims[productKey];
                                               setEditingConfig({
                                                 ...editingConfig,
-                                                productClaims: {
-                                                  ...editingConfig.productClaims,
-                                                  [productName]: {
-                                                    ...claimsData,
-                                                    enabledApproved: enabled
-                                                  }
-                                                }
+                                                productClaims: updatedClaims
                                               });
                                             }}
-                                            className="flex-shrink-0"
-                                          />
-                                          <span className="text-green-500 text-sm font-bold flex-shrink-0">✓</span>
-                                        </div>
-                                        <Textarea
-                                          value={claim}
-                                          onChange={(e) => {
-                                            if (effectiveUser?.role === 'admin') {
-                                              const claims = [...(claimsData.approvedClaims || [])];
-                                              claims[index] = e.target.value;
-                                              setEditingConfig({
-                                                ...editingConfig,
-                                                productClaims: {
-                                                  ...editingConfig.productClaims,
-                                                  [productName]: {
-                                                    ...claimsData,
-                                                    approvedClaims: claims
-                                                  }
-                                                }
-                                              });
-                                            }
-                                          }}
-                                          className="mt-2 text-sm resize-none min-h-[60px] border-green-200 focus:border-green-400"
-                                          disabled={effectiveUser?.role !== 'admin'}
-                                        />
+                                          >
+                                            <span className="text-xs">Delete Product</span>
+                                          </Button>
+                                        )}
+                                      </h4>
+                                      <div className="flex items-center space-x-2">
+                                        <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                          {claimsData.approvedClaims?.length || 0} Approved
+                                        </Badge>
+                                        <Badge variant="secondary" className="bg-red-100 text-red-800">
+                                          {claimsData.prohibitedClaims?.length || 0} Prohibited
+                                        </Badge>
                                       </div>
-                                    ))}
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                      {/* Approved Claims */}
+                                      <div>
+                                        <Label className="text-sm font-medium text-green-800 mb-3 block">✓ Approved Claims</Label>
+                                        <div className="space-y-3">
+                                          {(claimsData.approvedClaims || ['']).map((claim: string, index: number) => (
+                                            <div key={`approved-${index}`} className="space-y-2">
+                                              <div className="flex items-center space-x-3">
+                                                <Switch 
+                                                  checked={claimsData.enabledApproved?.[index] !== false}
+                                                  onCheckedChange={(checked) => {
+                                                    const enabled = [...(claimsData.enabledApproved || [])];
+                                                    enabled[index] = checked;
+                                                    setEditingConfig({
+                                                      ...editingConfig,
+                                                      productClaims: {
+                                                        ...editingConfig.productClaims,
+                                                        [productKey]: {
+                                                          ...claimsData,
+                                                          enabledApproved: enabled
+                                                        }
+                                                      }
+                                                    });
+                                                  }}
+                                                  className="flex-shrink-0"
+                                                />
+                                                <span className="text-green-500 text-sm font-bold flex-shrink-0">✓</span>
+                                                {effectiveUser?.role === 'admin' && claimsData.approvedClaims?.length > 1 && (
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-500 hover:text-red-700 flex-shrink-0 ml-auto"
+                                                    onClick={() => {
+                                                      const claims = [...(claimsData.approvedClaims || [])];
+                                                      const enabled = [...(claimsData.enabledApproved || [])];
+                                                      claims.splice(index, 1);
+                                                      enabled.splice(index, 1);
+                                                      setEditingConfig({
+                                                        ...editingConfig,
+                                                        productClaims: {
+                                                          ...editingConfig.productClaims,
+                                                          [productKey]: {
+                                                            ...claimsData,
+                                                            approvedClaims: claims,
+                                                            enabledApproved: enabled
+                                                          }
+                                                        }
+                                                      });
+                                                    }}
+                                                  >
+                                                    ×
+                                                  </Button>
+                                                )}
+                                              </div>
+                                              <Textarea
+                                                value={claim}
+                                                onChange={(e) => {
+                                                  if (effectiveUser?.role === 'admin') {
+                                                    const claims = [...(claimsData.approvedClaims || [])];
+                                                    claims[index] = e.target.value;
+                                                    setEditingConfig({
+                                                      ...editingConfig,
+                                                      productClaims: {
+                                                        ...editingConfig.productClaims,
+                                                        [productKey]: {
+                                                          ...claimsData,
+                                                          approvedClaims: claims
+                                                        }
+                                                      }
+                                                    });
+                                                  }
+                                                }}
+                                                className="text-sm resize-none min-h-[60px] border-green-200 focus:border-green-400"
+                                                placeholder="Enter approved product claim..."
+                                                disabled={effectiveUser?.role !== 'admin'}
+                                              />
+                                            </div>
+                                          ))}
+                                          {effectiveUser?.role === 'admin' && (
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() => {
+                                                const claims = [...(claimsData.approvedClaims || [])];
+                                                const enabled = [...(claimsData.enabledApproved || [])];
+                                                claims.push('');
+                                                enabled.push(true);
+                                                setEditingConfig({
+                                                  ...editingConfig,
+                                                  productClaims: {
+                                                    ...editingConfig.productClaims,
+                                                    [productKey]: {
+                                                      ...claimsData,
+                                                      approvedClaims: claims,
+                                                      enabledApproved: enabled
+                                                    }
+                                                  }
+                                                });
+                                              }}
+                                              className="w-full border-dashed border-green-300 text-green-600 hover:bg-green-50"
+                                            >
+                                              + Add approved claim
+                                            </Button>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Prohibited Claims */}
+                                      <div>
+                                        <Label className="text-sm font-medium text-red-800 mb-3 block">✗ Prohibited Claims</Label>
+                                        <div className="space-y-3">
+                                          {(claimsData.prohibitedClaims || ['']).map((claim: string, index: number) => (
+                                            <div key={`prohibited-${index}`} className="space-y-2">
+                                              <div className="flex items-center space-x-3">
+                                                <Switch 
+                                                  checked={claimsData.enabledProhibited?.[index] !== false}
+                                                  onCheckedChange={(checked) => {
+                                                    const enabled = [...(claimsData.enabledProhibited || [])];
+                                                    enabled[index] = checked;
+                                                    setEditingConfig({
+                                                      ...editingConfig,
+                                                      productClaims: {
+                                                        ...editingConfig.productClaims,
+                                                        [productKey]: {
+                                                          ...claimsData,
+                                                          enabledProhibited: enabled
+                                                        }
+                                                      }
+                                                    });
+                                                  }}
+                                                  className="flex-shrink-0"
+                                                />
+                                                <span className="text-red-500 text-sm font-bold flex-shrink-0">✗</span>
+                                                {effectiveUser?.role === 'admin' && claimsData.prohibitedClaims?.length > 1 && (
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-500 hover:text-red-700 flex-shrink-0 ml-auto"
+                                                    onClick={() => {
+                                                      const claims = [...(claimsData.prohibitedClaims || [])];
+                                                      const enabled = [...(claimsData.enabledProhibited || [])];
+                                                      claims.splice(index, 1);
+                                                      enabled.splice(index, 1);
+                                                      setEditingConfig({
+                                                        ...editingConfig,
+                                                        productClaims: {
+                                                          ...editingConfig.productClaims,
+                                                          [productKey]: {
+                                                            ...claimsData,
+                                                            prohibitedClaims: claims,
+                                                            enabledProhibited: enabled
+                                                          }
+                                                        }
+                                                      });
+                                                    }}
+                                                  >
+                                                    ×
+                                                  </Button>
+                                                )}
+                                              </div>
+                                              <Textarea
+                                                value={claim}
+                                                onChange={(e) => {
+                                                  if (effectiveUser?.role === 'admin') {
+                                                    const claims = [...(claimsData.prohibitedClaims || [])];
+                                                    claims[index] = e.target.value;
+                                                    setEditingConfig({
+                                                      ...editingConfig,
+                                                      productClaims: {
+                                                        ...editingConfig.productClaims,
+                                                        [productKey]: {
+                                                          ...claimsData,
+                                                          prohibitedClaims: claims
+                                                        }
+                                                      }
+                                                    });
+                                                  }
+                                                }}
+                                                className="text-sm resize-none min-h-[60px] border-red-200 focus:border-red-400"
+                                                placeholder="Enter prohibited product claim..."
+                                                disabled={effectiveUser?.role !== 'admin'}
+                                              />
+                                            </div>
+                                          ))}
+                                          {effectiveUser?.role === 'admin' && (
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() => {
+                                                const claims = [...(claimsData.prohibitedClaims || [])];
+                                                const enabled = [...(claimsData.enabledProhibited || [])];
+                                                claims.push('');
+                                                enabled.push(true);
+                                                setEditingConfig({
+                                                  ...editingConfig,
+                                                  productClaims: {
+                                                    ...editingConfig.productClaims,
+                                                    [productKey]: {
+                                                      ...claimsData,
+                                                      prohibitedClaims: claims,
+                                                      enabledProhibited: enabled
+                                                    }
+                                                  }
+                                                });
+                                              }}
+                                              className="w-full border-dashed border-red-300 text-red-600 hover:bg-red-50"
+                                            >
+                                              + Add prohibited claim
+                                            </Button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
                                   </div>
-                                </div>
-                              </div>
-                            ))}
+                                );
+                              });
+                            })()}
                           </div>
                         </div>
                       </TabsContent>

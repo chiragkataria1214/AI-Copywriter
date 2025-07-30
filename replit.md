@@ -6,7 +6,18 @@ This is a full-stack AI-powered copywriting platform built for generating advert
 
 ## Recent Changes (July 2025)
 
-**Latest Update - Generation Details Transparency System (July 30, 2025)**
+**Latest Update - Enhanced Product Claims Management & Retention Cleanup (July 30, 2025)**
+- **✅ RETENTION TAB STREAMLINED**: Removed unnecessary Audience and Additional Product Focus fields as requested - retention now focuses on key functionality
+- **✅ COMPREHENSIVE PRODUCT CLAIMS**: Complete overhaul of Product Claims section in AI Training Configuration
+- **✅ ALL PRODUCTS DISPLAYED**: Shows all 16 products from catalog with approved/prohibited claims interface
+- **✅ ADD NEW PRODUCTS**: Admin can add any new product with custom claims directly in the interface
+- **✅ DELETE PRODUCTS**: Admin can remove products from claims management with single click
+- **✅ DUAL CLAIMS SYSTEM**: Side-by-side approved (green) and prohibited (red) claims for each product
+- **✅ CLAIMS MANAGEMENT**: Add, edit, delete, and toggle individual claims with visual feedback
+- **✅ CONSISTENT PRODUCT CATALOG**: All 16 products now available across all generation stations and claims management
+- **✅ STREAMLINED UI**: Cleaner retention interface focuses on essential fields (platform, key message, products, goals)
+
+**Previous Update - Generation Details Transparency System (July 30, 2025)**
 - **✅ TRANSPARENCY SYSTEM**: Added comprehensive Generation Details Modal showing exactly what AI settings were used for each generation
 - **✅ VIEW DETAILS BUTTONS**: Added "View Details" buttons to all 4 major generation stations (Ad Copy, Landing Page, Custom Request, Retention)
 - **✅ COMPLETE DEBUGGING INFO**: Modal displays system prompts, user prompts, model settings, brand guidelines, frameworks, and persona configurations used
