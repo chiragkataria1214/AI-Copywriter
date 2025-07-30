@@ -4044,7 +4044,7 @@ export default function MetaAdGenerator() {
                                             size="sm"
                                             className="ml-3 text-red-500 hover:text-red-700 hover:bg-red-50"
                                             onClick={() => {
-                                              const updatedClaims = { ...editingConfig.productClaims };
+                                              const updatedClaims = { ...editingConfig?.productClaims };
                                               delete updatedClaims[productKey];
                                               setEditingConfig({
                                                 ...editingConfig,
@@ -5378,53 +5378,39 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                               </div>
 
                               <div>
-                                <Label className="text-sm font-medium text-gray-900 mb-3 block">Headline Frameworks</Label>
-                                <div className="space-y-2">
-                                  {(editingConfig?.stationPrompts?.adCopy?.headlineFrameworks || ['', '', '']).map((framework: string, index: number) => (
-                                    <div key={index} className="flex items-center space-x-3">
-                                      <Switch 
-                                        checked={editingConfig?.stationPrompts?.adCopy?.enabledHeadlineFrameworks?.[index] !== false}
-                                        onCheckedChange={(checked) => {
-                                          if (effectiveUser?.role !== 'admin') return;
-                                          const enabled = [...(editingConfig?.stationPrompts?.adCopy?.enabledHeadlineFrameworks || [])];
-                                          enabled[index] = checked;
-                                          setEditingConfig({
-                                            ...editingConfig,
-                                            stationPrompts: {
-                                              ...editingConfig?.stationPrompts,
-                                              adCopy: {
-                                                ...editingConfig?.stationPrompts?.adCopy,
-                                                enabledHeadlineFrameworks: enabled
-                                              }
-                                            }
-                                          });
-                                        }}
-                                        disabled={effectiveUser?.role !== 'admin'}
-                                      />
-                                      <Input 
-                                        value={framework}
-                                        onChange={(e) => {
-                                          if (effectiveUser?.role !== 'admin') return;
-                                          const updated = [...(editingConfig?.stationPrompts?.adCopy?.headlineFrameworks || [])];
-                                          updated[index] = e.target.value;
-                                          setEditingConfig({
-                                            ...editingConfig,
-                                            stationPrompts: {
-                                              ...editingConfig?.stationPrompts,
-                                              adCopy: {
-                                                ...editingConfig?.stationPrompts?.adCopy,
-                                                headlineFrameworks: updated
-                                              }
-                                            }
-                                          });
-                                        }}
-                                        placeholder="▶ Benefit-driven headlines (5-7 words max)"
-                                        disabled={effectiveUser?.role !== 'admin'}
-                                        className="flex-1"
-                                      />
-                                    </div>
-                                  ))}
-                                </div>
+                                <Label className="text-sm font-medium text-gray-900 mb-3 block">Headline Framework</Label>
+                                <Select 
+                                  value={editingConfig?.stationPrompts?.adCopy?.selectedHeadlineFramework || ''}
+                                  onValueChange={(value) => {
+                                    if (effectiveUser?.role === 'admin') {
+                                      setEditingConfig({
+                                        ...editingConfig,
+                                        stationPrompts: {
+                                          ...editingConfig?.stationPrompts,
+                                          adCopy: {
+                                            ...editingConfig?.stationPrompts?.adCopy,
+                                            selectedHeadlineFramework: value
+                                          }
+                                        }
+                                      });
+                                    }
+                                  }}
+                                  disabled={effectiveUser?.role !== 'admin'}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select headline framework from Copy Frameworks" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {editingConfig?.copyFrameworks?.headlineFrameworks?.map((framework: any, index: number) => (
+                                      <SelectItem key={index} value={framework.name || `framework-${index}`}>
+                                        {framework.name || `Framework ${index + 1}`}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Configure headline frameworks in Copy Frameworks tab above
+                                </p>
                               </div>
 
                               <div>
@@ -5448,104 +5434,12 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                 />
                               </div>
 
-                              <div>
-                                <Label className="text-sm font-medium text-gray-900 mb-3 block">Brand-First Guidelines</Label>
-                                <div className="space-y-2">
-                                  {(editingConfig?.stationPrompts?.adCopy?.brandFirstGuidelines || ['', '', '']).map((guideline: string, index: number) => (
-                                    <div key={index} className="flex items-center space-x-3">
-                                      <Switch 
-                                        checked={editingConfig?.stationPrompts?.adCopy?.enabledBrandFirstGuidelines?.[index] !== false}
-                                        onCheckedChange={(checked) => {
-                                          if (effectiveUser?.role !== 'admin') return;
-                                          const enabled = [...(editingConfig?.stationPrompts?.adCopy?.enabledBrandFirstGuidelines || [])];
-                                          enabled[index] = checked;
-                                          setEditingConfig({
-                                            ...editingConfig,
-                                            stationPrompts: {
-                                              ...editingConfig?.stationPrompts,
-                                              adCopy: {
-                                                ...editingConfig?.stationPrompts?.adCopy,
-                                                enabledBrandFirstGuidelines: enabled
-                                              }
-                                            }
-                                          });
-                                        }}
-                                        disabled={effectiveUser?.role !== 'admin'}
-                                      />
-                                      <Input 
-                                        value={guideline}
-                                        onChange={(e) => {
-                                          if (effectiveUser?.role !== 'admin') return;
-                                          const updated = [...(editingConfig?.stationPrompts?.adCopy?.brandFirstGuidelines || [])];
-                                          updated[index] = e.target.value;
-                                          setEditingConfig({
-                                            ...editingConfig,
-                                            stationPrompts: {
-                                              ...editingConfig?.stationPrompts,
-                                              adCopy: {
-                                                ...editingConfig?.stationPrompts?.adCopy,
-                                                brandFirstGuidelines: updated
-                                              }
-                                            }
-                                          });
-                                        }}
-                                        placeholder="▶ Focus on brand values and emotional connection"
-                                        disabled={effectiveUser?.role !== 'admin'}
-                                        className="flex-1"
-                                      />
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-
-                              <div>
-                                <Label className="text-sm font-medium text-gray-900 mb-3 block">Direct Response Guidelines</Label>
-                                <div className="space-y-2">
-                                  {(editingConfig?.stationPrompts?.adCopy?.directResponseGuidelines || ['', '', '']).map((guideline: string, index: number) => (
-                                    <div key={index} className="flex items-center space-x-3">
-                                      <Switch 
-                                        checked={editingConfig?.stationPrompts?.adCopy?.enabledDirectResponseGuidelines?.[index] !== false}
-                                        onCheckedChange={(checked) => {
-                                          if (effectiveUser?.role !== 'admin') return;
-                                          const enabled = [...(editingConfig?.stationPrompts?.adCopy?.enabledDirectResponseGuidelines || [])];
-                                          enabled[index] = checked;
-                                          setEditingConfig({
-                                            ...editingConfig,
-                                            stationPrompts: {
-                                              ...editingConfig?.stationPrompts,
-                                              adCopy: {
-                                                ...editingConfig?.stationPrompts?.adCopy,
-                                                enabledDirectResponseGuidelines: enabled
-                                              }
-                                            }
-                                          });
-                                        }}
-                                        disabled={effectiveUser?.role !== 'admin'}
-                                      />
-                                      <Input 
-                                        value={guideline}
-                                        onChange={(e) => {
-                                          if (effectiveUser?.role !== 'admin') return;
-                                          const updated = [...(editingConfig?.stationPrompts?.adCopy?.directResponseGuidelines || [])];
-                                          updated[index] = e.target.value;
-                                          setEditingConfig({
-                                            ...editingConfig,
-                                            stationPrompts: {
-                                              ...editingConfig?.stationPrompts,
-                                              adCopy: {
-                                                ...editingConfig?.stationPrompts?.adCopy,
-                                                directResponseGuidelines: updated
-                                              }
-                                            }
-                                          });
-                                        }}
-                                        placeholder="⚡ Use urgency and scarcity tactics effectively"
-                                        disabled={effectiveUser?.role !== 'admin'}
-                                        className="flex-1"
-                                      />
-                                    </div>
-                                  ))}
-                                </div>
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <p className="text-sm text-blue-800 font-medium">📋 Brand & DR Guidelines</p>
+                                <p className="text-sm text-blue-700 mt-1">
+                                  Brand-First and Direct Response guidelines are configured in the Copy Frameworks tab above. 
+                                  The system automatically uses those settings based on your Brand/DR balance slider.
+                                </p>
                               </div>
                             </div>
                           </div>
