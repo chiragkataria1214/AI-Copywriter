@@ -19,6 +19,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'wouter';
 import { ProductSelection } from "@/components/ProductSelection";
 import { PersonaSelect, SubPersonaSelect } from "@/components/PersonaSelect";
+import { TestSelect } from "@/components/ui/test-select";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export default function MetaAdGenerator() {
   const [activeTab, setActiveTab] = useState('paid-social');

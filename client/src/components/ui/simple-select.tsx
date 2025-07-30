@@ -61,12 +61,32 @@ export function SimpleSelectTrigger({ className, children }: SimpleSelectTrigger
     <button
       type="button"
       className={cn(
-        "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm cursor-pointer",
+        "hover:border-gray-400",
         // NO TRANSITIONS AT ALL - completely static
-        "transition-none transform-none",
+        "transition-none transform-none animate-none",
+        // Ensure it's clickable
+        "pointer-events-auto select-none",
         className
       )}
-      onClick={() => setIsOpen(!isOpen)}
+      style={{ 
+        pointerEvents: 'auto',
+        zIndex: 1,
+        position: 'relative',
+        userSelect: 'none'
+      }}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('SimpleSelect trigger clicked, current state:', isOpen);
+        const newState = !isOpen;
+        console.log('Setting state to:', newState);
+        setIsOpen(newState);
+      }}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
       aria-expanded={isOpen}
       aria-haspopup="listbox"
     >
