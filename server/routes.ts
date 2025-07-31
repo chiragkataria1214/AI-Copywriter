@@ -346,7 +346,13 @@ function registerConfigRoutes(app: Express) {
   app.get("/api/copy-frameworks/:type", async (req, res) => {
     try {
       const { type } = req.params;
-      const frameworks = await storage.getCopyFrameworksByType(type);
+      const validTypes = ['headline_framework', 'primary_text_rule', 'brand_first_guideline', 'direct_response_guideline'];
+      
+      if (!validTypes.includes(type)) {
+        return res.status(400).json({ error: "Invalid framework type" });
+      }
+      
+      const frameworks = await storage.getCopyFrameworksByType(type as 'headline_framework' | 'primary_text_rule' | 'brand_first_guideline' | 'direct_response_guideline');
       res.json(frameworks);
     } catch (error) {
       console.error("Error fetching copy frameworks by type:", error);
