@@ -2614,11 +2614,10 @@ export default function MetaAdGenerator() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {Object.entries(personas).map(([key, persona]) => (
-                                <SelectItem key={key} value={key}>
-                                  {(persona as any).displayName || (persona as any).name || key}
-                                </SelectItem>
-                              ))}
+                              <SelectItem value="lifeJuggler">Life Juggler</SelectItem>
+                              <SelectItem value="cleanBeautyEnthusiast">Clean Beauty Enthusiast</SelectItem>
+                              <SelectItem value="timeConstrainedProfessional">Time-Constrained Professional</SelectItem>
+                              <SelectItem value="naturalBeautySeeker">Natural Beauty Seeker</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
