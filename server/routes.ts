@@ -13,7 +13,7 @@ import bcrypt from "bcrypt";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
-import { insertUserSchema, adminCreateUserSchema, updateUserSchema } from "@shared/schema";
+import { insertUserSchema, adminCreateUserSchema, updateUserSchema, insertProductSchema, insertProductClaimSchema, insertPersonaSchema, insertPersonaPillarSchema, insertBrandConfigurationSchema, insertCopyFrameworkSchema } from "@shared/schema";
 
 const upload = multer({ dest: 'uploads/' });
 
@@ -56,6 +56,503 @@ const requireAdmin = async (req: any, res: any, next: any) => {
     res.status(500).json({ message: 'Authorization check failed' });
   }
 };
+
+
+function registerConfigRoutes(app: Express) {
+  // #region: Database-driven configuration management
+  
+  // Training configuration endpoint - replaces hardcoded config
+  app.get("/api/training-config", async (req, res) => {
+    try {
+      const config = await storage.getTrainingConfiguration();
+      res.json(config);
+    } catch (error) {
+      console.error("Error fetching training configuration:", error);
+      res.status(500).json({ error: "Failed to fetch training configuration" });
+    }
+  });
+  
+  // Products endpoints
+  app.get("/api/products", async (req, res) => {
+    try {
+      const products = await storage.getAllProducts();
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      res.status(500).json({ error: "Failed to fetch products" });
+    }
+  });
+  
+  app.get("/api/products/active", async (req, res) => {
+    try {
+      const products = await storage.getActiveProducts();
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching active products:", error);
+      res.status(500).json({ error: "Failed to fetch active products" });
+    }
+  });
+  
+  app.post("/api/products", async (req, res) => {
+    try {
+      const data = insertProductSchema.parse(req.body);
+      const product = await storage.createProduct(data);
+      res.json(product);
+    } catch (error) {
+      console.error("Error creating product:", error);
+      res.status(400).json({ error: "Failed to create product" });
+    }
+  });
+  
+  app.put("/api/products/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const data = insertProductSchema.partial().parse(req.body);
+      const product = await storage.updateProduct(id, data);
+      res.json(product);
+    } catch (error) {
+      console.error("Error updating product:", error);
+      res.status(400).json({ error: "Failed to update product" });
+    }
+  });
+  
+  app.delete("/api/products/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteProduct(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      res.status(400).json({ error: "Failed to delete product" });
+    }
+  });
+  
+  // Product claims endpoints
+  app.get("/api/products/:productId/claims", async (req, res) => {
+    try {
+      const { productId } = req.params;
+      const claims = await storage.getProductClaims(productId);
+      res.json(claims);
+    } catch (error) {
+      console.error("Error fetching product claims:", error);
+      res.status(500).json({ error: "Failed to fetch product claims" });
+    }
+  });
+  
+  app.post("/api/products/:productId/claims", async (req, res) => {
+    try {
+      const { productId } = req.params;
+      const data = insertProductClaimSchema.parse({ ...req.body, productId });
+      const claim = await storage.createProductClaim(data);
+      res.json(claim);
+    } catch (error) {
+      console.error("Error creating product claim:", error);
+      res.status(400).json({ error: "Failed to create product claim" });
+    }
+  });
+  
+  app.put("/api/product-claims/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const data = insertProductClaimSchema.partial().parse(req.body);
+      const claim = await storage.updateProductClaim(id, data);
+      res.json(claim);
+    } catch (error) {
+      console.error("Error updating product claim:", error);
+      res.status(400).json({ error: "Failed to update product claim" });
+    }
+  });
+  
+  app.delete("/api/product-claims/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteProductClaim(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting product claim:", error);
+      res.status(400).json({ error: "Failed to delete product claim" });
+    }
+  });
+  
+  // Personas endpoints
+  app.get("/api/personas", async (req, res) => {
+    try {
+      const personas = await storage.getAllPersonas();
+      res.json(personas);
+    } catch (error) {
+      console.error("Error fetching personas:", error);
+      res.status(500).json({ error: "Failed to fetch personas" });
+    }
+  });
+  
+  app.get("/api/personas/active", async (req, res) => {
+    try {
+      const personas = await storage.getActivePersonas();
+      res.json(personas);
+    } catch (error) {
+      console.error("Error fetching active personas:", error);
+      res.status(500).json({ error: "Failed to fetch active personas" });
+    }
+  });
+  
+  app.post("/api/personas", async (req, res) => {
+    try {
+      const data = insertPersonaSchema.parse(req.body);
+      const persona = await storage.createPersona(data);
+      res.json(persona);
+    } catch (error) {
+      console.error("Error creating persona:", error);
+      res.status(400).json({ error: "Failed to create persona" });
+    }
+  });
+  
+  app.put("/api/personas/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const data = insertPersonaSchema.partial().parse(req.body);
+      const persona = await storage.updatePersona(id, data);
+      res.json(persona);
+    } catch (error) {
+      console.error("Error updating persona:", error);
+      res.status(400).json({ error: "Failed to update persona" });
+    }
+  });
+  
+  app.delete("/api/personas/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deletePersona(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting persona:", error);
+      res.status(400).json({ error: "Failed to delete persona" });
+    }
+  });
+  
+  // Persona pillars endpoints
+  app.get("/api/personas/:personaId/pillars", async (req, res) => {
+    try {
+      const { personaId } = req.params;
+      const pillars = await storage.getPersonaPillars(personaId);
+      res.json(pillars);
+    } catch (error) {
+      console.error("Error fetching persona pillars:", error);
+      res.status(500).json({ error: "Failed to fetch persona pillars" });
+    }
+  });
+  
+  app.post("/api/personas/:personaId/pillars", async (req, res) => {
+    try {
+      const { personaId } = req.params;
+      const data = insertPersonaPillarSchema.parse({ ...req.body, personaId });
+      const pillar = await storage.createPersonaPillar(data);
+      res.json(pillar);
+    } catch (error) {
+      console.error("Error creating persona pillar:", error);
+      res.status(400).json({ error: "Failed to create persona pillar" });
+    }
+  });
+  
+  app.put("/api/persona-pillars/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const data = insertPersonaPillarSchema.partial().parse(req.body);
+      const pillar = await storage.updatePersonaPillar(id, data);
+      res.json(pillar);
+    } catch (error) {
+      console.error("Error updating persona pillar:", error);
+      res.status(400).json({ error: "Failed to update persona pillar" });
+    }
+  });
+  
+  app.delete("/api/persona-pillars/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deletePersonaPillar(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting persona pillar:", error);
+      res.status(400).json({ error: "Failed to delete persona pillar" });
+    }
+  });
+  
+  // Brand configuration endpoints
+  app.get("/api/brand-configuration", async (req, res) => {
+    try {
+      const config = await storage.getBrandConfiguration();
+      res.json(config);
+    } catch (error) {
+      console.error("Error fetching brand configuration:", error);
+      res.status(500).json({ error: "Failed to fetch brand configuration" });
+    }
+  });
+  
+  app.get("/api/brand-configuration/:type", async (req, res) => {
+    try {
+      const { type } = req.params;
+      const config = await storage.getBrandConfigurationByType(type);
+      res.json(config);
+    } catch (error) {
+      console.error("Error fetching brand configuration by type:", error);
+      res.status(500).json({ error: "Failed to fetch brand configuration by type" });
+    }
+  });
+  
+  app.post("/api/brand-configuration", async (req, res) => {
+    try {
+      const data = insertBrandConfigurationSchema.parse(req.body);
+      const config = await storage.createBrandConfiguration(data);
+      res.json(config);
+    } catch (error) {
+      console.error("Error creating brand configuration:", error);
+      res.status(400).json({ error: "Failed to create brand configuration" });
+    }
+  });
+  
+  app.put("/api/brand-configuration/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const data = insertBrandConfigurationSchema.partial().parse(req.body);
+      const config = await storage.updateBrandConfiguration(id, data);
+      res.json(config);
+    } catch (error) {
+      console.error("Error updating brand configuration:", error);
+      res.status(400).json({ error: "Failed to update brand configuration" });
+    }
+  });
+  
+  app.delete("/api/brand-configuration/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteBrandConfiguration(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting brand configuration:", error);
+      res.status(400).json({ error: "Failed to delete brand configuration" });
+    }
+  });
+  
+  // Copy frameworks endpoints
+  app.get("/api/copy-frameworks", async (req, res) => {
+    try {
+      const frameworks = await storage.getCopyFrameworks();
+      res.json(frameworks);
+    } catch (error) {
+      console.error("Error fetching copy frameworks:", error);
+      res.status(500).json({ error: "Failed to fetch copy frameworks" });
+    }
+  });
+  
+  app.get("/api/copy-frameworks/:type", async (req, res) => {
+    try {
+      const { type } = req.params;
+      const frameworks = await storage.getCopyFrameworksByType(type);
+      res.json(frameworks);
+    } catch (error) {
+      console.error("Error fetching copy frameworks by type:", error);
+      res.status(500).json({ error: "Failed to fetch copy frameworks by type" });
+    }
+  });
+  
+  app.post("/api/copy-frameworks", async (req, res) => {
+    try {
+      const data = insertCopyFrameworkSchema.parse(req.body);
+      const framework = await storage.createCopyFramework(data);
+      res.json(framework);
+    } catch (error) {
+      console.error("Error creating copy framework:", error);
+      res.status(400).json({ error: "Failed to create copy framework" });
+    }
+  });
+  
+  app.put("/api/copy-frameworks/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const data = insertCopyFrameworkSchema.partial().parse(req.body);
+      const framework = await storage.updateCopyFramework(id, data);
+      res.json(framework);
+    } catch (error) {
+      console.error("Error updating copy framework:", error);
+      res.status(400).json({ error: "Failed to update copy framework" });
+    }
+  });
+  
+  app.delete("/api/copy-frameworks/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteCopyFramework(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting copy framework:", error);
+      res.status(400).json({ error: "Failed to delete copy framework" });
+    }
+  });
+  
+  // System configuration endpoints
+  app.get("/api/system-configuration", async (req, res) => {
+    try {
+      const config = await storage.getSystemConfiguration();
+      res.json(config);
+    } catch (error) {
+      console.error("Error fetching system configuration:", error);
+      res.status(500).json({ error: "Failed to fetch system configuration" });
+    }
+  });
+  
+  app.get("/api/system-configuration/:key", async (req, res) => {
+    try {
+      const { key } = req.params;
+      const value = await storage.getSystemConfigValue(key);
+      res.json({ key, value });
+    } catch (error) {
+      console.error("Error fetching system configuration value:", error);
+      res.status(500).json({ error: "Failed to fetch system configuration value" });
+    }
+  });
+  
+  app.post("/api/system-configuration", async (req, res) => {
+    try {
+      const { key, value, description } = req.body;
+      const config = await storage.setSystemConfigValue(key, value, description);
+      res.json(config);
+    } catch (error) {
+      console.error("Error setting system configuration value:", error);
+      res.status(400).json({ error: "Failed to set system configuration value" });
+    }
+  });
+  
+  // Get personas from database
+  app.get('/personas', async (req, res) => {
+    try {
+      // For now, return empty object - personas will be loaded via main config endpoint
+      // TODO: Add specific personas table/field when database schema is ready
+      res.json({});
+    } catch (error) {
+      console.error('Error fetching personas:', error);
+      res.status(500).json({ error: 'Failed to fetch personas' });
+    }
+  });
+  
+  // Products configuration endpoint (for frontend config loading)
+  app.get("/api/config/products", async (req, res) => {
+    try {
+      const products = await storage.getAllProducts();
+      const productMap = products.reduce((acc, product) => {
+        // Use name as key for consistency with existing code
+        const key = product.name;
+        acc[key] = {
+          id: product.id,
+          name: product.name,
+          displayName: product.displayName,
+          description: product.description,
+          isActive: product.isActive,
+          sortOrder: product.sortOrder
+        };
+        return acc;
+      }, {} as Record<string, any>);
+      
+      res.json(productMap);
+    } catch (error) {
+      console.error("Error fetching products config:", error);
+      res.status(500).json({ error: "Failed to fetch products configuration" });
+    }
+  });
+  
+  // Personas configuration endpoint (for frontend config loading)
+  app.get("/api/config/personas", async (req, res) => {
+    try {
+      const personas = await storage.getAllPersonas();
+      const personaMap = personas.reduce((acc, persona) => {
+        const key = persona.name;
+        acc[key] = {
+          id: persona.id,
+          name: persona.name,
+          label: persona.displayName, // Frontend expects 'label' property
+          displayName: persona.displayName,
+          description: persona.description,
+          isActive: persona.isActive,
+          sortOrder: persona.sortOrder
+        };
+        return acc;
+      }, {} as Record<string, any>);
+      
+      res.json(personaMap);
+    } catch (error) {
+      console.error("Error fetching personas config:", error);
+      res.status(500).json({ error: "Failed to fetch personas configuration" });
+    }
+  });
+  
+  // Get products from database (legacy compatibility)
+  app.get('/products', async (req, res) => {
+    try {
+      const products = await storage.getAllProducts();
+      const productMap = products.reduce((acc, product) => {
+        // Use display name as key, converting to lowercase with hyphens
+        const key = product.displayName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        acc[key] = {
+          id: product.id,
+          name: product.name,
+          displayName: product.displayName,
+          description: product.description,
+          isActive: product.isActive
+        };
+        return acc;
+      }, {} as Record<string, any>);
+      
+      res.json(productMap);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      res.status(500).json({ error: "Failed to fetch products" });
+    }
+  });
+  
+  // Brand Guidelines configuration endpoint
+  app.get("/api/config/brand-guidelines", async (req, res) => {
+    try {
+      const config = await storage.getTrainingConfiguration();
+      res.json(config.brandGuidelines || {});
+    } catch (error) {
+      console.error("Error fetching brand guidelines:", error);
+      res.status(500).json({ error: "Failed to fetch brand guidelines" });
+    }
+  });
+  
+  // Copy Frameworks configuration endpoint
+  app.get("/api/config/copy-frameworks", async (req, res) => {
+    try {
+      const config = await storage.getTrainingConfiguration();
+      res.json(config.copyFrameworks || {});
+    } catch (error) {
+      console.error("Error fetching copy frameworks:", error);
+      res.status(500).json({ error: "Failed to fetch copy frameworks" });
+    }
+  });
+  
+  // Station Prompts configuration endpoint
+  app.get("/api/config/station-prompts", async (req, res) => {
+    try {
+      const config = await storage.getTrainingConfiguration();
+      res.json(config.stationPrompts || {});
+    } catch (error) {
+      console.error("Error fetching station prompts:", error);
+      res.status(500).json({ error: "Failed to fetch station prompts" });
+    }
+  });
+  
+  // Model Settings configuration endpoint
+  app.get("/api/config/model-settings", async (req, res) => {
+    try {
+      const config = await storage.getTrainingConfiguration();
+      res.json(config.modelSettings || {});
+    } catch (error) {
+      console.error("Error fetching model settings:", error);
+      res.status(500).json({ error: "Failed to fetch model settings" });
+    }
+  });
+  
+  // #endregion
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configure session middleware with database storage
@@ -1113,9 +1610,7 @@ Landing Page: ${data.landingPageUrl || 'None provided'}
   // Register admin routes
   registerAdminRoutes(app);
 
-  // Register config routes for database-driven configuration
-  const configRoutes = await import("./routes-config");
-  app.use(configRoutes.default);
+  registerConfigRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;

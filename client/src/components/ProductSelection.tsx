@@ -8,6 +8,7 @@ interface ProductSelectionProps {
   setSelectedProduct: (product: string) => void;
   selectedProducts: string[];
   setSelectedProducts: (products: string[]) => void;
+  products?: Record<string, any>;
 }
 
 export function ProductSelection({ 
@@ -15,9 +16,11 @@ export function ProductSelection({
   selectedProduct,
   setSelectedProduct,
   selectedProducts,
-  setSelectedProducts
+  setSelectedProducts,
+  products: dynamicProducts
 }: ProductSelectionProps) {
-  const products = [
+  // Fallback to hardcoded products if dynamic data is not available
+  const fallbackProducts = [
     { value: 'miracle balm', label: 'Miracle Balm' },
     { value: 'foundation', label: 'What The Foundation' },
     { value: 'tinted moisturizer', label: 'Just Enough' },
@@ -35,6 +38,14 @@ export function ProductSelection({
     { value: 'blush', label: 'Cheek Color' },
     { value: 'highlighter', label: 'Face Highlight' }
   ];
+
+  // Convert dynamic products to the expected format or use fallback
+  const products = dynamicProducts 
+    ? Object.entries(dynamicProducts).map(([key, product]: [string, any]) => ({
+        value: key,
+        label: product.name || product.label || key
+      }))
+    : fallbackProducts;
 
   const getProductDisplayName = (value: string) => {
     const product = products.find(p => p.value === value);

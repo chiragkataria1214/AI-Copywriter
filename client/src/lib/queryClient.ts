@@ -2,8 +2,23 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    // Get the response text first
+    const text = await res.text();
+    
+    try {
+      // Try to parse as JSON to get structured error message
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const errorData = JSON.parse(text);
+        const errorMessage = errorData.message || errorData.error || res.statusText;
+        throw new Error(errorMessage);
+      } else {
+        throw new Error(`${res.status}: ${text || res.statusText}`);
+      }
+    } catch (parseError) {
+      // If JSON parsing fails, use the raw text
+      throw new Error(`${res.status}: ${text || res.statusText}`);
+    }
   }
 }
 
@@ -30,14 +45,8 @@ export async function apiRequest(
   if (contentType && contentType.includes("application/json")) {
     return await res.json();
   } else {
-    // If not JSON, try to parse as text and handle gracefully
-    const text = await res.text();
-    try {
-      return JSON.parse(text);
-    } catch (e) {
-      console.error('Response is not valid JSON:', text.substring(0, 200));
-      throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}...`);
-    }
+    // If not JSON, just return the text
+    return await res.text();
   }
 }
 

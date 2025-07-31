@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Upload, Copy, Check, Target, Sparkles, Video, FileText, Zap, ThumbsUp, ThumbsDown, Star, Globe, List, AlertCircle, Palette, Users, Settings, LogOut, User, Database, Brain, BarChart3, Camera, Lock, Mail, MessageSquare } from 'lucide-react';
-import { useMutation } from '@tanstack/react-query';
+import { Upload, Copy, Check, Target, Sparkles, Video, FileText, Zap, ThumbsUp, ThumbsDown, Star, Globe, List, AlertCircle, Palette, Users, Settings, LogOut, User, Database, Brain, BarChart3, Camera, Lock, Mail, MessageSquare, Trash2 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,10 +18,22 @@ import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'wouter';
 import { ProductSelection } from "@/components/ProductSelection";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Product } from '@shared/schema';
+import { TrainingConfig } from '@shared/training-config';
 import { GenerationDetailsModal, GenerationMetadata } from '@/components/GenerationDetailsModal';
 
+interface SubPersona {
+  label: string;
+}
+
+interface Persona {
+  label: string;
+  subPersonas?: Record<string, SubPersona>;
+}
 
 export default function MetaAdGenerator() {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('ads');
   
   // Generation Details Modal state
@@ -41,6 +52,9 @@ export default function MetaAdGenerator() {
   const handleAISettingsClick = () => {
     if (hasAdminAccess) {
       setActiveTab('settings');
+      if (!editingConfig) {
+        loadTrainingConfigMutation.mutate();
+      }
     } else {
       setShowAdminKeyPrompt(true);
     }
@@ -143,95 +157,128 @@ export default function MetaAdGenerator() {
   } | null>(null);
   
   // Training Configuration States
-  const [trainingConfig, setTrainingConfig] = useState<any>(null);
+  const [editingConfig, setEditingConfig] = useState<TrainingConfig | null>(null);
+
+  const loadTrainingConfigMutation = useMutation({
+    mutationFn: async () => apiRequest('/api/training-config'),
+    onSuccess: (data) => {
+      console.log('DEBUG: Training config loaded:', data);
+      console.log('DEBUG: Brand guidelines:', data?.brandGuidelines);
+      console.log('DEBUG: Brand voice:', data?.brandGuidelines?.brandVoice);
+      console.log('DEBUG: Enabled brand voice:', data?.brandGuidelines?.enabledBrandVoice);
+      setEditingConfig(data);
+      toast({
+        title: "Configuration Loaded",
+        description: "You can now edit the AI training configuration.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to Load Configuration",
+        description: "Could not load the training configuration.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const saveTrainingConfigMutation = useMutation({
+    mutationFn: async (config: TrainingConfig) => {
+      return await apiRequest('/api/training-config', {
+        method: 'POST',
+        body: config,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Configuration Saved",
+        description: "The AI training configuration has been updated.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['trainingConfig'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to Save Configuration",
+        description: "Could not save the training configuration.",
+        variant: "destructive",
+      });
+    },
+  });
+
+
+  
   
 
-  const [editingConfig, setEditingConfig] = useState<any>(null);
-  const [configLoading, setConfigLoading] = useState(false);
-  
-  // Database-driven personas and products state
-  const [personas, setPersonas] = useState<any>({});
   const [products, setProducts] = useState<Record<string, any>>({});
-  
-  // Admin state managed through useAuth hook
-  const [adminPassword, setAdminPassword] = useState('');
-  
-  // Review stats state
+  const [productClaims, setProductClaims] = useState<Record<string, any>>({});
+  const [personas, setPersonas] = useState<Record<string, Persona>>({});
+  const [brandGuidelines, setBrandGuidelines] = useState<any>({});
+  const [copyFrameworks, setCopyFrameworks] = useState<any>({});
+  const [stationPrompts, setStationPrompts] = useState<any>({});
+  const [modelSettings, setModelSettings] = useState<any>({});
   const [reviewStats, setReviewStats] = useState<any>(null);
-  
-  // Auto-load training config and personas when settings tab is accessed
-  useEffect(() => {
-    if (activeTab === 'settings' && !trainingConfig && !configLoading) {
-      loadTrainingConfigMutation.mutate();
-    }
-  }, [activeTab]);
-  
-  // Load personas from database on component mount
-  useEffect(() => {
-    fetch('/api/config/personas')
-      .then(res => res.json())
-      .then(data => {
-        console.log('Loaded personas from database:', data);
-        // Use database personas if available, otherwise use fallback structure
-        if (Object.keys(data).length === 0) {
-          // Temporary fallback structure until database is fully populated
-          setPersonas({
-            lifeJuggler: {
-              label: 'Life Juggler',
-              description: 'Busy individuals balancing multiple responsibilities',
-              subPersonas: {
-                newMom: { label: 'New Mom', description: 'Recent mothers with changing routines' },
-                workingMom: { label: 'Working Mom', description: 'Balancing career and family' }
-              }
-            },
-            cleanBeautyEnthusiast: {
-              label: 'Clean Beauty Enthusiast',
-              description: 'Health-conscious consumers'
-            }
-          });
-        } else {
-          setPersonas(data);
-        }
-      })
-      .catch(err => {
-        console.error('Failed to load personas from database:', err);
-        // Fallback personas structure
-        setPersonas({
-          lifeJuggler: {
-            label: 'Life Juggler',
-            description: 'Busy individuals balancing multiple responsibilities'
-          }
-        });
-      });
-  }, []);
 
-  // Load products from database on component mount
-  useEffect(() => {
-    fetch('/api/config/products')
-      .then(res => res.json())
-      .then(data => {
-        console.log('Loaded products from database:', data);
-        setProducts(data);
-      })
-      .catch(err => {
-        console.error('Failed to load products from database:', err);
-        // Fallback products structure
-        setProducts({
-          'miracle-balm': { name: 'Miracle Balm', displayName: 'Miracle Balm' },
-          'foundation': { name: 'What The Foundation', displayName: 'What The Foundation' },
-          'mascara': { name: 'What The Mascara', displayName: 'What The Mascara' },
-          'sunscreen': { name: 'What The SPF', displayName: 'What The SPF' }
-        });
-      });
-  }, []);
   
-  // Load review stats
+  
+  const { data: productsData, isLoading: productsLoading } = useQuery({
+    queryKey: ['products'],
+    queryFn: () => apiRequest('/api/config/products'),
+  });
+
   useEffect(() => {
-    fetch('/api/reviews/stats')
-      .then(res => res.json())
-      .then(data => setReviewStats(data))
-      .catch(err => console.error('Failed to load review stats:', err));
-  }, []); // Remove effectiveUser dependency to prevent infinite loop
+    if (productsData) setProducts(productsData);
+  }, [productsData]);
+
+  const { data: personasData, isLoading: personasLoading } = useQuery({
+    queryKey: ['personas'],
+    queryFn: () => apiRequest('/api/config/personas'),
+  });
+
+  useEffect(() => {
+    if (personasData) {
+      setPersonas(personasData);
+      // Set default persona if none selected
+      if (!concept && Object.keys(personasData).length > 0) {
+        const firstPersona = Object.keys(personasData)[0];
+        setConcept(firstPersona);
+      }
+    }
+  }, [personasData, concept]);
+
+  const { data: brandGuidelinesData, isLoading: brandGuidelinesLoading } = useQuery({
+    queryKey: ['brandGuidelines'],
+    queryFn: () => apiRequest('/api/config/brand-guidelines'),
+  });
+
+  useEffect(() => {
+    if (brandGuidelinesData) setBrandGuidelines(brandGuidelinesData);
+  }, [brandGuidelinesData]);
+
+  const { data: copyFrameworksData, isLoading: copyFrameworksLoading } = useQuery({
+    queryKey: ['copyFrameworks'],
+    queryFn: () => apiRequest('/api/config/copy-frameworks'),
+  });
+
+  useEffect(() => {
+    if (copyFrameworksData) setCopyFrameworks(copyFrameworksData);
+  }, [copyFrameworksData]);
+
+  const { data: stationPromptsData, isLoading: stationPromptsLoading } = useQuery({
+    queryKey: ['stationPrompts'],
+    queryFn: () => apiRequest('/api/config/station-prompts'),
+  });
+
+  useEffect(() => {
+    if (stationPromptsData) setStationPrompts(stationPromptsData);
+  }, [stationPromptsData]);
+
+  const { data: modelSettingsData, isLoading: modelSettingsLoading } = useQuery({
+    queryKey: ['modelSettings'],
+    queryFn: () => apiRequest('/api/config/model-settings'),
+  });
+
+  useEffect(() => {
+    if (modelSettingsData) setModelSettings(modelSettingsData);
+  }, [modelSettingsData]);
   
   // Landing Page States
   const [landingPageType, setLandingPageType] = useState('listicle');
@@ -325,136 +372,36 @@ export default function MetaAdGenerator() {
   const [staticAdImagePreview, setStaticAdImagePreview] = useState('');
   const [staticAdAnalysis, setStaticAdAnalysis] = useState('');
 
-  // Personas now loaded from database in useEffect
+  const [landingPageTypes, setLandingPageTypes] = useState<any>({});
 
-  const landingPageTypes = {
-    listicle: {
-      label: 'Listicle',
-      description: 'List-based content with numbered reasons and benefits',
-      icon: List
-    },
-    trojanHorse: {
-      label: 'Trojan Horse',
-      description: 'Story-driven approach that connects to product benefits',
-      icon: Target
-    }
-  };
+  useEffect(() => {
+    fetch('/api/config/copy-frameworks')
+      .then(res => res.json())
+      .then(data => {
+        // Assuming the data is an array of frameworks, convert it to a map
+        const frameworkMap = (data.landingPage || []).reduce((acc: any, framework: any) => {
+          acc[framework.name] = {
+            label: framework.displayName,
+            description: framework.description,
+            icon: Target // You might want to map icons dynamically
+          };
+          return acc;
+        }, {});
+        setLandingPageTypes(frameworkMap);
+      })
+      .catch(err => {
+        console.error('Failed to load landing page types:', err);
+        toast({
+          title: "Failed to Load Landing Page Types",
+          description: "Could not load landing page types from the database.",
+          variant: "destructive",
+        });
+      });
+  }, []);
 
-  const generateTemplateAds = () => {
-    const selectedPersona = personas[concept];
-    const selectedSubPersona = subPersona && selectedPersona?.subPersonas?.[subPersona] ? selectedPersona.subPersonas[subPersona] : null;
-    const brandPercent = brandDrBalance[0];
-    const drPercent = 100 - brandPercent;
 
-    let headlineTemplates = [];
-    
-    if (drPercent > 75) {
-      headlineTemplates = [
-        `Transform Your ${selectedPersona?.label || 'Skin'} Now`,
-        `Get ${selectedPersona?.label || 'Results'} in Days`,
-        `Stop Struggling With Beauty`,
-        `The ${selectedPersona?.label || 'Solution'} You Need`,
-        `Finally - Beauty That Works`
-      ];
-    } else if (drPercent > 50) {
-      headlineTemplates = [
-        `${selectedPersona?.label || 'Beauty'} Made Simple`,
-        `Your ${selectedPersona?.label || 'Glow'} Awaits`,
-        `Discover ${selectedPersona?.label || 'Beauty'} Secrets`,
-        `Perfect for ${selectedPersona?.label || 'You'}`,
-        `${selectedPersona?.label || 'Results'} Guaranteed`
-      ];
-    } else if (brandPercent > 50) {
-      headlineTemplates = [
-        `Your Skin But Better`,
-        `Effortless Beauty Found`,
-        `Natural Glow Simplified`,
-        `One Step Beauty`,
-        `Barely There Perfect`
-      ];
-    } else {
-      headlineTemplates = [
-        `Your Skin But Better`,
-        `Effortless Beauty Found`,
-        `Natural Glow Simplified`,
-        `Barely There Perfect`,
-        `Skin That Looks Like Skin`
-      ];
-    }
 
-    let primaryText = '';
-    
-    if (drPercent > 75) {
-      primaryText = `Transform your beauty routine today! ${selectedPersona?.description || 'Get the results you deserve.'} `;
-      if (selectedSubPersona) {
-        primaryText += `Specifically designed for ${(selectedSubPersona as any).label.toLowerCase()}s dealing with ${(selectedSubPersona as any).valueProps.slice(0, 2).join(' and ').toLowerCase()}. `;
-      }
-      primaryText += `Don't wait - thousands are already experiencing the Jones Road difference. Limited time offer!`;
-    } else if (brandPercent > 50) {
-      primaryText = `Embrace beauty that feels natural and effortless. ${selectedPersona?.description || 'Designed for your authentic self.'} `;
-      if (selectedSubPersona) {
-        primaryText += `Lovingly crafted for ${(selectedSubPersona as any).label.toLowerCase()}s who cherish ${(selectedSubPersona as any).valueProps.slice(0, 2).join(' and ').toLowerCase()}. `;
-      }
-      primaryText += `Jones Road Beauty believes in enhancing who you already are - your skin but better, always.`;
-    } else {
-      primaryText = `What The Foundation is unlike any foundation you've ever tried. Not heavy, cakey, or dry. WTF is light and moisturizing, and barely noticeable so every day can be a great skin day. Perfect for busy ${selectedPersona?.label?.toLowerCase() || 'individuals'} who want to look effortlessly put-together without the time-consuming routine.`;
-    }
 
-    // Convert to new format with frameworks
-    const headlinesWithFrameworks = headlineTemplates.slice(0, 5).map((copy, index) => {
-      const frameworks = ["BENEFIT DRIVEN", "SOCIAL PROOF", "VALUE PROPS", "PROBLEM FOCUSED", "OFFER DRIVEN"];
-      return {
-        framework: frameworks[index] || "GENERAL",
-        copy
-      };
-    });
-    setGeneratedHeadlines(headlinesWithFrameworks);
-    setGeneratedPrimaryText(primaryText);
-    setSelectedHeadlineIndex(0); // Reset to first headline when new ones are generated
-  };
-
-  const generateTemplateLandingPage = () => {
-    const selectedPersona = personas[concept];
-    const brandPercent = brandDrBalance[0];
-    const drPercent = 100 - brandPercent;
-
-    let headline = '';
-    if (drPercent > 75) {
-      headline = `5 Reasons Why ${selectedPersona?.label || 'Smart Shoppers'} Choose Jones Road Beauty This Month`;
-    } else if (drPercent > 50) {
-      headline = `5 Reasons Why Your Current Beauty Routine Is Costing You Confidence`;
-    } else if (brandPercent > 50) {
-      headline = `5 Reasons Why 10,000+ Beauty Lovers Choose Jones Road Over Everything Else`;
-    } else {
-      headline = `5 Surprising Reasons Why "Natural Beauty" Actually Means Enhanced You`;
-    }
-
-    const landingCopy = {
-      headline: headline,
-      subheadline: `Discover the proven approach to effortless beauty that works for ${selectedPersona?.label?.toLowerCase() || 'everyone'}`,
-      introduction: `If you're ${selectedPersona?.description?.toLowerCase() || 'tired of complicated beauty routines'}, you've found your solution. Jones Road Beauty creates the "Your Skin But Better" look because we understand that true beauty enhances who you already are, not who you think you should become.`,
-      sections: [
-        {
-          title: 'REASON #1: It Actually Moisturizes Your Skin',
-          content: `Unlike traditional foundations that can dry out your skin, What The Foundation contains skin-nourishing oils that hydrate while you wear it. This means your skin looks better at the end of the day than when you started. Over 85% of our customers report getting compliments on their "natural glow" within the first week of use.`
-        },
-        {
-          title: 'REASON #2: No More Cakey, Mask-Like Finish', 
-          content: `The secret is in the formula that melts into your skin rather than sitting on top. You get natural-looking coverage that moves with your face, never against it. In independent testing, 92% of users found Jones Road products provided adequate coverage for daily wear.`
-        },
-        {
-          title: 'REASON #3: Get Ready in 5 Minutes or Less',
-          content: `Jones Road's "one and done" approach means you can achieve a complete, put-together look using just a few multi-functional products. The average Jones Road user completes their entire makeup routine in under 5 minutes, compared to the 23-minute industry average.`
-        }
-      ],
-      socialProof: `Trusted by 50,000+ ${selectedPersona?.label?.toLowerCase() || 'beauty lovers'} who've discovered that the best makeup looks like no makeup at all.`,
-      riskReversal: `${drPercent > 50 ? 'Limited time: Get your complete Jones Road starter kit with 30-day money-back guarantee.' : 'Experience the Jones Road difference with our gentle 30-day trial. Love your natural glow or get your money back.'}`,
-      conclusion: `Jones Road Beauty transforms your daily routine into moments of self-care and confidence, because the best version of you is already here.`,
-      cta: `${drPercent > 50 ? 'Join 50,000+ Happy Customers → Start Your Natural Beauty Journey Today' : 'Discover Your Most Beautiful Self → Join the Jones Road Community'}`
-    };
-
-    setGeneratedLandingCopy(landingCopy);
-  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -485,47 +432,9 @@ export default function MetaAdGenerator() {
     reader.readAsDataURL(file);
   };
 
-  // Load training configuration
-  const loadTrainingConfigMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest('/api/training-config', { method: 'GET' });
-    },
-    onSuccess: (data) => {
-      setTrainingConfig(data);
-      setEditingConfig(JSON.parse(JSON.stringify(data))); // Deep clone for editing
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to Load Configuration",
-        description: "Could not load training configuration.",
-        variant: "destructive"
-      });
-    }
-  });
+  
 
-  // Save training configuration
-  const saveTrainingConfigMutation = useMutation({
-    mutationFn: async (config: any) => {
-      return await apiRequest('/api/training-config', {
-        method: 'POST',
-        body: { ...config, adminPassword }
-      });
-    },
-    onSuccess: () => {
-      setTrainingConfig(editingConfig);
-      toast({
-        title: "Configuration Saved",
-        description: "Training configuration updated successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to Save Configuration", 
-        description: "Could not save training configuration. Check admin password.",
-        variant: "destructive"
-      });
-    }
-  });
+  
 
   // Admin state (bypassed for direct access)
   const [isAdmin, setIsAdmin] = useState(true);
@@ -539,6 +448,28 @@ export default function MetaAdGenerator() {
     });
   };
 
+  const deleteProductMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      return await apiRequest(`/api/products/${productId}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Product Deleted",
+        description: "The product has been successfully deleted from the database.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to Delete Product",
+        description: "Could not delete the product from the database.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // API mutations for generating copy
   const generateAdCopyMutation = useMutation({
     mutationFn: async () => {
@@ -547,7 +478,7 @@ export default function MetaAdGenerator() {
         customBrief,
         concept,
         subPersona,
-        targetAudience,
+        targetAudience: targetAudience || personas[concept]?.label || concept,
         landingPageUrl,
         brandDrBalance: brandDrBalance[0],
         useJonesBrandGuide,
@@ -590,7 +521,7 @@ export default function MetaAdGenerator() {
       console.error('Generation error:', error);
       toast({
         title: "Generation Failed",
-        description: "Failed to generate ad copy. Please try again.",
+        description: error.message || "Failed to generate ad copy. Please try again.",
         variant: "destructive"
       });
     }
@@ -617,7 +548,7 @@ export default function MetaAdGenerator() {
           customBrief,
           concept,
           subPersona,
-          targetAudience,
+          targetAudience: targetAudience || personas[concept]?.label || concept,
           brandDrBalance: brandDrBalance[0],
           selectedProduct,
           selectedProducts: retentionSelectedProducts,
@@ -1231,7 +1162,7 @@ export default function MetaAdGenerator() {
                         </Select>
                       </div>
                       
-                      {personas[concept as keyof typeof personas]?.subPersonas && Object.keys(personas[concept as keyof typeof personas].subPersonas).length > 0 && (
+                      {personas[concept]?.subPersonas && Object.keys(personas[concept].subPersonas!).length > 0 && (
                         <div>
                           <Label htmlFor="subPersona" className="block text-sm font-medium text-gray-700 mb-2">Sub-Persona</Label>
                           <Select value={subPersona} onValueChange={setSubPersona}>
@@ -1239,8 +1170,8 @@ export default function MetaAdGenerator() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {Object.entries(personas[concept as keyof typeof personas].subPersonas).map(([key, subPersona]) => (
-                                <SelectItem key={key} value={key}>{(subPersona as any).label}</SelectItem>
+                              {Object.entries(personas[concept].subPersonas!).map(([key, s]) => (
+                                <SelectItem key={key} value={key}>{s.label}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -1612,13 +1543,13 @@ export default function MetaAdGenerator() {
                             setCurrentGenerationMetadata({
                               stationName: 'Ad Copy - Primary Text',
                               timestamp: new Date().toISOString(),
-                              modelUsed: 'Claude Sonnet 4.0',
-                              temperature: 0.7,
-                              maxTokens: 2000,
-                              systemPrompt: 'Expert Meta ad copywriter specializing in Jones Road Beauty brand voice...',
+                              modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
+                              temperature: modelSettings?.temperature || 0.7,
+                              maxTokens: modelSettings?.maxTokens || 2000,
+                              systemPrompt: stationPrompts?.adCopy?.systemPrompt || 'Expert Meta ad copywriter specializing in Jones Road Beauty brand voice...',
                               userPrompt: `Target: ${concept}\nBrief: ${customBrief}\nTranscription: ${transcription}...`,
-                              brandGuidelines: ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
-                              frameworks: ['Benefit-driven', 'Social proof', 'Problem-focused'],
+                              brandGuidelines: brandGuidelines?.guidelines || ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
+                              frameworks: copyFrameworks?.adCopy?.frameworks || ['Benefit-driven', 'Social proof', 'Problem-focused'],
                               personaSettings: {
                                 concept: concept,
                                 subPersona: subPersona === 'none' ? undefined : subPersona
@@ -1846,7 +1777,7 @@ export default function MetaAdGenerator() {
                                 <div className="w-28 h-28 bg-white rounded-full shadow-lg flex items-center justify-center mb-3 mx-auto border border-gray-100">
                                   <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #004182 0%, #003366 100%)' }}>
                                     <span className="text-white font-bold text-base">
-                                      {products[selectedProduct]?.displayName?.split(' ').map(word => word.charAt(0)).join('').slice(0, 3) || 'JR'}
+                                      {products[selectedProduct]?.displayName?.split(' ').map((word: string) => word.charAt(0)).join('').slice(0, 3) || 'JR'}
                                     </span>
                                   </div>
                                 </div>
@@ -1995,7 +1926,7 @@ export default function MetaAdGenerator() {
                         </Select>
                       </div>
                       
-                      {personas[concept as keyof typeof personas]?.subPersonas && Object.keys(personas[concept as keyof typeof personas].subPersonas).length > 0 && (
+                      {personas[concept]?.subPersonas && Object.keys(personas[concept].subPersonas!).length > 0 && (
                         <div>
                           <Label htmlFor="subPersona" className="block text-sm font-medium text-gray-700 mb-2">Sub-Persona</Label>
                           <Select value={subPersona} onValueChange={setSubPersona}>
@@ -2003,8 +1934,8 @@ export default function MetaAdGenerator() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {Object.entries(personas[concept as keyof typeof personas].subPersonas).map(([key, subPersona]) => (
-                                <SelectItem key={key} value={key}>{(subPersona as any).label}</SelectItem>
+                              {Object.entries(personas[concept].subPersonas!).map(([key, s]) => (
+                                <SelectItem key={key} value={key}>{s.label}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -2303,13 +2234,13 @@ export default function MetaAdGenerator() {
                           setCurrentGenerationMetadata({
                             stationName: 'Landing Page',
                             timestamp: new Date().toISOString(),
-                            modelUsed: 'Claude Sonnet 4.0',
-                            temperature: 0.7,
-                            maxTokens: 2000,
-                            systemPrompt: 'Expert landing page copywriter specializing in Jones Road Beauty conversions...',
+                            modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
+                            temperature: modelSettings?.temperature || 0.7,
+                            maxTokens: modelSettings?.maxTokens || 2000,
+                            systemPrompt: stationPrompts?.landingPage?.systemPrompt || 'Expert landing page copywriter specializing in Jones Road Beauty conversions...',
                             userPrompt: `Type: ${landingPageType}\nProduct Brief: ${productBrief}\nMain Angle: ${mainAngle}...`,
-                            brandGuidelines: ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
-                            frameworks: ['Conversion optimization', 'Social proof integration', 'Mobile-first approach'],
+                            brandGuidelines: brandGuidelines?.guidelines || ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
+                            frameworks: copyFrameworks?.landingPage?.frameworks || ['Conversion optimization', 'Social proof integration', 'Mobile-first approach'],
                             personaSettings: {
                               concept: concept,
                               subPersona: subPersona === 'none' ? undefined : subPersona
@@ -2614,10 +2545,21 @@ export default function MetaAdGenerator() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="lifeJuggler">Life Juggler</SelectItem>
-                              <SelectItem value="cleanBeautyEnthusiast">Clean Beauty Enthusiast</SelectItem>
-                              <SelectItem value="timeConstrainedProfessional">Time-Constrained Professional</SelectItem>
-                              <SelectItem value="naturalBeautySeeker">Natural Beauty Seeker</SelectItem>
+                              {Object.entries(personas).length > 0 ? (
+                                Object.entries(personas).map(([key, persona]: [string, any]) => (
+                                  <SelectItem key={key} value={key}>
+                                    {persona.label || key}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                // Fallback to hardcoded options if personas haven't loaded yet
+                                <>
+                                  <SelectItem value="lifeJuggler">Life Juggler</SelectItem>
+                                  <SelectItem value="cleanBeautyEnthusiast">Clean Beauty Enthusiast</SelectItem>
+                                  <SelectItem value="timeConstrainedProfessional">Time-Constrained Professional</SelectItem>
+                                  <SelectItem value="naturalBeautySeeker">Natural Beauty Seeker</SelectItem>
+                                </>
+                              )}
                             </SelectContent>
                           </Select>
                         </div>
@@ -2630,6 +2572,7 @@ export default function MetaAdGenerator() {
                             setSelectedProduct={setSelectedProduct}
                             selectedProducts={[]}
                             setSelectedProducts={() => {}}
+                            products={products}
                           />
                         </div>
 
@@ -2713,13 +2656,13 @@ export default function MetaAdGenerator() {
                               setCurrentGenerationMetadata({
                                 stationName: 'Custom Request',
                                 timestamp: new Date().toISOString(),
-                                modelUsed: 'Claude Sonnet 4.0',
-                                temperature: 0.7,
-                                maxTokens: 2000,
-                                systemPrompt: 'Expert marketing copywriter for Jones Road Beauty...',
-                                userPrompt: `Request: ${customRequest}\nAudience: ${customAudience}...`,
-                                brandGuidelines: ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
-                                frameworks: ['Flexible copywriting', 'Brand consistency', 'Strategic messaging'],
+                                modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
+                                temperature: modelSettings?.temperature || 0.7,
+                                maxTokens: modelSettings?.maxTokens || 2000,
+                                systemPrompt: stationPrompts?.customRequest?.systemPrompt || 'Expert marketing copywriter for Jones Road Beauty...',
+                                userPrompt: `Request: ${customRequest}\nAudience: ${concept}...`,
+                                brandGuidelines: brandGuidelines?.guidelines || ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
+                                frameworks: copyFrameworks?.customRequest?.frameworks || ['Flexible copywriting', 'Brand consistency', 'Strategic messaging'],
                                 personaSettings: {
                                   concept: concept,
                                   subPersona: subPersona === 'none' ? undefined : subPersona
@@ -2851,7 +2794,7 @@ export default function MetaAdGenerator() {
                         </Select>
                         
                         {/* Sub-Persona Selection */}
-                        {concept === 'lifeJuggler' && (
+                        {concept && personas[concept]?.subPersonas && (
                           <div className="mt-3">
                             <Label className="block text-sm font-medium text-gray-700 mb-2">
                               Sub-Persona (Optional)
@@ -3162,13 +3105,13 @@ export default function MetaAdGenerator() {
                               setCurrentGenerationMetadata({
                                 stationName: 'Email & SMS Retention',
                                 timestamp: new Date().toISOString(),
-                                modelUsed: 'Claude Sonnet 4.0',
-                                temperature: 0.7,
-                                maxTokens: 2000,
-                                systemPrompt: 'Expert retention marketing copywriter for Jones Road Beauty...',
+                                modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
+                                temperature: modelSettings?.temperature || 0.7,
+                                maxTokens: modelSettings?.maxTokens || 2000,
+                                systemPrompt: stationPrompts?.retention?.systemPrompt || 'Expert retention marketing copywriter for Jones Road Beauty...',
                                 userPrompt: `Platform: ${retentionPlatform}\nKey Message: ${retentionKeyMessage}\nProducts: ${retentionSelectedProducts.join(', ')}...`,
-                                brandGuidelines: ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
-                                frameworks: ['Retention marketing', 'Email optimization', 'SMS best practices'],
+                                brandGuidelines: brandGuidelines?.guidelines || ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
+                                frameworks: copyFrameworks?.retention?.frameworks || ['Retention marketing', 'Email optimization', 'SMS best practices'],
                                 personaSettings: {
                                   concept: concept,
                                   subPersona: subPersona
@@ -3444,7 +3387,7 @@ export default function MetaAdGenerator() {
                   
 
 
-                  {trainingConfig ? (
+                  {editingConfig ? (
                     <Tabs defaultValue="brand-guidelines" className="w-full">
                       <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 p-2 h-auto">
                         <TabsTrigger value="brand-guidelines" className="text-xs sm:text-sm py-2 px-3">Brand Guidelines</TabsTrigger>
@@ -3465,7 +3408,7 @@ export default function MetaAdGenerator() {
                               onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
                                 ...editingConfig,
                                 brandGuidelines: {
-                                  ...editingConfig.brandGuidelines,
+                                  ...editingConfig?.brandGuidelines,
                                   corePositioning: e.target.value
                                 }
                               })}
@@ -3479,7 +3422,7 @@ export default function MetaAdGenerator() {
                           <div>
                             <Label className="text-sm font-medium text-gray-900 mb-3 block">Brand Voice Rules</Label>
                             <div className="space-y-3">
-                              {(editingConfig?.brandGuidelines?.brandVoice || ['', '', '']).map((rule: string, index: number) => (
+                              {(editingConfig?.brandGuidelines?.brandVoice || []).map((rule: string, index: number) => (
                                 <div key={index} className="space-y-2">
                                   <div className="flex items-center space-x-3">
                                     <Switch 
@@ -3490,7 +3433,7 @@ export default function MetaAdGenerator() {
                                         setEditingConfig({
                                           ...editingConfig,
                                           brandGuidelines: {
-                                            ...editingConfig.brandGuidelines,
+                                            ...editingConfig?.brandGuidelines,
                                             enabledBrandVoice: enabled
                                           }
                                         });
@@ -3506,14 +3449,14 @@ export default function MetaAdGenerator() {
                                         size="sm"
                                         className="text-red-500 hover:text-red-700 flex-shrink-0 ml-auto"
                                         onClick={() => {
-                                          const rules = [...(editingConfig.brandGuidelines.brandVoice || [])];
-                                          const enabled = [...(editingConfig.brandGuidelines.enabledBrandVoice || [])];
+                                          const rules = [...(editingConfig?.brandGuidelines?.brandVoice || [])];
+                                          const enabled = [...(editingConfig?.brandGuidelines?.enabledBrandVoice || [])];
                                           rules.splice(index, 1);
                                           enabled.splice(index, 1);
                                           setEditingConfig({
                                             ...editingConfig,
                                             brandGuidelines: {
-                                              ...editingConfig.brandGuidelines,
+                                              ...editingConfig?.brandGuidelines,
                                               brandVoice: rules,
                                               enabledBrandVoice: enabled
                                             }
@@ -3528,12 +3471,12 @@ export default function MetaAdGenerator() {
                                     value={rule}
                                     onChange={(e) => {
                                       if (effectiveUser?.role !== 'admin') return;
-                                      const rules = [...(editingConfig.brandGuidelines.brandVoice || [])];
+                                      const rules = [...(editingConfig?.brandGuidelines?.brandVoice || [])];
                                       rules[index] = e.target.value;
                                       setEditingConfig({
                                         ...editingConfig,
                                         brandGuidelines: {
-                                          ...editingConfig.brandGuidelines,
+                                          ...editingConfig?.brandGuidelines,
                                           brandVoice: rules
                                         }
                                       });
@@ -3556,7 +3499,7 @@ export default function MetaAdGenerator() {
                                     setEditingConfig({
                                       ...editingConfig,
                                       brandGuidelines: {
-                                        ...editingConfig.brandGuidelines,
+                                        ...editingConfig?.brandGuidelines,
                                         brandVoice: rules,
                                         enabledBrandVoice: enabled
                                       }
@@ -3573,7 +3516,7 @@ export default function MetaAdGenerator() {
                           <div>
                             <Label className="text-sm font-medium text-gray-900 mb-3 block">Key Terms & Phrases</Label>
                             <div className="space-y-3">
-                              {(editingConfig?.brandGuidelines?.keyTerminology || ['', '', '']).map((term: string, index: number) => (
+                              {(editingConfig?.brandGuidelines?.keyTerminology || []).map((term: string, index: number) => (
                                 <div key={index} className="space-y-2">
                                   <div className="flex items-center space-x-3">
                                     <Switch 
@@ -3584,7 +3527,7 @@ export default function MetaAdGenerator() {
                                         setEditingConfig({
                                           ...editingConfig,
                                           brandGuidelines: {
-                                            ...editingConfig.brandGuidelines,
+                                            ...editingConfig?.brandGuidelines,
                                             enabledKeyTerminology: enabled
                                           }
                                         });
@@ -3600,14 +3543,14 @@ export default function MetaAdGenerator() {
                                         size="sm"
                                         className="text-red-500 hover:text-red-700 flex-shrink-0 ml-auto"
                                         onClick={() => {
-                                          const terms = [...(editingConfig.brandGuidelines.keyTerminology || [])];
-                                          const enabled = [...(editingConfig.brandGuidelines.enabledKeyTerminology || [])];
+                                          const terms = [...(editingConfig?.brandGuidelines?.keyTerminology || [])];
+                                          const enabled = [...(editingConfig?.brandGuidelines?.enabledKeyTerminology || [])];
                                           terms.splice(index, 1);
                                           enabled.splice(index, 1);
                                           setEditingConfig({
                                             ...editingConfig,
                                             brandGuidelines: {
-                                              ...editingConfig.brandGuidelines,
+                                              ...editingConfig?.brandGuidelines,
                                               keyTerminology: terms,
                                               enabledKeyTerminology: enabled
                                             }
@@ -3622,12 +3565,12 @@ export default function MetaAdGenerator() {
                                     value={term}
                                     onChange={(e) => {
                                       if (effectiveUser?.role !== 'admin') return;
-                                      const terms = [...(editingConfig.brandGuidelines.keyTerminology || [])];
+                                      const terms = [...(editingConfig?.brandGuidelines?.keyTerminology || [])];
                                       terms[index] = e.target.value;
                                       setEditingConfig({
                                         ...editingConfig,
                                         brandGuidelines: {
-                                          ...editingConfig.brandGuidelines,
+                                          ...editingConfig?.brandGuidelines,
                                           keyTerminology: terms
                                         }
                                       });
@@ -3650,7 +3593,7 @@ export default function MetaAdGenerator() {
                                     setEditingConfig({
                                       ...editingConfig,
                                       brandGuidelines: {
-                                        ...editingConfig.brandGuidelines,
+                                        ...editingConfig?.brandGuidelines,
                                         keyTerminology: terms,
                                         enabledKeyTerminology: enabled
                                       }
@@ -3672,7 +3615,7 @@ export default function MetaAdGenerator() {
                               </span>
                             </Label>
                             <div className="space-y-3">
-                              {(editingConfig?.brandGuidelines?.approvedLanguage || ['', '', '']).map((phrase: string, index: number) => (
+                              {(editingConfig?.brandGuidelines?.approvedLanguage || []).map((phrase: string, index: number) => (
                                 <div key={index} className="space-y-2">
                                   <div className="flex items-center space-x-3">
                                     <Switch 
@@ -3683,7 +3626,7 @@ export default function MetaAdGenerator() {
                                         setEditingConfig({
                                           ...editingConfig,
                                           brandGuidelines: {
-                                            ...editingConfig.brandGuidelines,
+                                            ...editingConfig?.brandGuidelines,
                                             enabledApprovedLanguage: enabled
                                           }
                                         });
@@ -3699,14 +3642,14 @@ export default function MetaAdGenerator() {
                                         size="sm"
                                         className="text-red-500 hover:text-red-700 flex-shrink-0 ml-auto"
                                         onClick={() => {
-                                          const phrases = [...(editingConfig.brandGuidelines.approvedLanguage || [])];
-                                          const enabled = [...(editingConfig.brandGuidelines.enabledApprovedLanguage || [])];
+                                          const phrases = [...(editingConfig?.brandGuidelines?.approvedLanguage || [])];
+                                          const enabled = [...(editingConfig?.brandGuidelines?.enabledApprovedLanguage || [])];
                                           phrases.splice(index, 1);
                                           enabled.splice(index, 1);
                                           setEditingConfig({
                                             ...editingConfig,
                                             brandGuidelines: {
-                                              ...editingConfig.brandGuidelines,
+                                              ...editingConfig?.brandGuidelines,
                                               approvedLanguage: phrases,
                                               enabledApprovedLanguage: enabled
                                             }
@@ -3721,12 +3664,12 @@ export default function MetaAdGenerator() {
                                     value={phrase}
                                     onChange={(e) => {
                                       if (effectiveUser?.role !== 'admin') return;
-                                      const phrases = [...(editingConfig.brandGuidelines.approvedLanguage || [])];
+                                      const phrases = [...(editingConfig?.brandGuidelines?.approvedLanguage || [])];
                                       phrases[index] = e.target.value;
                                       setEditingConfig({
                                         ...editingConfig,
                                         brandGuidelines: {
-                                          ...editingConfig.brandGuidelines,
+                                          ...editingConfig?.brandGuidelines,
                                           approvedLanguage: phrases
                                         }
                                       });
@@ -3749,7 +3692,7 @@ export default function MetaAdGenerator() {
                                     setEditingConfig({
                                       ...editingConfig,
                                       brandGuidelines: {
-                                        ...editingConfig.brandGuidelines,
+                                        ...editingConfig?.brandGuidelines,
                                         approvedLanguage: phrases,
                                         enabledApprovedLanguage: enabled
                                       }
@@ -3771,7 +3714,7 @@ export default function MetaAdGenerator() {
                               </span>
                             </Label>
                             <div className="space-y-3">
-                              {(editingConfig?.brandGuidelines?.avoidedLanguage || ['', '', '']).map((phrase: string, index: number) => (
+                              {(editingConfig?.brandGuidelines?.avoidedLanguage || []).map((phrase: string, index: number) => (
                                 <div key={index} className="space-y-2">
                                   <div className="flex items-center space-x-3">
                                     <Switch 
@@ -3782,7 +3725,7 @@ export default function MetaAdGenerator() {
                                         setEditingConfig({
                                           ...editingConfig,
                                           brandGuidelines: {
-                                            ...editingConfig.brandGuidelines,
+                                            ...editingConfig?.brandGuidelines,
                                             enabledAvoidedLanguage: enabled
                                           }
                                         });
@@ -3798,14 +3741,14 @@ export default function MetaAdGenerator() {
                                         size="sm"
                                         className="text-red-500 hover:text-red-700 flex-shrink-0 ml-auto"
                                         onClick={() => {
-                                          const phrases = [...(editingConfig.brandGuidelines.avoidedLanguage || [])];
-                                          const enabled = [...(editingConfig.brandGuidelines.enabledAvoidedLanguage || [])];
+                                          const phrases = [...(editingConfig?.brandGuidelines?.avoidedLanguage || [])];
+                                          const enabled = [...(editingConfig?.brandGuidelines?.enabledAvoidedLanguage || [])];
                                           phrases.splice(index, 1);
                                           enabled.splice(index, 1);
                                           setEditingConfig({
                                             ...editingConfig,
                                             brandGuidelines: {
-                                              ...editingConfig.brandGuidelines,
+                                              ...editingConfig?.brandGuidelines,
                                               avoidedLanguage: phrases,
                                               enabledAvoidedLanguage: enabled
                                             }
@@ -3820,12 +3763,12 @@ export default function MetaAdGenerator() {
                                     value={phrase}
                                     onChange={(e) => {
                                       if (effectiveUser?.role !== 'admin') return;
-                                      const phrases = [...(editingConfig.brandGuidelines.avoidedLanguage || [])];
+                                      const phrases = [...(editingConfig?.brandGuidelines?.avoidedLanguage || [])];
                                       phrases[index] = e.target.value;
                                       setEditingConfig({
                                         ...editingConfig,
                                         brandGuidelines: {
-                                          ...editingConfig.brandGuidelines,
+                                          ...editingConfig?.brandGuidelines,
                                           avoidedLanguage: phrases
                                         }
                                       });
@@ -3848,7 +3791,7 @@ export default function MetaAdGenerator() {
                                     setEditingConfig({
                                       ...editingConfig,
                                       brandGuidelines: {
-                                        ...editingConfig.brandGuidelines,
+                                        ...editingConfig?.brandGuidelines,
                                         avoidedLanguage: phrases,
                                         enabledAvoidedLanguage: enabled
                                       }
@@ -3893,7 +3836,7 @@ export default function MetaAdGenerator() {
                                       setEditingConfig({
                                         ...editingConfig,
                                         productClaims: {
-                                          ...editingConfig.productClaims,
+                                          ...productClaims,
                                           [productKey]: {
                                             approvedClaims: [''],
                                             prohibitedClaims: [''],
@@ -3945,12 +3888,16 @@ export default function MetaAdGenerator() {
                                             size="sm"
                                             className="ml-3 text-red-500 hover:text-red-700 hover:bg-red-50"
                                             onClick={() => {
-                                              const updatedClaims = { ...editingConfig?.productClaims };
-                                              delete updatedClaims[productKey];
-                                              setEditingConfig({
-                                                ...editingConfig,
-                                                productClaims: updatedClaims
-                                              });
+                                              if (window.confirm(`Are you sure you want to delete the product '${displayName}'? This action cannot be undone.`)) {
+                                                const productId = products[productKey]?.id;
+                                                if (productId) {
+                                                  deleteProductMutation.mutate(productId);
+                                                } else {
+                                                  const updatedClaims = { ...productClaims };
+                                                  delete updatedClaims[productKey];
+                                                  setProductClaims(updatedClaims);
+                                                }
+                                              }
                                             }}
                                           >
                                             <span className="text-xs">Delete Product</span>
@@ -3983,7 +3930,7 @@ export default function MetaAdGenerator() {
                                                     setEditingConfig({
                                                       ...editingConfig,
                                                       productClaims: {
-                                                        ...editingConfig.productClaims,
+                                                        ...productClaims,
                                                         [productKey]: {
                                                           ...claimsData,
                                                           enabledApproved: enabled
@@ -4007,7 +3954,7 @@ export default function MetaAdGenerator() {
                                                       setEditingConfig({
                                                         ...editingConfig,
                                                         productClaims: {
-                                                          ...editingConfig.productClaims,
+                                                          ...productClaims,
                                                           [productKey]: {
                                                             ...claimsData,
                                                             approvedClaims: claims,
@@ -4030,7 +3977,7 @@ export default function MetaAdGenerator() {
                                                     setEditingConfig({
                                                       ...editingConfig,
                                                       productClaims: {
-                                                        ...editingConfig.productClaims,
+                                                        ...productClaims,
                                                         [productKey]: {
                                                           ...claimsData,
                                                           approvedClaims: claims
@@ -4057,7 +4004,7 @@ export default function MetaAdGenerator() {
                                                 setEditingConfig({
                                                   ...editingConfig,
                                                   productClaims: {
-                                                    ...editingConfig.productClaims,
+                                                    ...productClaims,
                                                     [productKey]: {
                                                       ...claimsData,
                                                       approvedClaims: claims,
@@ -4089,7 +4036,7 @@ export default function MetaAdGenerator() {
                                                     setEditingConfig({
                                                       ...editingConfig,
                                                       productClaims: {
-                                                        ...editingConfig.productClaims,
+                                                        ...productClaims,
                                                         [productKey]: {
                                                           ...claimsData,
                                                           enabledProhibited: enabled
@@ -4113,7 +4060,7 @@ export default function MetaAdGenerator() {
                                                       setEditingConfig({
                                                         ...editingConfig,
                                                         productClaims: {
-                                                          ...editingConfig.productClaims,
+                                                          ...productClaims,
                                                           [productKey]: {
                                                             ...claimsData,
                                                             prohibitedClaims: claims,
@@ -4136,7 +4083,7 @@ export default function MetaAdGenerator() {
                                                     setEditingConfig({
                                                       ...editingConfig,
                                                       productClaims: {
-                                                        ...editingConfig.productClaims,
+                                                        ...productClaims,
                                                         [productKey]: {
                                                           ...claimsData,
                                                           prohibitedClaims: claims
@@ -4163,7 +4110,7 @@ export default function MetaAdGenerator() {
                                                 setEditingConfig({
                                                   ...editingConfig,
                                                   productClaims: {
-                                                    ...editingConfig.productClaims,
+                                                    ...productClaims,
                                                     [productKey]: {
                                                       ...claimsData,
                                                       prohibitedClaims: claims,
@@ -4446,10 +4393,81 @@ export default function MetaAdGenerator() {
                       <TabsContent value="frameworks" className="mt-4">
                         <div className="space-y-4">
                           <div>
-                            <Label className="text-sm font-medium text-gray-900">Headline Frameworks</Label>
+                            <div className="flex justify-between items-center mb-3">
+                              <Label className="text-sm font-medium text-gray-900">Headline Frameworks</Label>
+                              {effectiveUser?.role === 'admin' && (
+                                <Button 
+                                  onClick={() => {
+                                    const newFramework = {
+                                      name: '',
+                                      description: '',
+                                      template: '',
+                                      examples: [],
+                                      isEnabled: true
+                                    };
+                                    const updated = [...(editingConfig?.copyFrameworks?.headlineFrameworks || []), newFramework];
+                                    setEditingConfig({
+                                      ...editingConfig,
+                                      copyFrameworks: {
+                                        ...editingConfig?.copyFrameworks,
+                                        headlineFrameworks: updated
+                                      }
+                                    });
+                                  }}
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs"
+                                >
+                                  <Sparkles className="w-3 h-3 mr-1" />
+                                  Add Framework
+                                </Button>
+                              )}
+                            </div>
                             <div className="mt-2 space-y-3">
                               {editingConfig?.copyFrameworks?.headlineFrameworks?.map((framework: any, index: number) => (
                                 <div key={index} className="border rounded-lg p-3">
+                                  <div className="flex justify-between items-start mb-3">
+                                    <div className="flex items-center space-x-2">
+                                      <Switch
+                                        checked={framework.isEnabled !== false}
+                                        onCheckedChange={(checked) => {
+                                          if (effectiveUser?.role !== 'admin') return;
+                                          const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
+                                          updated[index] = { ...updated[index], isEnabled: checked };
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            copyFrameworks: {
+                                              ...editingConfig.copyFrameworks,
+                                              headlineFrameworks: updated
+                                            }
+                                          });
+                                        }}
+                                        disabled={effectiveUser?.role !== 'admin'}
+                                      />
+                                      <Label className="text-xs text-gray-600">
+                                        {framework.isEnabled !== false ? 'Enabled' : 'Disabled'}
+                                      </Label>
+                                    </div>
+                                    {effectiveUser?.role === 'admin' && (
+                                      <Button
+                                        onClick={() => {
+                                          const updated = editingConfig.copyFrameworks.headlineFrameworks.filter((_, i) => i !== index);
+                                          setEditingConfig({
+                                            ...editingConfig,
+                                            copyFrameworks: {
+                                              ...editingConfig.copyFrameworks,
+                                              headlineFrameworks: updated
+                                            }
+                                          });
+                                        }}
+                                        size="sm"
+                                        variant="ghost"
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </Button>
+                                    )}
+                                  </div>
                                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     <div>
                                       <Label className="text-xs text-gray-600">Framework Name</Label>
@@ -4545,6 +4563,15 @@ Your Skin But Better"
                                   </div>
                                 </div>
                               ))}
+                              {(!editingConfig?.copyFrameworks?.headlineFrameworks || editingConfig.copyFrameworks.headlineFrameworks.length === 0) && (
+                                <div className="text-center py-8 text-gray-500">
+                                  <Sparkles className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                                  <p className="text-sm">No headline frameworks configured</p>
+                                  {effectiveUser?.role === 'admin' && (
+                                    <p className="text-xs mt-1">Click "Add Framework" to create your first headline framework</p>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                           
@@ -4586,7 +4613,10 @@ Keep sentences to 8-12 words for mobile comprehension"
                                       ...editingConfig.copyFrameworks,
                                       listicleFramework: {
                                         ...editingConfig.copyFrameworks?.listicleFramework,
-                                        contentSequence: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                        contentSequence: e.target.value.split('\n').map(item => item.trim()).filter(Boolean),
+                                        reasonStructure: editingConfig.copyFrameworks?.listicleFramework?.reasonStructure || [],
+                                        optimizationRules: editingConfig.copyFrameworks?.listicleFramework?.optimizationRules || [],
+                                        realExamples: editingConfig.copyFrameworks?.listicleFramework?.realExamples || [],
                                       }
                                     }
                                   })}
@@ -4612,7 +4642,10 @@ Keep sentences to 8-12 words for mobile comprehension"
                                       ...editingConfig.copyFrameworks,
                                       listicleFramework: {
                                         ...editingConfig.copyFrameworks?.listicleFramework,
-                                        reasonStructure: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                        reasonStructure: e.target.value.split('\n').map(item => item.trim()).filter(Boolean),
+                                        contentSequence: editingConfig.copyFrameworks?.listicleFramework?.contentSequence || [],
+                                        optimizationRules: editingConfig.copyFrameworks?.listicleFramework?.optimizationRules || [],
+                                        realExamples: editingConfig.copyFrameworks?.listicleFramework?.realExamples || [],
                                       }
                                     }
                                   })}
@@ -4637,7 +4670,10 @@ Keep sentences to 8-12 words for mobile comprehension"
                                       ...editingConfig.copyFrameworks,
                                       listicleFramework: {
                                         ...editingConfig.copyFrameworks?.listicleFramework,
-                                        optimizationRules: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                        optimizationRules: e.target.value.split('\n').map(item => item.trim()).filter(Boolean),
+                                        contentSequence: editingConfig.copyFrameworks?.listicleFramework?.contentSequence || [],
+                                        reasonStructure: editingConfig.copyFrameworks?.listicleFramework?.reasonStructure || [],
+                                        realExamples: editingConfig.copyFrameworks?.listicleFramework?.realExamples || [],
                                       }
                                     }
                                   })}
@@ -4662,7 +4698,10 @@ Each reason should stand alone and deliver immediate value"
                                       ...editingConfig.copyFrameworks,
                                       listicleFramework: {
                                         ...editingConfig.copyFrameworks?.listicleFramework,
-                                        realExamples: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                        realExamples: e.target.value.split('\n').map(item => item.trim()).filter(Boolean),
+                                        contentSequence: editingConfig.copyFrameworks?.listicleFramework?.contentSequence || [],
+                                        reasonStructure: editingConfig.copyFrameworks?.listicleFramework?.reasonStructure || [],
+                                        optimizationRules: editingConfig.copyFrameworks?.listicleFramework?.optimizationRules || [],
                                       }
                                     }
                                   })}
@@ -4687,7 +4726,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                 </span>
                               </Label>
                               <div className="space-y-2">
-                                {(editingConfig?.copyFrameworks?.brandDrBalance?.brandFirst || ['']).map((guideline: string, index: number) => (
+                                {(editingConfig?.copyFrameworks?.brandDrBalance?.brandFirst || []).map((guideline: string, index: number) => (
                                   <div key={index} className="flex items-start space-x-3 group">
                                     <span className="text-blue-500 text-sm font-medium flex-shrink-0 mt-2">▶</span>
                                     <Input
@@ -4769,7 +4808,7 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                                 </span>
                               </Label>
                               <div className="space-y-2">
-                                {(editingConfig?.copyFrameworks?.brandDrBalance?.directResponse || ['']).map((guideline: string, index: number) => (
+                                {(editingConfig?.copyFrameworks?.brandDrBalance?.directResponse || []).map((guideline: string, index: number) => (
                                   <div key={index} className="flex items-start space-x-3 group">
                                     <span className="text-orange-500 text-sm font-medium flex-shrink-0 mt-2">⚡</span>
                                     <Input

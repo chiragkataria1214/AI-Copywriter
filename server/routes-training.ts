@@ -1,5 +1,5 @@
 import type { Express } from "express";
-import { defaultTrainingConfig, type TrainingConfig } from '@shared/training-config';
+import { type TrainingConfig } from '@shared/training-config';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { storage } from './storage';
@@ -9,12 +9,18 @@ const TRAINING_CONFIG_PATH = path.join(process.cwd(), 'shared', 'training-config
 // Export function to get training config for use in other routes
 export async function getTrainingConfig(): Promise<TrainingConfig> {
   try {
-    // Try to get configuration from database first
+    // Get configuration from database only - no fallback
     const dbConfig = await storage.getTrainingConfiguration();
+    
+    // Validate that we have essential configuration
+    if (!dbConfig || typeof dbConfig !== 'object') {
+      throw new Error('Invalid configuration structure returned from database');
+    }
+    
     return dbConfig;
   } catch (error) {
-    console.warn('Failed to load config from database, falling back to default:', error);
-    return defaultTrainingConfig;
+    console.error('Failed to load config from database:', error);
+    throw new Error('Configuration must be loaded from database. Please ensure database is properly set up and contains configuration data.');
   }
 }
 
@@ -34,65 +40,68 @@ export function registerTrainingRoutes(app: Express, requireAdmin: any) {
   // Update training configuration
   app.post('/api/training-config', requireAdmin, async (req, res) => {
     try {
-      const updatedConfig = req.body;
+      const updatedConfig = req.body as TrainingConfig;
       
       // Validate the config structure (basic validation)
       if (!updatedConfig || typeof updatedConfig !== 'object') {
         return res.status(400).json({ message: "Invalid configuration format" });
       }
 
-      // Read the current file
-      const fileContent = await fs.readFile(TRAINING_CONFIG_PATH, 'utf-8');
-      
-      // Generate the new configuration object
-      const newConfigString = `// Training configuration for Claude AI copywriting prompts
-// This file contains all the brand guidelines, frameworks, and prompts used to train the AI
+      // Sanitize arrays to remove null/undefined/empty values
+      if (updatedConfig.brandGuidelines) {
+        const { brandGuidelines } = updatedConfig;
+        if (brandGuidelines.brandVoice) {
+          brandGuidelines.brandVoice = brandGuidelines.brandVoice.filter(item => item && item.trim() !== '');
+        }
+        if (brandGuidelines.keyTerminology) {
+          brandGuidelines.keyTerminology = brandGuidelines.keyTerminology.filter(item => item && item.trim() !== '');
+        }
+        if (brandGuidelines.approvedLanguage) {
+          brandGuidelines.approvedLanguage = brandGuidelines.approvedLanguage.filter(item => item && item.trim() !== '');
+        }
+        if (brandGuidelines.avoidedLanguage) {
+          brandGuidelines.avoidedLanguage = brandGuidelines.avoidedLanguage.filter(item => item && item.trim() !== '');
+        }
+      }
 
-export interface TrainingConfig {
-  brandGuidelines: {
-    corePositioning: string;
-    brandVoice: string[];
-    keyTerminology: string[];
-    approvedLanguage: string[];
-    avoidedLanguage: string[];
-    // Toggle states for individual items
-    enabledBrandVoice?: boolean[];
-    enabledKeyTerminology?: boolean[];
-    enabledApprovedLanguage?: boolean[];
-    enabledAvoidedLanguage?: boolean[];
-  };
-  copyFrameworks: {
-    headlineFrameworks: Array<{
-      name: string;
-      description: string;
-      template: string;
-      examples: string[];
-    }>;
-    primaryTextRules: string[];
-    brandDrBalance: {
-      brandFirst: string[];
-      directResponse: string[];
-    };
-  };
-  systemPrompts: {
-    adCopyGeneration: string;
-    landingPageGeneration: string;
-  };
-  userPromptTemplates: {
-    adCopy: string;
-    landingPage: string;
-  };
-  modelParameters: {
-    model: string;
-    maxTokens: number;
-    temperature?: number;
-  };
-}
+      // Sanitize product claims
+      if (updatedConfig.productClaims) {
+        for (const productName in updatedConfig.productClaims) {
+          const product = updatedConfig.productClaims[productName];
+          if (product.approvedClaims) {
+            product.approvedClaims = product.approvedClaims.filter(claim => claim && claim.trim() !== '');
+          }
+          if (product.prohibitedClaims) {
+            product.prohibitedClaims = product.prohibitedClaims.filter(claim => claim && claim.trim() !== '');
+          }
+        }
+      }
 
-export const defaultTrainingConfig: TrainingConfig = ${JSON.stringify(updatedConfig, null, 2)};`;
+      // Sanitize persona pillars
+      if (updatedConfig.personaPillars) {
+        for (const personaName in updatedConfig.personaPillars) {
+          const persona = updatedConfig.personaPillars[personaName];
+          if (persona.pillars) {
+            persona.pillars = persona.pillars.filter(pillar => pillar && pillar.trim() !== '');
+          }
+        }
+      }
 
-      // Write the updated file
-      await fs.writeFile(TRAINING_CONFIG_PATH, newConfigString, 'utf-8');
+      // Sanitize copy frameworks
+      if (updatedConfig.copyFrameworks) {
+        const { copyFrameworks } = updatedConfig;
+        if (copyFrameworks.primaryTextRules) {
+          copyFrameworks.primaryTextRules = copyFrameworks.primaryTextRules.filter(rule => rule && rule.trim() !== '');
+        }
+        if (copyFrameworks.brandDrBalance?.brandFirst) {
+          copyFrameworks.brandDrBalance.brandFirst = copyFrameworks.brandDrBalance.brandFirst.filter(rule => rule && rule.trim() !== '');
+        }
+        if (copyFrameworks.brandDrBalance?.directResponse) {
+          copyFrameworks.brandDrBalance.directResponse = copyFrameworks.brandDrBalance.directResponse.filter(rule => rule && rule.trim() !== '');
+        }
+      }
+
+      await storage.saveTrainingConfiguration(updatedConfig);
       
       res.json({ message: "Training configuration updated successfully" });
     } catch (error) {

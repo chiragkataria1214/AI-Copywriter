@@ -31,6 +31,7 @@ import {
   adminCreateUserSchema,
   updateUserSchema
 } from "@shared/schema";
+import { type TrainingConfig } from "@shared/training-config";
 import { db } from "./db";
 import { eq, desc, and, count, avg, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -109,6 +110,7 @@ export interface IStorage {
   
   // Comprehensive training config getter (combines all database sources)
   getTrainingConfiguration(): Promise<any>;
+  saveTrainingConfiguration(config: TrainingConfig): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -397,7 +399,7 @@ export class DatabaseStorage implements IStorage {
 
   async getBrandConfigurationByType(configType: string): Promise<BrandConfiguration[]> {
     return await db.select().from(brandConfiguration)
-      .where(eq(brandConfiguration.configType, configType))
+      .where(eq(brandConfiguration.configType, configType as "core_positioning" | "brand_voice" | "key_terminology" | "approved_language" | "avoided_language"))
       .orderBy(brandConfiguration.sortOrder);
   }
 
@@ -424,7 +426,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(copyFrameworks.frameworkType, copyFrameworks.sortOrder);
   }
 
-  async getCopyFrameworksByType(frameworkType: string): Promise<CopyFramework[]> {
+  async getCopyFrameworksByType(frameworkType: 'headline_framework' | 'primary_text_rule' | 'brand_first_guideline' | 'direct_response_guideline'): Promise<CopyFramework[]> {
     return await db.select().from(copyFrameworks)
       .where(eq(copyFrameworks.frameworkType, frameworkType))
       .orderBy(copyFrameworks.sortOrder);
@@ -496,6 +498,8 @@ export class DatabaseStorage implements IStorage {
       this.getSystemConfiguration()
     ]);
 
+   
+
     // Get all product claims
     const productClaims: { [key: string]: { approvedClaims: string[], prohibitedClaims: string[] } } = {};
     for (const product of allProducts) {
@@ -507,10 +511,11 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Get all persona pillars
-    const personaPillars: { [key: string]: { pillars: string[] } } = {};
+    const personaPillars: { [key: string]: { description: string | null, pillars: string[] } } = {};
     for (const persona of allPersonas) {
       const pillars = await this.getPersonaPillars(persona.id);
       personaPillars[persona.name] = {
+        description: persona.description,
         pillars: pillars.filter(p => p.isEnabled === 'true').map(p => p.pillarText)
       };
     }
@@ -519,13 +524,28 @@ export class DatabaseStorage implements IStorage {
     const brandGuidelines: any = {};
     const brandTypes = ['core_positioning', 'brand_voice', 'key_terminology', 'approved_language', 'avoided_language'];
     
+    console.log('DEBUG: All brand configs from DB:', brandConfigs.length, brandConfigs);
+    
     for (const type of brandTypes) {
-      const configs = brandConfigs.filter(c => c.configType === type && c.isEnabled === 'true');
       if (type === 'core_positioning') {
+        const configs = brandConfigs.filter(c => c.configType === type && c.isEnabled === 'true');
         brandGuidelines.corePositioning = configs[0]?.configValue || '';
       } else {
-        const key = type.replace('_', '');
-        brandGuidelines[key] = configs.map(c => c.configValue);
+        // Get all configs for this type (both enabled and disabled) ordered by sortOrder
+        const allConfigs = brandConfigs
+          .filter(c => c.configType === type)
+          .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        
+        const key = type.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
+        const enabledKey = `enabled${key.charAt(0).toUpperCase() + key.slice(1)}`;
+        
+        console.log(`DEBUG: Processing ${type} -> key: ${key}, found configs:`, allConfigs.length);
+        console.log(`DEBUG: All configs for ${type}:`, allConfigs);
+        
+        brandGuidelines[key] = allConfigs.map(c => c.configValue);
+        brandGuidelines[enabledKey] = allConfigs.map(c => c.isEnabled === 'true');
+        
+        console.log(`DEBUG: Final ${key}:`, brandGuidelines[key], 'enabled:', brandGuidelines[enabledKey]);
       }
     }
 
@@ -597,6 +617,422 @@ export class DatabaseStorage implements IStorage {
       modelParameters: modelParametersObj,
       stationPrompts: stationPromptsObj
     };
+  }
+  async saveTrainingConfiguration(config: TrainingConfig): Promise<void> {
+    await db.transaction(async (tx) => {
+      // #region Brand Guidelines
+      const { brandGuidelines } = config;
+
+      // Instead of deleting, we'll do a more surgical update.
+      // Get all existing brand configurations
+      const allDbBrandConfigs = await tx.select().from(brandConfiguration);
+      const updatedConfigIds = new Set<string>();
+
+      const guidelinesToInsert: InsertBrandConfiguration[] = [];
+      const guidelinesToUpdate: { id: string; data: Partial<InsertBrandConfiguration> }[] = [];
+      
+      // Core Positioning - treat as a special case, upsert
+      const corePositioningConfig = allDbBrandConfigs.find(c => c.configType === 'core_positioning');
+      if (brandGuidelines.corePositioning) {
+        if (corePositioningConfig) {
+          // Update existing
+          guidelinesToUpdate.push({ 
+            id: corePositioningConfig.id, 
+            data: { configValue: brandGuidelines.corePositioning, isEnabled: 'true' }
+          });
+          updatedConfigIds.add(corePositioningConfig.id);
+        } else {
+          // Insert new
+          guidelinesToInsert.push({
+            configType: 'core_positioning',
+            configValue: brandGuidelines.corePositioning,
+            isEnabled: 'true',
+          });
+        }
+      } else if (corePositioningConfig) {
+        // If it's empty in config but exists in db, mark as disabled
+        guidelinesToUpdate.push({ id: corePositioningConfig.id, data: { isEnabled: 'false' } });
+        updatedConfigIds.add(corePositioningConfig.id);
+      }
+      
+      // Other brand guidelines
+      const guidelineTypes: Array<'brand_voice' | 'key_terminology' | 'approved_language' | 'avoided_language'> = ['brand_voice', 'key_terminology', 'approved_language', 'avoided_language'];
+      
+      for (const type of guidelineTypes) {
+        const key = type.replace(/_([a-z])/g, (g) => g[1].toUpperCase()) as keyof typeof brandGuidelines;
+        const items = (brandGuidelines[key] as string[]) || [];
+        const enabledItems = brandGuidelines[`enabled${key.charAt(0).toUpperCase() + key.slice(1)}` as keyof typeof brandGuidelines] as boolean[] | undefined;
+        
+        const dbItemsForType = allDbBrandConfigs.filter(c => c.configType === type);
+
+        for (let i = 0; i < items.length; i++) {
+          const itemValue = items[i];
+          const isEnabled = enabledItems?.[i] !== false;
+          
+          // Skip null, undefined, or empty string values to prevent database constraint violations
+          if (!itemValue || itemValue.trim() === '') {
+            continue;
+          }
+          
+          // Check if a config for this item already exists (naive check by value)
+          const existingItem = dbItemsForType.find(dbItem => dbItem.configValue === itemValue);
+
+          if (existingItem) {
+            // Update existing item
+             guidelinesToUpdate.push({ 
+               id: existingItem.id, 
+               data: { isEnabled: isEnabled ? 'true' : 'false', sortOrder: i } 
+             });
+             updatedConfigIds.add(existingItem.id);
+          } else {
+            // Insert new item
+            guidelinesToInsert.push({
+              configType: type,
+              configValue: itemValue,
+              isEnabled: isEnabled ? 'true' : 'false',
+              sortOrder: i,
+            });
+          }
+        }
+      }
+      
+      // Now, delete any configs that were not in the new payload
+      const configsToDelete = allDbBrandConfigs.filter(c => !updatedConfigIds.has(c.id) && c.configType !== 'core_positioning'); // don't delete core positioning
+      
+      // Perform DB operations
+      if (guidelinesToInsert.length > 0) {
+        await tx.insert(brandConfiguration).values(guidelinesToInsert);
+      }
+      for (const update of guidelinesToUpdate) {
+        await tx.update(brandConfiguration).set(update.data).where(eq(brandConfiguration.id, update.id));
+      }
+      for (const config of configsToDelete) {
+        // We are no longer deleting, but disabling them
+        await tx.update(brandConfiguration).set({ isEnabled: 'false' }).where(eq(brandConfiguration.id, config.id));
+      }
+      // #endregion
+
+      // #region Product Claims
+      const { productClaims: productClaimsData } = config;
+      const allDbProducts = await tx.select().from(products);
+
+      for (const productName in productClaimsData) {
+        let product = allDbProducts.find(p => p.name === productName);
+        
+        // Create product if it doesn't exist
+        if (!product) {
+          [product] = await tx.insert(products).values({ name: productName, displayName: productName }).returning();
+        }
+
+        // Instead of clearing all claims, we'll do a more targeted update
+        const existingClaims = await tx.select().from(productClaims).where(eq(productClaims.productId, product.id));
+        const updatedClaimIds = new Set<string>();
+        
+        const claimsToInsert: InsertProductClaim[] = [];
+        const claimsToUpdate: { id: string; data: Partial<InsertProductClaim> }[] = [];
+
+        const processClaims = (claims: string[], type: 'approved' | 'prohibited', enabledStates?: boolean[]) => {
+          claims.forEach((claimText: string, index: number) => {
+            // Skip null, undefined, or empty string values to prevent database constraint violations
+            if (!claimText || claimText.trim() === '') {
+              return;
+            }
+            
+            const isEnabled = enabledStates?.[index] !== false;
+            const existingClaim = existingClaims.find(c => c.claimType === type && c.claimText === claimText);
+
+            if (existingClaim) {
+              // Update existing claim
+              claimsToUpdate.push({
+                id: existingClaim.id,
+                data: { isEnabled: isEnabled ? 'true' : 'false', sortOrder: index }
+              });
+              updatedClaimIds.add(existingClaim.id);
+            } else {
+              // Insert new claim
+              claimsToInsert.push({
+                productId: product.id,
+                claimType: type,
+                claimText: claimText,
+                isEnabled: isEnabled ? 'true' : 'false',
+                sortOrder: index,
+              });
+            }
+          });
+        };
+
+        const { approvedClaims, prohibitedClaims, enabledApproved, enabledProhibited } = productClaimsData[productName];
+        processClaims(approvedClaims, 'approved', enabledApproved);
+        processClaims(prohibitedClaims, 'prohibited', enabledProhibited);
+
+        // Disable claims that are in the DB but not in the new config for this product
+        const claimsToDisable = existingClaims.filter(c => !updatedClaimIds.has(c.id));
+        for (const claim of claimsToDisable) {
+          claimsToUpdate.push({ id: claim.id, data: { isEnabled: 'false' }});
+        }
+        
+        if (claimsToInsert.length > 0) {
+          await tx.insert(productClaims).values(claimsToInsert);
+        }
+        for (const update of claimsToUpdate) {
+          await tx.update(productClaims).set(update.data).where(eq(productClaims.id, update.id));
+        }
+      }
+      
+      // Delete products that are in DB but not in the new config
+      const productsInConfig = Object.keys(productClaimsData);
+      const productsToDelete = allDbProducts.filter(p => !productsInConfig.includes(p.name));
+      for (const product of productsToDelete) {
+        await tx.delete(products).where(eq(products.id, product.id));
+      }
+      // #endregion
+
+      // #region Personas
+      const { personaPillars: personaData } = config;
+      const allDbPersonas = await tx.select().from(personas);
+
+      for (const personaName in personaData) {
+        let persona = allDbPersonas.find(p => p.name === personaName);
+
+        if (!persona) {
+          [persona] = await tx.insert(personas).values({ name: personaName, displayName: personaName }).returning();
+        }
+
+        // Update description if provided, even if it's an empty string
+        if (personaData[personaName].description !== undefined && persona.description !== personaData[personaName].description) {
+          await tx.update(personas).set({ description: personaData[personaName].description }).where(eq(personas.id, persona.id));
+        }
+
+        // More surgical update for persona pillars
+        const existingPillars = await tx.select().from(personaPillars).where(eq(personaPillars.personaId, persona.id));
+        const updatedPillarIds = new Set<string>();
+
+        const pillarsToInsert: InsertPersonaPillar[] = [];
+        const pillarsToUpdate: { id: string; data: Partial<InsertPersonaPillar> }[] = [];
+
+        const { pillars } = personaData[personaName];
+        if (pillars && pillars.length > 0) {
+          pillars.forEach((pillarText: string, index: number) => {
+            // Skip null, undefined, or empty string values to prevent database constraint violations
+            if (!pillarText || pillarText.trim() === '') {
+              return;
+            }
+            
+            const existingPillar = existingPillars.find(p => p.pillarText === pillarText);
+
+            if (existingPillar) {
+              // Update existing pillar
+              pillarsToUpdate.push({
+                id: existingPillar.id,
+                data: { isEnabled: 'true', sortOrder: index }
+              });
+              updatedPillarIds.add(existingPillar.id);
+            } else {
+              // Insert new pillar
+              pillarsToInsert.push({
+                personaId: persona.id,
+                pillarText: pillarText,
+                isEnabled: 'true',
+                sortOrder: index,
+              });
+            }
+          });
+        }
+        
+        // Disable pillars that are in DB but not in new config
+        const pillarsToDisable = existingPillars.filter(p => !updatedPillarIds.has(p.id));
+        for (const pillar of pillarsToDisable) {
+          pillarsToUpdate.push({ id: pillar.id, data: { isEnabled: 'false' } });
+        }
+        
+        if (pillarsToInsert.length > 0) {
+          await tx.insert(personaPillars).values(pillarsToInsert);
+        }
+        for (const update of pillarsToUpdate) {
+          await tx.update(personaPillars).set(update.data).where(eq(personaPillars.id, update.id));
+        }
+      }
+
+      const personasInConfig = Object.keys(personaData);
+      const personasToDelete = allDbPersonas.filter(p => !personasInConfig.includes(p.name));
+      for (const persona of personasToDelete) {
+        await tx.delete(personas).where(eq(personas.id, persona.id));
+      }
+      // #endregion
+      
+      // #region Copy Frameworks
+      const { copyFrameworks: frameworksData } = config;
+      const allDbFrameworks = await tx.select().from(copyFrameworks);
+      const updatedFrameworkIds = new Set<string>();
+      
+      const frameworksToInsert: InsertCopyFramework[] = [];
+      const frameworksToUpdate: { id: string; data: Partial<InsertCopyFramework> }[] = [];
+
+      // Headline Frameworks
+      frameworksData.headlineFrameworks.forEach((fw: any, index: number) => {
+        // Skip frameworks with empty names to prevent database constraint violations
+        if (!fw.name || fw.name.trim() === '') {
+          return;
+        }
+        
+        const existingFw = allDbFrameworks.find(dbFw => dbFw.frameworkType === 'headline_framework' && dbFw.name === fw.name);
+        const isEnabled = fw.isEnabled !== false;
+        if (existingFw) {
+          frameworksToUpdate.push({
+            id: existingFw.id,
+            data: { 
+              name: fw.name,
+              description: fw.description,
+              template: fw.template,
+              examples: fw.examples,
+              isEnabled: isEnabled ? 'true' : 'false', 
+              sortOrder: index 
+            }
+          });
+          updatedFrameworkIds.add(existingFw.id);
+        } else {
+          frameworksToInsert.push({
+            frameworkType: 'headline_framework',
+            name: fw.name,
+            description: fw.description,
+            template: fw.template,
+            examples: fw.examples,
+            isEnabled: isEnabled ? 'true' : 'false',
+            sortOrder: index,
+          });
+        }
+      });
+
+      // Primary Text Rules
+      frameworksData.primaryTextRules.forEach((rule: string, index: number) => {
+        // Skip null, undefined, or empty string values to prevent database constraint violations
+        if (!rule || rule.trim() === '') {
+          return;
+        }
+        
+        const existingRule = allDbFrameworks.find(dbFw => dbFw.frameworkType === 'primary_text_rule' && dbFw.ruleText === rule);
+        const isEnabled = frameworksData.enabledPrimaryTextRules?.[index] !== false;
+        if (existingRule) {
+          frameworksToUpdate.push({ id: existingRule.id, data: { isEnabled: isEnabled ? 'true' : 'false', sortOrder: index }});
+          updatedFrameworkIds.add(existingRule.id);
+        } else {
+          frameworksToInsert.push({
+            frameworkType: 'primary_text_rule',
+            ruleText: rule,
+            isEnabled: isEnabled ? 'true' : 'false',
+            sortOrder: index,
+          });
+        }
+      });
+
+      // Brand First Guidelines
+      frameworksData.brandDrBalance.brandFirst.forEach((rule: string, index: number) => {
+        // Skip null, undefined, or empty string values to prevent database constraint violations
+        if (!rule || rule.trim() === '') {
+          return;
+        }
+        
+        const existingRule = allDbFrameworks.find(dbFw => dbFw.frameworkType === 'brand_first_guideline' && dbFw.ruleText === rule);
+        if (existingRule) {
+          frameworksToUpdate.push({ id: existingRule.id, data: { isEnabled: 'true', sortOrder: index }});
+          updatedFrameworkIds.add(existingRule.id);
+        } else {
+          frameworksToInsert.push({
+            frameworkType: 'brand_first_guideline',
+            ruleText: rule,
+            isEnabled: 'true',
+            sortOrder: index,
+          });
+        }
+      });
+
+      // Direct Response Guidelines
+      frameworksData.brandDrBalance.directResponse.forEach((rule: string, index: number) => {
+        // Skip null, undefined, or empty string values to prevent database constraint violations
+        if (!rule || rule.trim() === '') {
+          return;
+        }
+        
+        const existingRule = allDbFrameworks.find(dbFw => dbFw.frameworkType === 'direct_response_guideline' && dbFw.ruleText === rule);
+        if (existingRule) {
+          frameworksToUpdate.push({ id: existingRule.id, data: { isEnabled: 'true', sortOrder: index }});
+          updatedFrameworkIds.add(existingRule.id);
+        } else {
+          frameworksToInsert.push({
+            frameworkType: 'direct_response_guideline',
+            ruleText: rule,
+            isEnabled: 'true',
+            sortOrder: index,
+          });
+        }
+      });
+
+      // Disable headline frameworks not in the new config (removed frameworks)
+      const headlineFrameworksToDisable = allDbFrameworks.filter(f => 
+        f.frameworkType === 'headline_framework' && !updatedFrameworkIds.has(f.id)
+      );
+      for (const fw of headlineFrameworksToDisable) {
+        frameworksToUpdate.push({ id: fw.id, data: { isEnabled: 'false' } });
+      }
+
+      // Disable other framework types not in the new config
+      const otherFrameworksToDisable = allDbFrameworks.filter(f => 
+        f.frameworkType !== 'headline_framework' && !updatedFrameworkIds.has(f.id)
+      );
+      for (const fw of otherFrameworksToDisable) {
+        frameworksToUpdate.push({ id: fw.id, data: { isEnabled: 'false' } });
+      }
+
+      if (frameworksToInsert.length > 0) {
+        await tx.insert(copyFrameworks).values(frameworksToInsert);
+      }
+      for (const update of frameworksToUpdate) {
+        await tx.update(copyFrameworks).set(update.data).where(eq(copyFrameworks.id, update.id));
+      }
+      // #endregion
+
+      // #region System Configuration (Model, Prompts, etc.)
+      const allDbSystemConfigs = await tx.select().from(systemConfiguration);
+      const configsToUpsert: InsertSystemConfiguration[] = [];
+
+      const processSystemConfig = (prefix: string, configObject: Record<string, any>) => {
+        for (const key in configObject) {
+          const configKey = `${prefix}.${key}`;
+          const configValue = String(configObject[key]);
+          configsToUpsert.push({ configKey, configValue });
+        }
+      };
+      
+      const processNestedSystemConfig = (prefix: string, configObject: Record<string, Record<string, any>>) => {
+        for (const outerKey in configObject) {
+          for (const innerKey in configObject[outerKey]) {
+            const configKey = `${prefix}.${outerKey}.${innerKey}`;
+            const configValue = String(configObject[outerKey][innerKey]);
+            if(configValue) {
+              configsToUpsert.push({ configKey, configValue });
+            }
+          }
+        }
+      };
+
+      processSystemConfig('modelParameters', config.modelParameters);
+      processNestedSystemConfig('stationPrompts', config.stationPrompts);
+      
+      // Upsert logic
+      for (const config of configsToUpsert) {
+        const existingConfig = allDbSystemConfigs.find(dbC => dbC.configKey === config.configKey);
+        if (existingConfig) {
+          if (existingConfig.configValue !== config.configValue) {
+            await tx.update(systemConfiguration)
+              .set({ configValue: config.configValue })
+              .where(eq(systemConfiguration.configKey, config.configKey));
+          }
+        } else {
+          await tx.insert(systemConfiguration).values(config);
+        }
+      }
+      // #endregion
+    });
   }
 }
 

@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { defaultTrainingConfig, type TrainingConfig } from '@shared/training-config';
+import { type TrainingConfig } from '@shared/training-config';
 
 // Generation metadata interface for debugging/transparency
 export interface GenerationMetadata {
@@ -118,15 +118,23 @@ export interface StaticAdAnalysisRequest {
   selectedProduct?: string;
 }
 
-export async function generateAdCopy(request: AdCopyRequest, trainingConfig: TrainingConfig = defaultTrainingConfig) {
+export async function generateAdCopy(request: AdCopyRequest, trainingConfig: TrainingConfig) {
   const { transcription, customBrief, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProduct } = request;
+  
+  // Validate required parameters
+  if (!concept) {
+    throw new Error('Concept is required and must be provided from database persona data.');
+  }
+  if (!targetAudience) {
+    throw new Error('Target audience is required and must be provided.');
+  }
   
   // Provide safe defaults for undefined values
   const safeBrandDrBalance = brandDrBalance || 50;
   const brandPercent = safeBrandDrBalance;
   const drPercent = 100 - brandPercent;
-  const safeConcept = concept || 'lifeJuggler';
-  const safeTargetAudience = targetAudience || 'busy modern women';
+  const safeConcept = concept;
+  const safeTargetAudience = targetAudience;
   const safeSubPersona = subPersona || '';
   
   // Build comprehensive AI Settings context
@@ -139,10 +147,11 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
   });
 
   // Safe access to station prompt with AI Settings integration
-  const baseSystemPrompt = trainingConfig?.stationPrompts?.adCopy?.systemPrompt || 
-    `You are an expert Meta ad copywriter specializing in Jones Road Beauty's brand voice. 
-     Create authentic, engaging ad copy that balances brand storytelling with direct response tactics.
-     Target audience: {targetAudience}.`;
+  const baseSystemPrompt = trainingConfig?.stationPrompts?.adCopy?.systemPrompt;
+  
+  if (!baseSystemPrompt) {
+    throw new Error('Ad copy system prompt not found in training configuration. Please ensure database contains proper station prompt configuration.');
+  }
   
   const systemPrompt = `${baseSystemPrompt}
 
@@ -226,8 +235,12 @@ EXISTING AD CREATIVE ANALYSIS:
 Analyze the uploaded ad creative image to extract key visual elements, text overlay, color scheme, brand elements, and overall messaging strategy. Use insights from this existing creative to inform your new ad copy generation while maintaining brand consistency.`;
   }
 
-  const userTemplate = trainingConfig.stationPrompts?.adCopy?.userTemplate || 
-    'Generate ad copy for: {transcription} {landingPageContext}';
+  // Use database user prompt template instead of hardcoded fallback
+  const userTemplate = trainingConfig.stationPrompts?.adCopy?.userPromptTemplate;
+  
+  if (!userTemplate) {
+    throw new Error('Ad copy user prompt template not found in training configuration. Please ensure database contains proper station prompt configuration.');
+  }
   
   const userPrompt = userTemplate
     .replace('{transcription}', transcription)
@@ -298,65 +311,8 @@ Analyze the uploaded ad creative image to extract key visual elements, text over
       console.log('Raw response:', content);
       console.log('Request details - hasImageContent:', hasImageContent, 'imageLength:', base64Image?.length || 0);
       
-      // Fallback to template approach
-      const drPercent = 100 - brandPercent;
-      
-      // Mom-specific fallback headlines
-      const momHeadlines = isMomPersona ? [
-        { framework: "BENEFIT DRIVEN", copy: "The 5-Minute Face Every Busy Mom Needs" },
-        { framework: "SOCIAL PROOF", copy: "Thousands of Moms Love This Foundation" },
-        { framework: "PROBLEM FOCUSED", copy: "Finally, Foundation That Survives School Pickup" },
-        { framework: "VALUE PROPS", copy: "All-Day Wear for Non-Stop Moms" },
-        { framework: "OFFER DRIVEN", copy: "Mom-Approved Beauty in Minutes" }
-      ] : null;
-      
-      const headlines = momHeadlines || (drPercent > 75 ? [
-        { framework: "BENEFIT DRIVEN", copy: "Transform Your Routine Today" },
-        { framework: "SOCIAL PROOF", copy: "Join Thousands of Users" },
-        { framework: "OFFER DRIVEN", copy: "Limited Time Offer" },
-        { framework: "PROBLEM FOCUSED", copy: "Get Results Fast" },
-        { framework: "VALUE PROPS", copy: "Revolutionary Formula" }
-      ] : [
-        { framework: "BENEFIT DRIVEN", copy: "Your Skin But Better" },
-        { framework: "VALUE PROPS", copy: "Effortless Beauty Found" },
-        { framework: "PROBLEM FOCUSED", copy: "Natural Glow Simplified" },
-        { framework: "SOCIAL PROOF", copy: "One Step Beauty" },
-        { framework: "OFFER DRIVEN", copy: "Barely There Perfect" }
-      ]);
-      
-      // Get product name from request
-      const getProductName = (product: string) => {
-        switch(product) {
-          case 'miracle balm': return 'Miracle Balm';
-          case 'foundation': return 'What The Foundation';
-          case 'tinted moisturizer': return 'Just Enough Tinted Moisturizer';
-          case 'hero kit': return 'The Hero Kit';
-          case 'sunscreen': return 'Everyday Sunscreen';
-          case 'mascara': return 'What The Mascara';
-          case 'lip stick': return 'Lip & Cheek Stick';
-          case 'face pencil': return 'The Face Pencil';
-          default: return 'What The Foundation';
-        }
-      };
-      
-      const productName = getProductName(request.selectedProduct || 'foundation');
-      
-      const momPrimaryText = isMomPersona ? 
-        `${productName} is perfect for busy moms who need beauty that works as hard as they do. Quick application, all-day wear, no touch-ups needed between soccer practice and school pickup.` :
-        `${productName} is unlike any foundation you've ever tried. Not heavy, cakey, or dry. Perfect for busy individuals who want effortless beauty.`;
-      
-      return {
-        headlines,
-        primaryText: momPrimaryText,
-        debugInfo: {
-          systemPrompt,
-          userPrompt,
-          rawResponse: content,
-          modelUsed: trainingConfig.modelParameters.model,
-          fallbackUsed: true,
-          isMomPersona
-        }
-      };
+      // No hardcoded fallbacks - throw error if parsing fails
+      throw new Error('Failed to parse AI response. Please ensure database contains proper training configuration and try again.');
     }
     
     // Validate parsed response structure
@@ -398,11 +354,16 @@ Analyze the uploaded ad creative image to extract key visual elements, text over
   }
 }
 
-export async function generateLandingPageCopy(request: LandingPageRequest, trainingConfig: TrainingConfig = defaultTrainingConfig) {
+export async function generateLandingPageCopy(request: LandingPageRequest, trainingConfig: TrainingConfig) {
   const { landingPageType, productBrief, concept, subPersona, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle, transcription } = request;
   
+  // Validate required parameters
+  if (!concept) {
+    throw new Error('Concept is required and must be provided from database persona data.');
+  }
+  
   const safeBrandDrBalance = brandDrBalance || 50;
-  const safeConcept = concept || 'lifeJuggler';
+  const safeConcept = concept;
   const safeSubPersona = subPersona || '';
   
   // Build comprehensive AI Settings context
@@ -441,360 +402,52 @@ export async function generateLandingPageCopy(request: LandingPageRequest, train
         concept: params.concept,
         subPersona: params.subPersona
       } : undefined,
-      productClaims: trainingConfig?.productClaims || undefined,
+      productClaims: selectedProduct && trainingConfig?.productClaims?.[selectedProduct]
+        ? {
+            approved: trainingConfig.productClaims[selectedProduct].approvedClaims,
+            prohibited: trainingConfig.productClaims[selectedProduct].prohibitedClaims,
+          }
+        : undefined,
       brandDrBalance: params.brandDrBalance,
       selectedProduct: params.selectedProduct,
       settingsVersion: `v${Date.now()}` // Simple versioning
     };
   }
   
-  // Get customer review insights if product is selected
-  let reviewInsights = '';
-  if (selectedProduct) {
-    try {
-      const insights = await getCustomerReviewInsights(selectedProduct);
-      reviewInsights = `
-AUTHENTIC CUSTOMER INSIGHTS FOR ${selectedProduct.toUpperCase()}:
-- Most mentioned benefits: ${insights.topBenefits.join(', ')}
-- Customer language patterns: ${insights.commonPhrases.join(', ')}
-- Emotional triggers: ${insights.emotionalTriggers.join(', ')}
-- Pain points addressed: ${insights.painPoints.join(', ')}
-- Social proof elements: ${insights.socialProof.join(', ')}
+  // Customer review insights functionality is not yet implemented
+  // TODO: Implement customer review insights integration if needed
 
-USE THESE INSIGHTS TO:
-1. Mirror authentic customer language in your copy
-2. Address the specific pain points customers actually mention
-3. Highlight benefits that real customers value most
-4. Include emotional triggers that resonate with actual users
-`;
-    } catch (error) {
-      console.error('Failed to get review insights:', error);
-    }
-  }
-
-// Customer review insights function for landing pages
-async function getCustomerReviewInsights(product: string) {
-  try {
-    // Use existing review analysis system - we'll call a simple query instead
-    const { db } = await import('./db');
-    const { reviews } = await import('../shared/review-schema');
-    const { eq, ilike } = await import('drizzle-orm');
-    
-    // Get reviews for the specific product
-    const productReviews = await db.select().from(reviews)
-      .where(ilike(reviews.productName, `%${product}%`))
-      .limit(100);
-    
-    // Extract common phrases and benefits from reviews
-    const allText = productReviews.map(r => r.reviewText).join(' ').toLowerCase();
-    const analysis = {
-      topBenefits: extractBenefits(allText),
-      commonPhrases: extractPhrases(allText),
-      emotionalTriggers: extractEmotions(allText),
-      painPoints: extractPainPoints(allText),
-      socialProof: extractSocialProof(productReviews)
-    };
-    
-    return {
-      topBenefits: analysis.topBenefits?.slice(0, 5) || ['natural coverage', 'moisturizing formula', 'easy application'],
-      commonPhrases: analysis.commonPhrases?.slice(0, 5) || ['holy grail', 'game changer', 'your skin but better'],
-      emotionalTriggers: analysis.emotionalTriggers?.slice(0, 3) || ['confidence boost', 'effortless beauty', 'time-saving'],
-      painPoints: analysis.painPoints?.slice(0, 3) || ['dry skin', 'complicated routine', 'cakey makeup'],
-      socialProof: analysis.socialProof?.slice(0, 3) || ['thousands of reviews', '5-star rating', 'makeup artist approved']
-    };
-    
-    return analysis;
-  } catch (error) {
-    console.error('Error getting review insights:', error);
-    // Return fallback insights based on product
-    return {
-      topBenefits: ['natural coverage', 'skin-enhancing formula', 'easy application'],
-      commonPhrases: ['holy grail product', 'game changer', 'your skin but better'],
-      emotionalTriggers: ['confidence boost', 'effortless beauty', 'time-saving routine'],
-      painPoints: ['dry skin concerns', 'complicated routines', 'unnatural results'],
-      socialProof: ['thousands of happy customers', 'professional makeup artist approved', '5-star reviews']
-    };
-  }
-}
-
-// Helper functions for extracting insights from reviews
-function extractBenefits(text: string): string[] {
-  const benefitPatterns = [
-    'natural', 'coverage', 'moisturizing', 'easy', 'smooth', 'glowing', 'perfect', 'lightweight',
-    'long-lasting', 'buildable', 'flawless', 'effortless', 'comfortable', 'breathable'
-  ];
-  return benefitPatterns.filter(pattern => text.includes(pattern)).slice(0, 5);
-}
-
-function extractPhrases(text: string): string[] {
-  const commonPhrases = [
-    'holy grail', 'game changer', 'your skin but better', 'love this', 'amazing product',
-    'perfect for', 'so good', 'highly recommend', 'obsessed with', 'favorite product'
-  ];
-  return commonPhrases.filter(phrase => text.includes(phrase)).slice(0, 5);
-}
-
-function extractEmotions(text: string): string[] {
-  const emotions = [
-    'confidence', 'love', 'comfortable', 'happy', 'beautiful', 'natural', 'effortless'
-  ];
-  return emotions.filter(emotion => text.includes(emotion)).slice(0, 3);
-}
-
-function extractPainPoints(text: string): string[] {
-  const painPoints = [
-    'dry skin', 'complicated', 'heavy', 'cakey', 'unnatural', 'difficult', 'time consuming'
-  ];
-  return painPoints.filter(point => text.includes(point)).slice(0, 3);
-}
-
-function extractSocialProof(reviews: any[]): string[] {
-  const proof = [];
-  if (reviews.length > 100) proof.push('hundreds of reviews');
-  if (reviews.length > 10) proof.push('verified customers');
-  proof.push('real user testimonials');
-  return proof.slice(0, 3);
-}
+  // Use database system prompt instead of hardcoded
+  const baseSystemPrompt = trainingConfig?.stationPrompts?.landingPage?.systemPrompt;
   
-  const systemPrompt = `You are an expert conversion copywriter for Jones Road Beauty specializing in high-converting ${landingPageType} landing pages.
+  if (!baseSystemPrompt) {
+    throw new Error('Landing page system prompt not found in training configuration. Please ensure database contains proper station prompt configuration.');
+  }
+  
+  const systemPrompt = `${baseSystemPrompt}
 
-JONES ROAD BEAUTY BRAND GUIDELINES:
-- Core positioning: "Your Skin But Better" - natural, effortless enhancement  
-- Brand voice: Natural, welcoming, authentic, conversational, never pushy or salesy
-- Tone: Educational and helpful, like a friend sharing beauty tips
-- Focus on enhancement and ease, not transformation or perfection
-- Use "moisturizing" not "hydrating" for makeup products
-- Avoid aggressive direct response language, sales pressure, or urgency tactics
-- Sound like Bobbi Brown sharing makeup philosophy, not a sales funnel
-- Emphasize real, achievable results and natural beauty
-
-${reviewInsights}
-
-${landingPageType === 'multiProduct' ? `
-JONES ROAD MULTI PRODUCT PAGE STRUCTURE (COMBINING LOOP + JONES ROAD PATTERNS):
-- Clean, simplified hero messaging following Jones Road's "Make up, Simplified" approach
-- Authority/recommendation element (like "Recommended by [Influencer]")
-- Brief collection introduction explaining the curated selection value (30-50 words)
-- Hero product prominence with supporting product grid
-- Individual product showcases with clear benefits and use cases  
-- Trust signals and media mentions for credibility
-- Individual pricing and CTAs while maintaining collection cohesion
-
-JONES ROAD SPECIFIC MULTI-PRODUCT PATTERNS:
-- Simplified, clean messaging (avoid overwhelming copy)
-- "Favorites" or "Essentials" framing for product collections
-- Hero product + supporting cast structure
-- Authority figures/influencer recommendations
-- Media trust signals rather than just customer numbers
-- Individual product focus with clear value props
-- Natural, effortless beauty positioning throughout
-
-SUCCESSFUL MULTI-PRODUCT COMBINATION (LOOP + JONES ROAD):
-- Hero: Clean, benefit-focused headline with authority element
-- Collection framing: "[Person's] Favorites" or "The Essential Collection"
-- Hero product: One standout product with detailed benefits
-- Supporting products: Grid of complementary items with individual value props
-- Trust signals: Mix of media mentions and customer social proof
-- Individual CTAs: Clear pricing and action for each product
-
-EACH PRODUCT SECTION STRUCTURE (LOOP-INSPIRED):
-- PRODUCT NAME (clear, distinctive): What this specific item is called
-- ONE-LINE BENEFIT (8-12 words): Primary value proposition for this product
-- USE CASE ICONS/BULLETS (3-4 items): Specific situations where this product excels
-- BRIEF DESCRIPTION (20-30 words): How it works and why it's different
-- CUSTOMER INSIGHT (12-20 words): Quote or stat specific to this product
-- INDIVIDUAL CTA with price: Clear action for this specific item
-
-MULTI-PRODUCT SUCCESS ELEMENTS:
-- Hero: Strong collection-level social proof ("THE [PRODUCTS] EVERYONE IS TALKING ABOUT")
-- Range presentation: "Explore the Jones Road Range" or similar
-- Product differentiation: Each serves different needs/occasions
-- Use case clarity: Morning routine vs. evening vs. quick touch-up
-- Individual value props: Why someone would choose this specific item
-- Collection synergy: How using multiple products enhances results
-- Social proof variety: Different stats for different aspects (customers, reviews, community)
-` : landingPageType === 'listicle' ? `
-AUTHENTIC JONES ROAD LISTICLE STRUCTURE (BASED ON REAL EXAMPLES):
-- Direct, benefit-focused headline (6-12 words) - clear value proposition, not clickbait
-- Brief introduction that states the value clearly (30-50 words) - no fluff, get straight to the point
-- 5-6 numbered reasons with clear headers and specific benefits
-- Multiple soft CTAs throughout that feel natural, not pushy
-- Facts and benefits woven naturally - education through value demonstration
-
-NATURAL SEQUENCING (REAL LISTICLE STYLE):
-1. IMMEDIATE PROBLEM SOLVER: Addresses the most pressing concern
-2. UNIQUE ADVANTAGE: What makes this different/better
-3. EASE OF USE: How simple/convenient it is
-4. DEEPER BENEFIT: Secondary value that matters long-term
-5. SOCIAL PROOF: Real results from real people
-6. NATURAL CONCLUSION: Why this makes sense now
-
-EACH REASON STRUCTURE (BASED ON REAL LISTICLE EXAMPLES):
-- CLEAR BENEFIT STATEMENT (8-12 words): Direct, specific value - what it does
-- BRIEF EXPLANATION (15-25 words): Why this matters, how it works [FACTUAL TONE]
-- SPECIFIC DETAILS (10-15 words): Numbers, features, or proof points that support the claim
-- SOCIAL PROOF (ALTERNATE BETWEEN THESE TWO OPTIONS):
-  * CUSTOMER REVIEW (12-20 words): Short, relevant quote that supports THIS specific benefit
-  * BRAND COPY (12-20 words): Educational statement that reinforces the benefit naturally
-
-AUTHENTIC LISTICLE OPTIMIZATION RULES:
-- Maximum 50 words per reason section (extremely concise and scannable)
-- Lead with benefits, support with facts - not the other way around
-- Use specific details and numbers when possible (like "24dB reduction")
-- Keep language clear and direct - avoid flowery marketing speak
-- Each reason should stand alone and deliver immediate value
-- Maximum 2 sentences per paragraph - break up longer content
-- Use bullet points or short phrases for better readability
-- REVIEW RELEVANCE: When using customer reviews, select quotes that directly support the specific benefit of that section
-- VARIETY: Alternate between customer reviews and brand copy for social proof - don't use only reviews
-` : ''}
-
-REAL LISTICLE EXAMPLES TO EMULATE:
-- Grüns: "Better Poops (Seriously)" - direct, honest, conversational
-- Loop: "Blocks Out The Loudest Tools - 24dB Reduction" - specific benefit + proof
-- Create: "They're made with Creapure®, the highest-quality creatine..." - quality focus
-- Tone: Educational but approachable, like explaining to a friend who asked
-- Structure: Clear headers, short paragraphs, specific benefits, natural flow
-
-HIGH-CONVERTING TROJAN HORSE STRUCTURE (OPTIMIZED FOR CONVERSION SCORES):
-- Hook (50-75 words): Seemingly unrelated story that connects to deep pain point
-- Pattern interrupt (25-40 words): Challenge conventional beauty wisdom
-- Bridge (30-50 words): Connect story to audience's specific problem
-- Solution reveal (40-60 words): Present product as natural evolution of story
-- Social proof (25-40 words): Real customer transformations
-- Benefits ladder (60-90 words): Emotional + functional + social benefits [KEEP SCANNABLE]
-- Clear CTA (15-25 words): Direct call to action that feels natural
-
-CONVERSION OPTIMIZATION FOR TROJAN HORSE:
-- Maximum 400 words total for entire page (excluding introduction)
-- Break long paragraphs into 2-3 sentence blocks
-- Use specific numbers and timeframes for credibility
-- Each section should have ONE clear takeaway
-
-CUSTOMER REVIEW USAGE GUIDELINES:
-- Select reviews that DIRECTLY mention the benefit you're discussing in that section
-- Keep customer quotes to 15-25 words maximum - extract the most impactful part
-- Balance reviews with brand copy - don't use only reviews for social proof
-- Match review sentiment to the specific benefit being discussed
-- Use reviews that sound natural and authentic, not overly promotional
-
-CONVERSION PSYCHOLOGY PRINCIPLES:
-- Use curiosity gaps and open loops
-- Include specific numbers and timeframes
-- Address objections before they arise
-- Use "because" reasoning for every claim
-- Include social proof in every section
-- Create multiple micro-commitments leading to main CTA
-- Use loss aversion appropriately (but avoid aggressive urgency tactics)
+${aiSettingsContext}
 
 BRAND/DR BALANCE: ${safeBrandDrBalance}% brand voice, ${100 - safeBrandDrBalance}% direct response optimization
-TARGET PERSONA: ${concept}${subPersona ? ` (${subPersona})` : ''}
-COPY PERFORMANCE GOALS: High conversion rate while maintaining brand authenticity
+TARGET PERSONA: ${safeConcept}${safeSubPersona ? ` (${safeSubPersona})` : ''}
+${selectedProduct ? `PRODUCT FOCUS: ${selectedProduct}` : ''}`;
 
-OUTPUT FORMATTING RULES:
-- DO NOT use markdown formatting (**, *, _) in your output
-- Use plain text only for all content
-- Keep formatting clean and simple for web display`;
+  // Use database user prompt template instead of hardcoded
+  const baseUserPrompt = trainingConfig?.stationPrompts?.landingPage?.userPromptTemplate;
+  
+  if (!baseUserPrompt) {
+    throw new Error('Landing page user prompt template not found in training configuration. Please ensure database contains proper station prompt configuration.');
+  }
 
-  const userPrompt = `Create a high-converting ${landingPageType} landing page that drives sales and builds trust:
-
-${mainAngle ? `MAIN ANGLE/HOOK:
-${mainAngle}
-
-` : ''}PRODUCT BRIEF:
-${productBrief}
-
-${useAdsContent && adsContent ? `
-EXISTING AD COPY TO REFERENCE (ensure message consistency):
-${adsContent}
-` : ''}
-
-${transcription ? `
-VIDEO TRANSCRIPTION CONTENT (key messaging to incorporate):
-${transcription}
-
-Use the video transcription content to understand the authentic messaging approach, tone, and key product benefits being communicated. Incorporate similar language patterns and messaging themes in the landing page copy while maintaining consistency with the Jones Road Beauty brand voice.
-` : ''}
-
-CONVERSION REQUIREMENTS:
-- Primary goal: Drive product purchases
-- Secondary goal: Build email list
-- Audience: ${concept}${subPersona ? ` (specifically ${subPersona})` : ''} who value authentic, natural beauty
-- Tone: ${safeBrandDrBalance > 50 ? 'Brand-focused with authentic voice' : 'Direct response with natural warmth'}
-
-SPECIFIC INSTRUCTIONS:
-1. Use customer review insights to create authentic, relatable copy
-2. Include specific benefits that real customers mention
-3. Address actual pain points from customer feedback
-4. Use natural, conversational language that feels genuine
-5. Include social proof elements throughout
-6. Create clear value propositions with "because" reasoning
-7. End each section with a soft CTA or continuation hook
-8. KEEP PARAGRAPHS SHORT (2-3 sentences maximum)
-9. Use bullet points or short phrases for better readability
-10. Maximum 30 words per bullet point - be extremely concise and scannable
-11. NO RISK REVERSAL SECTION - remove guarantees and risk reversal content completely
-12. FREE SHIPPING THRESHOLD: Always use $85, never $50 or other amounts - this is Jones Road's actual threshold
-13. NEVER mention unauthorized claims or pricing - stick to approved product claims only
-
-${landingPageType === 'multiProduct' ? `
-Generate complete multi-product landing page copy combining Loop Earplugs and Jones Road patterns. Structure your response as:
-
-HEADLINE: [Clean, simplified headline following "Make up, Simplified" approach]
-SUBHEADLINE: [Authority element like "Recommended by [Expert]" or collection framing]
-INTRODUCTION: [Brief explanation of curated collection value - why these specific products]
-HERO PRODUCT: [Main Product Name]
-[Detailed benefits, use cases, customer insight, individual CTA]
-PRODUCT #2: [Supporting Product Name] 
-[Brief benefit, use case, price point, individual CTA]
-PRODUCT #3: [Supporting Product Name]
-[Brief benefit, use case, price point, individual CTA]
-COLLECTION BENEFITS: [Why this curated selection works as a complete routine]
-SOCIAL PROOF: [Mix of media mentions and customer testimonials]
-CTA: [Main collection call-to-action with bundle value]
-` : landingPageType === 'listicle' ? `
-Generate complete listicle landing page copy without introduction. Structure your response as:
-
-HEADLINE: [Main headline - 8-12 words maximum - MUST predominantly use "5 reasons why" format]
-SUBHEADLINE: [Supporting headline if needed - 8-15 words]
-REASON #1: [Title - 8-12 words]
-[Single paragraph: 40-50 words maximum. Start with benefit, add brief explanation, end with outcome. Very concise.]
-REASON #2: [Title - 8-12 words]
-[Single paragraph: 40-50 words maximum. Start with benefit, add brief explanation, end with outcome. Very concise.]
-REASON #3: [Title - 8-12 words]
-[Single paragraph: 40-50 words maximum. Start with benefit, add brief explanation, end with outcome. Very concise.]
-REASON #4: [Title - 8-12 words]
-[Single paragraph: 40-50 words maximum. Start with benefit, add brief explanation, end with outcome. Very concise.]
-REASON #5: [Title - 8-12 words]
-[Single paragraph: 40-50 words maximum. Start with benefit, add brief explanation, end with outcome. Very concise.]
-CTA: [Main call-to-action - mention free shipping over $85, not $50]
-
-LISTICLE HEADLINE EXAMPLES (USE THESE AS MODELS):
-- "5 Reasons Why What The Foundation Is Different"
-- "5 Reasons Why Miracle Balm Beats Regular Blush"
-- "5 Reasons Why This Mascara Changes Everything"
-- "5 Reasons Why Moms Choose This Foundation"
-- "5 Reasons Why Your Skin Deserves This"
-
-COPY LENGTH REQUIREMENTS:
-- Each reason paragraph: 40-50 words maximum (not 80+ words)
-- Use simple, clear sentences
-- Focus on ONE key benefit per reason
-- Match the concise style of actual Jones Road listicles
-- NO introductions, NO long explanations
-- Headlines MUST follow "5 reasons why" format for consistency
-` : `
-Generate complete landing page copy with all required sections. Structure your response as:
-
-HEADLINE: [Main headline]
-SUBHEADLINE: [Supporting headline if needed]
-INTRODUCTION: [Problem-agitation-promise opener]
-REASON #1: [Title]
-[Complete reason content with hook, explanation, proof, benefit]
-REASON #2: [Title]
-[Continue for all 5 reasons]
-CTA: [Main call-to-action]
-`}`;
+  // Replace template variables in user prompt
+  const userPrompt = baseUserPrompt
+    .replace('{landingPageType}', landingPageType)
+    .replace('{productBrief}', productBrief || '')
+    .replace('{concept}', safeConcept)
+    .replace('{subPersona}', safeSubPersona)
+    .replace('{brandPercent}', safeBrandDrBalance.toString())
+    .replace('{drPercent}', (100 - safeBrandDrBalance).toString())
+    .replace('{adsContentSection}', useAdsContent && adsContent ? `\nADS CONTENT TO REFERENCE:\n${adsContent}\n` : '');
 
   try {
     const response = await anthropic.messages.create({
@@ -972,10 +625,13 @@ export async function reviseContent(request: RevisionRequest): Promise<string> {
 
 JONES ROAD BEAUTY BRAND GUIDELINES:
 - Core positioning: "Your Skin But Better" - natural, effortless enhancement
-- Brand voice: Natural, welcoming, never pushy or aggressive
-- Focus on enhancement, not transformation
+- Brand voice: Natural, welcoming, authentic, conversational, never pushy or salesy
+- Tone: Educational and helpful, like a friend sharing beauty tips
+- Focus on enhancement and ease, not transformation or perfection
 - Use "moisturizing" not "hydrating" for makeup products
-- Authentic customer language patterns from real reviews
+- Avoid aggressive direct response language, sales pressure, or urgency tactics
+- Sound like Bobbi Brown sharing makeup philosophy, not a sales funnel
+- Emphasize real, achievable results and natural beauty
 
 Your task is to revise ${contentType} copy based on specific improvement instructions while maintaining the Jones Road Beauty brand voice and style.
 
@@ -1058,7 +714,7 @@ Please revise the content applying the improvement instructions while maintainin
   }
 }
 
-export async function analyzeStaticAd(request: StaticAdAnalysisRequest, _trainingConfig: TrainingConfig = defaultTrainingConfig) {
+export async function analyzeStaticAd(request: StaticAdAnalysisRequest, _trainingConfig: TrainingConfig) {
   const { staticAdImage, concept, subPersona, brandDrBalance, selectedProduct } = request;
   
   const brandPercent = brandDrBalance;
@@ -1077,50 +733,19 @@ export async function analyzeStaticAd(request: StaticAdAnalysisRequest, _trainin
   // Get training configuration
   const config = await import('./routes-training').then(m => m.getTrainingConfig());
   
-  const systemPrompt = config?.stationPrompts?.staticAd?.systemPrompt || 
-    `You are an expert marketing analyst and copywriter specializing in competitive analysis and adaptation for Jones Road Beauty.
-
-JONES ROAD BEAUTY BRAND VOICE:
-- Core positioning: "Your Skin But Better" - natural, effortless enhancement
-- Educational tone like Bobbi Brown, warm and approachable
-- "Make up, Simplified" philosophy - clean, uncomplicated messaging
-- Authentic and genuine, never pushy or aggressive
-- Focus on enhancing natural beauty, not covering it up
-- Use "moisturizing" not "hydrating" for makeup products
+  // Use database system prompt instead of hardcoded fallback
+  const baseSystemPrompt = config?.stationPrompts?.staticAd?.systemPrompt;
+  
+  if (!baseSystemPrompt) {
+    throw new Error('Static ad analysis system prompt not found in training configuration. Please ensure database contains proper station prompt configuration.');
+  }
+  
+  const systemPrompt = `${baseSystemPrompt}
 
 BRAND/DR BALANCE: ${brandPercent}% Brand Voice, ${drPercent}% Direct Response
 
 TARGET AUDIENCE: ${concept}${subPersona ? ` (${subPersona})` : ''}
-${selectedProduct ? `PRODUCT FOCUS: ${selectedProduct}` : ''}
-
-YOUR TASK:
-1. Analyze the uploaded static ad image comprehensively
-2. Extract key messaging, visual elements, and marketing strategies
-3. Generate Jones Road Beauty variations that adapt the effective elements while maintaining authentic brand voice
-4. Provide multiple targeting approaches for the specified persona
-
-ANALYSIS FRAMEWORK:
-- Visual elements: layout, colors, typography, imagery style
-- Messaging hierarchy: headline, subtext, call-to-action
-- Marketing psychology: hooks, benefits, urgency/scarcity elements
-- Target audience signals: language, imagery, positioning
-- Brand positioning: how they present their value proposition
-
-OUTPUT FORMAT:
-1. AD ANALYSIS
-   - Visual Elements
-   - Core Message
-   - Marketing Strategy
-   - Target Audience Indicators
-
-2. JONES ROAD ADAPTATIONS
-   Generate 3-5 Facebook ad variations that:
-   - Use Jones Road's authentic voice
-   - Target the specified persona effectively
-   - Adapt successful elements from the original
-   - Include headlines and primary text for each variation
-
-Use clean, plain text formatting without special characters.`;
+${selectedProduct ? `PRODUCT FOCUS: ${selectedProduct}` : ''}`;
 
   const userPrompt = `Please analyze this static ad image and create Jones Road Beauty variations targeting ${concept}${subPersona ? ` (${subPersona})` : ''}:
 
@@ -1175,11 +800,16 @@ INSTRUCTIONS:
   }
 }
 
-export async function generateCustomCopy(request: CustomCopyRequest, trainingConfig: TrainingConfig = defaultTrainingConfig) {
+export async function generateCustomCopy(request: CustomCopyRequest, trainingConfig: TrainingConfig) {
   const { customRequest, concept, subPersona, brandDrBalance, selectedProduct, useJonesBrandGuide } = request;
   
+  // Validate required parameters
+  if (!concept) {
+    throw new Error('Concept is required and must be provided from database persona data.');
+  }
+  
   const safeBrandDrBalance = brandDrBalance || 50;
-  const safeConcept = concept || 'lifeJuggler';
+  const safeConcept = concept;
   const safeSubPersona = subPersona || '';
   
   // Build comprehensive AI Settings context
@@ -1191,8 +821,14 @@ export async function generateCustomCopy(request: CustomCopyRequest, trainingCon
     useJonesBrandGuide
   });
   
-  const systemPrompt = `${trainingConfig?.stationPrompts?.customRequest?.systemPrompt || 
-    'You are a world-class copywriter and marketing strategist specializing in Jones Road Beauty brand voice.'}
+  // Use database system prompt instead of hardcoded fallback
+  const baseSystemPrompt = trainingConfig?.stationPrompts?.customRequest?.systemPrompt;
+  
+  if (!baseSystemPrompt) {
+    throw new Error('Custom request system prompt not found in training configuration. Please ensure database contains proper station prompt configuration.');
+  }
+  
+  const systemPrompt = `${baseSystemPrompt}
 
 ${aiSettingsContext}
 
@@ -1208,30 +844,37 @@ Create copy that fulfills the user's specific request while maintaining Jones Ro
 
   // Define audience context based on concept
   const getAudienceDescription = (concept: string, subPersona?: string) => {
-    const baseDescriptions = {
-      lifeJuggler: "Busy women managing multiple responsibilities who want simple, effective beauty solutions that work with their hectic lifestyle",
-      cleanBeautyEnthusiast: "Health-conscious consumers seeking natural, safe beauty products with clean ingredients and transparent formulations",
-      timeConstrainedProfessional: "Career-focused women needing quick, polished looks that transition from office to evening seamlessly",
-      naturalBeautySeeker: "Women wanting to enhance rather than mask their natural features, preferring authentic, effortless beauty"
-    };
-    
-    let description = baseDescriptions[concept as keyof typeof baseDescriptions] || baseDescriptions.lifeJuggler;
-    
-    if (subPersona === 'newMom') {
-      description += ". Specifically new mothers dealing with changing skin, limited time, and needing beauty solutions that work with their new lifestyle demands";
+    // Audience descriptions should come from database persona data
+    if (trainingConfig.personaPillars && trainingConfig.personaPillars[concept]) {
+      let description = trainingConfig.personaPillars[concept].description || '';
+      
+      if (subPersona && subPersona.toLowerCase().includes('mom')) {
+        description += ". Specifically mothers dealing with changing needs and limited time for complex beauty routines";
+      }
+      
+      return description;
     }
     
-    return description;
+    // No hardcoded fallbacks - throw error if persona not found in database
+    throw new Error(`Persona '${concept}' not found in training configuration. Please ensure database contains proper persona data.`);
   };
 
   const audienceDescription = getAudienceDescription(request.concept, request.subPersona);
   const productContext = request.selectedProduct ? `\n\nPRODUCT CONTEXT: ${request.selectedProduct}` : '';
   const brandBalance = request.brandDrBalance || 50;
-  const balanceGuidance = brandBalance > 60 
-    ? "Lean more toward brand storytelling and emotional connection"
-    : brandBalance < 40 
-    ? "Focus more on direct benefits and actionable results"
-    : "Balance brand voice with clear benefits";
+  
+  // Brand balance guidance should come from database copy frameworks
+  let balanceGuidance = "Balance brand voice with clear benefits";
+  if (trainingConfig.copyFrameworks) {
+    // Use copy framework rules to determine guidance
+    if (trainingConfig.copyFrameworks.brandDrBalance) {
+      if (brandBalance > 60 && trainingConfig.copyFrameworks.brandDrBalance.brandFirst) {
+        balanceGuidance = "Lean more toward brand storytelling and emotional connection";
+      } else if (brandBalance < 40 && trainingConfig.copyFrameworks.brandDrBalance.directResponse) {
+        balanceGuidance = "Focus more on direct benefits and actionable results";
+      }
+    }
+  }
 
   const userPrompt = `USER'S REQUEST:
 ${request.customRequest}
@@ -1289,7 +932,12 @@ export function buildAISettingsContext(trainingConfig: TrainingConfig, request: 
   brandDrBalance?: number;
   useJonesBrandGuide?: boolean;
 }) {
-  const { concept = 'lifeJuggler', subPersona = '', selectedProduct = '', selectedProducts = [], brandDrBalance = 50, useJonesBrandGuide = true } = request;
+  const { concept, subPersona = '', selectedProduct = '', selectedProducts = [], brandDrBalance = 50, useJonesBrandGuide = true } = request;
+  
+  // Validate required concept parameter
+  if (!concept) {
+    throw new Error('Concept is required and must be provided from database persona data.');
+  }
   
   let context = '';
   
@@ -1450,7 +1098,7 @@ export async function generateRetentionCopy(request: {
   brandDrBalance?: number;
   selectedProduct?: string;
   useJonesBrandGuide?: boolean;
-}, trainingConfig: TrainingConfig = defaultTrainingConfig) {
+}, trainingConfig: TrainingConfig) {
   console.log('generateRetentionCopy called with selectedProducts:', request.selectedProducts);
   
   const anthropic = new Anthropic({
@@ -1460,9 +1108,12 @@ export async function generateRetentionCopy(request: {
   // Build comprehensive AI Settings context
   const aiSettingsContext = buildAISettingsContext(trainingConfig, request);
   
-  // Get station-specific system prompt with AI Settings integration
-  const baseSystemPrompt = trainingConfig?.stationPrompts?.emailSmsRetention?.systemPrompt || 
-    `You are an expert ${request.platform?.toLowerCase() || 'email'} marketing copywriter specializing in customer retention and engagement campaigns for Jones Road Beauty.`;
+  // Get station-specific system prompt with AI Settings integration - database only
+  const baseSystemPrompt = trainingConfig?.stationPrompts?.emailSmsRetention?.systemPrompt;
+  
+  if (!baseSystemPrompt) {
+    throw new Error('Email/SMS retention system prompt not found in training configuration. Please ensure database contains proper station prompt configuration.');
+  }
   
   const systemPrompt = `${baseSystemPrompt}
 
