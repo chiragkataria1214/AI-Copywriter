@@ -13,6 +13,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 
+// Type definitions for API responses
+interface ReviewStats {
+  totalReviews: number;
+  byProduct: Record<string, number>;
+  avgRating: string;
+  positivePercentage: number;
+}
+
+interface Review {
+  id?: string;
+  rating: number;
+  review_text?: string;
+  content?: string;
+  reviewer_name?: string;
+  product_name?: string;
+  source?: string;
+  created_at?: string;
+}
+
 export default function ReviewTraining() {
   const [bulkReviews, setBulkReviews] = useState('');
   const [reviewFormat, setReviewFormat] = useState<'csv' | 'json' | 'text'>('text');
@@ -88,7 +107,7 @@ export default function ReviewTraining() {
   });
 
   // Get review stats
-  const { data: reviewStats, isLoading: statsLoading } = useQuery({
+  const { data: reviewStats, isLoading: statsLoading } = useQuery<ReviewStats>({
     queryKey: ['/api/reviews/stats'],
     retry: false,
   });
@@ -100,7 +119,7 @@ export default function ReviewTraining() {
   });
 
   // Get actual reviews for viewing
-  const { data: reviews, isLoading: reviewsLoading } = useQuery({
+  const { data: reviews, isLoading: reviewsLoading } = useQuery<Review[]>({
     queryKey: ['/api/reviews?limit=50'],
     retry: false,
   });
@@ -112,8 +131,7 @@ export default function ReviewTraining() {
   });
 
   // Type guards for stats
-  const hasValidStats = reviewStats && typeof reviewStats === 'object' && 
-    'totalReviews' in reviewStats;
+  const hasValidStats = reviewStats && typeof reviewStats.totalReviews === 'number' && reviewStats.totalReviews > 0;
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -498,7 +516,8 @@ Format examples:
                 <CardContent>
                   <div className="space-y-4">
                     {hasValidStats && reviewStats.byProduct && Object.entries(reviewStats.byProduct).map(([product, count]) => {
-                      const percentage = Math.round((count / reviewStats.totalReviews) * 100);
+                      const countNum = typeof count === 'number' ? count : 0;
+                      const percentage = Math.round((countNum / reviewStats.totalReviews) * 100);
                       const colors = {
                         mascara: 'bg-blue-500',
                         foundation: 'bg-purple-500',
@@ -515,7 +534,7 @@ Format examples:
                               <span className="text-sm font-medium capitalize">{product}</span>
                             </div>
                             <div className="text-sm text-gray-600">
-                              {count.toLocaleString()} reviews ({percentage}%)
+                              {countNum.toLocaleString()} reviews ({percentage}%)
                             </div>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-3">

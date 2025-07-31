@@ -27,16 +27,20 @@ export default function UserManagement() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [newUser, setNewUser] = useState({
+  const [newUser, setNewUser] = useState<{
+    username: string;
+    password: string;
+    role: 'admin' | 'team_member';
+  }>({
     username: '',
     password: '',
-    role: 'team_member' as const
+    role: 'team_member'
   });
 
   // Fetch all users
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['/api/admin/users'],
-    enabled: currentUser?.role === 'admin'
+    enabled: (currentUser as any)?.role === 'admin'
   });
 
   // Create user mutation
@@ -143,7 +147,7 @@ export default function UserManagement() {
   };
 
   const handleDeleteUser = (user: User) => {
-    if (user.id === currentUser?.id) {
+    if (user.id === (currentUser as any)?.id) {
       toast({
         title: "Error",
         description: "You cannot delete your own account",
@@ -157,7 +161,7 @@ export default function UserManagement() {
     }
   };
 
-  if (currentUser?.role !== 'admin') {
+  if ((currentUser as any)?.role !== 'admin') {
     return (
       <div>
         {/* Navigation Header */}
@@ -266,7 +270,7 @@ export default function UserManagement() {
                 <Label htmlFor="role">Role</Label>
                 <Select
                   value={newUser.role}
-                  onValueChange={(value) => setNewUser({ ...newUser, role: value as 'admin' | 'team_member' })}
+                  onValueChange={(value: string) => setNewUser({ ...newUser, role: value as 'admin' | 'team_member' })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -324,7 +328,7 @@ export default function UserManagement() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{user.username}</span>
-                        {user.id === currentUser?.id && (
+                        {user.id === (currentUser as any)?.id && (
                           <Badge variant="secondary">You</Badge>
                         )}
                       </div>
@@ -346,7 +350,7 @@ export default function UserManagement() {
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    {user.id !== currentUser?.id && (
+                    {user.id !== (currentUser as any)?.id && (
                       <Button
                         variant="outline"
                         size="sm"

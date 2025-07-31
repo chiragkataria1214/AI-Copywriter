@@ -9,17 +9,36 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BarChart3, Database, Search, Filter, TrendingUp, Star, Users, Target, ArrowLeft, Home } from "lucide-react";
 import { Link } from "wouter";
 
+// Type definitions for API responses
+interface ReviewStats {
+  totalReviews: number;
+  byProduct: Record<string, number>;
+  avgRating: string;
+  positivePercentage: number;
+}
+
+interface Review {
+  id?: string;
+  rating: number;
+  review_text?: string;
+  content?: string;
+  reviewer_name?: string;
+  product_name?: string;
+  source?: string;
+  created_at?: string;
+}
+
 export default function ReviewAnalytics() {
   const [searchTerm, setSearchTerm] = useState("");
   const [productFilter, setProductFilter] = useState("all");
 
   // Fetch review stats
-  const { data: reviewStats, isLoading: statsLoading } = useQuery({
+  const { data: reviewStats, isLoading: statsLoading } = useQuery<ReviewStats>({
     queryKey: ['/api/reviews/stats'],
   });
 
   // Fetch actual reviews
-  const { data: reviews, isLoading: reviewsLoading, refetch: refetchReviews } = useQuery({
+  const { data: reviews, isLoading: reviewsLoading, refetch: refetchReviews } = useQuery<Review[]>({
     queryKey: ['/api/reviews?limit=20'],
   });
 
@@ -121,7 +140,8 @@ export default function ReviewAnalytics() {
           <CardContent>
             <div className="space-y-4">
               {hasValidStats && reviewStats.byProduct && Object.entries(reviewStats.byProduct).map(([product, count]) => {
-                const percentage = Math.round((count / reviewStats.totalReviews) * 100);
+                const countNum = typeof count === 'number' ? count : 0;
+                const percentage = Math.round((countNum / reviewStats.totalReviews) * 100);
                 const colors = {
                   mascara: 'bg-blue-500',
                   foundation: 'bg-purple-500',
@@ -138,7 +158,7 @@ export default function ReviewAnalytics() {
                         <span className="text-sm font-medium capitalize">{product}</span>
                       </div>
                       <div className="text-sm text-gray-600">
-                        {count.toLocaleString()} reviews ({percentage}%)
+                        {countNum.toLocaleString()} reviews ({percentage}%)
                       </div>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-3">
@@ -217,13 +237,13 @@ export default function ReviewAnalytics() {
             ) : reviews && Array.isArray(reviews) && reviews.length > 0 ? (
               <div className="space-y-4 max-h-[600px] overflow-y-auto border rounded-lg">
                 {reviews
-                  .filter((review: any) => {
+                  .filter((review: Review) => {
                     if (productFilter !== 'all' && review.product_name !== productFilter) return false;
                     if (searchTerm && !review.review_text?.toLowerCase().includes(searchTerm.toLowerCase()) && 
                         !review.reviewer_name?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
                     return true;
                   })
-                  .map((review: any, index: number) => (
+                  .map((review: Review, index: number) => (
                     <div key={index} className="p-4 border-b last:border-b-0 hover:bg-gray-50 transition-colors">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center space-x-3">

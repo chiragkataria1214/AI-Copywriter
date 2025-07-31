@@ -63,7 +63,11 @@ Return your analysis in this exact JSON format:
       }]
     });
 
-    const analysis = JSON.parse(response.content[0].text);
+    const firstContent = response.content[0];
+    if (firstContent.type !== 'text') {
+      throw new Error('Expected text response from Claude');
+    }
+    const analysis = JSON.parse(firstContent.text);
     return analysis;
   } catch (error) {
     console.error('Voice analysis error:', error);
@@ -134,7 +138,11 @@ Return in this exact JSON format:
       }]
     });
 
-    const result = JSON.parse(response.content[0].text);
+    const firstContent = response.content[0];
+    if (firstContent.type !== 'text') {
+      throw new Error('Expected text response from Claude');
+    }
+    const result = JSON.parse(firstContent.text);
     return result;
   } catch (error) {
     console.error('Influencer copy generation error:', error);
