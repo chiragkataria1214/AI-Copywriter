@@ -524,7 +524,7 @@ export class DatabaseStorage implements IStorage {
     const brandGuidelines: any = {};
     const brandTypes = ['core_positioning', 'brand_voice', 'key_terminology', 'approved_language', 'avoided_language'];
     
-    console.log('DEBUG: All brand configs from DB:', brandConfigs.length, brandConfigs);
+    // console.log('DEBUG: All brand configs from DB:', brandConfigs.length, brandConfigs);
     
     for (const type of brandTypes) {
       if (type === 'core_positioning') {
@@ -539,13 +539,13 @@ export class DatabaseStorage implements IStorage {
         const key = type.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
         const enabledKey = `enabled${key.charAt(0).toUpperCase() + key.slice(1)}`;
         
-        console.log(`DEBUG: Processing ${type} -> key: ${key}, found configs:`, allConfigs.length);
-        console.log(`DEBUG: All configs for ${type}:`, allConfigs);
+        // console.log(`DEBUG: Processing ${type} -> key: ${key}, found configs:`, allConfigs.length);
+        // console.log(`DEBUG: All configs for ${type}:`, allConfigs);
         
         brandGuidelines[key] = allConfigs.map(c => c.configValue);
         brandGuidelines[enabledKey] = allConfigs.map(c => c.isEnabled === 'true');
         
-        console.log(`DEBUG: Final ${key}:`, brandGuidelines[key], 'enabled:', brandGuidelines[enabledKey]);
+        // console.log(`DEBUG: Final ${key}:`, brandGuidelines[key], 'enabled:', brandGuidelines[enabledKey]);
       }
     }
 

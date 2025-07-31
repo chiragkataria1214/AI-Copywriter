@@ -74,6 +74,36 @@
     color: var(--jones-primary);
   }
   
+  /* Make all dropdown triggers and items clickable */
+  [data-radix-select-trigger],
+  [data-radix-select-item],
+  [role="combobox"],
+  [role="option"],
+  .cursor-pointer {
+    cursor: pointer !important;
+  }
+  
+  /* Select component styling */
+  [data-radix-select-trigger]:hover,
+  [data-radix-select-item]:hover {
+    cursor: pointer !important;
+  }
+  
+  /* Additional Select component targeting */
+  .select-trigger,
+  .select-item,
+  button[role="combobox"],
+  div[role="option"] {
+    cursor: pointer !important;
+  }
+  
+  /* Make sure all interactive elements have pointer cursor */
+  select,
+  button,
+  [tabindex]:not([tabindex="-1"]) {
+    cursor: pointer !important;
+  }
+  
   .bg-jones-primary {
     background-color: var(--jones-primary);
   }

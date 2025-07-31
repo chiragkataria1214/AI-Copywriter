@@ -1020,6 +1020,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
       }
       
+      // Get current training config
+      const trainingConfig = await getTrainingConfig();
+      
       const result = await generateAdCopy({
         transcription,
         customBrief,
@@ -1031,7 +1034,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         useJonesBrandGuide,
         airLink,
         uploadedImage
-      });
+      }, trainingConfig);
       
       res.json({
         copyId: 'demo-' + Date.now(), // Demo ID
@@ -1072,7 +1075,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         useJonesBrandGuide,
         airLink,
         uploadedImage
-      });
+      }, trainingConfig);
       
       const generationTime = Date.now() - startTime;
 
@@ -1257,13 +1260,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Static ad image is required' });
       }
       
+      // Get current training config
+      const trainingConfig = await getTrainingConfig();
+      
       const result = await analyzeStaticAd({
         staticAdImage,
         concept: concept || 'lifeJuggler',
         subPersona: subPersona || undefined,
         brandDrBalance: brandDrBalance || 50,
         selectedProduct: selectedProduct || undefined
-      });
+      }, trainingConfig);
       
       res.json({
         analysis: result.analysis,
