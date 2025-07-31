@@ -550,7 +550,7 @@ function registerConfigRoutes(app: Express) {
   app.get("/api/config/model-settings", async (req, res) => {
     try {
       const config = await storage.getTrainingConfiguration();
-      res.json(config.modelSettings || {});
+      res.json(config.modelParameters || {});
     } catch (error) {
       console.error("Error fetching model settings:", error);
       res.status(500).json({ error: "Failed to fetch model settings" });

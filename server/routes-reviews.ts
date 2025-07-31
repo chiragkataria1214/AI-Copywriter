@@ -17,7 +17,8 @@ export function registerReviewRoutes(app: Express) {
         LIMIT ${limit} OFFSET ${offset}
       `);
       
-      res.json(result[0]);
+      // Drizzle returns { rows: [...] } structure
+      res.json(result.rows || []);
     } catch (error) {
       console.error('Error fetching reviews:', error);
       res.status(500).json({ message: 'Failed to fetch reviews' });
@@ -52,23 +53,23 @@ export function registerReviewRoutes(app: Express) {
         WHERE rating IS NOT NULL
       `);
       
-      const byProduct = {};
+      const byProduct: Record<string, number> = {};
       const rows = productResult.rows || [];
-      rows.forEach(row => {
+      rows.forEach((row: any) => {
         if (row?.product_name && row?.review_count) {
-          byProduct[row.product_name.toLowerCase()] = parseInt(row.review_count);
+          byProduct[row.product_name.toLowerCase()] = parseInt(row.review_count as string);
         }
       });
       
       const ratingRows = ratingResult.rows?.[0] || {};
-      const avgRating = ratingRows.avg_rating || 5.0;
-      const positivePercentage = ratingRows.positive_percentage || 100.0;
+      const avgRating = (ratingRows as any)?.avg_rating || 5.0;
+      const positivePercentage = (ratingRows as any)?.positive_percentage || 100.0;
       
       res.json({
-        totalReviews: parseInt(totalReviews),
+        totalReviews: parseInt(totalReviews as string),
         byProduct,
-        avgRating: parseFloat(avgRating).toFixed(1),
-        positivePercentage: Math.round(parseFloat(positivePercentage))
+        avgRating: parseFloat(avgRating as string).toFixed(1),
+        positivePercentage: Math.round(parseFloat(positivePercentage as string))
       });
     } catch (error) {
       console.error('Review stats error:', error);
@@ -85,7 +86,7 @@ export function registerReviewRoutes(app: Express) {
         LIMIT 1
       `);
       
-      res.json(result[0]?.[0] || null);
+      res.json(result.rows?.[0] || null);
     } catch (error) {
       console.error('Error fetching insights:', error);
       res.status(500).json({ message: 'Failed to fetch insights' });

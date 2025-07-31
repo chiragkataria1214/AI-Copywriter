@@ -101,7 +101,7 @@ export default function ReviewTraining() {
 
   // Get actual reviews for viewing
   const { data: reviews, isLoading: reviewsLoading } = useQuery({
-    queryKey: ['/api/reviews'],
+    queryKey: ['/api/reviews?limit=50'],
     retry: false,
   });
 

@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'wouter';
@@ -39,6 +40,59 @@ export default function MetaAdGenerator() {
   // Generation Details Modal state
   const [showGenerationDetails, setShowGenerationDetails] = useState(false);
   const [currentGenerationMetadata, setCurrentGenerationMetadata] = useState<GenerationMetadata | null>(null);
+
+  // Helper function to check if generation buttons should be disabled
+  const getGenerationDisabledState = (stationType: 'adCopy' | 'landingPage' | 'customRequest' | 'emailSmsRetention' | 'staticAd') => {
+    // Debug logging
+    console.log('DEBUG: Validation check for', stationType);
+    console.log('DEBUG: modelSettings:', modelSettings);
+    console.log('DEBUG: stationPrompts:', stationPrompts);
+    
+    // Check if model settings are configured
+    const hasModelName = modelSettings?.model && modelSettings.model.trim() !== '';
+    const hasMaxTokens = modelSettings?.maxTokens && modelSettings.maxTokens > 0;
+    
+    console.log('DEBUG: hasModelName:', hasModelName, 'model:', modelSettings?.model);
+    console.log('DEBUG: hasMaxTokens:', hasMaxTokens, 'maxTokens:', modelSettings?.maxTokens);
+    
+    // Check if station-specific prompt exists
+    let hasStationPrompt = false;
+    let stationPromptReason = '';
+    
+    switch (stationType) {
+      case 'adCopy':
+        hasStationPrompt = stationPrompts?.adCopy?.systemPrompt && stationPrompts.adCopy.systemPrompt.trim() !== '';
+        stationPromptReason = 'Ad Copy system prompt is not configured';
+        console.log('DEBUG: adCopy prompt check:', hasStationPrompt, 'prompt:', stationPrompts?.adCopy?.systemPrompt?.substring(0, 50) + '...');
+        break;
+      case 'landingPage':
+        hasStationPrompt = stationPrompts?.landingPage?.systemPrompt && stationPrompts.landingPage.systemPrompt.trim() !== '';
+        stationPromptReason = 'Landing Page system prompt is not configured';
+        break;
+      case 'customRequest':
+        hasStationPrompt = stationPrompts?.customRequest?.systemPrompt && stationPrompts.customRequest.systemPrompt.trim() !== '';
+        stationPromptReason = 'Custom Request system prompt is not configured';
+        break;
+      case 'emailSmsRetention':
+        hasStationPrompt = stationPrompts?.emailSmsRetention?.systemPrompt && stationPrompts.emailSmsRetention.systemPrompt.trim() !== '';
+        stationPromptReason = 'Email/SMS Retention system prompt is not configured';
+        break;
+      case 'staticAd':
+        hasStationPrompt = stationPrompts?.staticAd?.systemPrompt && stationPrompts.staticAd.systemPrompt.trim() !== '';
+        stationPromptReason = 'Static Ad system prompt is not configured';
+        break;
+    }
+    
+    const reasons = [];
+    if (!hasModelName) reasons.push('Model name is not set');
+    if (!hasMaxTokens) reasons.push('Max tokens is not set');
+    if (!hasStationPrompt) reasons.push(stationPromptReason);
+    
+    return {
+      disabled: !hasModelName || !hasMaxTokens || !hasStationPrompt,
+      reason: reasons.join(', ')
+    };
+  };
   
   // New product name for adding products to claims
   const [newProductName, setNewProductName] = useState('');
@@ -76,6 +130,8 @@ export default function MetaAdGenerator() {
         setShowAdminKeyPrompt(false);
         setAdminKeyInput('');
         setActiveTab('settings');
+        // Load training configuration immediately after granting access
+        loadTrainingConfigMutation.mutate();
         toast({
           title: "Access Granted",
           description: "You now have access to AI Settings",
@@ -1410,24 +1466,37 @@ export default function MetaAdGenerator() {
                   </CardContent>
                 </Card>
 
-                <Button 
-                  onClick={generateAdCopy} 
-                  className="w-full text-white"
-                  style={{ backgroundColor: '#004182' }}
-                  disabled={generateAdCopyMutation.isPending}
-                >
-                  {generateAdCopyMutation.isPending ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2" size={16} />
-                      Generate Ad Copy
-                    </>
-                  )}
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="w-full">
+                        <Button 
+                          onClick={generateAdCopy} 
+                          className="w-full text-white"
+                          style={{ backgroundColor: '#004182' }}
+                          disabled={generateAdCopyMutation.isPending || getGenerationDisabledState('adCopy').disabled}
+                        >
+                          {generateAdCopyMutation.isPending ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="mr-2" size={16} />
+                              Generate Ad Copy
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </TooltipTrigger>
+                    {getGenerationDisabledState('adCopy').disabled && (
+                      <TooltipContent>
+                        <p>{getGenerationDisabledState('adCopy').reason}</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
               </div>
 
               {/* Results Section */}
@@ -2185,24 +2254,37 @@ export default function MetaAdGenerator() {
                   </CardContent>
                 </Card>
 
-                <Button 
-                  onClick={generateAdCopy} 
-                  className="w-full text-white hover:opacity-90"
-                  style={{ backgroundColor: '#004182' }}
-                  disabled={generateLandingCopyMutation.isPending}
-                >
-                  {generateLandingCopyMutation.isPending ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2" size={16} />
-                      Generate Landing Page Copy
-                    </>
-                  )}
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="w-full">
+                        <Button 
+                          onClick={generateAdCopy} 
+                          className="w-full text-white hover:opacity-90"
+                          style={{ backgroundColor: '#004182' }}
+                          disabled={generateLandingCopyMutation.isPending || getGenerationDisabledState('landingPage').disabled}
+                        >
+                          {generateLandingCopyMutation.isPending ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="mr-2" size={16} />
+                              Generate Landing Page Copy
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </TooltipTrigger>
+                    {getGenerationDisabledState('landingPage').disabled && (
+                      <TooltipContent>
+                        <p>{getGenerationDisabledState('landingPage').reason}</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
               </div>
 
               {/* Results Section */}
@@ -2594,23 +2676,41 @@ export default function MetaAdGenerator() {
                         </div>
                       </div>
 
-                      <Button 
-                        onClick={() => generateCustomCopyMutation.mutate()}
-                        disabled={!customRequest.trim() || generateCustomCopyMutation.isPending}
-                        className="w-full flex items-center justify-center space-x-2"
-                      >
-                        {generateCustomCopyMutation.isPending ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            <span>Generating...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Brain size={16} />
-                            <span>Generate Custom Copy</span>
-                          </>
-                        )}
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="w-full">
+                              <Button 
+                                onClick={() => generateCustomCopyMutation.mutate()}
+                                disabled={!customRequest.trim() || generateCustomCopyMutation.isPending || getGenerationDisabledState('customRequest').disabled}
+                                className="w-full flex items-center justify-center space-x-2"
+                              >
+                                {generateCustomCopyMutation.isPending ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                    <span>Generating...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Brain size={16} />
+                                    <span>Generate Custom Copy</span>
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </TooltipTrigger>
+                          {(getGenerationDisabledState('customRequest').disabled || !customRequest.trim()) && (
+                            <TooltipContent>
+                              <p>
+                                {!customRequest.trim() 
+                                  ? 'Please enter a custom request' 
+                                  : getGenerationDisabledState('customRequest').reason
+                                }
+                              </p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </CardContent>
                 </Card>
@@ -3048,23 +3148,41 @@ export default function MetaAdGenerator() {
                         </p>
                       </div>
 
-                      <Button 
-                        onClick={() => generateRetentionCopyMutation.mutate()}
-                        disabled={!retentionKeyMessage.trim() || generateRetentionCopyMutation.isPending}
-                        className="w-full flex items-center justify-center space-x-2"
-                      >
-                        {generateRetentionCopyMutation.isPending ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            <span>Generating...</span>
-                          </>
-                        ) : (
-                          <>
-                            {retentionPlatform === 'SMS' ? <MessageSquare size={16} /> : <Mail size={16} />}
-                            <span>Generate {retentionPlatform} Copy</span>
-                          </>
-                        )}
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="w-full">
+                              <Button 
+                                onClick={() => generateRetentionCopyMutation.mutate()}
+                                disabled={!retentionKeyMessage.trim() || generateRetentionCopyMutation.isPending || getGenerationDisabledState('emailSmsRetention').disabled}
+                                className="w-full flex items-center justify-center space-x-2"
+                              >
+                                {generateRetentionCopyMutation.isPending ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                    <span>Generating...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    {retentionPlatform === 'SMS' ? <MessageSquare size={16} /> : <Mail size={16} />}
+                                    <span>Generate {retentionPlatform} Copy</span>
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </TooltipTrigger>
+                          {(getGenerationDisabledState('emailSmsRetention').disabled || !retentionKeyMessage.trim()) && (
+                            <TooltipContent>
+                              <p>
+                                {!retentionKeyMessage.trim() 
+                                  ? 'Please enter a key message' 
+                                  : getGenerationDisabledState('emailSmsRetention').reason
+                                }
+                              </p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </CardContent>
                 </Card>
@@ -3299,17 +3417,35 @@ export default function MetaAdGenerator() {
                       </div>
                     </div>
 
-                    <Button 
-                      onClick={() => analyzeStaticAdMutation.mutate()}
-                      disabled={!staticAdImage || analyzeStaticAdMutation.isPending}
-                      className="w-full flex items-center justify-center space-x-2"
-                    >
-                      <Camera size={16} />
-                      <span>
-                        {analyzeStaticAdMutation.isPending ? 'Analyzing...' :
-                         staticAdImage ? 'Analyze Ad & Generate Variations' : 'Upload Image First'}
-                      </span>
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="w-full">
+                            <Button 
+                              onClick={() => analyzeStaticAdMutation.mutate()}
+                              disabled={!staticAdImage || analyzeStaticAdMutation.isPending || getGenerationDisabledState('staticAd').disabled}
+                              className="w-full flex items-center justify-center space-x-2"
+                            >
+                              <Camera size={16} />
+                              <span>
+                                {analyzeStaticAdMutation.isPending ? 'Analyzing...' :
+                                 staticAdImage ? 'Analyze Ad & Generate Variations' : 'Upload Image First'}
+                              </span>
+                            </Button>
+                          </div>
+                        </TooltipTrigger>
+                        {(getGenerationDisabledState('staticAd').disabled || !staticAdImage) && (
+                          <TooltipContent>
+                            <p>
+                              {!staticAdImage 
+                                ? 'Please upload an image first' 
+                                : getGenerationDisabledState('staticAd').reason
+                              }
+                            </p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </CardContent>
               </Card>
@@ -4537,7 +4673,7 @@ export default function MetaAdGenerator() {
                                   <div className="mt-2">
                                     <Label className="text-xs text-gray-600">Example Headlines (one per line)</Label>
                                     <Textarea 
-                                      value={framework.examples?.join('\n') || ''}
+                                      value={Array.isArray(framework.examples) ? framework.examples.join('\n') : ''}
                                       onChange={(e) => {
                                         if (effectiveUser?.role !== 'admin') return;
                                         const updated = [...editingConfig.copyFrameworks.headlineFrameworks];
@@ -4578,7 +4714,9 @@ Your Skin But Better"
                           <div>
                             <Label className="text-sm font-medium text-gray-900">Copy Writing Rules (one per line)</Label>
                             <Textarea 
-                              value={editingConfig?.copyFrameworks?.primaryTextRules?.join('\n') || ''}
+                                                                value={Array.isArray(editingConfig?.copyFrameworks?.primaryTextRules) 
+                                    ? editingConfig.copyFrameworks.primaryTextRules.join('\n') 
+                                    : ''}
                               onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
                                 ...editingConfig,
                                 copyFrameworks: {
@@ -4606,7 +4744,9 @@ Keep sentences to 8-12 words for mobile comprehension"
                               <div>
                                 <Label className="text-xs font-medium text-gray-900 mb-2 block">Content Structure Sequence</Label>
                                 <Textarea 
-                                  value={editingConfig?.copyFrameworks?.listicleFramework?.contentSequence?.join('\n') || ''}
+                                  value={Array.isArray(editingConfig?.copyFrameworks?.listicleFramework?.contentSequence) 
+                                    ? editingConfig.copyFrameworks.listicleFramework.contentSequence.join('\n') 
+                                    : ''}
                                   onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
                                     ...editingConfig,
                                     copyFrameworks: {
@@ -4635,7 +4775,9 @@ Keep sentences to 8-12 words for mobile comprehension"
                               <div>
                                 <Label className="text-xs font-medium text-gray-900 mb-2 block">Each Reason Structure Format</Label>
                                 <Textarea 
-                                  value={editingConfig?.copyFrameworks?.listicleFramework?.reasonStructure?.join('\n') || ''}
+                                  value={Array.isArray(editingConfig?.copyFrameworks?.listicleFramework?.reasonStructure) 
+                                    ? editingConfig.copyFrameworks.listicleFramework.reasonStructure.join('\n') 
+                                    : ''}
                                   onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
                                     ...editingConfig,
                                     copyFrameworks: {
@@ -4663,7 +4805,9 @@ Keep sentences to 8-12 words for mobile comprehension"
                               <div>
                                 <Label className="text-xs font-medium text-gray-900 mb-2 block">Optimization Rules</Label>
                                 <Textarea 
-                                  value={editingConfig?.copyFrameworks?.listicleFramework?.optimizationRules?.join('\n') || ''}
+                                  value={Array.isArray(editingConfig?.copyFrameworks?.listicleFramework?.optimizationRules) 
+                                    ? editingConfig.copyFrameworks.listicleFramework.optimizationRules.join('\n') 
+                                    : ''}
                                   onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
                                     ...editingConfig,
                                     copyFrameworks: {
@@ -4691,7 +4835,9 @@ Each reason should stand alone and deliver immediate value"
                               <div>
                                 <Label className="text-xs font-medium text-gray-900 mb-2 block">Real Example Patterns to Emulate</Label>
                                 <Textarea 
-                                  value={editingConfig?.copyFrameworks?.listicleFramework?.realExamples?.join('\n') || ''}
+                                  value={Array.isArray(editingConfig?.copyFrameworks?.listicleFramework?.realExamples) 
+                                    ? editingConfig.copyFrameworks.listicleFramework.realExamples.join('\n') 
+                                    : ''}
                                   onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
                                     ...editingConfig,
                                     copyFrameworks: {
@@ -5357,7 +5503,9 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                               <div>
                                 <Label className="text-sm font-medium text-gray-900 mb-3 block">Copy Writing Rules</Label>
                                 <Textarea 
-                                  value={editingConfig?.stationPrompts?.adCopy?.copyWritingRules?.join('\n') || ''}
+                                  value={Array.isArray(editingConfig?.stationPrompts?.adCopy?.copyWritingRules) 
+                                    ? editingConfig.stationPrompts.adCopy.copyWritingRules.join('\n') 
+                                    : ''}
                                   onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
                                     ...editingConfig,
                                     stationPrompts: {
@@ -5438,7 +5586,9 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                               <div>
                                 <Label className="text-sm font-medium text-gray-900 mb-3 block">Content Structure Rules</Label>
                                 <Textarea 
-                                  value={editingConfig?.stationPrompts?.landingPage?.contentStructureRules?.join('\n') || ''}
+                                  value={Array.isArray(editingConfig?.stationPrompts?.landingPage?.contentStructureRules) 
+                                    ? editingConfig.stationPrompts.landingPage.contentStructureRules.join('\n') 
+                                    : ''}
                                   onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
                                     ...editingConfig,
                                     stationPrompts: {
@@ -5509,7 +5659,9 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                               <div>
                                 <Label className="text-sm font-medium text-gray-900 mb-3 block">CTA Guidelines</Label>
                                 <Textarea 
-                                  value={editingConfig?.stationPrompts?.landingPage?.ctaGuidelines?.join('\n') || ''}
+                                  value={Array.isArray(editingConfig?.stationPrompts?.landingPage?.ctaGuidelines) 
+                                    ? editingConfig.stationPrompts.landingPage.ctaGuidelines.join('\n') 
+                                    : ''}
                                   onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
                                     ...editingConfig,
                                     stationPrompts: {
@@ -5582,7 +5734,9 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                               <div>
                                 <Label className="text-sm font-medium text-gray-900 mb-3 block">Image-Text Balance Rules</Label>
                                 <Textarea 
-                                  value={editingConfig?.stationPrompts?.staticAd?.imageTextBalanceRules?.join('\n') || ''}
+                                  value={Array.isArray(editingConfig?.stationPrompts?.staticAd?.imageTextBalanceRules) 
+                                    ? editingConfig.stationPrompts.staticAd.imageTextBalanceRules.join('\n') 
+                                    : ''}
                                   onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
                                     ...editingConfig,
                                     stationPrompts: {
@@ -5603,7 +5757,9 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                               <div>
                                 <Label className="text-sm font-medium text-gray-900 mb-3 block">Platform-Specific Guidelines</Label>
                                 <Textarea 
-                                  value={editingConfig?.stationPrompts?.staticAd?.platformGuidelines?.join('\n') || ''}
+                                  value={Array.isArray(editingConfig?.stationPrompts?.staticAd?.platformGuidelines) 
+                                    ? editingConfig.stationPrompts.staticAd.platformGuidelines.join('\n') 
+                                    : ''}
                                   onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
                                     ...editingConfig,
                                     stationPrompts: {
@@ -5739,7 +5895,9 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                               <div>
                                 <Label className="text-sm font-medium text-gray-900 mb-3 block">Retention Best Practices</Label>
                                 <Textarea 
-                                  value={editingConfig?.stationPrompts?.emailSmsRetention?.retentionBestPractices?.join('\n') || ''}
+                                  value={Array.isArray(editingConfig?.stationPrompts?.emailSmsRetention?.retentionBestPractices) 
+                                    ? editingConfig.stationPrompts.emailSmsRetention.retentionBestPractices.join('\n') 
+                                    : ''}
                                   onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
                                     ...editingConfig,
                                     stationPrompts: {
@@ -5812,7 +5970,9 @@ Tone: Educational but approachable, like explaining to a friend who asked"
                               <div>
                                 <Label className="text-sm font-medium text-gray-900 mb-3 block">Request Type Guidelines</Label>
                                 <Textarea 
-                                  value={editingConfig?.stationPrompts?.customRequest?.requestTypeGuidelines?.join('\n') || ''}
+                                  value={Array.isArray(editingConfig?.stationPrompts?.customRequest?.requestTypeGuidelines) 
+                                    ? editingConfig.stationPrompts.customRequest.requestTypeGuidelines.join('\n') 
+                                    : ''}
                                   onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
                                     ...editingConfig,
                                     stationPrompts: {

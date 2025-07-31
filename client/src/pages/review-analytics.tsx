@@ -20,8 +20,7 @@ export default function ReviewAnalytics() {
 
   // Fetch actual reviews
   const { data: reviews, isLoading: reviewsLoading, refetch: refetchReviews } = useQuery({
-    queryKey: ['/api/reviews'],
-    queryFn: () => fetch('/api/reviews?limit=20').then(res => res.json()),
+    queryKey: ['/api/reviews?limit=20'],
   });
 
   const hasValidStats = reviewStats && typeof reviewStats.totalReviews === 'number' && reviewStats.totalReviews > 0;

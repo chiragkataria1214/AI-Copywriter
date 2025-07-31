@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { type TrainingConfig } from '@shared/training-config';
+import sharp from 'sharp';
 
 // Generation metadata interface for debugging/transparency
 export interface GenerationMetadata {
@@ -64,6 +65,74 @@ function detectImageType(base64String: string): string {
   
   // Default to jpeg if cannot detect
   return 'image/jpeg';
+}
+
+// Function to resize image if it exceeds Anthropic's dimension limits
+async function resizeImageIfNeeded(base64String: string, maxDimension: number = 8000): Promise<{ data: string; mediaType: string }> {
+  try {
+    // Extract base64 data (remove data URL prefix if present)
+    let imageData = base64String;
+    let originalMediaType = 'image/jpeg'; // default
+    
+    if (base64String.startsWith('data:image/')) {
+      const base64Match = base64String.match(/^data:image\/[^;]+;base64,(.+)$/);
+      if (base64Match) {
+        imageData = base64Match[1];
+        // Extract original media type from data URL
+        const mediaTypeMatch = base64String.match(/^data:(image\/[^;]+);/);
+        if (mediaTypeMatch) {
+          originalMediaType = mediaTypeMatch[1];
+        }
+      }
+    } else {
+      // For raw base64, detect the type
+      originalMediaType = detectImageType(base64String);
+    }
+    
+    // Convert base64 to buffer
+    const buffer = Buffer.from(imageData, 'base64');
+    
+    // Get image metadata
+    const metadata = await sharp(buffer).metadata();
+    
+    // Check if resizing is needed
+    if (metadata.width && metadata.height && 
+        (metadata.width > maxDimension || metadata.height > maxDimension)) {
+      
+      console.log(`Resizing image from ${metadata.width}x${metadata.height} to fit within ${maxDimension}px`);
+      
+      // Resize while maintaining aspect ratio
+      const resizedBuffer = await sharp(buffer)
+        .resize(maxDimension, maxDimension, {
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .jpeg({ quality: 85 }) // Convert to JPEG for better compression
+        .toBuffer();
+      
+      // Convert back to base64
+      return {
+        data: resizedBuffer.toString('base64'),
+        mediaType: 'image/jpeg' // Always JPEG after resizing
+      };
+    }
+    
+    // Return original if no resizing needed
+    return {
+      data: imageData,
+      mediaType: originalMediaType
+    };
+  } catch (error) {
+    console.error('Error resizing image:', error);
+    // Return original image if resizing fails
+    const fallbackData = base64String.startsWith('data:image/') 
+      ? base64String.split(',')[1] 
+      : base64String;
+    return {
+      data: fallbackData,
+      mediaType: detectImageType(base64String)
+    };
+  }
 }
 
 if (!process.env.ANTHROPIC_API_KEY) {
@@ -256,13 +325,17 @@ Analyze the uploaded ad creative image to extract key visual elements, text over
         const mimeMatch = base64Image.match(/^data:image\/([a-zA-Z0-9+/]+);base64,(.+)$/);
         if (mimeMatch) {
           const mimeType = `image/${mimeMatch[1]}`;
-          const imageData = mimeMatch[2];
+          const originalImageData = mimeMatch[2];
+          
+          // Resize image if needed to prevent dimension errors
+          const { data: resizedImageData, mediaType: finalMediaType } = await resizeImageIfNeeded(originalImageData);
+          
           messageContent.push({
             type: 'image',
             source: {
               type: 'base64',
-              media_type: mimeType,
-              data: imageData
+              media_type: finalMediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+              data: resizedImageData
             }
           });
         }
@@ -275,12 +348,15 @@ Analyze the uploaded ad creative image to extract key visual elements, text over
             const base64Data = Buffer.from(buffer).toString('base64');
             const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
             
+            // Resize image if needed to prevent dimension errors
+            const { data: resizedImageData, mediaType: finalMediaType } = await resizeImageIfNeeded(base64Data);
+            
             messageContent.push({
               type: 'image',
               source: {
                 type: 'base64',
-                media_type: contentType,
-                data: base64Data
+                media_type: finalMediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+                data: resizedImageData
               }
             });
           }
@@ -311,8 +387,38 @@ Analyze the uploaded ad creative image to extract key visual elements, text over
       console.log('Raw response:', content);
       console.log('Request details - hasImageContent:', hasImageContent, 'imageLength:', base64Image?.length || 0);
       
-      // No hardcoded fallbacks - throw error if parsing fails
-      throw new Error('Failed to parse AI response. Please ensure database contains proper training configuration and try again.');
+      // Try to extract structured data from markdown format as fallback
+      try {
+        const headlines: Array<{ framework: string; copy: string }> = [];
+        const headlineMatches = content.match(/(?:HEADLINE|##\s*HEADLINE)[^:]*:?\s*(.+?)(?=\n|$)/gi);
+        if (headlineMatches) {
+          headlineMatches.slice(0, 5).forEach((match) => {
+            const cleanMatch = match.replace(/(?:HEADLINE|##\s*HEADLINE)[^:]*:?\s*/i, '').trim();
+            if (cleanMatch) {
+              headlines.push({
+                framework: 'GENERAL',
+                copy: cleanMatch.replace(/^\*\*(.+)\*\*$/, '$1').replace(/^"(.+)"$/, '$1').trim()
+              });
+            }
+          });
+        }
+        
+        // Extract primary text
+        let primaryText = '';
+        const primaryTextMatch = content.match(/(?:PRIMARY TEXT|##\s*PRIMARY TEXT)[^:]*:?\s*([\s\S]*?)(?=\n##|\n\*\*|$)/i);
+        if (primaryTextMatch) {
+          primaryText = primaryTextMatch[1].trim().replace(/^\*\*(.+)\*\*$/, '$1').replace(/^"(.+)"$/, '$1').trim();
+        }
+        
+        if (headlines.length > 0 && primaryText) {
+          parsedResponse = { headlines, primaryText };
+        } else {
+          throw new Error('Could not extract structured data from response');
+        }
+      } catch (fallbackError) {
+        // No hardcoded fallbacks - throw error if parsing fails
+        throw new Error('Failed to parse AI response. Please ensure database contains proper training configuration and try again.');
+      }
     }
     
     // Validate parsed response structure
@@ -730,6 +836,12 @@ export async function analyzeStaticAd(request: StaticAdAnalysisRequest, _trainin
     hasDataPrefix: staticAdImage.startsWith('data:')
   });
 
+  // Resize image if needed to prevent dimension errors
+  const { data: resizedImageData, mediaType: finalMediaType } = await resizeImageIfNeeded(staticAdImage);
+  
+  // After resizing, the image is converted to JPEG format, so we need to use the correct media type
+  // const finalMediaType = "image/jpeg"; // resizeImageIfNeeded always converts to JPEG
+  
   // Get training configuration
   const config = await import('./routes-training').then(m => m.getTrainingConfig());
   
@@ -745,16 +857,29 @@ export async function analyzeStaticAd(request: StaticAdAnalysisRequest, _trainin
 BRAND/DR BALANCE: ${brandPercent}% Brand Voice, ${drPercent}% Direct Response
 
 TARGET AUDIENCE: ${concept}${subPersona ? ` (${subPersona})` : ''}
-${selectedProduct ? `PRODUCT FOCUS: ${selectedProduct}` : ''}`;
+${selectedProduct ? `PRODUCT FOCUS: ${selectedProduct}` : ''}
 
-  const userPrompt = `Please analyze this static ad image and create Jones Road Beauty variations targeting ${concept}${subPersona ? ` (${subPersona})` : ''}:
+IMPORTANT: Return your response in structured JSON format with the following structure:
+{
+  "analysis": "Your comprehensive analysis of what makes this ad effective",
+  "variations": [
+    {
+      "headline": "Compelling headline variation",
+      "primaryText": "Primary text variation (150-200 words)",
+      "framework": "Framework used (e.g., BENEFIT DRIVEN, SOCIAL PROOF, etc.)"
+    }
+  ]
+}`;
+
+  const userPrompt = `Please analyze this static ad image and create Jones Road Beauty variations targeting 
 
 INSTRUCTIONS:
 - Provide comprehensive analysis of what makes this ad effective
-- Create compelling Jones Road variations that adapt the successful elements
+- Create 3 compelling Jones Road variations that adapt the successful elements
 - Focus on authentic language that resonates with the target persona
 - Include specific headlines and primary text for each variation
-- Maintain Jones Road's "effortless beauty" positioning throughout`;
+- Maintain Jones Road's "effortless beauty" positioning throughout
+`;
 
   try {
     const response = await anthropic.messages.create({
@@ -772,8 +897,8 @@ INSTRUCTIONS:
             type: "image",
             source: {
               type: "base64",
-              media_type: detectImageType(staticAdImage) as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-              data: staticAdImage
+              media_type: finalMediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+              data: resizedImageData
             }
           }
         ]
@@ -782,18 +907,36 @@ INSTRUCTIONS:
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
     
-    // Clean up formatting - remove special characters
-    const cleanedContent = content
-      .replace(/\*\*/g, '') // Remove bold formatting
-      .replace(/#{1,6}\s?/g, '') // Remove markdown headers
-      .replace(/\[([^\]]+)\]/g, '$1') // Remove square brackets
-      .replace(/`([^`]+)`/g, '$1') // Remove code formatting
-      .trim();
-    
-    return {
-      analysis: cleanedContent,
-      rawResponse: content
-    };
+    // Try to parse JSON response first
+    let parsedResponse;
+    try {
+      // Extract JSON from response - handle potential markdown wrapping
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      const jsonString = jsonMatch ? jsonMatch[0] : content;
+      parsedResponse = JSON.parse(jsonString);
+      
+      return {
+        analysis: parsedResponse.analysis || 'Analysis not available',
+        variations: parsedResponse.variations || [],
+        rawResponse: content
+      };
+    } catch (parseError) {
+      console.log('Failed to parse JSON, falling back to text formatting');
+      
+      // Fallback: Clean up formatting and return as text
+      const cleanedContent = content
+        .replace(/\*\*/g, '') // Remove bold formatting
+        .replace(/#{1,6}\s?/g, '') // Remove markdown headers
+        .replace(/\[([^\]]+)\]/g, '$1') // Remove square brackets
+        .replace(/`([^`]+)`/g, '$1') // Remove code formatting
+        .trim();
+      
+      return {
+        analysis: cleanedContent,
+        variations: [],
+        rawResponse: content
+      };
+    }
   } catch (error) {
     console.error('Static ad analysis error:', error);
     throw new Error('Failed to analyze static ad');
