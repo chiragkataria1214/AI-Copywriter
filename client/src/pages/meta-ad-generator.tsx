@@ -1204,7 +1204,7 @@ export default function MetaAdGenerator() {
                           </SimpleSelectTrigger>
                           <SimpleSelectContent>
                             {Object.entries(personas).map(([key, persona]) => (
-                              <SimpleSelectItem key={key} value={key}>{persona.label}</SimpleSelectItem>
+                              <SimpleSelectItem key={key} value={key}>{(persona as any).displayName || (persona as any).name || key}</SimpleSelectItem>
                             ))}
                           </SimpleSelectContent>
                         </SimpleSelect>
@@ -1926,13 +1926,17 @@ export default function MetaAdGenerator() {
                         
                         <div className="space-y-4">
                           <div>
-                            <Label className="text-sm font-medium text-gray-700">Target Audience</Label>
-                            <select className="w-full mt-1 p-2 border border-gray-300 rounded-md">
-                              <option>Life Juggler</option>
-                              <option>Clean Beauty Enthusiast</option>
-                              <option>Time-Constrained Professional</option>
-                              <option>Natural Beauty Seeker</option>
-                            </select>
+                            <Label className="text-sm font-medium text-gray-700">Target Persona</Label>
+                            <SimpleSelect value={concept} onValueChange={setConcept}>
+                              <SimpleSelectTrigger>
+                                <SimpleSelectValue placeholder="Select persona" />
+                              </SimpleSelectTrigger>
+                              <SimpleSelectContent>
+                                {Object.entries(personas).map(([key, persona]) => (
+                                  <SimpleSelectItem key={key} value={key}>{(persona as any).displayName || (persona as any).name || key}</SimpleSelectItem>
+                                ))}
+                              </SimpleSelectContent>
+                            </SimpleSelect>
                           </div>
 
                           <div>
@@ -2832,7 +2836,7 @@ export default function MetaAdGenerator() {
                           </SimpleSelectTrigger>
                           <SimpleSelectContent>
                             {Object.entries(personas).map(([key, persona]) => (
-                              <SimpleSelectItem key={key} value={key}>{persona.label}</SimpleSelectItem>
+                              <SimpleSelectItem key={key} value={key}>{(persona as any).displayName || (persona as any).name || key}</SimpleSelectItem>
                             ))}
                           </SimpleSelectContent>
                         </SimpleSelect>
@@ -3669,34 +3673,34 @@ export default function MetaAdGenerator() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-sm font-medium text-gray-700">Target Audience</Label>
+                        <Label className="text-sm font-medium text-gray-700">Target Persona</Label>
                         <SimpleSelect value={concept} onValueChange={setConcept}>
                           <SimpleSelectTrigger>
-                            <SimpleSelectValue placeholder="Select audience" />
+                            <SimpleSelectValue placeholder="Select persona" />
                           </SimpleSelectTrigger>
                           <SimpleSelectContent>
-                            <SimpleSelectItem value="lifeJuggler">Life Juggler</SimpleSelectItem>
-                            <SimpleSelectItem value="cleanBeautyEnthusiast">Clean Beauty Enthusiast</SimpleSelectItem>
-                            <SimpleSelectItem value="timeConstrainedProfessional">Time-Constrained Professional</SimpleSelectItem>
-                            <SimpleSelectItem value="naturalBeautySeeker">Natural Beauty Seeker</SimpleSelectItem>
+                            {Object.entries(personas).map(([key, persona]) => (
+                              <SimpleSelectItem key={key} value={key}>{(persona as any).displayName || (persona as any).name || key}</SimpleSelectItem>
+                            ))}
                           </SimpleSelectContent>
                         </SimpleSelect>
                       </div>
 
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">Sub-Persona</Label>
-                        <SimpleSelect value={subPersona} onValueChange={setSubPersona}>
-                          <SimpleSelectTrigger>
-                            <SimpleSelectValue placeholder="Select sub-persona" />
-                          </SimpleSelectTrigger>
-                          <SimpleSelectContent>
-                            <SimpleSelectItem value="newMom">New Mom</SimpleSelectItem>
-                            <SimpleSelectItem value="workingMom">Working Mom</SimpleSelectItem>
-                            <SimpleSelectItem value="busyProfessional">Busy Professional</SimpleSelectItem>
-                            <SimpleSelectItem value="naturalBeautyLover">Natural Beauty Lover</SimpleSelectItem>
-                          </SimpleSelectContent>
-                        </SimpleSelect>
-                      </div>
+                      {personas[concept as keyof typeof personas]?.subPersonas && Object.keys(personas[concept as keyof typeof personas].subPersonas).length > 0 && (
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">Sub-Persona</Label>
+                          <SimpleSelect value={subPersona} onValueChange={setSubPersona}>
+                            <SimpleSelectTrigger>
+                              <SimpleSelectValue placeholder="Select sub-persona" />
+                            </SimpleSelectTrigger>
+                            <SimpleSelectContent>
+                              {Object.entries(personas[concept as keyof typeof personas].subPersonas).map(([key, subPersona]) => (
+                                <SimpleSelectItem key={key} value={key}>{(subPersona as any).label}</SimpleSelectItem>
+                              ))}
+                            </SimpleSelectContent>
+                          </SimpleSelect>
+                        </div>
+                      )}
                     </div>
 
                     <Button 
