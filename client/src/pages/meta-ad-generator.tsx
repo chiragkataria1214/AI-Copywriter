@@ -1204,7 +1204,7 @@ export default function MetaAdGenerator() {
                           </SimpleSelectTrigger>
                           <SimpleSelectContent>
                             {Object.entries(personas).map(([key, persona]) => (
-                              <SimpleSelectItem key={key} value={key}>{(persona as any).displayName || (persona as any).name || key}</SimpleSelectItem>
+                              <SimpleSelectItem key={key} value={key}>{(persona as any).label || key}</SimpleSelectItem>
                             ))}
                           </SimpleSelectContent>
                         </SimpleSelect>
@@ -1933,7 +1933,7 @@ export default function MetaAdGenerator() {
                               </SimpleSelectTrigger>
                               <SimpleSelectContent>
                                 {Object.entries(personas).map(([key, persona]) => (
-                                  <SimpleSelectItem key={key} value={key}>{(persona as any).displayName || (persona as any).name || key}</SimpleSelectItem>
+                                  <SimpleSelectItem key={key} value={key}>{(persona as any).label || key}</SimpleSelectItem>
                                 ))}
                               </SimpleSelectContent>
                             </SimpleSelect>
@@ -2836,7 +2836,7 @@ export default function MetaAdGenerator() {
                           </SimpleSelectTrigger>
                           <SimpleSelectContent>
                             {Object.entries(personas).map(([key, persona]) => (
-                              <SimpleSelectItem key={key} value={key}>{(persona as any).displayName || (persona as any).name || key}</SimpleSelectItem>
+                              <SimpleSelectItem key={key} value={key}>{(persona as any).label || key}</SimpleSelectItem>
                             ))}
                           </SimpleSelectContent>
                         </SimpleSelect>
@@ -3024,12 +3024,12 @@ export default function MetaAdGenerator() {
                           id="productBrief" 
                           rows={5}
                           className="w-full resize-none text-sm"
-                          placeholder="Describe your product, its benefits, target audience, and key selling points..."
+                          placeholder="Describe your product, its benefits, target persona, and key selling points..."
                           value={productBrief}
                           onChange={(e) => setProductBrief(e.target.value)}
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                          Include product features, benefits, target audience, and unique selling points for better landing page copy
+                          Include product features, benefits, target persona, and unique selling points for better landing page copy
                         </p>
                       </div>
                     </div>
@@ -3441,7 +3441,7 @@ export default function MetaAdGenerator() {
                           className="min-h-[120px]"
                         />
                         <p className="text-xs text-gray-500 mt-2">
-                          Be as specific as possible about format, audience, tone, and purpose
+                          Be as specific as possible about format, persona, tone, and purpose
                         </p>
                       </div>
 
@@ -3680,7 +3680,7 @@ export default function MetaAdGenerator() {
                           </SimpleSelectTrigger>
                           <SimpleSelectContent>
                             {Object.entries(personas).map(([key, persona]) => (
-                              <SimpleSelectItem key={key} value={key}>{(persona as any).displayName || (persona as any).name || key}</SimpleSelectItem>
+                              <SimpleSelectItem key={key} value={key}>{(persona as any).label || key}</SimpleSelectItem>
                             ))}
                           </SimpleSelectContent>
                         </SimpleSelect>
