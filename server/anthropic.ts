@@ -1228,6 +1228,7 @@ export function buildAISettingsContext(trainingConfig: TrainingConfig, request: 
 export async function generateRetentionCopy(request: {
   keyMessage: string;
   platform: string;
+  emailType?: string;
   selectedProducts?: string[];
   audience?: string;
   goal?: string;
@@ -1264,6 +1265,7 @@ ${aiSettingsContext}
 
 ${request.platform === 'SMS' ? 'SMS' : 'Email'} Copy Specifications:
 - Platform: ${request.platform || 'Email'}
+${request.platform === 'Email' && request.emailType ? `- Email Type: ${request.emailType}` : ''}
 - Target Audience: ${request.audience || 'General audience'}
 - Goal: ${request.goal || 'Drive Sales'}
 - Campaign Type: ${request.campaignType || 'Promo'}

@@ -393,6 +393,7 @@ export default function MetaAdGenerator() {
   // Retention Tab States
   const [retentionKeyMessage, setRetentionKeyMessage] = useState('');
   const [retentionPlatform, setRetentionPlatform] = useState('Email');
+  const [retentionEmailType, setRetentionEmailType] = useState('Product Spotlight / Hero Product');
   const [retentionSelectedProducts, setRetentionSelectedProducts] = useState<string[]>([]);
   const [retentionAudience, setRetentionAudience] = useState('General audience');
   const [retentionGoal, setRetentionGoal] = useState('Drive Sales');
@@ -757,6 +758,7 @@ export default function MetaAdGenerator() {
         body: {
           keyMessage: retentionKeyMessage,
           platform: retentionPlatform,
+          emailType: retentionEmailType,
           selectedProducts: retentionSelectedProducts,
           audience: retentionAudience,
           goal: retentionGoal,
@@ -2759,6 +2761,39 @@ export default function MetaAdGenerator() {
                             </SelectContent>
                           </Select>
                         </div>
+
+                        {retentionPlatform === 'Email' && (
+                          <div>
+                            <Label className="block text-sm font-medium text-gray-700 mb-2">
+                              Email Type *
+                            </Label>
+                            <p className="text-xs text-gray-500 mb-3">
+                              Choose the specific email framework that best fits your campaign goals
+                            </p>
+                            <Select value={retentionEmailType} onValueChange={setRetentionEmailType}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select email type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="GTL (Get the Look)">GTL (Get the Look)</SelectItem>
+                                <SelectItem value="Plain Text / Letter-Style Note">Plain Text / Letter-Style Note</SelectItem>
+                                <SelectItem value="Product Spotlight / Hero Product">Product Spotlight / Hero Product</SelectItem>
+                                <SelectItem value="Product Roundup / Theme-Based Edit">Product Roundup / Theme-Based Edit</SelectItem>
+                                <SelectItem value="Back in Stock">Back in Stock</SelectItem>
+                                <SelectItem value="Product Launch">Product Launch</SelectItem>
+                                <SelectItem value="Teaser Email (Pre-Launch)">Teaser Email (Pre-Launch)</SelectItem>
+                                <SelectItem value="Retail Event / Pop-Up / IRL Activation">Retail Event / Pop-Up / IRL Activation</SelectItem>
+                                <SelectItem value="Promotional Email">Promotional Email</SelectItem>
+                                <SelectItem value="Set or Kit Email">Set or Kit Email</SelectItem>
+                                <SelectItem value="How-To (Problem/Solution)">How-To (Problem/Solution)</SelectItem>
+                                <SelectItem value="Duos or Product Combinations">Duos or Product Combinations</SelectItem>
+                                <SelectItem value="Shade Roundup">Shade Roundup</SelectItem>
+                                <SelectItem value="How to Use It (Product Tutorial)">How to Use It (Product Tutorial)</SelectItem>
+                                <SelectItem value="Social Proof">Social Proof</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
 
                         {/* Target Persona Section */}
                         <div>
