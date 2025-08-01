@@ -1272,25 +1272,6 @@ ${request.platform === 'Email' && request.emailType ? `- Email Type: ${request.e
 - Urgency Level: ${request.urgencyLevel || 'Medium'}
 - Content Length: ${request.contentLength || 'Short'}
 
-${request.platform === 'Email' ? `
-Email Campaign Type Guidelines:
-${request.campaignType === 'GTL (Get the Look)' ? '- Show how to recreate a full look using multiple products\n- Focus on step-by-step application and product combinations\n- Create aspirational, tutorial-style content' : ''}
-${request.campaignType === 'Plain Text / Letter-Style Note' ? '- Use personal storytelling and intimate tone\n- Focus on product context and exclusive announcements\n- Write as a personal note from founder or team' : ''}
-${request.campaignType === 'Product Spotlight / Hero Product' ? '- Feature one product and its specific benefits\n- Deep dive into usage, results, and customer stories\n- Create focused, conversion-driven content' : ''}
-${request.campaignType === 'Product Roundup / Theme-Based Edit' ? '- Curate multiple products around a specific theme or need\n- Show how products work together for a complete solution\n- Organize by season, occasion, or skin concern' : ''}
-${request.campaignType === 'Back in Stock' ? '- Announce the return of a popular product with urgency\n- Highlight why it was missed and popular\n- Create excitement and FOMO for quick action' : ''}
-${request.campaignType === 'Product Launch' ? '- Introduce new product with excitement and benefits\n- Explain what makes it unique and needed\n- Build anticipation and drive initial sales' : ''}
-${request.campaignType === 'Teaser Email (Pre-Launch)' ? '- Build anticipation for upcoming product launch\n- Create mystery and excitement without full reveal\n- Generate early interest and engagement' : ''}
-${request.campaignType === 'Retail Event / Pop-Up / IRL Activation' ? '- Invite to in-person shopping events and experiences\n- Highlight exclusive access and special offers\n- Create urgency around limited availability' : ''}
-${request.campaignType === 'Promotional Email' ? '- Focus on sales, GWP, and limited-time offers\n- Create urgency with clear deadlines and benefits\n- Drive immediate conversion with compelling CTAs' : ''}
-${request.campaignType === 'Set or Kit Email' ? '- Promote curated product bundles and value\n- Show how products complement each other\n- Highlight savings and convenience of sets' : ''}
-${request.campaignType === 'How-To (Problem/Solution)' ? '- Educate on solving common skin/makeup problems\n- Position products as solutions to specific concerns\n- Provide helpful, actionable advice' : ''}
-${request.campaignType === 'Duos or Product Combinations' ? '- Sell two products that work better together\n- Highlight synergistic benefits and results\n- Show enhanced performance when used together' : ''}
-${request.campaignType === 'Shade Roundup' ? '- Curate shades for a season, mood, or trend\n- Help customers find their perfect color match\n- Create seasonal or trendy color stories' : ''}
-${request.campaignType === 'How to Use It (Product Tutorial)' ? '- Teach how to apply or layer a specific product\n- Provide step-by-step instructions and tips\n- Build confidence in product usage' : ''}
-${request.campaignType === 'Social Proof' ? '- Feature customer reviews, testimonials, or press quotes\n- Build credibility and trust through real experiences\n- Highlight authentic customer results and satisfaction' : ''}
-` : ''}
-
 ${request.keywordsToInclude && request.keywordsToInclude.length > 0 ? `
 Keywords to Include: ${request.keywordsToInclude.join(', ')}
 ` : ''}
