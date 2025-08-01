@@ -397,7 +397,7 @@ export default function MetaAdGenerator() {
   const [retentionSelectedProducts, setRetentionSelectedProducts] = useState<string[]>([]);
   const [retentionAudience, setRetentionAudience] = useState('General audience');
   const [retentionGoal, setRetentionGoal] = useState('Drive Sales');
-  const [retentionCampaignType, setRetentionCampaignType] = useState('Promo');
+  const [retentionCampaignType, setRetentionCampaignType] = useState('Product Spotlight / Hero Product');
   const [retentionUrgencyLevel, setRetentionUrgencyLevel] = useState('Medium');
   const [retentionContentLength, setRetentionContentLength] = useState('Short');
   const [retentionKeywordsToInclude, setRetentionKeywordsToInclude] = useState<string[]>([]);
@@ -2936,11 +2936,21 @@ export default function MetaAdGenerator() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="Promo">Promo</SelectItem>
-                                <SelectItem value="Welcome">Welcome</SelectItem>
-                                <SelectItem value="Product Drop">Product Drop</SelectItem>
-                                <SelectItem value="Cart Recovery">Cart Recovery</SelectItem>
-                                <SelectItem value="Winback">Winback</SelectItem>
+                                <SelectItem value="GTL (Get the Look)">GTL (Get the Look)</SelectItem>
+                                <SelectItem value="Plain Text / Letter-Style Note">Plain Text / Letter-Style Note</SelectItem>
+                                <SelectItem value="Product Spotlight / Hero Product">Product Spotlight / Hero Product</SelectItem>
+                                <SelectItem value="Product Roundup / Theme-Based Edit">Product Roundup / Theme-Based Edit</SelectItem>
+                                <SelectItem value="Back in Stock">Back in Stock</SelectItem>
+                                <SelectItem value="Product Launch">Product Launch</SelectItem>
+                                <SelectItem value="Teaser Email (Pre-Launch)">Teaser Email (Pre-Launch)</SelectItem>
+                                <SelectItem value="Retail Event / Pop-Up / IRL Activation">Retail Event / Pop-Up / IRL Activation</SelectItem>
+                                <SelectItem value="Promotional Email">Promotional Email</SelectItem>
+                                <SelectItem value="Set or Kit Email">Set or Kit Email</SelectItem>
+                                <SelectItem value="How-To (Problem/Solution)">How-To (Problem/Solution)</SelectItem>
+                                <SelectItem value="Duos or Product Combinations">Duos or Product Combinations</SelectItem>
+                                <SelectItem value="Shade Roundup">Shade Roundup</SelectItem>
+                                <SelectItem value="How to Use It (Product Tutorial)">How to Use It (Product Tutorial)</SelectItem>
+                                <SelectItem value="Social Proof">Social Proof</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
