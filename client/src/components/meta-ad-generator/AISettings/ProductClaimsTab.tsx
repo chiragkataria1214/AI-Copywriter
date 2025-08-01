@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { ChevronDown, ChevronRight, Plus, Package, Trash2 } from 'lucide-react';
 import { TrainingConfig } from '@shared/training-config';
+import { generateProductSlug, slugToDisplayName } from '@shared/utils';
 
 interface ProductClaimsTabProps {
   editingConfig: TrainingConfig;
@@ -67,7 +68,9 @@ export const ProductClaimsTab: React.FC<ProductClaimsTabProps> = ({
                 size="sm"
                 onClick={() => {
                   if (newProductName.trim()) {
-                    const productKey = newProductName.toLowerCase().replace(/\s+/g, '-');
+                    // Generate proper slug for the key using utility function
+                    const productKey = generateProductSlug(newProductName);
+                    
                     setEditingConfig({
                       ...editingConfig,
                       productClaims: {
@@ -120,8 +123,7 @@ export const ProductClaimsTab: React.FC<ProductClaimsTabProps> = ({
               enabledProhibited: []
             };
 
-            const displayName = products[productKey]?.displayName ||
-              productKey.split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+            const displayName = products[productKey]?.displayName || slugToDisplayName(productKey);
 
             const isExpanded = expandedProducts.has(productKey);
             

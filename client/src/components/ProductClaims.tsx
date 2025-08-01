@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Trash2 } from 'lucide-react';
+import { generateProductSlug, slugToDisplayName } from '@shared/utils';
 
 interface ProductClaimsProps {
   productClaims: any;
@@ -60,7 +61,8 @@ export const ProductClaims: React.FC<ProductClaimsProps> = ({
               size="sm"
               onClick={() => {
                 if (newProductName.trim()) {
-                  const productKey = newProductName.toLowerCase().replace(/\s+/g, '-');
+                  // Generate proper slug for the key using utility function
+                  const productKey = generateProductSlug(newProductName);
                   setProductClaims({
                     ...productClaims,
                     [productKey]: {

@@ -528,8 +528,8 @@ function registerConfigRoutes(app: Express) {
     try {
       const products = await storage.getAllProducts();
       const productMap = products.reduce((acc, product) => {
-        // Use display name as key, converting to lowercase with hyphens
-        const key = product.displayName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        // Use the standardized name field as key (already properly formatted)
+        const key = product.name;
         acc[key] = {
           id: product.id,
           name: product.name,
@@ -1325,7 +1325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }, trainingConfig);
       
       res.json({
-        captions: result.captions
+        captions: result?.captions || []
       });
     } catch (error) {
       console.error('Social captions generation error:', error);
@@ -1372,7 +1372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }, trainingConfig);
       
       res.json({
-        sequence: result.sequence
+        sequence: result?.sequence || []
       });
     } catch (error) {
       console.error('Story sequence generation error:', error);

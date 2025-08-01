@@ -9,7 +9,9 @@
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
     "db:push": "drizzle-kit push",
-    "init-prompts": "tsx -e \"import('./server/init-default-prompts.ts').then(m => m.initializeDefaultPrompts())\""
+    "init-prompts": "tsx -e \"import('./server/init-default-prompts.ts').then(m => m.initializeDefaultPrompts())\"",
+    "fix-products": "tsx -e \"import('./server/fix-product-names.ts').then(m => m.fixProductNames())\"",
+    "cleanup-products": "tsx -e \"import('./server/cleanup-products.ts').then(m => m.cleanupProducts())\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
