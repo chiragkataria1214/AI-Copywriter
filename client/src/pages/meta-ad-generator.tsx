@@ -2949,6 +2949,25 @@ export default function MetaAdGenerator() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <Label className="block text-sm font-medium text-gray-700 mb-2">
+                              Audience Segment
+                            </Label>
+                            <Select value={retentionAudience} onValueChange={setRetentionAudience}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="General audience">General audience</SelectItem>
+                                <SelectItem value="New prospects">New prospects</SelectItem>
+                                <SelectItem value="Existing customers">Existing customers</SelectItem>
+                                <SelectItem value="VIP customers">VIP customers</SelectItem>
+                                <SelectItem value="Cart abandoners">Cart abandoners</SelectItem>
+                                <SelectItem value="Win-back customers">Win-back customers</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div>
+                            <Label className="block text-sm font-medium text-gray-700 mb-2">
                               Goal
                             </Label>
                             <Select value={retentionGoal} onValueChange={setRetentionGoal}>
@@ -2963,8 +2982,6 @@ export default function MetaAdGenerator() {
                               </SelectContent>
                             </Select>
                           </div>
-
-
                         </div>
 
 
