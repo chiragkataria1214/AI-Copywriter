@@ -2751,15 +2751,28 @@ export default function MetaAdGenerator() {
                           <Label className="block text-sm font-medium text-gray-700 mb-2">
                             Platform *
                           </Label>
-                          <Select value={retentionPlatform} onValueChange={setRetentionPlatform}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Choose platform" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Email">Email</SelectItem>
-                              <SelectItem value="SMS">SMS</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="grid grid-cols-2 gap-3">
+                            <button
+                              onClick={() => setRetentionPlatform('Email')}
+                              className={`p-3 border-2 rounded-lg text-center transition-colors ${retentionPlatform === 'Email'
+                                  ? 'border-[#004182] bg-[#004182]/10 text-[#004182]'
+                                  : 'border-gray-300 hover:border-[#004182]'
+                                }`}
+                            >
+                              <Mail size={20} className="mx-auto mb-2" />
+                              <span className="text-sm font-medium">Email</span>
+                            </button>
+                            <button
+                              onClick={() => setRetentionPlatform('SMS')}
+                              className={`p-3 border-2 rounded-lg text-center transition-colors ${retentionPlatform === 'SMS'
+                                  ? 'border-[#004182] bg-[#004182]/10 text-[#004182]'
+                                  : 'border-gray-300 hover:border-[#004182]'
+                                }`}
+                            >
+                              <MessageSquare size={20} className="mx-auto mb-2" />
+                              <span className="text-sm font-medium">SMS</span>
+                            </button>
+                          </div>
                         </div>
 
                         {retentionPlatform === 'Email' && (
