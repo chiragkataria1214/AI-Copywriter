@@ -6,6 +6,9 @@ This project is a full-stack AI-powered copywriting platform designed for genera
 ## Recent Changes (August 2025)
 - **Email Output Format Optimization**: Updated retention email generation to produce template-ready copy for designed emails rather than plain text format. System now generates copy components (subject lines, preheader, main copy) that integrate seamlessly with professional email templates, matching Jones Road Beauty's actual email structure from milled.com examples.
 - **Comprehensive Email Best Practices Integration**: Implemented detailed email copywriting frameworks covering 15 campaign types, subject line optimization, and segmentation strategies based on Jones Road Beauty's proven performance data.
+- **Complete Product Database Update**: Updated database with authentic Jones Road Beauty product line (23 products total) sourced directly from official website, including full product names like "Just Enough Tinted Moisturizer", "The Makeup Travel Kit 2.0", "Miracle Balm Palette", etc.
+- **Enhanced Multi-Product Selection**: Added "Select All Products" functionality to Email & SMS Retention tab with single-column layout for better readability of complete product names.
+- **Interface Streamlining**: Removed redundant Campaign Type section from Email & SMS Retention tab since Email Type dropdown already covers all campaign types. Re-added Audience Segment field with proper customer segmentation options (prospects, existing customers, VIP, cart abandoners, win-back customers).
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
