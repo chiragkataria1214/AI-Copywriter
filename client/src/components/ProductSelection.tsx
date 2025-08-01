@@ -19,31 +19,31 @@ export function ProductSelection({
   setSelectedProducts,
   products: dynamicProducts
 }: ProductSelectionProps) {
-  // Fallback to hardcoded products if dynamic data is not available
+  // Fallback to authentic Jones Road Beauty products if dynamic data is not available
   const fallbackProducts = [
-    { value: 'miracle balm', label: 'Miracle Balm' },
-    { value: 'foundation', label: 'What The Foundation' },
-    { value: 'tinted moisturizer', label: 'Just Enough' },
-    { value: 'hero kit', label: 'The Hero Kit' },
-    { value: 'sunscreen', label: 'Everyday Sunscreen' },
-    { value: 'mascara', label: 'What The Mascara' },
-    { value: 'lip stick', label: 'Lip & Cheek Stick' },
-    { value: 'face pencil', label: 'The Face Pencil' },
-    { value: 'cleanser', label: 'What The Cleanser' },
-    { value: 'serum', label: 'Vitamin C Serum' },
-    { value: 'eye cream', label: 'Under Eye Rescue' },
-    { value: 'bronzer', label: 'Cool Bronzer' },
-    { value: 'lip gloss', label: 'Lip Gloss' },
-    { value: 'concealer', label: 'What The Concealer' },
-    { value: 'blush', label: 'Cheek Color' },
-    { value: 'highlighter', label: 'Face Highlight' }
+    { value: 'The Best Mascara', label: 'The Best Mascara' },
+    { value: 'Everyday Sunscreen', label: 'Everyday Sunscreen' },
+    { value: 'Miracle Balm', label: 'Miracle Balm' },
+    { value: 'Miracle Balm Palette', label: 'Miracle Balm Palette' },
+    { value: 'Just Enough Tinted Moisturizer', label: 'Just Enough Tinted Moisturizer' },
+    { value: 'Like a Mother Mascara', label: 'Like a Mother Mascara' },
+    { value: 'The Makeup Travel Kit 2.0', label: 'The Makeup Travel Kit 2.0' },
+    { value: 'Lip and Cheek Stick', label: 'Lip and Cheek Stick' },
+    { value: 'Under Eye Rescue SPF 30', label: 'Under Eye Rescue SPF 30' },
+    { value: 'What the Foundation', label: 'What the Foundation' },
+    { value: 'Cool Gloss', label: 'Cool Gloss' },
+    { value: 'Just a Sec', label: 'Just a Sec' },
+    { value: 'Gel Liner', label: 'Gel Liner' },
+    { value: 'The Foundation Brush', label: 'The Foundation Brush' },
+    { value: 'The Lip Liner', label: 'The Lip Liner' },
+    { value: 'Holiday Kit', label: 'Holiday Kit' }
   ];
 
   // Convert dynamic products to the expected format or use fallback
   const products = dynamicProducts 
     ? Object.entries(dynamicProducts).map(([key, product]: [string, any]) => ({
-        value: key,
-        label: product.name || product.label || key
+        value: product.name || key,
+        label: product.displayName || product.name || product.label || key
       }))
     : fallbackProducts;
 
