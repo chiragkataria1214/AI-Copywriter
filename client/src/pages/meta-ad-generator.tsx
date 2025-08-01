@@ -386,15 +386,13 @@ export default function MetaAdGenerator() {
   }>>([]);
   const [generatedCustomResponse, setGeneratedCustomResponse] = useState('');
 
-  // Retention Tab States
+  // Retention Tab States (moved before mutations to fix hoisting)
   const [retentionKeyMessage, setRetentionKeyMessage] = useState('');
   const [retentionPlatform, setRetentionPlatform] = useState('Email');
   const [retentionEmailType, setRetentionEmailType] = useState('Product Spotlight / Hero Product');
   const [retentionSelectedProducts, setRetentionSelectedProducts] = useState<string[]>([]);
   const [retentionAudience, setRetentionAudience] = useState('General audience');
   const [retentionGoal, setRetentionGoal] = useState('Drive Sales');
-
-
   const [retentionContentLength, setRetentionContentLength] = useState('Short');
   const [retentionKeywordsToInclude, setRetentionKeywordsToInclude] = useState<string[]>([]);
   const [retentionWordsToAvoid, setRetentionWordsToAvoid] = useState<string[]>([]);
