@@ -2862,14 +2862,37 @@ export default function MetaAdGenerator() {
                             Select products to mention in your {retentionPlatform.toLowerCase()} copy. Email/SMS campaigns often feature multiple products.
                           </p>
 
+                          {/* Select All Button */}
+                          <div className="mb-3">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-xs px-3 py-2 h-auto justify-center border-dashed border-2 hover:bg-blue-50 hover:border-blue-300"
+                              onClick={() => {
+                                const allProductNames = Object.values(products).map((product: any) => product.name);
+                                if (retentionSelectedProducts.length === allProductNames.length) {
+                                  // If all are selected, deselect all
+                                  setRetentionSelectedProducts([]);
+                                } else {
+                                  // Otherwise, select all
+                                  setRetentionSelectedProducts(allProductNames);
+                                }
+                              }}
+                            >
+                              {retentionSelectedProducts.length === Object.values(products).length 
+                                ? "Deselect All Products" 
+                                : "Select All Products"}
+                            </Button>
+                          </div>
+
                           {/* Quick Select Buttons */}
-                          <div className="grid grid-cols-2 gap-2 mb-4">
+                          <div className="grid grid-cols-1 gap-2 mb-4">
                             {Object.values(products).map((product: any) => (
                               <Button
                                 key={product.name}
                                 variant={retentionSelectedProducts.includes(product.name) ? "default" : "outline"}
                                 size="sm"
-                                className={`text-xs px-2 py-2 h-auto justify-start ${retentionSelectedProducts.includes(product.name)
+                                className={`text-xs px-3 py-2 h-auto justify-start ${retentionSelectedProducts.includes(product.name)
                                     ? 'bg-[#004182] text-white border-[#004182]'
                                     : 'hover:bg-gray-50'
                                   }`}
