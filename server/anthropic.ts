@@ -1233,7 +1233,7 @@ export async function generateRetentionCopy(request: {
   audience?: string;
   goal?: string;
   campaignType?: string;
-  urgencyLevel?: string;
+
   contentLength?: string;
   keywordsToInclude?: string[];
   wordsToAvoid?: string[];
@@ -1269,7 +1269,7 @@ ${request.platform === 'Email' && request.emailType ? `- Email Type: ${request.e
 - Target Audience: ${request.audience || 'General audience'}
 - Goal: ${request.goal || 'Drive Sales'}
 - Campaign Type: ${request.campaignType || 'Product Spotlight / Hero Product'}
-- Urgency Level: ${request.urgencyLevel || 'Medium'}
+
 - Content Length: ${request.contentLength || 'Short'}
 
 ${request.keywordsToInclude && request.keywordsToInclude.length > 0 ? `

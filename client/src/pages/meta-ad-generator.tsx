@@ -398,7 +398,7 @@ export default function MetaAdGenerator() {
   const [retentionAudience, setRetentionAudience] = useState('General audience');
   const [retentionGoal, setRetentionGoal] = useState('Drive Sales');
   const [retentionCampaignType, setRetentionCampaignType] = useState('Product Spotlight / Hero Product');
-  const [retentionUrgencyLevel, setRetentionUrgencyLevel] = useState('Medium');
+
   const [retentionContentLength, setRetentionContentLength] = useState('Short');
   const [retentionKeywordsToInclude, setRetentionKeywordsToInclude] = useState<string[]>([]);
   const [retentionWordsToAvoid, setRetentionWordsToAvoid] = useState<string[]>([]);
@@ -763,7 +763,7 @@ export default function MetaAdGenerator() {
           audience: retentionAudience,
           goal: retentionGoal,
           campaignType: retentionCampaignType,
-          urgencyLevel: retentionUrgencyLevel,
+
           contentLength: retentionContentLength,
           keywordsToInclude: retentionKeywordsToInclude,
           wordsToAvoid: retentionWordsToAvoid,
@@ -2956,22 +2956,7 @@ export default function MetaAdGenerator() {
                           </div>
                         </div>
 
-                        <div>
-                          <Label className="block text-sm font-medium text-gray-700 mb-2">
-                            Urgency Level
-                          </Label>
-                          <Select value={retentionUrgencyLevel} onValueChange={setRetentionUrgencyLevel}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="None">None</SelectItem>
-                              <SelectItem value="Low">Low</SelectItem>
-                              <SelectItem value="Medium">Medium</SelectItem>
-                              <SelectItem value="High">High</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+
 
                         <div>
                           <Label className="block text-sm font-medium text-gray-700 mb-2">
