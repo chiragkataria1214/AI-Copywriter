@@ -1,19 +1,21 @@
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Palette, Settings, Users, LogOut } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 interface HeaderProps {
     effectiveUser: {
         username: string;
         role: string;
+        isAdmin?: boolean;
     } | null;
     logout: () => void;
     isLoggingOut: boolean;
-    setupAdmin: () => void;
-    isSettingUpAdmin: boolean;
 }
 
-export const Header = ({ effectiveUser, logout, isLoggingOut, setupAdmin, isSettingUpAdmin }: HeaderProps) => {
+export const Header = ({ effectiveUser, logout, isLoggingOut }: HeaderProps) => {
+    const [, setLocation] = useLocation();
+
     return (
         <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
@@ -48,26 +50,13 @@ export const Header = ({ effectiveUser, logout, isLoggingOut, setupAdmin, isSett
                                     )}
                                 </div>
 
-                                {effectiveUser?.role !== 'admin' && (
-                                    <DropdownMenuItem
-                                        onClick={setupAdmin}
-                                        disabled={isSettingUpAdmin}
-                                        className="flex items-center space-x-2"
-                                    >
-                                        <Settings size={14} />
-                                        <span>{isSettingUpAdmin ? 'Setting up...' : 'Become Admin'}</span>
-                                    </DropdownMenuItem>
-                                )}
-
-                                {effectiveUser?.role === 'admin' && (
-                                    <DropdownMenuItem
-                                        onClick={() => window.location.href = '/users'}
-                                        className="flex items-center space-x-2"
-                                    >
-                                        <Users size={14} />
-                                        <span>Manage Users</span>
-                                    </DropdownMenuItem>
-                                )}
+                                <DropdownMenuItem
+                                    onClick={() => setLocation('/users')}
+                                    className="flex items-center space-x-2"
+                                >
+                                    <Users size={14} />
+                                    <span>Manage Users</span>
+                                </DropdownMenuItem>
 
                                 <DropdownMenuSeparator />
 

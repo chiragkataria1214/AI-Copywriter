@@ -26,7 +26,29 @@ export const PaidSocialTabs = (props: any) => {
 
             {/* Static Ad Sub-Tab */}
             <TabsContent value="static-ad">
-                <StaticAdTab {...props} />
+                <StaticAdTab 
+                    personas={props.personas}
+                    concept={props.concept}
+                    setConcept={props.setConcept}
+                    staticAdImage={props.staticAdImage}
+                    setStaticAdImage={props.setStaticAdImage}
+                    staticAdImagePreview={props.staticAdImagePreview}
+                    setStaticAdImagePreview={props.setStaticAdImagePreview}
+                    staticAdAnalysis={props.staticAdAnalysis}
+                    setStaticAdAnalysis={props.setStaticAdAnalysis}
+                    analyzeStaticAdMutation={props.analyzeStaticAdMutation}
+                    getGenerationDisabledState={props.getGenerationDisabledState}
+                    copyToClipboard={props.copyToClipboard}
+                    selectedProduct={props.selectedProduct}
+                    subPersona={props.subPersona}
+                    brandDrBalance={props.brandDrBalance}
+                    setCurrentGenerationMetadata={props.setCurrentGenerationMetadata}
+                    setShowGenerationDetails={props.setShowGenerationDetails}
+                    modelSettings={props.modelSettings}
+                    stationPrompts={props.stationPrompts}
+                    brandGuidelines={props.brandGuidelines}
+                    copyFrameworks={props.copyFrameworks}
+                />
             </TabsContent>
         </Tabs>
     );

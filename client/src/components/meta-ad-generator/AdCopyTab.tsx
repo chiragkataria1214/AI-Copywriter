@@ -922,25 +922,30 @@ export const AdCopyTab = ({
                                     <Globe className="text-jones-primary mr-2 sm:mr-3" size={18} />
                                     Ad Preview
                                 </h3>
-                                <div className="flex items-center space-x-3">
+                                <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-x-3 sm:space-y-0">
                                     {generatedHeadlines.length > 1 && (
                                         <div className="flex items-center space-x-2">
-                                            <Label className="text-sm text-gray-600">Headline:</Label>
+                                            <Label className="text-sm text-gray-600">Preview Headline:</Label>
                                             <Select value={selectedHeadlineIndex.toString()} onValueChange={(value) => setSelectedHeadlineIndex(parseInt(value))}>
-                                                <SelectTrigger className="w-48">
+                                                <SelectTrigger className="w-52">
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {generatedHeadlines.map((headline, index) => (
                                                         <SelectItem key={index} value={index.toString()}>
-                                                            <div className="flex flex-col py-1">
+                                                            <div className="flex flex-col py-1 max-w-48">
                                                                 <span className="font-medium text-sm">{headline.framework}</span>
-                                                                <span className="text-xs text-gray-500 truncate">{headline.copy.substring(0, 35)}...</span>
+                                                                <span className="text-xs text-gray-500 truncate">{headline.copy.substring(0, 40)}...</span>
                                                             </div>
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
+                                        </div>
+                                    )}
+                                    {generatedHeadlines.length === 1 && (
+                                        <div className="text-sm text-gray-600">
+                                            Showing: <span className="font-medium">{generatedHeadlines[0]?.framework}</span>
                                         </div>
                                     )}
                                     <Badge variant="secondary" style={{ backgroundColor: '#f0f4ff', color: '#004182' }} className="text-sm font-medium px-3 py-1.5 border border-blue-200">
@@ -976,14 +981,24 @@ export const AdCopyTab = ({
                                     </div>
                                 </div>
 
-                                {/* Mobile Primary Text */}
-                                {generatedPrimaryText && (
-                                    <div className="px-4 pb-3">
+                                {/* Mobile Headline and Primary Text */}
+                                <div className="px-4 pb-3">
+                                    {generatedHeadlines.length > 0 && generatedHeadlines[selectedHeadlineIndex] && (
+                                        <div className="mb-3">
+                                            <p className="text-[16px] font-semibold text-gray-900 leading-[1.3] mb-2">
+                                                {generatedHeadlines[selectedHeadlineIndex].copy}
+                                            </p>
+                                            <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-300 text-xs font-medium px-2 py-1">
+                                                {generatedHeadlines[selectedHeadlineIndex].framework}
+                                            </Badge>
+                                        </div>
+                                    )}
+                                    {generatedPrimaryText && (
                                         <p className="text-[15px] text-gray-900 leading-[1.4]">
                                             {generatedPrimaryText}
                                         </p>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
 
                                 {/* Mobile Product Image */}
                                 <div className="aspect-square flex items-center justify-center relative bg-white">
@@ -1018,13 +1033,13 @@ export const AdCopyTab = ({
                                 </div>
 
                                 {/* Mobile Link Preview Section */}
-                                {generatedHeadlines.length > 0 && (
+                                {(generatedHeadlines.length > 0 || generatedPrimaryText) && (
                                     <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
                                         <div className="text-[13px] text-gray-500 mb-1 uppercase tracking-wide font-medium">
                                             JONESROADBEAUTY.COM
                                         </div>
                                         <div className="font-medium text-[15px] text-gray-900 mb-3 leading-tight">
-                                            {generatedHeadlines[selectedHeadlineIndex]?.copy || 'Your Next Beauty Game-Changer'}
+                                            {products[selectedProduct]?.displayName || 'Discover Your Perfect Beauty Match'}
                                         </div>
                                         <Button
                                             size="sm"

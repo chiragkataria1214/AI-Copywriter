@@ -65,6 +65,13 @@ export interface TrainingConfig {
       enabledSubjectLineFrameworks?: boolean[];
       retentionBestPractices?: string[];
       requestTypeGuidelines?: string[];
+      // Social Captions Station properties
+      hashtagStrategy?: string[];
+      engagementTactics?: string[];
+      // Story Sequences Station properties
+      storyStructureGuidelines?: string[];
+      sequenceTiming?: string[];
+      narrativeTechniques?: string[];
     };
   };
   modelParameters: {
@@ -79,6 +86,9 @@ export interface TrainingConfig {
   userPromptTemplates: {
     adCopy: string;
     landingPage: string;
+  };
+  emailTemplates?: {
+    [key: string]: string[];
   };
 }
 

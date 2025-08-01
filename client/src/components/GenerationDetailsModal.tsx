@@ -14,6 +14,8 @@ export interface GenerationMetadata {
   maxTokens?: number;
   systemPrompt: string;
   userPrompt: string;
+  requestPayload?: any;
+  rawResponse?: string;
   brandGuidelines?: string[];
   frameworks?: string[];
   personaSettings?: {
@@ -39,7 +41,9 @@ interface GenerationDetailsModalProps {
 
 export function GenerationDetailsModal({ isOpen, onClose, metadata, onEditSettings, userRole }: GenerationDetailsModalProps) {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    prompts: true,
+    payload: false,
+    prompts: false,
+    response: false,
     model: false,
     brand: false,
     frameworks: false,
@@ -156,34 +160,38 @@ export function GenerationDetailsModal({ isOpen, onClose, metadata, onEditSettin
               <div className="space-y-4 bg-white border rounded-lg p-4">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium">System Prompt</h4>
+                    <h4 className="font-medium text-gray-900">System Prompt</h4>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => copyToClipboard(metadata.systemPrompt, 'System prompt')}
-                      className="h-6 px-2"
                     >
-                      <Copy className="h-3 w-3" />
+                      <Copy size={16} className="mr-1" />
+                      Copy
                     </Button>
                   </div>
-                  <div className="bg-gray-50 rounded p-3 text-sm font-mono text-gray-700 max-h-64 overflow-y-auto whitespace-pre-wrap">
-                    {metadata.systemPrompt}
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 max-h-64 overflow-y-auto">
+                    <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {metadata.systemPrompt}
+                    </pre>
                   </div>
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium">User Prompt Template</h4>
+                    <h4 className="font-medium text-gray-900">User Prompt</h4>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => copyToClipboard(metadata.userPrompt, 'User prompt')}
-                      className="h-6 px-2"
                     >
-                      <Copy className="h-3 w-3" />
+                      <Copy size={16} className="mr-1" />
+                      Copy
                     </Button>
                   </div>
-                  <div className="bg-gray-50 rounded p-3 text-sm font-mono text-gray-700 max-h-64 overflow-y-auto whitespace-pre-wrap">
-                    {metadata.userPrompt}
+                  <div className="bg-green-50 rounded-lg p-4 border border-green-200 max-h-64 overflow-y-auto">
+                    <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {metadata.userPrompt}
+                    </pre>
                   </div>
                 </div>
               </div>
@@ -357,6 +365,78 @@ export function GenerationDetailsModal({ isOpen, onClose, metadata, onEditSettin
                       </div>
                     </div>
                   )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
+          {/* Request Payload */}
+          {metadata.requestPayload && (
+            <Collapsible open={openSections.payload} onOpenChange={() => toggleSection('payload')}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between p-4 bg-white border rounded-lg hover:bg-gray-50">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    <span className="font-medium">Request Payload</span>
+                    <Badge variant="secondary">JSON</Badge>
+                  </div>
+                  {openSections.payload ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <div className="bg-white border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-gray-900">Request Payload</h4>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyToClipboard(JSON.stringify(metadata.requestPayload, null, 2), 'Request payload')}
+                    >
+                      <Copy size={16} className="mr-1" />
+                      Copy
+                    </Button>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4 border max-h-64 overflow-y-auto">
+                    <pre className="text-sm text-gray-700 whitespace-pre-wrap overflow-x-auto">
+                      {JSON.stringify(metadata.requestPayload, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
+          {/* Raw Response */}
+          {metadata.rawResponse && (
+            <Collapsible open={openSections.response} onOpenChange={() => toggleSection('response')}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between p-4 bg-white border rounded-lg hover:bg-gray-50">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    <span className="font-medium">Raw AI Response</span>
+                    <Badge variant="secondary">Full</Badge>
+                  </div>
+                  {openSections.response ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <div className="bg-white border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-gray-900">Raw AI Response</h4>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyToClipboard(metadata.rawResponse || '', 'Raw response')}
+                    >
+                      <Copy size={16} className="mr-1" />
+                      Copy
+                    </Button>
+                  </div>
+                  <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200 max-h-64 overflow-y-auto">
+                    <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {metadata.rawResponse}
+                    </pre>
+                  </div>
                 </div>
               </CollapsibleContent>
             </Collapsible>

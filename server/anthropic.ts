@@ -568,32 +568,72 @@ ${selectedProduct ? `PRODUCT FOCUS: ${selectedProduct}` : ''}`;
     // Debug logging to see what we received
     console.log('AI Response for landing page:', content.substring(0, 500) + '...');
     
-    // Parse the enhanced response structure with more flexible matching
-    const headlineMatch = content.match(/HEADLINE:?\s*(.+?)(?=\n|SUBHEADLINE|INTRODUCTION|$)/is);
-    // If no HEADLINE prefix found, use the first line as headline
-    const fallbackHeadline = !headlineMatch ? content.match(/^(.+?)(?=\n)/) : null;
-    const subheadlineMatch = content.match(/SUBHEADLINE:?\s*(.+?)(?=\n|INTRODUCTION|REASON|HERO PRODUCT|PRODUCT|$)/is);
-    const introMatch = landingPageType === 'multiProduct' 
-      ? content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=HERO PRODUCT|PRODUCT #?1|$)/i)
-      : landingPageType === 'listicle' 
-        ? null // No introduction for listicles
-        : content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=REASON #?1|$)/i);
-    const ctaMatch = content.match(/CTA:?\s*([\s\S]*?)(?=RISK REVERSAL|$)/i);
-    const riskReversalMatch = content.match(/RISK REVERSAL:?\s*([\s\S]*?)$/i);
+    // Try to parse as JSON first, then fall back to text parsing
+    let parsedJson = null;
+    try {
+      // Extract JSON from response - handle potential markdown wrapping
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      const jsonString = jsonMatch ? jsonMatch[0] : content;
+      parsedJson = JSON.parse(jsonString);
+      console.log('Successfully parsed JSON response:', parsedJson);
+    } catch (error) {
+      console.log('Not a JSON response, using text parsing...');
+    }
+    
+    let headlineMatch, subheadlineMatch, introMatch, ctaMatch, riskReversalMatch;
+    
+         if (parsedJson) {
+       // Use JSON parsing
+       headlineMatch = parsedJson.headline ? [null, parsedJson.headline] : null;
+       subheadlineMatch = parsedJson.subheadline ? [null, parsedJson.subheadline] : null;
+       introMatch = parsedJson.introduction ? [null, parsedJson.introduction] : null;
+       ctaMatch = parsedJson.cta ? [null, parsedJson.cta] : null;
+       riskReversalMatch = parsedJson.riskReversal || parsedJson.risk_reversal ? [null, parsedJson.riskReversal || parsedJson.risk_reversal] : null;
+    } else {
+      // Use text parsing as fallback
+      headlineMatch = content.match(/HEADLINE:?\s*(.+?)(?=\n|SUBHEADLINE|INTRODUCTION|$)/is);
+      // If no HEADLINE prefix found, use the first line as headline
+      const fallbackHeadline = !headlineMatch ? content.match(/^(.+?)(?=\n)/) : null;
+      if (!headlineMatch && fallbackHeadline) headlineMatch = fallbackHeadline;
+      
+      subheadlineMatch = content.match(/SUBHEADLINE:?\s*(.+?)(?=\n|INTRODUCTION|REASON|HERO PRODUCT|PRODUCT|$)/is);
+      introMatch = landingPageType === 'multiProduct' 
+        ? content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=HERO PRODUCT|PRODUCT #?1|$)/i)
+        : landingPageType === 'listicle' 
+          ? null // No introduction for listicles
+          : content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=REASON #?1|$)/i);
+      ctaMatch = content.match(/CTA:?\s*([\s\S]*?)(?=RISK REVERSAL|$)/i);
+      riskReversalMatch = content.match(/RISK REVERSAL:?\s*([\s\S]*?)$/i);
+    }
     
     console.log('Parsing results:', {
-      headline: headlineMatch ? headlineMatch[1] : (fallbackHeadline ? fallbackHeadline[1] : 'NOT FOUND'),
+      headline: headlineMatch ? headlineMatch[1] : 'NOT FOUND',
       hasReasons: content.includes('REASON'),
       hasProducts: content.includes('PRODUCT'),
       hasHeroProduct: content.includes('HERO PRODUCT'),
       landingPageType: landingPageType,
-      contentStart: content.substring(0, 200)
+      contentStart: content.substring(0, 200),
+      isJsonResponse: !!parsedJson
     });
     
     // Extract sections with improved parsing (works for REASON, PRODUCT, and HERO PRODUCT sections)
     const sections = [];
     
-    if (landingPageType === 'multiProduct') {
+    if (parsedJson && parsedJson.sections) {
+      // Handle JSON sections
+      for (const section of parsedJson.sections) {
+        const content = section.content || section.description || '';
+        const hookMatch = content.match(/^([^.!?]*[.!?])/);
+        const hook = hookMatch ? hookMatch[1].trim() : '';
+        
+        sections.push({
+          title: section.title || section.name || '',
+          content,
+          hook: hook.length < 200 ? hook : '',
+          wordCount: content.split(/\s+/).length
+        });
+      }
+    } else if (landingPageType === 'multiProduct') {
       // Handle HERO PRODUCT first
       const heroMatch = content.match(/HERO PRODUCT:?\s*(.+?)(?=\n)([\s\S]*?)(?=PRODUCT #\d+|COLLECTION BENEFITS:|SOCIAL PROOF:|CTA:|RISK REVERSAL:|$)/i);
       if (heroMatch) {
@@ -684,7 +724,7 @@ ${selectedProduct ? `PRODUCT FOCUS: ${selectedProduct}` : ''}`;
       }
     }
     
-    const finalHeadline = headlineMatch ? headlineMatch[1] : (fallbackHeadline ? fallbackHeadline[1] : '');
+    const finalHeadline = headlineMatch ? headlineMatch[1] : '';
     
     return {
       headline: finalHeadline.trim().replace(/\*\*/g, ''),
@@ -693,6 +733,8 @@ ${selectedProduct ? `PRODUCT FOCUS: ${selectedProduct}` : ''}`;
       sections,
       cta: ctaMatch ? ctaMatch[1].trim().replace(/\*\*/g, '') : '',
       riskReversal: riskReversalMatch ? riskReversalMatch[1].trim().replace(/\*\*/g, '') : '',
+      socialProof: '', // Add empty socialProof for frontend compatibility
+      conclusion: '', // Add empty conclusion for frontend compatibility
       rawResponse: content,
       stats: {
         totalWords: content.split(/\s+/).length,
@@ -871,7 +913,7 @@ IMPORTANT: Return your response in structured JSON format with the following str
   ]
 }`;
 
-  const userPrompt = `Please analyze this static ad image and create Jones Road Beauty variations targeting 
+  const userPrompt = `Please analyze this static ad image and create Jones Road Beauty variations targeting ${concept}${subPersona ? ` (${subPersona})` : ''}.
 
 INSTRUCTIONS:
 - Provide comprehensive analysis of what makes this ad effective
@@ -1233,7 +1275,6 @@ export async function generateRetentionCopy(request: {
   audience?: string;
   goal?: string;
   campaignType?: string;
-
   contentLength?: string;
   keywordsToInclude?: string[];
   wordsToAvoid?: string[];
@@ -1332,6 +1373,21 @@ Create ${request.platform?.toLowerCase() || 'email'} copy that authentically rep
 
 CRITICAL: Return ONLY plain text email copy. NO JSON, NO markdown, NO special formatting.
 
+       ${trainingConfig?.emailTemplates?.retention && trainingConfig.emailTemplates.retention.length > 0 ? `
+       EMAIL TEMPLATE ANALYSIS REQUIRED:
+       ${trainingConfig.emailTemplates.retention.length} email template image(s) have been provided. You MUST:
+       1. Analyze the visual layout, design elements, and content structure of each template
+       2. Identify text placement areas, content blocks, and visual hierarchy
+       3. Create copy that perfectly fits the template's design constraints
+       4. Match the tone and style suggested by the visual design
+       5. Ensure text length and formatting align with the template's layout requirements
+       6. Structure your copy to match the specific sections visible in the template(s)
+       7. WHERE IMAGES ARE NEEDED: Include placeholder text "[IMAGE: Description of what image should go here]" in your copy wherever the template shows image placement areas
+
+       IMPORTANT: Your copy must be designed to work seamlessly with the provided email template design(s).
+       Include image placeholders like "[IMAGE: Product photo]", "[IMAGE: Hero banner]", "[IMAGE: Logo]" etc. wherever images should be placed.
+       ` : ''}
+
 Requirements:
 1. Follow the ${request.platform === 'SMS' ? 'SMS' : 'email'} format and character/word limits for ${request.contentLength?.toLowerCase() || 'short'} content
 2. Use Jones Road Beauty's authentic, friendly tone throughout
@@ -1354,7 +1410,7 @@ SUBJECT LINE 2: [Second subject line]
 PREHEADER: [4-6 word preview]
 
 MAIN COPY:
-[Write copy for designed email templates - short, scannable paragraphs that work with visual layouts. Focus on clear benefits and engaging content that fits into professional email designs.]
+[Write copy for designed email templates - short, scannable paragraphs that work with visual layouts. Focus on clear benefits and engaging content that fits into professional email designs. Include image placeholders using format "[IMAGE: Description]" where visual elements would enhance the message (e.g., "[IMAGE: Product photo]", "[IMAGE: Hero banner]", "[IMAGE: Logo]").]
 
 This copy will be inserted into designed email templates, NOT plain text emails.
 `}
@@ -1366,11 +1422,89 @@ NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.`;
       throw new Error('Anthropic API key not configured properly');
     }
 
+    // Prepare message content with images if provided
+    const messageContent: any[] = [{ type: 'text', text: userPrompt }];
+    
+    // Add email template images from training configuration (not from request)
+    const emailTemplates = trainingConfig?.emailTemplates?.retention || [];
+    if (emailTemplates.length > 0) {
+      console.log(`Processing ${emailTemplates.length} email template(s)`);
+      
+      emailTemplates.forEach((template: string, index: number) => {
+        // Clean the base64 string and detect format
+        let mediaType = 'image/jpeg'; // default
+        let cleanBase64 = template;
+        
+        try {
+          // Remove data URL prefix if present
+          if (template.includes(',')) {
+            const parts = template.split(',');
+            if (parts.length > 1) {
+              cleanBase64 = parts[1];
+              // Extract media type from data URL
+              const dataUrlPrefix = parts[0];
+              if (dataUrlPrefix.includes('image/png')) {
+                mediaType = 'image/png';
+              } else if (dataUrlPrefix.includes('image/gif')) {
+                mediaType = 'image/gif';
+              } else if (dataUrlPrefix.includes('image/webp')) {
+                mediaType = 'image/webp';
+              } else if (dataUrlPrefix.includes('image/jpeg') || dataUrlPrefix.includes('image/jpg')) {
+                mediaType = 'image/jpeg';
+              }
+              console.log(`Template ${index + 1}: Extracted media type from data URL: ${mediaType}`);
+            }
+          } else {
+            // Try to detect from magic bytes
+            const headerBase64 = cleanBase64.substring(0, 16);
+            const binaryString = atob(headerBase64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            
+            // Check magic bytes for different formats
+            if (bytes.length >= 4 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
+              mediaType = 'image/png';
+              console.log(`Template ${index + 1}: Detected PNG format via magic bytes`);
+            } else if (bytes.length >= 3 && bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
+              mediaType = 'image/jpeg';
+              console.log(`Template ${index + 1}: Detected JPEG format via magic bytes`);
+            } else if (bytes.length >= 6 && bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && 
+                       bytes[3] === 0x38 && (bytes[4] === 0x37 || bytes[4] === 0x39) && bytes[5] === 0x61) {
+              mediaType = 'image/gif';
+              console.log(`Template ${index + 1}: Detected GIF format via magic bytes`);
+            } else if (bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+                       bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
+              mediaType = 'image/webp';
+              console.log(`Template ${index + 1}: Detected WebP format via magic bytes`);
+            } else {
+              console.log(`Template ${index + 1}: Unknown format, using JPEG as default. First 8 bytes:`, 
+                         Array.from(bytes.slice(0, 8)).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' '));
+            }
+          }
+        } catch (error) {
+          console.warn(`Template ${index + 1}: Could not detect image format, using default JPEG:`, error);
+        }
+
+        console.log(`Template ${index + 1}: Using media type: ${mediaType}, Base64 length: ${cleanBase64.length}`);
+
+        messageContent.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: mediaType,
+            data: cleanBase64
+          }
+        });
+      });
+    }
+
     const response = await anthropic.messages.create({
       model: DEFAULT_MODEL_STR,
       system: systemPrompt,
       max_tokens: 2048,
-      messages: [{ role: 'user', content: userPrompt }],
+      messages: [{ role: 'user', content: messageContent }],
     });
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
@@ -1405,5 +1539,304 @@ NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.`;
     }
     
     throw new Error('Failed to generate retention copy due to an unknown error');
+  }
+}
+
+export async function generateSocialCaptions(request: {
+  contentType: string;
+  transcription: string;
+  platform: string;
+  goal: string;
+  tone: string;
+  variations: number;
+  selectedProduct?: string;
+  concept?: string;
+}, trainingConfig: TrainingConfig) {
+  
+  const anthropic = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY!,
+  });
+
+  // Build comprehensive AI Settings context
+  const aiSettingsContext = buildAISettingsContext(trainingConfig, request);
+  
+  const systemPrompt = `You are a social media expert specializing in creating engaging organic social content for Jones Road Beauty. Your goal is to create authentic, platform-optimized captions that drive engagement and reflect the brand's "effortless beauty" philosophy.
+
+${aiSettingsContext}
+
+BRAND VOICE GUIDELINES:
+- Authentic and relatable, never overly polished
+- Conversational and approachable
+- Focus on enhancing natural beauty
+- Inclusive and empowering
+- Educational but not preachy
+- Use "we" and "you" to create connection
+
+PLATFORM OPTIMIZATION:
+- Instagram: Use relevant hashtags, encourage engagement, visual storytelling
+- Facebook: Longer form content, community building, discussion starters  
+- TikTok: Trending language, hooks, call-to-actions for engagement
+- Multi-Platform: Adaptable content that works across channels
+
+ENGAGEMENT TACTICS:
+- Start with strong hooks
+- Include questions to encourage comments
+- Use relevant hashtags strategically
+- Add clear call-to-actions
+- Create shareable moments
+- Encourage user-generated content`;
+
+  const platformGuidance = {
+    instagram: "Use 3-5 relevant hashtags, encourage saves/shares, ask engaging questions, use Instagram-specific language like 'swipe' or 'tap'",
+    facebook: "Focus on community building, longer captions, discussion starters, shareable content",
+    tiktok: "Use trending phrases, strong hooks, encourage duets/responses, casual conversational tone",
+    "multi-platform": "Create versatile content that can be adapted for different platforms"
+  };
+
+  const toneGuidance = {
+    "authentic-personal": "Personal stories, vulnerable moments, relatable experiences",
+    "educational-expert": "Tips, tutorials, ingredient benefits, how-to content",
+    "fun-playful": "Lighthearted, humorous, entertaining content",
+    "inspirational": "Motivational, empowering, confidence-building messages",
+    "conversational": "Casual chat, friend-to-friend tone, everyday language"
+  };
+
+  const goalGuidance = {
+    "product-education": "Focus on product benefits, how-to-use, ingredients, results",
+    "brand-awareness": "Showcase brand values, mission, behind-the-scenes content",
+    "community-building": "Encourage interaction, user stories, shared experiences",
+    "behind-scenes": "Show process, team, authenticity, brand personality",
+    "user-generated": "Feature customer stories, reviews, transformations"
+  };
+
+  const userPrompt = `Create ${request.variations} engaging social media captions based on this content:
+
+CONTENT: ${request.transcription}
+
+PLATFORM: ${request.platform}
+GOAL: ${request.goal}
+TONE: ${request.tone}
+
+PLATFORM GUIDANCE: ${platformGuidance[request.platform as keyof typeof platformGuidance] || platformGuidance["multi-platform"]}
+TONE GUIDANCE: ${toneGuidance[request.tone as keyof typeof toneGuidance] || "Authentic and engaging"}
+GOAL GUIDANCE: ${goalGuidance[request.goal as keyof typeof goalGuidance] || "Create engaging content"}
+
+REQUIREMENTS:
+- Create ${request.variations} distinct caption variations
+- Each should be 50-150 words (adjust for platform)
+- Include relevant hashtags where appropriate
+- Add engaging hooks and call-to-actions
+- Maintain Jones Road Beauty's authentic voice
+- Make each variation unique in approach and angle
+
+Return as a JSON array of strings:
+["Caption 1 text...", "Caption 2 text...", "Caption 3 text..."]`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      system: systemPrompt,
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: userPrompt }],
+    });
+
+    const content = response.content[0].type === 'text' ? response.content[0].text : '';
+    
+    // Parse JSON response
+    try {
+      // First try direct parsing
+      const captions = JSON.parse(content);
+      if (Array.isArray(captions)) {
+        return { captions };
+      }
+    } catch (parseError) {
+      // Try to extract JSON from markdown code blocks
+      const jsonMatch = content.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
+      if (jsonMatch) {
+        try {
+          const captions = JSON.parse(jsonMatch[1]);
+          if (Array.isArray(captions)) {
+            return { captions };
+          }
+        } catch (innerParseError) {
+          console.log('Failed to parse extracted JSON:', innerParseError);
+        }
+      }
+      
+      // Try to find a JSON array pattern in the content
+      const arrayMatch = content.match(/\[[\s\S]*?\]/);
+      if (arrayMatch) {
+        try {
+          const captions = JSON.parse(arrayMatch[0]);
+          if (Array.isArray(captions)) {
+            return { captions };
+          }
+        } catch (arrayParseError) {
+          console.log('Failed to parse array match:', arrayParseError);
+        }
+      }
+      
+      // Fallback: split by double newlines and clean up
+      console.log('Using fallback parsing method for content:', content.substring(0, 200) + '...');
+      const captions = content
+        .split('\n\n')
+        .filter(caption => caption.trim().length > 0)
+        .map(caption => caption.trim().replace(/^["']|["']$/g, '')) // Remove surrounding quotes
+        .slice(0, request.variations);
+      
+      return { captions };
+    }
+  } catch (error) {
+    console.error('Social captions generation error:', error);
+    throw new Error('Failed to generate social captions');
+  }
+}
+
+export async function generateStorySequence(request: {
+  contentType: string;
+  transcription: string;
+  sequenceType: string;
+  length: number;
+  tone: string;
+  selectedProduct?: string;
+  concept?: string;
+}, trainingConfig: TrainingConfig) {
+  
+  const anthropic = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY!,
+  });
+
+  // Build comprehensive AI Settings context
+  const aiSettingsContext = buildAISettingsContext(trainingConfig, request);
+  
+  const systemPrompt = `You are a social media strategist specializing in Instagram Stories for Jones Road Beauty. Your goal is to create engaging story sequences that drive engagement and showcase the brand's "effortless beauty" philosophy.
+
+${aiSettingsContext}
+
+BRAND VOICE GUIDELINES:
+- Authentic and relatable, never overly polished
+- Conversational and approachable
+- Focus on enhancing natural beauty
+- Inclusive and empowering
+- Educational but not preachy
+
+STORY BEST PRACTICES:
+- Strong opening hook to stop the scroll
+- Clear visual direction for each slide
+- Progressive narrative that builds engagement
+- Interactive elements (polls, questions, swipe-ups)
+- Strong call-to-action in final slides
+- Consistent brand aesthetic and voice`;
+
+  const sequenceTypeGuidance = {
+    "product-showcase": "Feature product benefits, application, results, before/after",
+    "tutorial": "Step-by-step process, educational content, how-to guidance",
+    "behind-scenes": "Process, team, authenticity, brand personality, workspace",
+    "before-after": "Transformation journey, results, testimonials, progress",
+    "day-in-life": "Routine integration, lifestyle content, relatable moments"
+  };
+
+  const toneGuidance = {
+    "authentic-personal": "Personal stories, vulnerable moments, relatable experiences",
+    "educational-expert": "Tips, tutorials, ingredient benefits, how-to content",
+    "fun-playful": "Lighthearted, humorous, entertaining content",
+    "inspirational": "Motivational, empowering, confidence-building messages",
+    "conversational": "Casual chat, friend-to-friend tone, everyday language"
+  };
+
+  const userPrompt = `Create a ${request.length}-slide Instagram Story sequence based on this content:
+
+CONTENT: ${request.transcription}
+
+SEQUENCE TYPE: ${request.sequenceType}
+TONE: ${request.tone}
+LENGTH: ${request.length} slides
+
+SEQUENCE GUIDANCE: ${sequenceTypeGuidance[request.sequenceType as keyof typeof sequenceTypeGuidance] || "Create engaging story content"}
+TONE GUIDANCE: ${toneGuidance[request.tone as keyof typeof toneGuidance] || "Authentic and engaging"}
+
+REQUIREMENTS:
+- Create exactly ${request.length} slides
+- Each slide should have: title, content, visual direction
+- Progressive narrative that builds engagement
+- Include interactive elements where appropriate
+- Strong opening hook and closing call-to-action
+- Maintain Jones Road Beauty's authentic voice
+- Provide specific visual direction for each slide
+
+Return as JSON array with this structure:
+[
+  {
+    "slide": 1,
+    "type": "hook/intro/tutorial/etc",
+    "title": "Slide title",
+    "content": "Main text content for the slide",
+    "visualDirection": "Specific direction for what to show visually"
+  }
+]`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      system: systemPrompt,
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: userPrompt }],
+    });
+
+    const content = response.content[0].type === 'text' ? response.content[0].text : '';
+    
+    // Parse JSON response
+    try {
+      // First try direct parsing
+      const sequence = JSON.parse(content);
+      if (Array.isArray(sequence)) {
+        return { sequence };
+      }
+    } catch (parseError) {
+      // Try to extract JSON from markdown code blocks
+      const jsonMatch = content.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
+      if (jsonMatch) {
+        try {
+          const sequence = JSON.parse(jsonMatch[1]);
+          if (Array.isArray(sequence)) {
+            return { sequence };
+          }
+        } catch (innerParseError) {
+          console.log('Failed to parse extracted JSON:', innerParseError);
+        }
+      }
+      
+      // Try to find a JSON array pattern in the content
+      const arrayMatch = content.match(/\[[\s\S]*?\]/);
+      if (arrayMatch) {
+        try {
+          const sequence = JSON.parse(arrayMatch[0]);
+          if (Array.isArray(sequence)) {
+            return { sequence };
+          }
+        } catch (arrayParseError) {
+          console.log('Failed to parse array match:', arrayParseError);
+        }
+      }
+      
+      console.log('Failed to parse JSON, creating fallback sequence. Content:', content.substring(0, 200) + '...');
+      
+      // Fallback: create basic sequence structure
+      const slides = [];
+      for (let i = 1; i <= request.length; i++) {
+        slides.push({
+          slide: i,
+          type: i === 1 ? 'hook' : i === request.length ? 'cta' : 'content',
+          title: `Slide ${i}`,
+          content: `Story content for slide ${i} based on: ${request.transcription.substring(0, 100)}...`,
+          visualDirection: `Visual direction for slide ${i}`
+        });
+      }
+      
+      return { sequence: slides };
+    }
+  } catch (error) {
+    console.error('Story sequence generation error:', error);
+    throw new Error('Failed to generate story sequence');
   }
 }

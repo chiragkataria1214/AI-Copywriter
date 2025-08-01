@@ -584,6 +584,7 @@ export class DatabaseStorage implements IStorage {
     const userPromptTemplatesObj: any = {};
     const modelParametersObj: any = {};
     const stationPromptsObj: any = {};
+    const emailTemplatesObj: any = {};
 
     for (const config of systemConfigs) {
       const { configKey, configValue } = config;
@@ -604,6 +605,14 @@ export class DatabaseStorage implements IStorage {
         
         if (!stationPromptsObj[station]) stationPromptsObj[station] = {};
         stationPromptsObj[station][field] = configValue;
+      } else if (configKey.startsWith('emailTemplates.')) {
+        const key = configKey.replace('emailTemplates.', '');
+        try {
+          emailTemplatesObj[key] = JSON.parse(configValue);
+        } catch (error) {
+          console.error(`Failed to parse email templates for key ${key}:`, error);
+          emailTemplatesObj[key] = [];
+        }
       }
     }
 
@@ -615,7 +624,8 @@ export class DatabaseStorage implements IStorage {
       systemPrompts: systemPromptsObj,
       userPromptTemplates: userPromptTemplatesObj,
       modelParameters: modelParametersObj,
-      stationPrompts: stationPromptsObj
+      stationPrompts: stationPromptsObj,
+      emailTemplates: emailTemplatesObj
     };
   }
   async saveTrainingConfiguration(config: TrainingConfig): Promise<void> {

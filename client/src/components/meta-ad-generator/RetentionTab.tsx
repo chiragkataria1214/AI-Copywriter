@@ -1,0 +1,729 @@
+import React from 'react';
+import { Mail, MessageSquare, FileText, Copy, Settings, Zap } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { GenerationMetadata } from '@/components/GenerationDetailsModal';
+
+interface SubPersona {
+  label: string;
+}
+
+interface Persona {
+  label: string;
+  subPersonas?: Record<string, SubPersona>;
+}
+
+interface Product {
+  name: string;
+  displayName: string;
+}
+
+interface RetentionCopyHistoryItem {
+  keyMessage: string;
+  platform: string;
+  response: string;
+  timestamp: Date;
+}
+
+interface RetentionTabProps {
+  // State variables
+  retentionKeyMessage: string;
+  setRetentionKeyMessage: (value: string) => void;
+  retentionPlatform: string;
+  setRetentionPlatform: (value: string) => void;
+  retentionEmailType: string;
+  setRetentionEmailType: (value: string) => void;
+  retentionSelectedProducts: string[];
+  setRetentionSelectedProducts: (value: string[]) => void;
+  retentionAudience: string;
+  setRetentionAudience: (value: string) => void;
+  retentionGoal: string;
+  setRetentionGoal: (value: string) => void;
+  retentionKeywordsToInclude: string[];
+  retentionWordsToAvoid: string[];
+  generatedRetentionCopy: string;
+  retentionCopyHistory: RetentionCopyHistoryItem[];
+  
+  // Shared state
+  concept: string;
+  setConcept: (value: string) => void;
+  subPersona: string;
+  setSubPersona: (value: string) => void;
+  brandDrBalance: number[];
+  setBrandDrBalance: (value: number[]) => void;
+  selectedProduct: string;
+  
+  // Data
+  personas: Record<string, Persona>;
+  products: Record<string, Product>;
+  
+  // Functions
+  addRetentionKeyword: (keyword: string, isAvoid?: boolean) => void;
+  removeRetentionKeyword: (keyword: string, isAvoid?: boolean) => void;
+  getBrandDrLabel: () => string;
+  getGenerationDisabledState: (stationType: 'emailSmsRetention') => { disabled: boolean; reason: string };
+  copyToClipboard: (text: string, type: string) => Promise<void>;
+  
+  // Mutations and settings
+  generateRetentionCopyMutation: {
+    mutate: () => void;
+    isPending: boolean;
+  };
+  
+  // Modal functions
+  setCurrentGenerationMetadata: (metadata: GenerationMetadata) => void;
+  setShowGenerationDetails: (show: boolean) => void;
+  setSelectedItemForRevision: (item: { type: 'headline' | 'primaryText' | 'landingCopy' | 'custom' | 'retention'; index?: number; field?: string } | null) => void;
+  setRevisionInstructions: (instructions: string) => void;
+  setShowRevisionPanel: (show: boolean) => void;
+  
+  // Settings
+  modelSettings?: {
+    model?: string;
+    temperature?: number;
+    maxTokens?: number;
+  };
+  stationPrompts?: {
+    retention?: {
+      systemPrompt?: string;
+    };
+  };
+  brandGuidelines?: {
+    guidelines?: string[];
+  };
+  copyFrameworks?: {
+    retention?: {
+      frameworks?: string[];
+    };
+  };
+}
+
+export const RetentionTab: React.FC<RetentionTabProps> = ({
+  retentionKeyMessage,
+  setRetentionKeyMessage,
+  retentionPlatform,
+  setRetentionPlatform,
+  retentionEmailType,
+  setRetentionEmailType,
+  retentionSelectedProducts,
+  setRetentionSelectedProducts,
+  retentionAudience,
+  setRetentionAudience,
+  retentionGoal,
+  setRetentionGoal,
+  retentionKeywordsToInclude,
+  retentionWordsToAvoid,
+  generatedRetentionCopy,
+  retentionCopyHistory,
+  concept,
+  setConcept,
+  subPersona,
+  setSubPersona,
+  brandDrBalance,
+  setBrandDrBalance,
+  selectedProduct,
+  personas,
+  products,
+  addRetentionKeyword,
+  removeRetentionKeyword,
+  getBrandDrLabel,
+  getGenerationDisabledState,
+  copyToClipboard,
+  generateRetentionCopyMutation,
+  setCurrentGenerationMetadata,
+  setShowGenerationDetails,
+  setSelectedItemForRevision,
+  setRevisionInstructions,
+  setShowRevisionPanel,
+  modelSettings,
+  stationPrompts,
+  brandGuidelines,
+  copyFrameworks,
+}) => {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+      {/* Input Section */}
+      <div className="space-y-4 sm:space-y-6">
+        <Card>
+          <CardContent className="p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Mail className="text-jones-primary mr-2 sm:mr-3" size={18} />
+              Email & SMS Retention Copy
+            </h3>
+
+            <div className="space-y-4">
+              {/* Platform Selection First */}
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 mb-2">
+                  Platform *
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setRetentionPlatform('Email')}
+                    className={`p-3 border-2 rounded-lg text-center transition-colors ${retentionPlatform === 'Email'
+                        ? 'border-[#004182] bg-[#004182]/10 text-[#004182]'
+                        : 'border-gray-300 hover:border-[#004182]'
+                      }`}
+                  >
+                    <Mail size={20} className="mx-auto mb-2" />
+                    <span className="text-sm font-medium">Email</span>
+                  </button>
+                  <button
+                    onClick={() => setRetentionPlatform('SMS')}
+                    className={`p-3 border-2 rounded-lg text-center transition-colors ${retentionPlatform === 'SMS'
+                        ? 'border-[#004182] bg-[#004182]/10 text-[#004182]'
+                        : 'border-gray-300 hover:border-[#004182]'
+                      }`}
+                  >
+                    <MessageSquare size={20} className="mx-auto mb-2" />
+                    <span className="text-sm font-medium">SMS</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Key Message Field */}
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 mb-2">
+                  Key Message / Short Description *
+                </Label>
+                <Textarea
+                  placeholder="Brief description of what the copy should be about..."
+                  value={retentionKeyMessage}
+                  onChange={(e) => setRetentionKeyMessage(e.target.value)}
+                  className="min-h-[80px]"
+                />
+              </div>
+
+              {retentionPlatform === 'Email' && (
+                <div>
+                  <Label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email Type *
+                  </Label>
+                  <p className="text-xs text-gray-500 mb-3">
+                    Choose the specific email framework that best fits your campaign goals
+                  </p>
+                  <Select value={retentionEmailType} onValueChange={setRetentionEmailType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select email type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="GTL (Get the Look)">GTL (Get the Look)</SelectItem>
+                      <SelectItem value="Plain Text / Letter-Style Note">Plain Text / Letter-Style Note</SelectItem>
+                      <SelectItem value="Product Spotlight / Hero Product">Product Spotlight / Hero Product</SelectItem>
+                      <SelectItem value="Product Roundup / Theme-Based Edit">Product Roundup / Theme-Based Edit</SelectItem>
+                      <SelectItem value="Back in Stock">Back in Stock</SelectItem>
+                      <SelectItem value="Product Launch">Product Launch</SelectItem>
+                      <SelectItem value="Teaser Email (Pre-Launch)">Teaser Email (Pre-Launch)</SelectItem>
+                      <SelectItem value="Retail Event / Pop-Up / IRL Activation">Retail Event / Pop-Up / IRL Activation</SelectItem>
+                      <SelectItem value="Promotional Email">Promotional Email</SelectItem>
+                      <SelectItem value="Set or Kit Email">Set or Kit Email</SelectItem>
+                      <SelectItem value="How-To (Problem/Solution)">How-To (Problem/Solution)</SelectItem>
+                      <SelectItem value="Duos or Product Combinations">Duos or Product Combinations</SelectItem>
+                      <SelectItem value="Shade Roundup">Shade Roundup</SelectItem>
+                      <SelectItem value="How to Use It (Product Tutorial)">How to Use It (Product Tutorial)</SelectItem>
+                      <SelectItem value="Social Proof">Social Proof</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Target Persona Section */}
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 mb-2">
+                  Target Persona
+                </Label>
+                <p className="text-xs text-gray-500 mb-3">
+                  Choose the primary audience for this retention campaign
+                </p>
+                <Select value={concept} onValueChange={setConcept}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select target persona" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(personas).map(([key, persona]) => (
+                      <SelectItem key={key} value={key}>
+                        {(persona as any).label || key.replace(/([A-Z])/g, ' $1').trim()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Sub-Persona Selection */}
+                {concept && personas[concept]?.subPersonas && (
+                  <div className="mt-3">
+                    <Label className="block text-sm font-medium text-gray-700 mb-2">
+                      Sub-Persona (Optional)
+                    </Label>
+                    <Select value={subPersona} onValueChange={setSubPersona}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose specific sub-persona" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None (General)</SelectItem>
+                        {personas[concept]?.subPersonas && Object.entries(personas[concept].subPersonas).map(([key, subPersona]) => (
+                          <SelectItem key={key} value={key}>
+                            {(subPersona as any).label || key.replace(/([A-Z])/g, ' $1').trim()}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+
+              {/* Product Selection for Retention */}
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 mb-2">
+                  Products to Feature (Multi-Select)
+                </Label>
+                <p className="text-xs text-gray-500 mb-4">
+                  Select products to mention in your {retentionPlatform.toLowerCase()} copy. Email/SMS campaigns often feature multiple products.
+                </p>
+
+                {/* Select All/Deselect All Button */}
+                <div className="mb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs px-4 py-3 h-auto justify-center border-dashed border-2 hover:bg-blue-50 hover:border-blue-400 transition-all duration-200"
+                    onClick={() => {
+                      const allProductNames = Object.values(products).map((product: any) => product.name);
+                      if (retentionSelectedProducts.length === allProductNames.length) {
+                        // If all are selected, deselect all
+                        setRetentionSelectedProducts([]);
+                      } else {
+                        // Otherwise, select all
+                        setRetentionSelectedProducts(allProductNames);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
+                        retentionSelectedProducts.length === Object.values(products).length 
+                          ? 'bg-blue-500 border-blue-500' 
+                          : 'border-gray-300'
+                      }`}>
+                        {retentionSelectedProducts.length === Object.values(products).length && (
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className="font-medium">
+                        {retentionSelectedProducts.length === Object.values(products).length 
+                          ? "Deselect All Products" 
+                          : "Select All Products"}
+                      </span>
+                    </div>
+                  </Button>
+                </div>
+
+                {/* Product Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
+                  {Object.values(products).map((product: any) => {
+                    const isSelected = retentionSelectedProducts.includes(product.name);
+                    return (
+                      <div
+                        key={product.name}
+                        className={`relative border-2 rounded-lg p-3 cursor-pointer transition-all duration-200 hover:shadow-sm ${
+                          isSelected
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-200 hover:border-gray-300 bg-white'
+                        }`}
+                        onClick={() => {
+                          if (retentionSelectedProducts.includes(product.name)) {
+                            setRetentionSelectedProducts(retentionSelectedProducts.filter(p => p !== product.name));
+                          } else {
+                            setRetentionSelectedProducts([...retentionSelectedProducts, product.name]);
+                          }
+                        }}
+                      >
+                        {/* Checkbox */}
+                        <div className="absolute top-2 right-2">
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
+                            isSelected 
+                              ? 'bg-blue-500 border-blue-500' 
+                              : 'border-gray-300'
+                          }`}>
+                            {isSelected && (
+                              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Product Info */}
+                        <div className="pr-6">
+                          <h4 className={`text-xs font-semibold mb-0.5 ${
+                            isSelected ? 'text-blue-900' : 'text-gray-900'
+                          }`}>
+                            {product.displayName}
+                          </h4>
+                          <p className={`text-xs ${
+                            isSelected ? 'text-blue-600' : 'text-gray-500'
+                          }`}>
+                            {product.name}
+                          </p>
+                        </div>
+
+                        {/* Selection indicator dot */}
+                        {isSelected && (
+                          <div className="absolute bottom-2 left-2">
+                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Selected Products Summary */}
+                {retentionSelectedProducts.length > 0 && (
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <p className="text-sm font-semibold text-blue-900">
+                          {retentionSelectedProducts.length} Product{retentionSelectedProducts.length !== 1 ? 's' : ''} Selected
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-blue-700 hover:text-blue-900 hover:bg-blue-100 h-6 px-2"
+                        onClick={() => setRetentionSelectedProducts([])}
+                      >
+                        Clear all
+                      </Button>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      {retentionSelectedProducts.map((productValue) => {
+                        const productLabel = products[productValue]?.displayName || productValue;
+                        return (
+                          <Badge 
+                            key={productValue} 
+                            variant="secondary" 
+                            className="text-xs bg-white text-blue-800 border border-blue-200 hover:bg-blue-50 transition-colors"
+                          >
+                            {productLabel}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {retentionSelectedProducts.length === 0 && (
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="flex items-center space-x-2 text-gray-500">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <p className="text-sm">
+                        No products selected - AI will generate general copy without specific product focus
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="block text-sm font-medium text-gray-700 mb-2">
+                    Audience Segment
+                  </Label>
+                  <Select value={retentionAudience} onValueChange={setRetentionAudience}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="General audience">General audience</SelectItem>
+                      <SelectItem value="New prospects">New prospects</SelectItem>
+                      <SelectItem value="Existing customers">Existing customers</SelectItem>
+                      <SelectItem value="VIP customers">VIP customers</SelectItem>
+                      <SelectItem value="Cart abandoners">Cart abandoners</SelectItem>
+                      <SelectItem value="Win-back customers">Win-back customers</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="block text-sm font-medium text-gray-700 mb-2">
+                    Goal
+                  </Label>
+                  <Select value={retentionGoal} onValueChange={setRetentionGoal}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Drive Sales">Drive Sales</SelectItem>
+                      <SelectItem value="Educate">Educate</SelectItem>
+                      <SelectItem value="Re-engage">Re-engage</SelectItem>
+                      <SelectItem value="Promote New Arrival">Promote New Arrival</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Brand/DR Balance Section */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-sm font-medium text-gray-700">Brand/DR Balance</Label>
+                  <span className="text-sm text-gray-500">{getBrandDrLabel()}</span>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  Balance between brand storytelling and direct response tactics
+                </p>
+                <Slider
+                  value={brandDrBalance}
+                  onValueChange={setBrandDrBalance}
+                  max={100}
+                  step={1}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>All DR</span>
+                  <span>Balanced</span>
+                  <span>All Brand</span>
+                </div>
+              </div>
+
+              {/* Keywords to Include */}
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 mb-2">
+                  Keywords to Include (Optional)
+                </Label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {retentionKeywordsToInclude.map((keyword, index) => (
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                      {keyword}
+                      <button
+                        onClick={() => removeRetentionKeyword(keyword, false)}
+                        className="ml-1 text-gray-500 hover:text-gray-700"
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                <Input
+                  placeholder="Type keyword and press Enter..."
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addRetentionKeyword(e.currentTarget.value, false);
+                      e.currentTarget.value = '';
+                    }
+                  }}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Examples: "clean ingredients", "limited edition", "fast shipping"
+                </p>
+              </div>
+
+              {/* Words to Avoid */}
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 mb-2">
+                  Words to Avoid (Optional)
+                </Label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {retentionWordsToAvoid.map((word, index) => (
+                    <Badge key={index} variant="destructive" className="flex items-center gap-1">
+                      {word}
+                      <button
+                        onClick={() => removeRetentionKeyword(word, true)}
+                        className="ml-1 text-white hover:text-gray-200"
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                <Input
+                  placeholder="Type word to avoid and press Enter..."
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addRetentionKeyword(e.currentTarget.value, true);
+                      e.currentTarget.value = '';
+                    }
+                  }}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Examples: "cheap", "guaranteed", "free forever"
+                </p>
+              </div>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="w-full">
+                      <Button
+                        onClick={() => generateRetentionCopyMutation.mutate()}
+                        disabled={!retentionKeyMessage.trim() || generateRetentionCopyMutation.isPending || getGenerationDisabledState('emailSmsRetention').disabled}
+                        className="w-full flex items-center justify-center space-x-2"
+                      >
+                        {generateRetentionCopyMutation.isPending ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>Generating...</span>
+                          </>
+                        ) : (
+                          <>
+                            {retentionPlatform === 'SMS' ? <MessageSquare size={16} /> : <Mail size={16} />}
+                            <span>Generate {retentionPlatform} Copy</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  {(getGenerationDisabledState('emailSmsRetention').disabled || !retentionKeyMessage.trim()) && (
+                    <TooltipContent>
+                      <p>
+                        {!retentionKeyMessage.trim()
+                          ? 'Please enter a key message'
+                          : getGenerationDisabledState('emailSmsRetention').reason
+                        }
+                      </p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Output Section */}
+      <div className="space-y-4 sm:space-y-6">
+        {/* Generated Copy */}
+        {generatedRetentionCopy && (
+          <Card>
+            <CardContent className="p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                {retentionPlatform === 'SMS' ? <MessageSquare className="text-jones-primary mr-2 sm:mr-3" size={18} /> : <Mail className="text-jones-primary mr-2 sm:mr-3" size={18} />}
+                Generated {retentionPlatform} Copy
+              </h3>
+
+              <div className="space-y-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="whitespace-pre-wrap text-sm text-gray-800">
+                    {generatedRetentionCopy}
+                  </div>
+                </div>
+
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => copyToClipboard(generatedRetentionCopy, 'retention')}
+                    className="flex items-center space-x-2"
+                  >
+                    <Copy size={16} />
+                    <span>Copy</span>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCurrentGenerationMetadata({
+                        stationName: 'Email & SMS Retention',
+                        timestamp: new Date().toISOString(),
+                        modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
+                        temperature: modelSettings?.temperature || 0.7,
+                        maxTokens: modelSettings?.maxTokens || 2000,
+                        systemPrompt: stationPrompts?.retention?.systemPrompt || 'Expert retention marketing copywriter for Jones Road Beauty...',
+                        userPrompt: `Platform: ${retentionPlatform}\nKey Message: ${retentionKeyMessage}\nProducts: ${retentionSelectedProducts.join(', ')}...`,
+                        brandGuidelines: brandGuidelines?.guidelines || ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
+                        frameworks: copyFrameworks?.retention?.frameworks || ['Retention marketing', 'Email optimization', 'SMS best practices'],
+                        personaSettings: {
+                          concept: concept,
+                          subPersona: subPersona
+                        },
+                        brandDrBalance: brandDrBalance[0],
+                        selectedProduct: selectedProduct
+                      });
+                      setShowGenerationDetails(true);
+                    }}
+                    className="flex items-center space-x-1 text-xs"
+                  >
+                    <Settings size={12} />
+                    <span>View Details</span>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedItemForRevision({
+                        type: 'retention',
+                        field: 'retention'
+                      });
+                      setRevisionInstructions('');
+                      setShowRevisionPanel(true);
+                    }}
+                    className="flex items-center space-x-2"
+                  >
+                    <Zap size={16} />
+                    <span>Edit</span>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Copy History */}
+        {retentionCopyHistory.length > 0 && (
+          <Card>
+            <CardContent className="p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <FileText className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                Recent {retentionPlatform} Copy
+              </h3>
+
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {retentionCopyHistory.slice(0, 5).map((item, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-3">
+                    <div className="text-xs text-gray-500 mb-1">
+                      {item.timestamp.toLocaleString()} • {item.platform}
+                    </div>
+                    <div className="text-sm font-medium text-gray-700 mb-2">
+                      Message: {item.keyMessage.substring(0, 100)}
+                      {item.keyMessage.length > 100 && '...'}
+                    </div>
+                    <div className="text-sm text-gray-600 bg-gray-50 rounded p-2">
+                      {item.response.substring(0, 200)}
+                      {item.response.length > 200 && '...'}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyToClipboard(item.response, 'retention')}
+                      className="mt-2 flex items-center space-x-1"
+                    >
+                      <Copy size={12} />
+                      <span>Copy</span>
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}; 

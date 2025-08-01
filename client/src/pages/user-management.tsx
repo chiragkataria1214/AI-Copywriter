@@ -9,9 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { Users, Plus, Edit, Trash2, Shield, User, ArrowLeft, Home } from 'lucide-react';
+import { Users, Plus, Edit, Trash2, Shield, User, ArrowLeft, Home, Search, MoreVertical, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Link } from 'wouter';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface User {
   id: string;
@@ -27,6 +29,7 @@ export default function UserManagement() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [newUser, setNewUser] = useState<{
     username: string;
     password: string;
@@ -42,6 +45,11 @@ export default function UserManagement() {
     queryKey: ['/api/admin/users'],
     enabled: (currentUser as any)?.role === 'admin'
   });
+
+  // Filter users based on search query
+  const filteredUsers = users.filter(user =>
+    user.username.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Create user mutation
   const createUserMutation = useMutation({
@@ -71,7 +79,7 @@ export default function UserManagement() {
 
   // Update user mutation
   const updateUserMutation = useMutation({
-    mutationFn: async ({ id, userData }: { id: string; userData: { username?: string; role?: string } }) => {
+    mutationFn: async ({ id, userData }: { id: string; userData: { username: string; role: string } }) => {
       return await apiRequest(`/api/admin/users/${id}`, {
         method: 'PUT',
         body: userData
@@ -97,8 +105,8 @@ export default function UserManagement() {
 
   // Delete user mutation
   const deleteUserMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return await apiRequest(`/api/admin/users/${id}`, {
+    mutationFn: async (userId: string) => {
+      return await apiRequest(`/api/admin/users/${userId}`, {
         method: 'DELETE'
       });
     },
@@ -119,14 +127,6 @@ export default function UserManagement() {
   });
 
   const handleCreateUser = () => {
-    if (!newUser.username || !newUser.password) {
-      toast({
-        title: "Error",
-        description: "Username and password are required",
-        variant: "destructive",
-      });
-      return;
-    }
     createUserMutation.mutate(newUser);
   };
 
@@ -161,11 +161,19 @@ export default function UserManagement() {
     }
   };
 
+  const getInitials = (username: string) => {
+    return username.split('@')[0].substring(0, 2).toUpperCase();
+  };
+
+  const getRoleColor = (role: string) => {
+    return role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800';
+  };
+
   if ((currentUser as any)?.role !== 'admin') {
     return (
-      <div>
+      <div className="min-h-screen bg-gray-50">
         {/* Navigation Header */}
-        <div className="bg-white border-b border-gray-200 px-4 py-3 mb-6">
+        <div className="bg-white border-b border-gray-200 px-4 py-4 mb-8">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
             <div className="flex items-center gap-4">
               <Link href="/">
@@ -182,27 +190,37 @@ export default function UserManagement() {
                 </Button>
               </Link>
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 font-medium">
               User Management
             </div>
           </div>
         </div>
         
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <Shield className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Admin Access Required</h3>
-            <p className="text-gray-500">You need admin privileges to access user management.</p>
-          </div>
+        <div className="flex items-center justify-center min-h-[500px] px-4">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-8 text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Shield className="h-8 w-8 text-red-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Admin Access Required</h3>
+              <p className="text-gray-600 mb-6">You need administrator privileges to access user management features.</p>
+              <Link href="/">
+                <Button className="w-full">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Return to Main App
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50">
       {/* Navigation Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 mb-6">
+      <div className="bg-white border-b border-gray-200 px-4 py-4 mb-8">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-4">
             <Link href="/">
@@ -219,198 +237,260 @@ export default function UserManagement() {
               </Button>
             </Link>
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 font-medium">
             User Management
           </div>
         </div>
       </div>
 
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Users className="h-6 w-6" />
-            User Management
-          </h2>
-          <p className="text-gray-600 mt-1">Manage user accounts and permissions</p>
-        </div>
-        
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Add User
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New User</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  value={newUser.username}
-                  onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                  placeholder="Enter username"
-                />
-              </div>
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                  placeholder="Enter password"
-                />
-              </div>
-              <div>
-                <Label htmlFor="role">Role</Label>
-                <Select
-                  value={newUser.role}
-                  onValueChange={(value: string) => setNewUser({ ...newUser, role: value as 'admin' | 'team_member' })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="team_member">Team Member</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setCreateDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreateUser}
-                  disabled={createUserMutation.isPending}
-                >
-                  {createUserMutation.isPending ? 'Creating...' : 'Create User'}
-                </Button>
-              </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Page Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Users className="h-6 w-6 text-blue-600" />
+                </div>
+                User Management
+              </h1>
+              <p className="mt-2 text-gray-600">Manage user accounts and permissions for your organization</p>
             </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Users List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>All Users</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8">Loading users...</div>
-          ) : users.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">No users found</div>
-          ) : (
-            <div className="space-y-3">
-              {users.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                      {user.role === 'admin' ? (
-                        <Shield className="h-5 w-5 text-blue-600" />
-                      ) : (
-                        <User className="h-5 w-5 text-gray-600" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{user.username}</span>
-                        {user.id === (currentUser as any)?.id && (
-                          <Badge variant="secondary">You</Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                          {user.role === 'admin' ? 'Admin' : 'Team Member'}
-                        </Badge>
-                        <span>•</span>
-                        <span>Created {new Date(user.createdAt).toLocaleDateString()}</span>
-                      </div>
-                    </div>
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add User
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <UserPlus className="h-5 w-5" />
+                    Create New User
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div>
+                    <Label htmlFor="username" className="text-sm font-medium">Email Address</Label>
+                    <Input
+                      id="username"
+                      type="email"
+                      placeholder="user@example.com"
+                      value={newUser.username}
+                      onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                      className="mt-1"
+                    />
                   </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditUser(user)}
-                    >
-                      <Edit className="h-4 w-4" />
+                  <div>
+                    <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Enter password"
+                      value={newUser.password}
+                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="role" className="text-sm font-medium">Role</Label>
+                    <Select value={newUser.role} onValueChange={(value: 'admin' | 'team_member') => setNewUser({ ...newUser, role: value })}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="team_member">Team Member</SelectItem>
+                        <SelectItem value="admin">Administrator</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+                      Cancel
                     </Button>
-                    {user.id !== (currentUser as any)?.id && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteUser(user)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
+                    <Button 
+                      onClick={handleCreateUser}
+                      disabled={createUserMutation.isPending || !newUser.username || !newUser.password}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {createUserMutation.isPending ? 'Creating...' : 'Create User'}
+                    </Button>
                   </div>
                 </div>
-              ))}
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        {/* Search and Filters */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  placeholder="Search users by email..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <div className="text-sm text-gray-500">
+                {filteredUsers.length} of {users.length} users
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        {/* Users List */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              All Users
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-500">Loading users...</p>
+              </div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  {searchQuery ? 'No users found' : 'No users yet'}
+                </h3>
+                <p className="text-gray-500 mb-6">
+                  {searchQuery ? 'Try adjusting your search terms.' : 'Get started by creating your first user account.'}
+                </p>
+                {!searchQuery && (
+                  <Button onClick={() => setCreateDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add First User
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {filteredUsers.map((user) => (
+                  <div key={user.id} className="p-6 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold">
+                            {getInitials(user.username)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="flex items-center gap-3">
+                            <h3 className="text-lg font-medium text-gray-900">{user.username}</h3>
+                            {user.id === (currentUser as any)?.id && (
+                              <Badge variant="secondary" className="text-xs">You</Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 mt-1">
+                            <Badge className={`text-xs ${getRoleColor(user.role)}`}>
+                              {user.role === 'admin' ? (
+                                <>
+                                  <Shield className="h-3 w-3 mr-1" />
+                                  Administrator
+                                </>
+                              ) : (
+                                <>
+                                  <User className="h-3 w-3 mr-1" />
+                                  Team Member
+                                </>
+                              )}
+                            </Badge>
+                            <span className="text-sm text-gray-500">
+                              Created {new Date(user.createdAt).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit User
+                          </DropdownMenuItem>
+                          {user.id !== (currentUser as any)?.id && (
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteUser(user)}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete User
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Edit User Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="h-5 w-5" />
+              Edit User
+            </DialogTitle>
           </DialogHeader>
           {selectedUser && (
-            <div className="space-y-4">
+            <div className="space-y-4 pt-4">
               <div>
-                <Label htmlFor="edit-username">Username</Label>
+                <Label htmlFor="edit-username" className="text-sm font-medium">Email Address</Label>
                 <Input
                   id="edit-username"
+                  type="email"
                   value={selectedUser.username}
                   onChange={(e) => setSelectedUser({ ...selectedUser, username: e.target.value })}
+                  className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="edit-role">Role</Label>
-                <Select
-                  value={selectedUser.role}
-                  onValueChange={(value) => 
-                    setSelectedUser({ ...selectedUser, role: value as 'admin' | 'team_member' })
-                  }
+                <Label htmlFor="edit-role" className="text-sm font-medium">Role</Label>
+                <Select 
+                  value={selectedUser.role} 
+                  onValueChange={(value: 'admin' | 'team_member') => setSelectedUser({ ...selectedUser, role: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="team_member">Team Member</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="admin">Administrator</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setEditDialogOpen(false)}
-                >
+              <div className="flex justify-end gap-3 pt-4">
+                <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
                   Cancel
                 </Button>
                 <Button
                   onClick={handleUpdateUser}
                   disabled={updateUserMutation.isPending}
+                  className="bg-blue-600 hover:bg-blue-700"
                 >
                   {updateUserMutation.isPending ? 'Updating...' : 'Update User'}
                 </Button>

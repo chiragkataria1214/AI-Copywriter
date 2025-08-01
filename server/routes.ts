@@ -5,7 +5,7 @@ import { registerJunipRoutes } from "./routes-junip";
 import { registerAdminRoutes } from "./routes-admin";
 import { storage } from "./storage";
 import multer from "multer";
-import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd, generateRetentionCopy } from "./anthropic";
+import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd, generateRetentionCopy, generateSocialCaptions, generateStorySequence } from "./anthropic";
 import { analyzeInfluencerVoice, generateInfluencerStyleCopy, fetchInstagramContent } from "./influencer-analyzer";
 import { getTrainingConfig } from "./routes-training";
 import { z } from "zod";
@@ -69,6 +69,40 @@ function registerConfigRoutes(app: Express) {
     } catch (error) {
       console.error("Error fetching training configuration:", error);
       res.status(500).json({ error: "Failed to fetch training configuration" });
+    }
+  });
+
+  // Email templates endpoint
+  app.post("/api/email-templates", requireAuth, async (req, res) => {
+    try {
+      const { templates } = req.body;
+      if (!Array.isArray(templates)) {
+        return res.status(400).json({ error: "Templates must be an array" });
+      }
+
+      // Store email templates in system configuration
+      await storage.setSystemConfigValue(
+        'emailTemplates.retention',
+        JSON.stringify(templates),
+        'Email templates for retention copy generation'
+      );
+
+      res.json({ success: true, message: 'Email templates saved successfully' });
+    } catch (error) {
+      console.error("Error saving email templates:", error);
+      res.status(500).json({ error: "Failed to save email templates" });
+    }
+  });
+
+  app.get("/api/email-templates", requireAuth, async (req, res) => {
+    try {
+      const configs = await storage.getSystemConfiguration();
+      const templateConfig = configs.find(c => c.configKey === 'emailTemplates.retention');
+      const templates = templateConfig ? JSON.parse(templateConfig.configValue) : [];
+      res.json({ templates });
+    } catch (error) {
+      console.error("Error fetching email templates:", error);
+      res.status(500).json({ error: "Failed to fetch email templates" });
     }
   });
   
@@ -1253,6 +1287,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate social captions endpoint (protected)
+  app.post('/api/generate-social-captions', requireAuth, async (req, res) => {
+    try {
+      const { 
+        contentType, 
+        transcription, 
+        platform, 
+        goal, 
+        tone, 
+        variations, 
+        selectedProduct 
+      } = req.body;
+      
+      console.log('Social captions request:', { contentType, platform, goal, tone, variations, selectedProduct, transcriptionLength: transcription?.length });
+      
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(400).json({ message: 'Anthropic API key not configured' });
+      }
+      
+      if (!transcription || !transcription.trim()) {
+        return res.status(400).json({ message: 'Content transcription is required' });
+      }
+      
+      // Get current training config
+      const trainingConfig = await getTrainingConfig();
+      
+      const result = await generateSocialCaptions({
+        contentType: contentType || 'video',
+        transcription: transcription.trim(),
+        platform: platform || 'instagram',
+        goal: goal || 'product-education',
+        tone: tone || 'authentic-personal',
+        variations: variations || 3,
+        selectedProduct: selectedProduct,
+        concept: 'lifeJuggler' // Default concept for social captions
+      }, trainingConfig);
+      
+      res.json({
+        captions: result.captions
+      });
+    } catch (error) {
+      console.error('Social captions generation error:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate social captions',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Generate story sequence endpoint (protected)
+  app.post('/api/generate-story-sequence', requireAuth, async (req, res) => {
+    try {
+      const { 
+        contentType, 
+        transcription, 
+        sequenceType, 
+        length, 
+        tone, 
+        selectedProduct 
+      } = req.body;
+      
+      console.log('Story sequence request:', { contentType, sequenceType, length, tone, selectedProduct, transcriptionLength: transcription?.length });
+      
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(400).json({ message: 'Anthropic API key not configured' });
+      }
+      
+      if (!transcription || !transcription.trim()) {
+        return res.status(400).json({ message: 'Content transcription is required' });
+      }
+      
+      // Get current training config
+      const trainingConfig = await getTrainingConfig();
+      
+      const result = await generateStorySequence({
+        contentType: contentType || 'video',
+        transcription: transcription.trim(),
+        sequenceType: sequenceType || 'product-showcase',
+        length: length || 5,
+        tone: tone || 'authentic-personal',
+        selectedProduct: selectedProduct,
+        concept: 'lifeJuggler' // Default concept for story sequences
+      }, trainingConfig);
+      
+      res.json({
+        sequence: result.sequence
+      });
+    } catch (error) {
+      console.error('Story sequence generation error:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate story sequence',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Static ad analysis endpoint (protected)
   app.post('/api/analyze-static-ad', requireAuth, async (req, res) => {
     try {
@@ -1345,6 +1475,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           introduction: result.introduction,
           sections: result.sections,
           riskReversal: result.riskReversal,
+          socialProof: result.socialProof,
+          conclusion: result.conclusion,
           cta: result.cta,
           stats: result.stats
         },
