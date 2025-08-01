@@ -2971,20 +2971,27 @@ export default function MetaAdGenerator() {
 
 
 
+                        {/* Brand/DR Balance Section */}
                         <div>
-                          <Label className="block text-sm font-medium text-gray-700 mb-2">
-                            Content Length
-                          </Label>
-                          <Select value={retentionContentLength} onValueChange={setRetentionContentLength}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Short">Short</SelectItem>
-                              <SelectItem value="Medium">Medium</SelectItem>
-                              <SelectItem value="Long">Long</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center justify-between mb-2">
+                            <Label className="text-sm font-medium text-gray-700">Brand/DR Balance</Label>
+                            <span className="text-sm text-gray-500">{getBrandDrLabel()}</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mb-3">
+                            Balance between brand storytelling and direct response tactics
+                          </p>
+                          <Slider
+                            value={brandDrBalance}
+                            onValueChange={setBrandDrBalance}
+                            max={100}
+                            step={1}
+                            className="w-full"
+                          />
+                          <div className="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>All DR</span>
+                            <span>Balanced</span>
+                            <span>All Brand</span>
+                          </div>
                         </div>
 
 
