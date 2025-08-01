@@ -1347,18 +1347,19 @@ ${request.platform === 'SMS' ? `
 RETURN ONLY SMS TEXT:
 [Your SMS message here]
 ` : `
-RETURN IN THIS EXACT FORMAT:
+RETURN TEMPLATE-READY EMAIL COPY IN THIS FORMAT:
 
 SUBJECT LINE 1: [First subject line]
 SUBJECT LINE 2: [Second subject line]  
 PREHEADER: [4-6 word preview]
 
-[Email body content with natural paragraphs]
+MAIN COPY:
+[Write copy for designed email templates - short, scannable paragraphs that work with visual layouts. Focus on clear benefits and engaging content that fits into professional email designs.]
 
-[Clear call-to-action]
+This copy will be inserted into designed email templates, NOT plain text emails.
 `}
 
-NO JSON STRUCTURE. NO MARKDOWN. JUST PLAIN TEXT EMAIL COPY FOLLOWING THE FORMAT ABOVE.`;
+NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.`;
 
   try {
     if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === 'dummy-key') {
