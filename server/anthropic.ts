@@ -1330,6 +1330,8 @@ Create ${request.platform?.toLowerCase() || 'email'} copy that authentically rep
 
 "${request.keyMessage}"
 
+CRITICAL: Return ONLY plain text email copy. NO JSON, NO markdown, NO special formatting.
+
 Requirements:
 1. Follow the ${request.platform === 'SMS' ? 'SMS' : 'email'} format and character/word limits for ${request.contentLength?.toLowerCase() || 'short'} content
 2. Use Jones Road Beauty's authentic, friendly tone throughout
@@ -1337,26 +1339,26 @@ Requirements:
 4. Focus on ${request.goal?.toLowerCase() || 'driving sales'} as the primary goal
 5. Structure as ${request.campaignType?.toLowerCase() || 'promo'} campaign type
 6. Include clear, compelling call-to-action appropriate for the campaign
-7. Apply ${request.urgencyLevel?.toLowerCase() || 'medium'} urgency level
-${request.selectedProducts && request.selectedProducts.length > 0 ? `8. FEATURE THESE PRODUCTS: ${request.selectedProducts.join(', ')} - Include these products naturally in the copy with their benefits and create relevant calls-to-action` : ''}
-${request.keywordsToInclude && request.keywordsToInclude.length > 0 ? `9. Naturally incorporate these keywords: ${request.keywordsToInclude.join(', ')}` : ''}
-${request.wordsToAvoid && request.wordsToAvoid.length > 0 ? `10. Avoid using these words: ${request.wordsToAvoid.join(', ')}` : ''}
+${request.selectedProducts && request.selectedProducts.length > 0 ? `7. FEATURE THESE PRODUCTS: ${request.selectedProducts.join(', ')} - Include these products naturally in the copy with their benefits and create relevant calls-to-action` : ''}
+${request.keywordsToInclude && request.keywordsToInclude.length > 0 ? `8. Naturally incorporate these keywords: ${request.keywordsToInclude.join(', ')}` : ''}
+${request.wordsToAvoid && request.wordsToAvoid.length > 0 ? `9. Avoid using these words: ${request.wordsToAvoid.join(', ')}` : ''}
 
 ${request.platform === 'SMS' ? `
-Format your response as SMS copy only (no additional explanations):
-- Single message if under 160 characters
-- Multiple parts if longer, clearly marked as "Part 1:", "Part 2:", etc.
+RETURN ONLY SMS TEXT:
+[Your SMS message here]
 ` : `
-Format your response as complete email copy:
-SUBJECT: [Compelling subject line]
-PREVIEW: [Preview text that appears after subject]
+RETURN IN THIS EXACT FORMAT:
 
-[Email body copy]
+SUBJECT LINE 1: [First subject line]
+SUBJECT LINE 2: [Second subject line]  
+PREHEADER: [4-6 word preview]
+
+[Email body content with natural paragraphs]
 
 [Clear call-to-action]
 `}
 
-Make it authentic to Jones Road Beauty's "Your Skin But Better" philosophy while being highly effective for customer retention.`;
+NO JSON STRUCTURE. NO MARKDOWN. JUST PLAIN TEXT EMAIL COPY FOLLOWING THE FORMAT ABOVE.`;
 
   try {
     if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === 'dummy-key') {
