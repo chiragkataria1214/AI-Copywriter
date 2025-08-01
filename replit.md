@@ -1,194 +1,8 @@
-# AI Copywriter - System Architecture
+# AI Copywriter
 
 ## Overview
 
-This is a full-stack AI-powered copywriting platform built for generating advertising copy and landing pages across multiple platforms, specifically tailored for Jones Road Beauty brand guidelines. The application uses Claude AI (via Anthropic SDK) for authentic copywriting generation, with a modern React frontend, Node.js/Express backend, and is designed for deployment on Replit. The system features sophisticated persona targeting, Brand/DR balance controls, and professional UI built with shadcn/ui components.
-
-## Recent Changes (July 2025)
-
-**Latest Update - Complete Database-Driven System with Full Product Collection & UX Enhancements (July 31, 2025)**
-- **✅ PRODUCT COLLECTION RESTORED**: Fixed critical issue where only 1 product remained - restored full Jones Road Beauty collection (12 products total)
-- **✅ COMPLETE PRODUCT CATALOG**: Database now contains What The Foundation, Miracle Balm, Just Enough, Hero Kit, Sunscreen, Mascara, Lip Stick, Face Pencil, Cleanser, Serum, Eye Cream, and Bronzer
-- **✅ CURSOR POINTER UX**: Added comprehensive cursor pointer styling to all dropdown components throughout the application for better user experience
-- **✅ SELECT COMPONENT ENHANCEMENT**: Modified shadcn Select components with cursor-pointer styling on triggers and items for consistent hover feedback
-- **✅ CSS STYLING IMPROVEMENTS**: Added utility classes targeting all interactive elements (dropdowns, buttons, selects) with proper hover states
-- **✅ AD COPY GENERATION FIX**: Resolved missing system prompt issue in station configuration that was preventing ad copy generation
-- **✅ DATABASE INTEGRITY**: All 12 products properly seeded with correct display names and sort order for consistent dropdown presentation
-- **✅ PERSONA SYSTEM COMPLETE**: All 9 specific personas from user document properly loaded with automatic default selection to prevent blank states
-
-**Previous Update - Perfect UX Consistency Achieved Across All Sections (July 30, 2025)**
-- **✅ IDENTICAL GRID SELECTION PATTERN**: Both paid social and organic social now feature the exact same grid selection buttons for content types
-- **✅ MATCHING VIDEO/IMAGE SELECTION**: Consistent "Video/Transcription" and "Image" buttons with identical styling and behavior across sections
-- **✅ UNIFIED CONDITIONAL DISPLAY**: Both sections show/hide content based on selection with matching layout patterns and spacing
-- **✅ CONSISTENT UPLOAD BUTTONS**: Identical upload button styling, positioning, and functionality across paid and organic social
-- **✅ SEAMLESS USER EXPERIENCE**: Users can now switch between sections without learning different interaction patterns
-- **✅ PERFECT VISUAL HARMONY**: Complete design consistency with matching colors, spacing, icons, and typography throughout
-
-**Previous Update - Complete Organic Social Captions Implementation (July 30, 2025)**
-- **✅ ORGANIC SOCIAL CAPTIONS COMPLETE**: Full end-to-end functionality for generating authentic social media captions from video transcriptions or product images
-- **✅ BACKEND INTEGRATION**: Created `/api/generate-social-captions` endpoint with comprehensive Claude AI integration for Jones Road Beauty brand voice
-- **✅ PLATFORM-SPECIFIC GENERATION**: Instagram, Facebook, TikTok, and Multi-platform optimization with tailored content strategies
-- **✅ CONTENT STRATEGY CONTROLS**: Content goals (product education, brand awareness, community building, etc.) and tone options (authentic-personal, educational-expert, etc.)
-- **✅ ASSET UPLOAD SYSTEM**: Video transcription input and static image upload with preview functionality
-- **✅ CAPTION PREVIEW & COPY**: Generated captions displayed with platform labels and one-click copy functionality
-- **✅ VARIATION CONTROL**: Users can select 3, 5, or 7 caption variations for A/B testing and content variety
-- **✅ JONES ROAD VOICE INTEGRATION**: AI prompts include authentic brand voice, "Makeup Simplified" philosophy, and product-specific optimization
-
-**Previous Update - Complete Navigation Restructure: Paid Social + Organic Social Implementation (July 30, 2025)**
-- **✅ NAVIGATION RESTRUCTURED**: Changed from 3 main tabs to 4 main tabs for clearer content organization
-- **✅ PAID SOCIAL TAB**: Contains sub-tabs for Ad Copy (existing functionality) and Static Ad (full UI implemented)
-- **✅ ORGANIC SOCIAL TAB**: Complete interface for social media captions and story sequences with platform selection, content goals, and tone options
-- **✅ STATIC AD ANALYZER**: Full interface with upload capabilities, analysis settings, and preview features
-- **✅ LOGICAL SEPARATION**: Clear distinction between paid advertising content and organic social media content
-- **✅ IMPROVED UX**: More intuitive navigation structure matching user mental model of marketing content types
-- **✅ SCALABLE STRUCTURE**: Sub-tabs under Paid Social allow for future expansion of paid advertising features
-- **✅ COMPLETE UI FRAMEWORK**: All sections have professional interfaces ready for backend integration
-
-**Previous Update - CRITICAL PRODUCTION FREEZE RESOLVED: Direct Textarea Implementation (July 29, 2025)**
-- **✅ FREEZE ISSUE COMPLETELY RESOLVED**: User confirmed transcription functionality works perfectly in production after cache clearing
-- **✅ CACHE ISSUE IDENTIFIED**: Problem was browser cache serving old component version - incognito mode confirmed fix works
-- **✅ DIRECT TEXTAREA IMPLEMENTATION**: Embedded raw HTML textarea directly in main component to eliminate all deployment sync issues
-- **✅ COMPONENT DEPENDENCY ELIMINATED**: Removed separate TranscriptionInput component file that was causing build/cache complications
-- **✅ PRODUCTION TESTED & WORKING**: User successfully tested transcription input on deployed URL without any freezing
-- **✅ JOB-CRITICAL ISSUE RESOLVED**: Transcription functionality now works reliably in production environment
-
-**Previous Update - Fixed Button/Link Functionality by Removing Hover Effects (July 29, 2025)**
-- **✅ BUTTON FUNCTIONALITY RESTORED**: Removed all problematic hover effects from Button component that were preventing clicks
-- **✅ TOAST COMPONENT FIXED**: Eliminated hover transitions and effects from Toast component
-- **✅ GLOBAL CSS PROTECTION**: Added utility rules to disable hover transforms and ensure pointer events work properly
-- **✅ UI RESPONSIVENESS**: All buttons, links, and interactive elements now function correctly without visual interference
-- **✅ PERFORMANCE OPTIMIZATION**: Removed unnecessary transition animations that were causing UI lag and click failures
-
-**Previous Update - Enhanced Listicle Headlines with "5 Reasons Why" Format (July 29, 2025)**
-- **✅ LISTICLE HEADLINE CONSISTENCY**: Added specific "5 reasons why" format examples in AI prompts to ensure consistent headline patterns
-- **✅ HEADLINE EXAMPLES INTEGRATION**: Added 5 specific headline examples ("5 Reasons Why What The Foundation Is Different", etc.) to train AI on preferred format
-- **✅ FORMAT ENFORCEMENT**: Updated landing page generation prompt to explicitly require "5 reasons why" format for listicle headlines
-- **✅ BRAND CONSISTENCY**: Ensures listicle headlines match user's preference for consistent "5 reasons why" format across all generations
-- **✅ AI TRAINING ENHANCEMENT**: Specific examples guide Claude AI to generate headlines that follow the established pattern consistently
-
-**Previous Update - Landing Page Transcription Integration & Listicle Format Optimization (July 29, 2025)**
-- **✅ TRANSCRIPTION INTEGRATION**: Landing page generation now includes video transcription content when using generated ads content
-- **✅ FRONTEND ENHANCEMENT**: Updated landing page mutation to pass transcription data when "Use Generated Ads Content" is selected
-- **✅ BACKEND IMPLEMENTATION**: Enhanced server routes and anthropic functions to handle transcription parameter in landing page generation
-- **✅ AI PROMPT ENHANCEMENT**: Added transcription content section to landing page AI prompts for consistent messaging and tone matching
-- **✅ INTERFACE UPDATES**: Updated TypeScript interfaces to properly type transcription data flow throughout the system
-- **✅ SEAMLESS WORKFLOW**: Users can now generate ads with transcription, then create landing pages that maintain the same messaging consistency
-- **✅ LISTICLE FORMAT OPTIMIZED**: Removed introduction sections from listicle landing pages per user preference - now generates clean listicles without intros
-- **✅ COPY LENGTH FIXED**: Adjusted listicle paragraph length to 40-50 words maximum to match actual Jones Road listicles (was previously too long)
-- **✅ SHIPPING THRESHOLD CORRECTED**: Fixed free shipping mentions from incorrect $50 to accurate $85 threshold per Jones Road policy
-- **✅ WORD COUNT ENFORCEMENT**: Added explicit word count limits for headlines (8-12 words), subheadlines (8-15 words), and reason paragraphs (40-50 words)
-
-**Previous Update - Product Claims Validation System (July 29, 2025)**
-- **✅ PRODUCT CLAIMS INTEGRATION**: Built comprehensive product claims validation system from Google Sheets data to ensure accurate copy
-- **✅ AI SETTINGS INTERFACE**: Added dedicated "Product Claims" tab in AI Settings with visual approved/prohibited claims management
-- **✅ CLAIMS VALIDATION**: AI prompts now include explicit product claims validation for Foundation, Mascara, Sunscreen, and Miracle Balm
-- **✅ DR SAFETY MEASURES**: System prevents false claims especially when DR slider > 50% by enforcing approved claims only
-- **✅ ADMIN CONTROLS**: Editable claims interface with toggle switches and real-time editing for authorized administrators
-- **✅ TRUTH ENFORCEMENT**: All generated copy now validated against approved product claims to prevent marketing compliance issues
-
-**Previous Update - Landing Page Copy Length Optimization (July 28, 2025)**
-- **✅ MOBILE-OPTIMIZED COPY**: Updated landing page generation to follow strict 8-12 word sentence rule for mobile comprehension
-- **✅ LISTICLE FRAMEWORK**: Implemented precise framework from uploaded guidelines - "briefly enumerate reasons" with concise sentences
-- **✅ EXPLICIT EXAMPLES**: Added wrong/correct examples in prompts showing exact word count constraints and formatting
-- **✅ LOOP EARPLUGS STYLE**: Copy now matches inspiration pages with scannable, short sentences instead of long paragraphs
-- **✅ WORD COUNT ENFORCEMENT**: Every sentence must be 8-12 words maximum - no exceptions for mobile optimization
-- **✅ SENTENCE STRUCTURE**: Break complex thoughts into multiple short sentences for better mobile readability
-
-**Previous Update - Custom Domain Restored & Deployment Complete (July 28, 2025)**
-- **✅ DOMAIN RESTORED**: jrbcopy.com custom domain successfully reconnected to deployed application
-- **✅ AUTHENTICATION BYPASS**: Completely removed authentication system to enable immediate app access for deployment
-- **✅ AI SETTINGS FIXED**: Training configuration endpoints now accessible without authentication barriers
-- **✅ STANDALONE APP**: Created isolated StandaloneApp component with zero authentication dependencies
-- **✅ DIRECT ACCESS**: App now loads immediately without login barriers at root URL for deployed version
-- **✅ PRODUCTION READY**: Authentication system disabled for seamless user access in deployed state
-- **✅ CORE FUNCTIONALITY**: All AI copywriting features accessible without registration or login requirements
-- **✅ DEPLOYMENT COMPLETE**: Live at jrbcopy.com with full functionality and 21,000+ customer reviews integrated
-
-**Previous Update - Enhanced Custom Request with Revision System (July 28, 2025)**
-- **✅ EDIT/REVISION SYSTEM**: Added full revision capabilities to Custom Request feature with "Edit" button and feedback system
-- **✅ FORMAT MATCHING**: Enhanced AI to mirror user's brief format and structure - professional marketing terminology, numbered sections, detailed breakdowns
-- **✅ STRATEGIC OUTPUT**: AI now provides comprehensive strategic recommendations with implementation details matching industry standards
-- **✅ REVISION INTEGRATION**: Custom copy revisions work seamlessly with existing revision system, maintaining Jones Road voice during edits
-- **✅ PROFESSIONAL STRUCTURE**: Output matches detailed formatting style of user briefs with section headers, strategic depth, and actionable recommendations
-- **✅ CUSTOM REQUEST TAB**: Added flexible "Custom Request" tab for open-ended copywriting requests beyond standard templates
-- **✅ CHAT-LIKE INTERFACE**: Built conversational interface for any copywriting need - briefs, social media, emails, product announcements
-- **✅ REQUEST HISTORY**: Added history tracking showing recent custom requests with copy-to-clipboard functionality
-- **✅ JONES ROAD VOICE**: Maintains authentic brand voice while adapting to any format or copywriting request
-- **✅ BACKEND INTEGRATION**: Created '/api/generate-custom-copy' endpoint with audience context and brand balance controls
-- **✅ NAVIGATION ENHANCEMENT**: Fixed admin page navigation with "Back to Main App" buttons on all admin interfaces
-- **✅ FLEXIBLE COPYWRITING**: Users can now request briefs, campaigns, social content, or any marketing copy outside standard templates
-
-**Previous Update - Added Multi Product Landing Page Type (July 28, 2025)**
-- **✅ NEW LANDING PAGE TYPE**: Added "Multi Product Page" option to landing page generator for showcasing product collections and cross-selling
-- **✅ DUAL-PATTERN AI STRUCTURE**: Enhanced AI generation combining Loop Earplugs social proof patterns with Jones Road Beauty's clean, simplified approach
-- **✅ ENHANCED UI GRID**: Updated landing page type selection to accommodate three options with improved grid layout and descriptions
-- **✅ HERO + SUPPORTING STRUCTURE**: AI generates hero product prominence with supporting product grid, following Jones Road's "Anne's Favorites" model
-- **✅ CLEAN MESSAGING APPROACH**: Incorporates Jones Road's "Make up, Simplified" philosophy with authority elements and trust signals
-- **✅ ADVANCED PARSING SYSTEM**: Built specialized parsing for HERO PRODUCT, numbered PRODUCT sections, COLLECTION BENEFITS, and SOCIAL PROOF
-- **✅ CURATED COLLECTION FOCUS**: Emphasizes "favorites" and "essentials" framing rather than overwhelming product catalogs
-
-**Previous Update - Authentication System Fixed for Multi-User Deployment (July 27, 2025)**
-- **✅ AUTHENTICATION SYSTEM READY**: Fixed and verified complete login/registration flow for multiple users
-- **✅ DATABASE USER MANAGEMENT**: All test accounts now use proper @jonesroadbeauty.com domain format
-- **✅ WORKING TEST ACCOUNTS**: Created and verified: cody@jonesroadbeauty.com (admin), test@jonesroadbeauty.com (team member), sarah@jonesroadbeauty.com (team member)
-- **✅ SESSION MANAGEMENT**: Confirmed sessions persist across page refreshes and API calls with secure bcrypt password hashing
-- **✅ ROLE-BASED ACCESS**: Team members and admins have proper permission levels with working user management interface
-- **✅ DEMO LOGIN FIXED**: Quick demo login button now uses correct test account credentials
-- **✅ PRODUCTION READY**: Authentication system is secure and ready for deployment - other people can now safely register and use the app
-- **✅ VERIFIED WORKING**: User confirmed successful login and access to main application interface
-
-**Previous Update - Landing Page & UI Refinements (July 27, 2025)**
-- **✅ LANDING PAGE COPY OPTIMIZED**: Significantly shortened paragraph copy for better readability - reduced sections from 80 to 50 words maximum, intro from 50-100 to 30-50 words
-- **✅ AUTHENTIC REVIEW INTEGRATION**: Fixed review relevance matching - AI now selects customer quotes that directly support specific bullet point benefits
-- **✅ MIXED SOCIAL PROOF**: Alternates between customer reviews (12-20 words) and brand copy (12-20 words) for variety instead of only reviews
-- **✅ REMOVED RISK REVERSAL**: Cleaned up landing page structure by removing guarantee section per user feedback
-- **✅ MARKDOWN CLEANUP**: Fixed asterisk (**) formatting issues - all output now displays as clean plain text
-- **✅ HEADER UI STREAMLINED**: Moved admin functions, connection status, and sign out to clean dropdown menu - header now shows only username and gear icon for professional, uncluttered interface
-- **✅ TECHNICAL FIXES**: Resolved interface definitions, database imports, and template literal syntax issues that were preventing generation
-
-**Latest Update - Enhanced Landing Page Generation with Customer Insights (July 27, 2025)**
-- **✅ ENHANCED: Customer Review Integration**: Landing page generation now incorporates product-specific customer review insights for authentic copy generation
-- **✅ ENHANCED: Performance Analysis System**: Added comprehensive copywriting analysis based on direct response principles (section completeness, word count, key elements)
-- **✅ ENHANCED: Visual Content Structure**: Improved sections display with word counts, numbered indicators, and visual performance metrics
-- **✅ ENHANCED: Optimization Recommendations**: Real-time suggestions for improving conversion potential based on content structure analysis
-- **✅ ENHANCED: Product-Specific Training**: selectedProduct parameter now filters customer review data for targeted landing page copy generation
-- **✅ TECHNICAL: API Enhancement**: Updated generate-landing-copy endpoint to accept selectedProduct and return detailed performance metrics
-- **✅ TECHNICAL: UI Improvements**: Enhanced landing page display with conversion scoring, risk reversal indicators, and structured content breakdown
-
-**Latest Update - MASSIVE SCALE Review Import System (July 27, 2025)**
-- **BREAKTHROUGH: Comprehensive Junip Scraper**: Built advanced web scraper that fetches thousands of authentic reviews - now successfully importing 1,500+ real customer reviews with proper product categorization
-- **Authentic Scale Achieved**: System now handles thousands of reviews as requested - Foundation (450+), Mascara (400+), Sunscreen (300+), Miracle Balm (300+)
-- **Real Web Scraping**: Successfully connects to actual Junip page (https://junip.co/reviews/jones-road) and fetches 20,546+ characters of live content
-- **Product Selection Interface**: Added product dropdown to both Ad Copy and Landing Page generators with Jones Road's top 4 products prioritized
-- **Enhanced Review Processing**: Advanced product detection algorithms properly categorize thousands of reviews from authentic customer language patterns
-- **Database Schema Optimized**: Handles massive scale with proper foreign key constraints and efficient data parsing for thousands of reviews
-- **Massive Customer Dataset**: Now importing 1,500+ authentic customer reviews with comprehensive product mapping for robust AI training
-- **Product-Specific AI Training**: Framework processes thousands of customer reviews by specific products to generate highly targeted, authentic copy using real customer language patterns
-- **Admin Interface Integration**: Customer Reviews tab supports both large-scale Junip imports and manual uploads within AI Settings panel
-- **Analytics Dashboard**: Handles analytics for thousands of reviews with sentiment distribution, theme analysis, and comprehensive import tracking
-
-## Recent Changes (July 2025)
-
-- **Claude AI Integration Complete**: Successfully integrated Anthropic's Claude 4.0 Sonnet for authentic ad copy generation
-- **Brand Guidelines Implementation**: Built Jones Road Beauty brand voice and positioning into system prompts
-- **Persona Targeting System**: Added detailed sub-personas (Life Juggler → New Mom, etc.) for precise audience targeting
-- **Brand/DR Balance Controls**: Real-time slider showing percentage balance (defaults to 50%), influences copy style
-- **API Structure Fixed**: Resolved fetch API request structure issues that were causing frontend errors
-- **Response Parsing Enhanced**: Robust parsing system for Claude's natural language responses into structured headlines and primary text
-- **Application Rebranding**: Updated from "Meta Ad Generator" to "AI Copywriter" to reflect broader platform capabilities
-- **Color Scheme Update**: Changed from Jones Road Beauty colors to Replit agent button blue throughout application per user preference
-- **Advanced Copywriting Frameworks**: Integrated 6 specific headline frameworks (benefit-driven, social proof, offer-driven, value props, problem-focused, urgency/scarcity) with intelligent selection and proven template structures
-- **Landing Page Integration**: Added optional landing page URL input for holistic funnel creation - analyzes existing landing pages to ensure ad copy messaging is congruent with landing page content
-- **Ad Preview Component**: Built authentic Facebook feed ad preview showing headlines in proper link preview section, with accurate platform layout, branding, and engagement elements
-- **Framework Separation Fix**: Separated copywriting framework types from headline copy - now displays clean headlines with framework badges instead of bundled text
-- **Mobile Facebook Preview**: Optimized ad preview to authentic mobile feed layout (375px width, proper typography, Facebook blue colors)
-- **Prompt Debug System**: Added comprehensive debug tab showing exact system prompts, user prompts, request payloads, and raw AI responses for fine-tuning Claude AI performance
-- **Editable Training Configuration**: Created comprehensive interface for editing all AI training materials including brand guidelines, copy frameworks, system prompts, and model parameters in plain text format
-- **Enhanced Training UX**: Redesigned training configuration with editable text areas, visual bullet point indicators, toggle switches for experimental features, and improved mobile editing experience
-- **Admin Security Restoration**: Restored comprehensive admin-only access controls for all AI Settings interface elements while ensuring authenticated admin users have full editing capabilities for all training materials and model configuration parameters
-- **Complete User Management System**: Built full admin system with role-based permissions (admin/team member), user management interface at /users route, and comprehensive CRUD operations for user accounts
-- **Authentication Flow Improvements**: Enhanced login/register flow with improved session management, forced page reloads after authentication, and better error handling for deployed environments
-- **Junip API Integration Framework**: Built comprehensive system for automatic customer review imports from Junip platform, including API client, database schema, analysis pipeline, and admin interface integration within AI Settings panel
+This is a full-stack AI-powered copywriting platform for generating advertising copy and landing pages, specifically tailored for Jones Road Beauty brand guidelines. The application uses Claude AI (via Anthropic SDK) for authentic copywriting, featuring sophisticated persona targeting, Brand/DR balance controls, and a professional UI. The system is designed for deployment on Replit. Its core purpose is to provide an efficient and brand-consistent content generation tool for marketing teams.
 
 ## User Preferences
 
@@ -197,62 +11,41 @@ Preferred color scheme: #004182 blue (replaces Jones Road Beauty brand colors an
 
 ## System Architecture
 
-### Frontend Architecture
+### Frontend
 - **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite with hot module replacement
+- **Build Tool**: Vite
 - **UI Library**: shadcn/ui components (Radix UI primitives)
-- **Styling**: Tailwind CSS with custom design tokens
-- **State Management**: React hooks with TanStack Query for server state
-- **Routing**: Wouter for lightweight client-side routing
+- **Styling**: Tailwind CSS
+- **State Management**: React hooks with TanStack Query
+- **Routing**: Wouter
+- **UI/UX Decisions**: Professional interface built with shadcn/ui. Consistent grid selection patterns, unified conditional display, and consistent upload buttons across sections. Focus on seamless user experience with identical styling and behavior. Color scheme preference is #004182 blue.
 
-### Backend Architecture
+### Backend
 - **Runtime**: Node.js with TypeScript
-- **Framework**: Express.js with middleware-based architecture
+- **Framework**: Express.js
 - **Database ORM**: Drizzle ORM with PostgreSQL dialect
 - **Database Provider**: Neon Database (@neondatabase/serverless)
-- **File Upload**: Multer for handling multipart/form-data
-- **Session Management**: Built-in memory storage for user sessions
+- **File Upload**: Multer
+- **Session Management**: Built-in memory storage
 
 ### Key Design Decisions
+- **Frontend Architecture**: React with TypeScript for type safety and component reusability. Vite for fast development. shadcn/ui for high-quality, customizable components.
+- **Database Strategy**: Drizzle ORM for type-safe PostgreSQL queries. Neon Database for serverless, Replit-compatible deployment with connection pooling. Comprehensive database includes a full Jones Road Beauty product catalog (12 products).
+- **State Management**: TanStack Query for server state (caching, sync) and React state for UI interactions.
+- **Review Integration**: Junip API integration for scalable, real-time customer review data. System supports automated imports and manual uploads, processing thousands of product-specific reviews for AI training.
+- **AI Integration**: Claude AI (Anthropic SDK) for authentic copy generation, incorporating Jones Road Beauty brand voice, "Makeup Simplified" philosophy, and product-specific optimization.
+- **Feature Specifications**:
+    - **Ad Copy Generation**: Supports various platforms (e.g., Facebook, Instagram, TikTok), content goals, and tone options. Includes ad preview component.
+    - **Landing Page Generation**: Integrates video transcription content, optimizes for mobile readability (8-12 word sentences), and supports various page types including multi-product pages. Incorporates real customer review insights and performance analysis.
+    - **Organic Social Captions**: Full end-to-end functionality for generating captions from video transcriptions or product images, tailored for different social media platforms.
+    - **Persona Targeting**: Detailed sub-personas for precise audience targeting.
+    - **Brand/DR Balance**: Slider control to influence copy style.
+    - **Product Claims Validation**: System built from Google Sheets data to enforce accurate, approved product claims, especially with higher DR settings.
+    - **Custom Request**: Flexible tab for open-ended copywriting requests with revision capabilities, maintaining Jones Road voice.
+    - **Authentication System**: Secure login/registration flow with role-based access (admin/team member) and user management. Authentication is currently bypassed for immediate app access on deployed version.
 
-**Frontend Architecture Choice**: React with TypeScript was chosen for type safety and component reusability. Vite provides fast development builds and hot reloading. The shadcn/ui approach gives high-quality components while maintaining customization flexibility.
-
-**Database Strategy**: Drizzle ORM provides type-safe database queries with PostgreSQL. The serverless Neon database connection supports the Replit deployment model with automatic connection pooling.
-
-**State Management**: TanStack Query handles server state with caching and synchronization, while local React state manages UI interactions. This hybrid approach reduces complexity while maintaining good UX.
-
-**Review Integration Strategy**: Junip API integration was chosen over manual uploads for scalability and real-time data access. The system supports both automated imports and manual fallbacks, with comprehensive error handling and rate limiting to ensure reliable operation.
-
-## Key Components
-
-### Database Layer
-- **Schema**: User management with username/password authentication
-- **Connection**: Serverless PostgreSQL via Neon with WebSocket support
-- **Migrations**: Drizzle Kit for schema management and migrations
-
-### API Layer
-- **File Upload**: `/api/upload-video` endpoint for video transcription processing
-- **Content Generation**: `/api/generate-ad-copy` for AI-powered copy generation
-- **Review Management**: `/api/junip/*` endpoints for review imports, analytics, and training insights
-- **Error Handling**: Centralized error middleware with proper HTTP status codes
-
-### Frontend Components
-- **Meta Ad Generator**: Main application interface with tabbed navigation
-- **UI Components**: Complete shadcn/ui component library (buttons, forms, dialogs, etc.)
-- **Responsive Design**: Mobile-first approach with Tailwind breakpoints
-
-### Authentication System
-- **User Model**: Simple username/password based authentication
-- **Storage**: In-memory storage implementation with interface for future database integration
-- **Session Management**: Express session handling
-
-## Data Flow
-
-1. **User Input**: Users provide video files, transcriptions, or text content through the React frontend
-2. **File Processing**: Uploaded videos are processed server-side for transcription extraction
-3. **Content Generation**: User inputs are sent to AI generation endpoints (placeholder implementation)
-4. **State Management**: Generated content is cached client-side using TanStack Query
-5. **User Interaction**: Copy-to-clipboard functionality and content refinement through the UI
+### Data Flow
+User input (video files, transcriptions, text) -> Server-side processing (transcription extraction) -> AI generation endpoints -> Client-side caching (TanStack Query) -> UI display and interaction.
 
 ## External Dependencies
 
@@ -262,6 +55,7 @@ Preferred color scheme: #004182 blue (replaces Jones Road Beauty brand colors an
 - **@tanstack/react-query**: Server state management
 - **@radix-ui/**: Accessible UI primitives
 - **tailwindcss**: Utility-first CSS framework
+- **Anthropic SDK**: For Claude AI integration
 
 ### Development Tools
 - **vite**: Frontend build tool and dev server
@@ -272,22 +66,7 @@ Preferred color scheme: #004182 blue (replaces Jones Road Beauty brand colors an
 - **@replit/vite-plugin-runtime-error-modal**: Development error handling
 - **@replit/vite-plugin-cartographer**: Development tooling integration
 
-## Deployment Strategy
-
-### Development Environment
-- **Hot Reloading**: Vite dev server with React Fast Refresh
-- **TypeScript**: Real-time type checking across client and server
-- **Database**: Drizzle Kit for schema push and migration management
-
-### Production Build
-- **Frontend**: Vite builds optimized static assets to `dist/public`
-- **Backend**: esbuild bundles server code to `dist/index.js`
-- **Environment**: NODE_ENV-based configuration switching
-
-### Replit Deployment
-- **File Structure**: Monorepo with `client/`, `server/`, and `shared/` directories
-- **Environment Variables**: DATABASE_URL for PostgreSQL connection
-- **Static Serving**: Express serves built frontend assets in production
-- **Process Management**: Single Node.js process handling both frontend and API routes
-
-The architecture supports scalable development with clear separation between frontend and backend concerns, while maintaining simplicity for the Replit deployment environment.
+### Third-Party Services
+- **Claude AI (Anthropic)**: Core AI for copy generation.
+- **Neon Database**: Serverless PostgreSQL database.
+- **Junip**: Platform for comprehensive customer review scraping and import.
