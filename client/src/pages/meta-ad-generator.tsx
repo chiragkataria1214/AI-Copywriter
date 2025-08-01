@@ -2734,19 +2734,7 @@ export default function MetaAdGenerator() {
                       </h3>
 
                       <div className="space-y-4">
-                        {/* Required Fields */}
-                        <div>
-                          <Label className="block text-sm font-medium text-gray-700 mb-2">
-                            Key Message / Short Description *
-                          </Label>
-                          <Textarea
-                            placeholder="Brief description of what the copy should be about..."
-                            value={retentionKeyMessage}
-                            onChange={(e) => setRetentionKeyMessage(e.target.value)}
-                            className="min-h-[80px]"
-                          />
-                        </div>
-
+                        {/* Platform Selection First */}
                         <div>
                           <Label className="block text-sm font-medium text-gray-700 mb-2">
                             Platform *
@@ -2773,6 +2761,19 @@ export default function MetaAdGenerator() {
                               <span className="text-sm font-medium">SMS</span>
                             </button>
                           </div>
+                        </div>
+
+                        {/* Key Message Field */}
+                        <div>
+                          <Label className="block text-sm font-medium text-gray-700 mb-2">
+                            Key Message / Short Description *
+                          </Label>
+                          <Textarea
+                            placeholder="Brief description of what the copy should be about..."
+                            value={retentionKeyMessage}
+                            onChange={(e) => setRetentionKeyMessage(e.target.value)}
+                            className="min-h-[80px]"
+                          />
                         </div>
 
                         {retentionPlatform === 'Email' && (
