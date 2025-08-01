@@ -3,6 +3,10 @@
 ## Overview
 This project is a full-stack AI-powered copywriting platform designed for generating advertising copy and landing pages, specifically tailored to the Jones Road Beauty brand guidelines. It leverages Claude AI (via Anthropic SDK) for copy generation, featuring a React frontend, Node.js/Express backend, and is optimized for Replit deployment. Key capabilities include sophisticated persona targeting, Brand/DR balance controls, a professional UI built with shadcn/ui components, and specialized retention marketing functionalities for Email & SMS campaigns. The business vision is to provide a scalable system for generating authentic, brand-aligned marketing content, ensuring compliance with product claims, and enabling dynamic content configuration through a database-driven approach.
 
+## Recent Changes (August 2025)
+- **Email Output Format Optimization**: Updated retention email generation to produce template-ready copy for designed emails rather than plain text format. System now generates copy components (subject lines, preheader, main copy) that integrate seamlessly with professional email templates, matching Jones Road Beauty's actual email structure from milled.com examples.
+- **Comprehensive Email Best Practices Integration**: Implemented detailed email copywriting frameworks covering 15 campaign types, subject line optimization, and segmentation strategies based on Jones Road Beauty's proven performance data.
+
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 Preferred color scheme: #004182 blue (replaces Jones Road Beauty brand colors and previous Replit blue).
