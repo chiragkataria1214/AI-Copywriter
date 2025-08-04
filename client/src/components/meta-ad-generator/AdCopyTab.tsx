@@ -574,50 +574,78 @@ export const AdCopyTab = ({
                         <div className="space-y-4">
                             <div>
                                 <Label className="text-sm font-medium text-gray-700 mb-3 block">
-                                    Quick Select - Top Products
+                                    Quick Select - Popular Products
                                 </Label>
+                                <p className="text-xs text-gray-500 mb-3">
+                                    Choose from our most frequently featured products for ad copy generation
+                                </p>
+                                
                                 <div className="flex flex-wrap gap-2 mb-4">
-                                    {Object.values(products).slice(0, 4).map((product: any) => (
-                                        <Button
-                                            key={product.name}
-                                            variant={selectedProduct === product.name ? "default" : "outline"}
-                                            size="sm"
-                                            className={`text-xs px-3 py-1 h-8 ${selectedProduct === product.name
-                                                    ? 'bg-[#004182] text-white border-[#004182]'
-                                                    : 'hover:bg-gray-50'
+                                    {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].map((productName) => {
+                                        const product = products[productName];
+                                        if (!product) return null;
+                                        
+                                        const isSelected = selectedProduct === productName;
+                                        return (
+                                            <button
+                                                key={productName}
+                                                onClick={() => setSelectedProduct(isSelected ? '' : productName)}
+                                                className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                                                    isSelected
+                                                        ? 'bg-[#004182] text-white border-2 border-[#004182] shadow-sm'
+                                                        : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-[#004182] hover:bg-blue-50'
                                                 }`}
-                                            onClick={() => setSelectedProduct(product.name)}
-                                        >
-                                            {product.displayName}
-                                        </Button>
-                                    ))}
+                                            >
+                                                <div className={`w-3 h-3 rounded-full mr-2 flex items-center justify-center ${
+                                                    isSelected ? 'bg-white' : 'bg-gray-300'
+                                                }`}>
+                                                    {isSelected && (
+                                                        <svg className="w-2 h-2 text-[#004182]" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                        </svg>
+                                                    )}
+                                                </div>
+                                                {product.displayName}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-gray-700">
-                                        Or choose from all products
-                                    </Label>
-                                    <Select value={selectedProduct || "all"} onValueChange={(value) => setSelectedProduct(value === "all" ? "" : value)}>
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="All products (no filtering)" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All products</SelectItem>
-                                            {Object.entries(products).map(([key, product]) => (
-                                                <SelectItem key={key} value={key}>
-                                                    {(product as any).displayName || (product as any).name || key}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                <div className="border-t border-gray-200 pt-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium text-gray-700">
+                                            Or choose from all products
+                                        </Label>
+                                        <Select value={selectedProduct || "all"} onValueChange={(value) => setSelectedProduct(value === "all" ? "" : value)}>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="All products (no filtering)" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All products</SelectItem>
+                                                {Object.entries(products).map(([key, product]) => (
+                                                    <SelectItem key={key} value={key}>
+                                                        {(product as any).displayName || (product as any).name || key}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
 
                                 {selectedProduct && (
-                                    <p className="text-xs text-gray-500 mt-2">
-                                        AI will use customer reviews specific to {
-                                            products[selectedProduct]?.displayName || selectedProduct
-                                        } for authentic language patterns
-                                    </p>
+                                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <div className="flex items-center space-x-2">
+                                            <div className="w-5 h-5 bg-[#004182] rounded-full flex items-center justify-center">
+                                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                            <p className="text-sm font-medium text-[#004182]">
+                                                Selected: {products[selectedProduct]?.displayName}
+                                            </p>
+                                        </div>
+                                       
+                                    </div>
                                 )}
                             </div>
                         </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Mail, MessageSquare, FileText, Copy, Settings, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -147,6 +147,23 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
   brandGuidelines,
   copyFrameworks,
 }) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
       {/* Input Section */}
@@ -287,102 +304,203 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                   Select products to mention in your {retentionPlatform.toLowerCase()} copy. Email/SMS campaigns often feature multiple products.
                 </p>
 
-                {/* Select All/Deselect All Button */}
+                {/* Quick Select - Top Products */}
                 <div className="mb-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-xs px-4 py-3 h-auto justify-center border-dashed border-2 hover:bg-blue-50 hover:border-blue-400 transition-all duration-200"
-                    onClick={() => {
-                      const allProductNames = Object.values(products).map((product: any) => product.name);
-                      if (retentionSelectedProducts.length === allProductNames.length) {
-                        // If all are selected, deselect all
-                        setRetentionSelectedProducts([]);
-                      } else {
-                        // Otherwise, select all
-                        setRetentionSelectedProducts(allProductNames);
-                      }
-                    }}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
-                        retentionSelectedProducts.length === Object.values(products).length 
-                          ? 'bg-blue-500 border-blue-500' 
-                          : 'border-gray-300'
-                      }`}>
-                        {retentionSelectedProducts.length === Object.values(products).length && (
-                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
-                      <span className="font-medium">
-                        {retentionSelectedProducts.length === Object.values(products).length 
-                          ? "Deselect All Products" 
-                          : "Select All Products"}
-                      </span>
-                    </div>
-                  </Button>
-                </div>
-
-                {/* Product Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
-                  {Object.values(products).map((product: any) => {
-                    const isSelected = retentionSelectedProducts.includes(product.name);
-                    return (
-                      <div
-                        key={product.name}
-                        className={`relative border-2 rounded-lg p-3 cursor-pointer transition-all duration-200 hover:shadow-sm ${
-                          isSelected
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300 bg-white'
-                        }`}
-                        onClick={() => {
-                          if (retentionSelectedProducts.includes(product.name)) {
-                            setRetentionSelectedProducts(retentionSelectedProducts.filter(p => p !== product.name));
-                          } else {
-                            setRetentionSelectedProducts([...retentionSelectedProducts, product.name]);
-                          }
-                        }}
-                      >
-                        {/* Checkbox */}
-                        <div className="absolute top-2 right-2">
-                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
-                            isSelected 
-                              ? 'bg-blue-500 border-blue-500' 
-                              : 'border-gray-300'
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-xs font-medium text-gray-600">Quick Select - Popular Products</Label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-blue-600 hover:text-blue-800 h-auto p-1"
+                      onClick={() => {
+                        const topProducts = ['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'];
+                        const allTopSelected = topProducts.every(product => retentionSelectedProducts.includes(product));
+                        
+                        if (allTopSelected) {
+                          // Deselect all top products
+                          setRetentionSelectedProducts(retentionSelectedProducts.filter(p => !topProducts.includes(p)));
+                        } else {
+                          // Select all top products
+                          const newSelection = [...new Set([...retentionSelectedProducts, ...topProducts])];
+                          setRetentionSelectedProducts(newSelection);
+                        }
+                      }}
+                    >
+                      {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].every(product => retentionSelectedProducts.includes(product)) ? 'Deselect Top 5' : 'Select Top 5'}
+                    </Button>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].map((productName) => {
+                      const product = products[productName];
+                      if (!product) return null;
+                      
+                      const isSelected = retentionSelectedProducts.includes(productName);
+                      return (
+                        <button
+                          key={productName}
+                          onClick={() => {
+                            if (retentionSelectedProducts.includes(productName)) {
+                              setRetentionSelectedProducts(retentionSelectedProducts.filter(p => p !== productName));
+                            } else {
+                              setRetentionSelectedProducts([...retentionSelectedProducts, productName]);
+                            }
+                          }}
+                          className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                            isSelected
+                              ? 'bg-blue-500 text-white border-2 border-blue-500 shadow-sm'
+                              : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                          }`}
+                        >
+                          <div className={`w-3 h-3 rounded-full mr-2 flex items-center justify-center ${
+                            isSelected ? 'bg-white' : 'bg-gray-300'
                           }`}>
                             {isSelected && (
-                              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <svg className="w-2 h-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                               </svg>
                             )}
                           </div>
-                        </div>
+                          {product.displayName}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-                        {/* Product Info */}
-                        <div className="pr-6">
-                          <h4 className={`text-xs font-semibold mb-0.5 ${
-                            isSelected ? 'text-blue-900' : 'text-gray-900'
-                          }`}>
-                            {product.displayName}
-                          </h4>
-                          <p className={`text-xs ${
-                            isSelected ? 'text-blue-600' : 'text-gray-500'
-                          }`}>
-                            {product.name}
-                          </p>
-                        </div>
+                {/* All Products - Dropdown */}
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <Label className="text-xs font-medium text-gray-600">All Products</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs px-3 py-1 h-auto border-dashed hover:bg-blue-50 hover:border-blue-400 transition-all duration-200"
+                      onClick={() => {
+                        const allProductNames = Object.values(products).map((product: any) => product.name);
+                        if (retentionSelectedProducts.length === allProductNames.length) {
+                          setRetentionSelectedProducts([]);
+                        } else {
+                          setRetentionSelectedProducts(allProductNames);
+                        }
+                      }}
+                    >
+                      {retentionSelectedProducts.length === Object.values(products).length ? "Deselect All" : "Select All"}
+                    </Button>
+                  </div>
 
-                        {/* Selection indicator dot */}
-                        {isSelected && (
-                          <div className="absolute bottom-2 left-2">
-                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                  {/* Multi-Select Dropdown */}
+                  <div className="relative" ref={dropdownRef}>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between text-left font-normal"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setIsDropdownOpen(!isDropdownOpen);
+                      }}
+                    >
+                      <span className="text-sm">
+                        {(() => {
+                          const allProducts = Object.values(products);
+                          const selectedFromDropdown = retentionSelectedProducts.filter(productName => 
+                            allProducts.some((product: any) => product.name === productName)
+                          );
+                          if (selectedFromDropdown.length === 0) {
+                            return "Choose products...";
+                          } else if (selectedFromDropdown.length === 1) {
+                            return products[selectedFromDropdown[0]]?.displayName || selectedFromDropdown[0];
+                          } else {
+                            return `${selectedFromDropdown.length} products selected`;
+                          }
+                        })()}
+                      </span>
+                      <svg className={`w-4 h-4 opacity-50 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </Button>
+                    
+                                          {isDropdownOpen && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                          {/* Popular Products Section */}
+                          <div className="border-b border-gray-100 bg-blue-50 px-3 py-2">
+                            <div className="text-xs font-semibold text-blue-800 mb-2">★ Popular Products</div>
+                            {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].map((productName) => {
+                              const product = products[productName];
+                              if (!product) return null;
+                              
+                              const isSelected = retentionSelectedProducts.includes(productName);
+                              return (
+                                <div
+                                  key={productName}
+                                  className="flex items-center px-1 py-1.5 hover:bg-blue-100 cursor-pointer rounded"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (retentionSelectedProducts.includes(productName)) {
+                                      setRetentionSelectedProducts(retentionSelectedProducts.filter(p => p !== productName));
+                                    } else {
+                                      setRetentionSelectedProducts([...retentionSelectedProducts, productName]);
+                                    }
+                                  }}
+                                >
+                                  <div className={`w-4 h-4 rounded border-2 flex items-center justify-center mr-3 transition-colors ${
+                                    isSelected 
+                                      ? 'bg-blue-500 border-blue-500' 
+                                      : 'border-blue-300'
+                                  }`}>
+                                    {isSelected && (
+                                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  <span className="text-sm font-medium text-blue-900">{product.displayName}</span>
+                                </div>
+                              );
+                            })}
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
+
+                          {/* All Other Products */}
+                          <div className="px-3 py-2">
+                            <div className="text-xs font-semibold text-gray-600 mb-2">All Products</div>
+                            {Object.values(products)
+                              .filter((product: any) => !['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].includes(product.name))
+                              .map((product: any) => {
+                                const isSelected = retentionSelectedProducts.includes(product.name);
+                                return (
+                                  <div
+                                    key={product.name}
+                                    className="flex items-center px-1 py-1.5 hover:bg-gray-50 cursor-pointer rounded"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (retentionSelectedProducts.includes(product.name)) {
+                                        setRetentionSelectedProducts(retentionSelectedProducts.filter(p => p !== product.name));
+                                      } else {
+                                        setRetentionSelectedProducts([...retentionSelectedProducts, product.name]);
+                                      }
+                                    }}
+                                  >
+                                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center mr-3 transition-colors ${
+                                      isSelected 
+                                        ? 'bg-blue-500 border-blue-500' 
+                                        : 'border-gray-300'
+                                    }`}>
+                                      {isSelected && (
+                                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                      )}
+                                    </div>
+                                    <span className="text-sm">{product.displayName}</span>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      )}
+                  </div>
+
+                  {/* Selected Products from Dropdown as Chips */}
+                  
                 </div>
 
                 {/* Selected Products Summary */}
