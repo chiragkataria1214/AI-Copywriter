@@ -93,20 +93,14 @@ const BriefCreationTab = (props: any) => {
 
         setIsGenerating(true);
         try {
-            const response = await apiRequest('/api/generate-brief', {
+            const data = await apiRequest('/api/generate-brief', {
                 method: 'POST',
-                body: JSON.stringify({
+                body: {
                     notes,
                     googleDriveLinks
-                })
+                }
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to generate brief');
-            }
-
-            const data = await response.json();
             setGeneratedBrief(data.brief);
             
             // Store briefId for potential future feedback functionality
