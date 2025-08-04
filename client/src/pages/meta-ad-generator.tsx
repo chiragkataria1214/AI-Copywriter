@@ -22,7 +22,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Product } from '@shared/schema';
 import { TrainingConfig } from '@shared/training-config';
 import { GenerationDetailsModal, GenerationMetadata } from '@/components/GenerationDetailsModal';
-import { Header, MainTabs, PaidSocialTabs, AdCopyTab, StaticAdTab, OrganicSocialTab, LandingPageTab, CustomCopyTab, RetentionTab, AISettingsComponent } from '@/components/meta-ad-generator';
+import { Header, MainTabs, PaidSocialTabs, ProductLaunchTabs, AdCopyTab, StaticAdTab, OrganicSocialTab, LandingPageTab, CustomCopyTab, RetentionTab, AISettingsComponent } from '@/components/meta-ad-generator';
 
 interface SubPersona {
   label: string;
@@ -37,6 +37,7 @@ export default function MetaAdGenerator() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('paid-social');
   const [paidSocialSubTab, setPaidSocialSubTab] = useState('ad-copy');
+  const [productLaunchSubTab, setProductLaunchSubTab] = useState('brief-creation');
   const [organicSocialType, setOrganicSocialType] = useState('captions');
 
   // Generation Details Modal state
@@ -1236,6 +1237,19 @@ export default function MetaAdGenerator() {
                 setSelectedItemForRevision={setSelectedItemForRevision}
                 setRevisionInstructions={setRevisionInstructions}
                 setShowRevisionPanel={setShowRevisionPanel}
+                modelSettings={modelSettings}
+                stationPrompts={stationPrompts}
+                brandGuidelines={brandGuidelines}
+                copyFrameworks={copyFrameworks}
+              />
+            </TabsContent>
+
+            <TabsContent value="product-launch">
+              <ProductLaunchTabs 
+                productLaunchSubTab={productLaunchSubTab}
+                setProductLaunchSubTab={setProductLaunchSubTab}
+                personas={personas}
+                products={products}
                 modelSettings={modelSettings}
                 stationPrompts={stationPrompts}
                 brandGuidelines={brandGuidelines}

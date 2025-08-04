@@ -1,6 +1,7 @@
 export * from './Header';
 export * from './MainTabs';
 export * from './PaidSocialTabs';
+export * from './ProductLaunchTabs';
 export * from './AdCopyTab';
 export * from './StaticAdTab';
 export * from './OrganicSocialTab';

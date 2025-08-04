@@ -1,5 +1,5 @@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Sparkles, Users, FileText, Brain, Mail, Settings, Lock } from 'lucide-react';
+import { Sparkles, Users, FileText, Brain, Mail, Settings, Lock, Rocket } from 'lucide-react';
 
 interface MainTabsProps {
     activeTab: string;
@@ -10,7 +10,7 @@ interface MainTabsProps {
 export const MainTabs = ({ activeTab, handleAISettingsClick, hasAdminAccess }: MainTabsProps) => {
     return (
         <div className="flex w-full mb-6 sm:mb-8">
-            <TabsList className="grid grid-cols-6 flex-1">
+            <TabsList className="grid grid-cols-7 flex-1">
                 <TabsTrigger value="paid-social" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
                     <Sparkles size={16} />
                     <span className="text-xs sm:text-sm">Paid Social</span>
@@ -30,6 +30,10 @@ export const MainTabs = ({ activeTab, handleAISettingsClick, hasAdminAccess }: M
                 <TabsTrigger value="retention" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
                     <Mail size={16} />
                     <span className="text-xs sm:text-sm">Retention</span>
+                </TabsTrigger>
+                <TabsTrigger value="product-launch" className="tabs-trigger-fix flex-col sm:flex-row space-y-0 sm:space-y-0 sm:space-x-2">
+                    <Rocket size={16} />
+                    <span className="text-xs sm:text-sm">Product Launch</span>
                 </TabsTrigger>
                 <TabsTrigger
                     value="settings"
