@@ -257,9 +257,9 @@ const BriefCreationTab = (props: any) => {
                     </CardHeader>
                     <CardContent>
                         <div className="prose max-w-none">
-                            <pre className="whitespace-pre-wrap text-sm bg-gray-50 p-4 rounded">
+                            <div className="whitespace-pre-wrap text-sm bg-white border border-gray-200 p-6 rounded-lg text-gray-900 leading-relaxed">
                                 {generatedBrief}
-                            </pre>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
