@@ -1854,15 +1854,16 @@ export async function generateBrief(request: BriefRequest, trainingConfig: Train
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
 
-    let systemPrompt = `You are an expert marketing strategist and brief writer specializing in product launches. Your role is to create comprehensive, strategic product launch briefs that guide successful campaign execution.
+    // Use system prompt from training config if available, otherwise use default
+    let systemPrompt = trainingConfig.stationPrompts?.productLaunch?.systemPrompt || `You are an expert marketing strategist and brief writer specializing in product launches. Your role is to create comprehensive, strategic product launch briefs that guide successful campaign execution.
 
 # Brand Guidelines:
 Core Positioning: ${trainingConfig.brandGuidelines.corePositioning}
 
 `;
 
-    // Add brand voice rules if available
-    if (trainingConfig.brandGuidelines.brandVoice && trainingConfig.brandGuidelines.brandVoice.length > 0) {
+    // Add brand voice rules if available and not using custom system prompt
+    if (!trainingConfig.stationPrompts?.productLaunch?.systemPrompt && trainingConfig.brandGuidelines.brandVoice && trainingConfig.brandGuidelines.brandVoice.length > 0) {
       systemPrompt += 'Brand Voice Rules:\n';
       trainingConfig.brandGuidelines.brandVoice.forEach((rule, index) => {
         const isEnabled = !trainingConfig.brandGuidelines.enabledBrandVoice || trainingConfig.brandGuidelines.enabledBrandVoice[index];
@@ -1873,7 +1874,11 @@ Core Positioning: ${trainingConfig.brandGuidelines.corePositioning}
       systemPrompt += '\n';
     }
 
-    systemPrompt += `
+    // Add brief structure from training config if available
+    if (trainingConfig.stationPrompts?.productLaunch?.briefStructure && !trainingConfig.stationPrompts?.productLaunch?.systemPrompt) {
+      systemPrompt += `\n# Brief Structure Template:\n${trainingConfig.stationPrompts.productLaunch.briefStructure}\n\nUse this structure template when creating the brief.`;
+    } else if (!trainingConfig.stationPrompts?.productLaunch?.systemPrompt) {
+      systemPrompt += `
 # Brief Writing Guidelines:
 
 ## Structure Requirements:
@@ -1903,19 +1908,30 @@ Core Positioning: ${trainingConfig.brandGuidelines.corePositioning}
 - Suggest success metrics
 
 Create a strategic product launch brief that synthesizes the provided information into a comprehensive launch strategy.`;
-
-    let userPrompt = `Based on the following meeting notes and information, create a comprehensive product launch brief:\n\n# Meeting Notes & Input:\n${request.notes}`;
-
-    // Add Google Drive references if provided
-    if (request.googleDriveLinks && request.googleDriveLinks.length > 0) {
-      userPrompt += `\n\n# Referenced Past Briefs:\n`;
-      request.googleDriveLinks.forEach((link, index) => {
-        userPrompt += `${index + 1}. ${link}\n`;
-      });
-      userPrompt += `\nNote: Please reference the strategic frameworks and successful elements from these past briefs in your recommendations.`;
     }
 
-    userPrompt += `\n\nPlease create a strategic, comprehensive product launch brief that incorporates these insights and provides clear direction for the launch campaign.`;
+    // Use user prompt template from training config if available, otherwise use default
+    let userPrompt;
+    if (trainingConfig.stationPrompts?.productLaunch?.userPromptTemplate) {
+      userPrompt = trainingConfig.stationPrompts.productLaunch.userPromptTemplate
+        .replace('{notes}', request.notes)
+        .replace('{googleDriveLinks}', request.googleDriveLinks && request.googleDriveLinks.length > 0 
+          ? `Referenced Past Briefs:\n${request.googleDriveLinks.map((link, i) => `${i + 1}. ${link}`).join('\n')}\n\nNote: Please reference the strategic frameworks and successful elements from these past briefs in your recommendations.\n`
+          : '');
+    } else {
+      userPrompt = `Based on the following meeting notes and information, create a comprehensive product launch brief:\n\n# Meeting Notes & Input:\n${request.notes}`;
+      
+      // Add Google Drive references if provided
+      if (request.googleDriveLinks && request.googleDriveLinks.length > 0) {
+        userPrompt += `\n\n# Referenced Past Briefs:\n`;
+        request.googleDriveLinks.forEach((link, index) => {
+          userPrompt += `${index + 1}. ${link}\n`;
+        });
+        userPrompt += `\nNote: Please reference the strategic frameworks and successful elements from these past briefs in your recommendations.`;
+      }
+      
+      userPrompt += `\n\nPlease create a strategic, comprehensive product launch brief that incorporates these insights and provides clear direction for the launch campaign.`;
+    }
 
     const response = await anthropic.messages.create({
       model: trainingConfig.modelParameters.model,

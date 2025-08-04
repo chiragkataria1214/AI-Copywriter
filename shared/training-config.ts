@@ -72,6 +72,8 @@ export interface TrainingConfig {
       storyStructureGuidelines?: string[];
       sequenceTiming?: string[];
       narrativeTechniques?: string[];
+      // Product Launch Station properties
+      briefStructure?: string;
     };
   };
   modelParameters: {

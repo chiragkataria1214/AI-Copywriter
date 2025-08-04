@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Target, Copy } from 'lucide-react';
+import { Settings, Target, Copy, Rocket } from 'lucide-react';
 import { TrainingConfig } from '@shared/training-config';
 import {
   BrandGuidelinesTab,
@@ -11,6 +11,7 @@ import {
   CopyFrameworksTab,
   CustomerReviewsTab,
   StationPromptsTab,
+  ProductLaunchTab,
   ModelSettingsTab
 } from './AISettings';
 
@@ -81,13 +82,17 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
 
                     {editingConfig ? (
                       <Tabs defaultValue="brand-guidelines" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 p-2 h-auto">
+                        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 p-2 h-auto">
                           <TabsTrigger value="brand-guidelines" className="text-xs sm:text-sm py-2 px-3">Brand Guidelines</TabsTrigger>
                           <TabsTrigger value="product-claims" className="text-xs sm:text-sm py-2 px-3">Product Claims</TabsTrigger>
                           <TabsTrigger value="personas" className="text-xs sm:text-sm py-2 px-3">Personas</TabsTrigger>
                           <TabsTrigger value="frameworks" className="text-xs sm:text-sm py-2 px-3">Copy Frameworks</TabsTrigger>
                           <TabsTrigger value="reviews" className="text-xs sm:text-sm py-2 px-3">Customer Reviews</TabsTrigger>
                           <TabsTrigger value="station-prompts" className="text-xs sm:text-sm py-2 px-3">Station Prompts</TabsTrigger>
+                          <TabsTrigger value="product-launch" className="text-xs sm:text-sm py-2 px-3 flex items-center gap-1">
+                            <Rocket size={14} />
+                            <span>Product Launch</span>
+                          </TabsTrigger>
                           <TabsTrigger value="model" className="text-xs sm:text-sm py-2 px-3">Model Settings</TabsTrigger>
                         </TabsList>
 
@@ -144,6 +149,13 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
                             editingConfig={editingConfig}
                             setEditingConfig={setEditingConfig}
                             effectiveUser={effectiveUser}
+                          />
+                        </TabsContent>
+
+                        <TabsContent value="product-launch" className="mt-4">
+                          <ProductLaunchTab
+                            editingConfig={editingConfig}
+                            setEditingConfig={setEditingConfig}
                           />
                         </TabsContent>
 
