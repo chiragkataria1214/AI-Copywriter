@@ -1840,3 +1840,103 @@ Return as JSON array with this structure:
     throw new Error('Failed to generate story sequence');
   }
 }
+
+// Product Launch Brief Generation
+interface BriefRequest {
+  notes: string;
+  googleDriveLinks?: string[];
+  metadata?: GenerationMetadata;
+}
+
+export async function generateBrief(request: BriefRequest, trainingConfig: TrainingConfig) {
+  try {
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+
+    let systemPrompt = `You are an expert marketing strategist and brief writer specializing in product launches. Your role is to create comprehensive, strategic product launch briefs that guide successful campaign execution.
+
+# Brand Guidelines:
+Core Positioning: ${trainingConfig.brandGuidelines.corePositioning}
+
+`;
+
+    // Add brand voice rules if available
+    if (trainingConfig.brandGuidelines.brandVoice && trainingConfig.brandGuidelines.brandVoice.length > 0) {
+      systemPrompt += 'Brand Voice Rules:\n';
+      trainingConfig.brandGuidelines.brandVoice.forEach((rule, index) => {
+        const isEnabled = !trainingConfig.brandGuidelines.enabledBrandVoice || trainingConfig.brandGuidelines.enabledBrandVoice[index];
+        if (isEnabled) {
+          systemPrompt += `- ${rule}\n`;
+        }
+      });
+      systemPrompt += '\n';
+    }
+
+    systemPrompt += `
+# Brief Writing Guidelines:
+
+## Structure Requirements:
+- Executive Summary
+- Product Overview
+- Target Audience Analysis
+- Competitive Landscape
+- Key Messages & Positioning
+- Launch Strategy & Timeline
+- Channel Strategy
+- Success Metrics & KPIs
+- Budget Considerations
+- Risk Assessment
+
+## Writing Style:
+- Professional yet accessible tone
+- Clear, actionable recommendations
+- Data-driven insights where possible
+- Strategic thinking with tactical execution details
+- Concise but comprehensive coverage
+
+## Output Format:
+- Use clear headings and subheadings
+- Include bullet points for easy scanning
+- Provide specific, actionable recommendations
+- Include timeline considerations
+- Suggest success metrics
+
+Create a strategic product launch brief that synthesizes the provided information into a comprehensive launch strategy.`;
+
+    let userPrompt = `Based on the following meeting notes and information, create a comprehensive product launch brief:\n\n# Meeting Notes & Input:\n${request.notes}`;
+
+    // Add Google Drive references if provided
+    if (request.googleDriveLinks && request.googleDriveLinks.length > 0) {
+      userPrompt += `\n\n# Referenced Past Briefs:\n`;
+      request.googleDriveLinks.forEach((link, index) => {
+        userPrompt += `${index + 1}. ${link}\n`;
+      });
+      userPrompt += `\nNote: Please reference the strategic frameworks and successful elements from these past briefs in your recommendations.`;
+    }
+
+    userPrompt += `\n\nPlease create a strategic, comprehensive product launch brief that incorporates these insights and provides clear direction for the launch campaign.`;
+
+    const response = await anthropic.messages.create({
+      model: trainingConfig.modelParameters.model,
+      max_tokens: trainingConfig.modelParameters.maxTokens,
+      messages: [
+        { role: 'user', content: userPrompt }
+      ],
+      system: systemPrompt
+    });
+
+    const content = response.content[0];
+    if (content.type === 'text') {
+      return { 
+        brief: content.text,
+        metadata: request.metadata
+      };
+    } else {
+      throw new Error('Unexpected response type from Claude');
+    }
+  } catch (error) {
+    console.error('Brief generation error:', error);
+    throw new Error('Failed to generate product launch brief');
+  }
+}

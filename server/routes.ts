@@ -5,7 +5,7 @@ import { registerJunipRoutes } from "./routes-junip";
 import { registerAdminRoutes } from "./routes-admin";
 import { storage } from "./storage";
 import multer from "multer";
-import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd, generateRetentionCopy, generateSocialCaptions, generateStorySequence } from "./anthropic";
+import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd, generateRetentionCopy, generateSocialCaptions, generateStorySequence, generateBrief } from "./anthropic";
 import { analyzeInfluencerVoice, generateInfluencerStyleCopy, fetchInstagramContent } from "./influencer-analyzer";
 import { getTrainingConfig } from "./routes-training";
 import { z } from "zod";
@@ -1214,6 +1214,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Custom copy generation error:', error);
       res.status(500).json({ error: 'Failed to generate custom copy' });
+    }
+  });
+
+  // Product Launch Brief generation endpoint (protected)
+  app.post('/api/generate-brief', requireAuth, async (req, res) => {
+    try {
+      const { notes, googleDriveLinks } = req.body;
+      
+      console.log('Brief generation request:', { notes, googleDriveLinks });
+      
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(400).json({ message: 'Anthropic API key not configured' });
+      }
+      
+      if (!notes || !notes.trim()) {
+        return res.status(400).json({ message: 'Notes are required for brief generation' });
+      }
+      
+      // Get current training config
+      const trainingConfig = await getTrainingConfig();
+      
+      const result = await generateBrief({
+        notes: notes.trim(),
+        googleDriveLinks: googleDriveLinks || []
+      }, trainingConfig);
+      
+      res.json({
+        brief: result.brief,
+        metadata: result.metadata
+      });
+    } catch (error) {
+      console.error('Brief generation error:', error);
+      res.status(500).json({ error: 'Failed to generate product launch brief' });
     }
   });
 
