@@ -12,8 +12,9 @@ import { z } from "zod";
 import bcrypt from "bcrypt";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import { pool } from "./db";
-import { insertUserSchema, adminCreateUserSchema, updateUserSchema, insertProductSchema, insertProductClaimSchema, insertPersonaSchema, insertPersonaPillarSchema, insertBrandConfigurationSchema, insertCopyFrameworkSchema } from "@shared/schema";
+import { pool, db } from "./db";
+import { eq } from "drizzle-orm";
+import { insertUserSchema, adminCreateUserSchema, updateUserSchema, insertProductSchema, insertProductClaimSchema, insertPersonaSchema, insertPersonaPillarSchema, insertBrandConfigurationSchema, insertCopyFrameworkSchema, productBriefs, insertProductBriefSchema } from "@shared/schema";
 
 const upload = multer({ dest: 'uploads/' });
 
@@ -1232,6 +1233,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Notes are required for brief generation' });
       }
       
+      // Track generation start time
+      const startTime = Date.now();
+      
       // Get current training config
       const trainingConfig = await getTrainingConfig();
       
@@ -1240,13 +1244,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
         googleDriveLinks: googleDriveLinks || []
       }, trainingConfig);
       
+      // Calculate generation time
+      const generationTimeMs = Date.now() - startTime;
+      
+      // Save the brief to database for model improvement
+      let briefId = null;
+      try {
+        const [insertedBrief] = await db.insert(productBriefs).values({
+          userId: (req.session as any)?.userId || 'demo-user',
+          notes: notes.trim(),
+          googleDriveLinks: googleDriveLinks || [],
+          generatedBrief: result.brief,
+          configSnapshot: trainingConfig,
+          generationTimeMs,
+          tokensUsed: null
+        }).returning({ id: productBriefs.id });
+        
+        briefId = insertedBrief.id;
+        console.log('Brief saved to database for training improvement:', briefId);
+      } catch (dbError) {
+        console.error('Failed to save brief to database:', dbError);
+        // Don't fail the request if database save fails
+      }
+      
       res.json({
         brief: result.brief,
+        briefId: briefId,
         metadata: result.metadata
       });
     } catch (error) {
       console.error('Brief generation error:', error);
       res.status(500).json({ error: 'Failed to generate product launch brief' });
+    }
+  });
+
+  // Brief feedback endpoint for model improvement (protected)
+  app.post('/api/brief-feedback', requireAuth, async (req, res) => {
+    try {
+      const { briefId, rating, feedback, wasEdited, finalVersion } = req.body;
+      
+      if (!briefId) {
+        return res.status(400).json({ message: 'Brief ID is required' });
+      }
+      
+      // Update the brief with feedback data
+      await db.update(productBriefs)
+        .set({ 
+          rating: rating || null,
+          feedback: feedback || null,
+          wasEdited: wasEdited ? 'true' : 'false',
+          finalVersion: finalVersion || null,
+          updatedAt: new Date()
+        })
+        .where(eq(productBriefs.id, briefId));
+      
+      console.log('Brief feedback saved:', { briefId, rating, hasCustomFeedback: !!feedback });
+      
+      res.json({ success: true, message: 'Feedback saved successfully' });
+    } catch (error) {
+      console.error('Brief feedback error:', error);
+      res.status(500).json({ error: 'Failed to save brief feedback' });
     }
   });
 

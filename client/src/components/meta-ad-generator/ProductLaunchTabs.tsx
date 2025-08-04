@@ -108,6 +108,12 @@ const BriefCreationTab = (props: any) => {
 
             const data = await response.json();
             setGeneratedBrief(data.brief);
+            
+            // Store briefId for potential future feedback functionality
+            if (data.briefId) {
+                console.log('Brief saved with ID:', data.briefId);
+            }
+            
             toast({ title: "Brief generated successfully!" });
         } catch (error) {
             console.error('Brief generation error:', error);

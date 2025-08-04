@@ -231,3 +231,41 @@ export type CopyFramework = typeof copyFrameworks.$inferSelect;
 export type InsertCopyFramework = z.infer<typeof insertCopyFrameworkSchema>;
 export type SystemConfiguration = typeof systemConfiguration.$inferSelect;
 export type InsertSystemConfiguration = z.infer<typeof insertSystemConfigurationSchema>;
+
+// Product launch briefs table for storing and improving AI training data
+export const productBriefs = pgTable("product_briefs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  
+  // Input data
+  notes: text("notes").notNull(), // Meeting notes and transcripts
+  googleDriveLinks: jsonb("google_drive_links"), // Array of Google Drive links to past briefs
+  
+  // Generated output
+  generatedBrief: text("generated_brief").notNull(),
+  
+  // AI configuration used
+  configSnapshot: jsonb("config_snapshot"), // Training config at time of generation
+  
+  // Performance tracking
+  generationTimeMs: integer("generation_time_ms"), // Time taken to generate
+  tokensUsed: integer("tokens_used"), // Claude tokens consumed
+  
+  // Quality feedback (for future model improvement)
+  rating: varchar("rating"), // "excellent", "good", "poor", null
+  feedback: text("feedback"), // Optional text feedback from user
+  wasEdited: varchar("was_edited").default("false"), // Track if user edited the output
+  finalVersion: text("final_version"), // Store user's final edited version if different
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertProductBriefSchema = createInsertSchema(productBriefs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type ProductBrief = typeof productBriefs.$inferSelect;
+export type InsertProductBrief = z.infer<typeof insertProductBriefSchema>;
