@@ -647,7 +647,7 @@ ${selectedProduct ? `PRODUCT FOCUS: ${selectedProduct}` : ''}`;
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
     
     // Debug logging to see what we received
-    console.log('AI Response for landing page:', content.substring(0, 500) + '...');
+    // console.log('AI Response for landing page:', content.substring(0, 500) + '...');
     
     // Try to parse as JSON first, then fall back to text parsing
     let parsedJson = null;

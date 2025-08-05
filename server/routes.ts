@@ -1523,7 +1523,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customRequest, concept, brandDrBalance, selectedProduct, useJonesBrandGuide } = req.body;
       
-      console.log('Custom copy request:', { customRequest, concept, brandDrBalance, selectedProduct, useJonesBrandGuide });
+      // console.log('Custom copy request:', { customRequest, concept, brandDrBalance, selectedProduct, useJonesBrandGuide });
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -1858,7 +1858,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         imageData // Add image data parameter
       } = req.body;
       
-      console.log('Story sequence request:', { contentType, sequenceType, length, tone, selectedProduct, transcriptionLength: transcription?.length, hasImageData: !!imageData });
+      // console.log('Story sequence request:', { contentType, sequenceType, length, tone, selectedProduct, transcriptionLength: transcription?.length, hasImageData: !!imageData });
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });

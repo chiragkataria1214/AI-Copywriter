@@ -893,15 +893,15 @@ export function OrganicSocialTab({
                       imageData = storyImagePreview; // This contains the full data URI
                     }
 
-                    console.log('🚀 Sending Story Sequence Request:', {
-                      contentType: storyContentType,
-                      transcription: storyVideoTranscription,
-                      sequenceType: storySequenceType,
-                      length: storyLength,
-                      tone: storyTone,
-                      selectedProduct: selectedProduct,
-                      hasImageData: !!imageData
-                    });
+                    // console.log('🚀 Sending Story Sequence Request:', {
+                    //   contentType: storyContentType,
+                    //   transcription: storyVideoTranscription,
+                    //   sequenceType: storySequenceType,
+                    //   length: storyLength,
+                    //   tone: storyTone,
+                    //   selectedProduct: selectedProduct,
+                    //   hasImageData: !!imageData
+                    // });
 
                     const response = await fetch('/api/generate-story-sequence', {
                       method: 'POST',
@@ -918,7 +918,7 @@ export function OrganicSocialTab({
                       })
                     });
 
-                    console.log('📡 Story Sequence Response Status:', response.status, response.statusText);
+                    // console.log('📡 Story Sequence Response Status:', response.status, response.statusText);
 
                     if (!response.ok) {
                       const errorData = await response.json().catch(() => ({ error: 'Failed to generate story sequence' }));
@@ -927,9 +927,9 @@ export function OrganicSocialTab({
                     }
 
                     const data = await response.json();
-                    console.log('🔍 Story Sequence API Response:', data);
-                    console.log('📚 Generated Story Sequence Array:', data.sequence);
-                    console.log('📊 Number of slides received:', data.sequence?.length || 0);
+                    // console.log('🔍 Story Sequence API Response:', data);
+                    // console.log('📚 Generated Story Sequence Array:', data.sequence);
+                    // console.log('📊 Number of slides received:', data.sequence?.length || 0);
                     
                     // Ensure we have a valid array of slides
                     let sequence = data.sequence || [];
@@ -950,17 +950,17 @@ export function OrganicSocialTab({
                       sequence = [];
                     }
                     
-                    if (sequence && Array.isArray(sequence)) {
-                      sequence.forEach((slide: any, index: number) => {
-                        console.log(`📄 Slide ${index + 1}:`, {
-                          slide: slide.slide,
-                          type: slide.type,
-                          title: slide.title,
-                          content: slide.content,
-                          visualDirection: slide.visualDirection
-                        });
-                      });
-                    }
+                    // if (sequence && Array.isArray(sequence)) {
+                    //   sequence.forEach((slide: any, index: number) => {
+                    //     console.log(`📄 Slide ${index + 1}:`, {
+                    //       slide: slide.slide,
+                    //       type: slide.type,
+                    //       title: slide.title,
+                    //       content: slide.content,
+                    //       visualDirection: slide.visualDirection
+                    //     });
+                    //   });
+                    // }
                     
                     setGeneratedStorySequence(sequence);
                   } catch (error) {
