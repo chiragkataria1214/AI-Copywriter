@@ -18,6 +18,10 @@ import {
   type InsertCopyFramework,
   type SystemConfiguration,
   type InsertSystemConfiguration,
+  type EmailFramework,
+  type InsertEmailFramework,
+  type EmailImageAnalysis,
+  type InsertEmailImageAnalysis,
   users,
   generatedCopy,
   passwordResetTokens,
@@ -28,6 +32,8 @@ import {
   brandConfiguration,
   copyFrameworks,
   systemConfiguration,
+  emailFrameworks,
+  emailImageAnalysis,
   adminCreateUserSchema,
   updateUserSchema
 } from "@shared/schema";
@@ -107,6 +113,21 @@ export interface IStorage {
   getSystemConfiguration(): Promise<SystemConfiguration[]>;
   getSystemConfigValue(key: string): Promise<string | null>;
   setSystemConfigValue(key: string, value: string, description?: string): Promise<SystemConfiguration>;
+  
+  // Email frameworks operations
+  getAllEmailFrameworks(): Promise<EmailFramework[]>;
+  getActiveEmailFrameworks(): Promise<EmailFramework[]>;
+  getEmailFramework(name: string): Promise<EmailFramework | undefined>;
+  createEmailFramework(data: InsertEmailFramework): Promise<EmailFramework>;
+  updateEmailFramework(name: string, data: Partial<InsertEmailFramework>): Promise<EmailFramework>;
+  deleteEmailFramework(name: string): Promise<void>;
+  
+  // Email image analysis operations
+  saveEmailImageAnalysis(data: InsertEmailImageAnalysis): Promise<EmailImageAnalysis>;
+  getEmailImageAnalysis(id: string): Promise<EmailImageAnalysis | undefined>;
+  getEmailImageAnalysisByUser(userId: string): Promise<EmailImageAnalysis[]>;
+  updateEmailImageAnalysis(id: string, data: Partial<InsertEmailImageAnalysis>): Promise<EmailImageAnalysis>;
+  deleteEmailImageAnalysis(id: string): Promise<void>;
   
   // Comprehensive training config getter (combines all database sources)
   getTrainingConfiguration(): Promise<any>;
@@ -1043,6 +1064,58 @@ export class DatabaseStorage implements IStorage {
       }
       // #endregion
     });
+  }
+
+  // Email frameworks operations
+  async getAllEmailFrameworks(): Promise<EmailFramework[]> {
+    return await db.select().from(emailFrameworks).orderBy(emailFrameworks.sortOrder);
+  }
+
+  async getActiveEmailFrameworks(): Promise<EmailFramework[]> {
+    return await db.select().from(emailFrameworks).where(eq(emailFrameworks.isActive, 'true')).orderBy(emailFrameworks.sortOrder);
+  }
+
+  async getEmailFramework(name: string): Promise<EmailFramework | undefined> {
+    const [framework] = await db.select().from(emailFrameworks).where(eq(emailFrameworks.name, name));
+    return framework || undefined;
+  }
+
+  async createEmailFramework(data: InsertEmailFramework): Promise<EmailFramework> {
+    const [framework] = await db.insert(emailFrameworks).values(data).returning();
+    return framework;
+  }
+
+  async updateEmailFramework(name: string, data: Partial<InsertEmailFramework>): Promise<EmailFramework> {
+    const [framework] = await db.update(emailFrameworks).set(data).where(eq(emailFrameworks.name, name)).returning();
+    return framework;
+  }
+
+  async deleteEmailFramework(name: string): Promise<void> {
+    await db.delete(emailFrameworks).where(eq(emailFrameworks.name, name));
+  }
+
+  // Email image analysis operations
+  async saveEmailImageAnalysis(data: InsertEmailImageAnalysis): Promise<EmailImageAnalysis> {
+    const [analysis] = await db.insert(emailImageAnalysis).values(data).returning();
+    return analysis;
+  }
+
+  async getEmailImageAnalysis(id: string): Promise<EmailImageAnalysis | undefined> {
+    const [analysis] = await db.select().from(emailImageAnalysis).where(eq(emailImageAnalysis.id, id));
+    return analysis || undefined;
+  }
+
+  async getEmailImageAnalysisByUser(userId: string): Promise<EmailImageAnalysis[]> {
+    return await db.select().from(emailImageAnalysis).where(eq(emailImageAnalysis.userId, userId)).orderBy(desc(emailImageAnalysis.createdAt));
+  }
+
+  async updateEmailImageAnalysis(id: string, data: Partial<InsertEmailImageAnalysis>): Promise<EmailImageAnalysis> {
+    const [analysis] = await db.update(emailImageAnalysis).set(data).where(eq(emailImageAnalysis.id, id)).returning();
+    return analysis;
+  }
+
+  async deleteEmailImageAnalysis(id: string): Promise<void> {
+    await db.delete(emailImageAnalysis).where(eq(emailImageAnalysis.id, id));
   }
 }
 

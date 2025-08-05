@@ -27,6 +27,8 @@ export const StationPromptsTab: React.FC<StationPromptsTabProps> = ({
   const [currentGenerationMetadata, setCurrentGenerationMetadata] = useState<GenerationMetadata | null>(null);
   const [emailTemplates, setEmailTemplates] = useState<string[]>([]);
   const [emailTemplatePreviews, setEmailTemplatePreviews] = useState<string[]>([]);
+  const [emailFrameworks, setEmailFrameworks] = useState<any[]>([]);
+  const [expandedFrameworks, setExpandedFrameworks] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   // Load email templates on component mount
@@ -46,6 +48,22 @@ export const StationPromptsTab: React.FC<StationPromptsTabProps> = ({
     };
 
     loadEmailTemplates();
+  }, []);
+
+  // Load email frameworks on component mount
+  useEffect(() => {
+    const loadEmailFrameworks = async () => {
+      try {
+        const data = await apiRequest('/api/email-frameworks');
+        if (data && Array.isArray(data)) {
+          setEmailFrameworks(data);
+        }
+      } catch (error) {
+        console.error('Failed to load email frameworks:', error);
+      }
+    };
+
+    loadEmailFrameworks();
   }, []);
 
   // Save email templates to database
@@ -126,7 +144,43 @@ export const StationPromptsTab: React.FC<StationPromptsTabProps> = ({
       newExpanded.add(stationId);
     }
     setExpandedStations(newExpanded);
+  }
+
+  const toggleFramework = (frameworkName: string) => {
+    const newExpanded = new Set(expandedFrameworks);
+    if (newExpanded.has(frameworkName)) {
+      newExpanded.delete(frameworkName);
+    } else {
+      newExpanded.add(frameworkName);
+    }
+    setExpandedFrameworks(newExpanded);
   };
+
+  const updateEmailFramework = async (frameworkName: string, data: any) => {
+    try {
+      await apiRequest(`/api/email-frameworks/${frameworkName}`, {
+        method: 'PUT',
+        body: data,
+      });
+      
+      // Update local state
+      setEmailFrameworks(prev => prev.map(fw => 
+        fw.name === frameworkName ? { ...fw, ...data } : fw
+      ));
+      
+      toast({
+        title: "Framework Updated",
+        description: `${data.displayName || frameworkName} framework has been updated.`,
+      });
+    } catch (error) {
+      console.error('Failed to update email framework:', error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update framework. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };;
 
   // Email template upload handler
   const handleEmailTemplateUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -769,6 +823,143 @@ To see actual AI responses, generate content using this station.`,
                 disabled={effectiveUser?.role !== 'admin'}
               />
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Email Frameworks Station */}
+      <div className="border border-gray-200 rounded-lg">
+        <StationToggleButton
+          isOpen={expandedStations.has('emailFrameworks')}
+          onClick={() => toggleStation('emailFrameworks')}
+          title="Email Frameworks Station"
+          icon={<Mail className="w-5 h-5" />}
+          iconColor="text-green-500"
+          description="Editable email copywriting frameworks for different campaign types"
+          stationId="emailFrameworks"
+        />
+        
+        {expandedStations.has('emailFrameworks') && (
+          <div className="p-6 pt-4 border-t border-gray-100 space-y-6">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <p className="text-sm text-green-800 font-medium">📧 Email Framework Management</p>
+              <p className="text-sm text-green-700 mt-1">
+                Configure and customize email copywriting frameworks for different campaign types. Each framework includes specific guidelines, structure templates, and best practices.
+              </p>
+            </div>
+
+            {emailFrameworks.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Mail className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>Loading email frameworks...</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {emailFrameworks.map((framework) => (
+                  <div key={framework.name} className="border border-gray-200 rounded-lg">
+                    <button
+                      onClick={() => toggleFramework(framework.name)}
+                      className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors duration-200"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2">
+                          {expandedFrameworks.has(framework.name) ? (
+                            <ChevronDown className="w-4 h-4 text-gray-500" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-gray-500" />
+                          )}
+                          <Mail className="w-4 h-4 text-green-500" />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-900">{framework.displayName}</h4>
+                          {!expandedFrameworks.has(framework.name) && (
+                            <p className="text-sm text-gray-600 mt-1">{framework.description}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          framework.isActive === 'true' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {framework.isActive === 'true' ? 'Active' : 'Inactive'}
+                        </div>
+                        <span className="text-xs text-gray-500 font-medium">
+                          {expandedFrameworks.has(framework.name) ? 'Collapse' : 'Expand'}
+                        </span>
+                      </div>
+                    </button>
+                    
+                    {expandedFrameworks.has(framework.name) && (
+                      <div className="border-t border-gray-200 p-6 space-y-6">
+                        <div>
+                          <Label className="text-sm font-medium text-gray-900 mb-3 block">Framework Description</Label>
+                          <Textarea
+                            value={framework.description || ''}
+                            onChange={(e) => updateEmailFramework(framework.name, { description: e.target.value })}
+                            className="text-gray-900"
+                            rows={2}
+                            placeholder="Brief description of this email framework..."
+                            disabled={effectiveUser?.role !== 'admin'}
+                          />
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium text-gray-900 mb-3 block">Key Guidelines</Label>
+                          <Textarea
+                            value={framework.keyGuidelines || ''}
+                            onChange={(e) => updateEmailFramework(framework.name, { keyGuidelines: e.target.value })}
+                            className="text-gray-900"
+                            rows={6}
+                            placeholder="Key guidelines and best practices for this framework..."
+                            disabled={effectiveUser?.role !== 'admin'}
+                          />
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium text-gray-900 mb-3 block">Structure Template</Label>
+                          <Textarea
+                            value={framework.structureTemplate || ''}
+                            onChange={(e) => updateEmailFramework(framework.name, { structureTemplate: e.target.value })}
+                            className="text-gray-900"
+                            rows={8}
+                            placeholder="Email structure template with placeholders..."
+                            disabled={effectiveUser?.role !== 'admin'}
+                          />
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium text-gray-900 mb-3 block">Example Copy</Label>
+                          <Textarea
+                            value={framework.exampleCopy || ''}
+                            onChange={(e) => updateEmailFramework(framework.name, { exampleCopy: e.target.value })}
+                            className="text-gray-900"
+                            rows={6}
+                            placeholder="Example email copy using this framework..."
+                            disabled={effectiveUser?.role !== 'admin'}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={framework.isActive === 'true'}
+                              onCheckedChange={(checked) => updateEmailFramework(framework.name, { isActive: checked ? 'true' : 'false' })}
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                            <Label className="text-sm font-medium text-gray-900">Active Framework</Label>
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Sort Order: {framework.sortOrder}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

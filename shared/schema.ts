@@ -174,6 +174,34 @@ export const systemConfiguration = pgTable("system_configuration", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Email frameworks table for the 15 email types and their specific structures
+export const emailFrameworks = pgTable("email_frameworks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(), // e.g., "gtl", "plain_text", "product_spotlight"
+  displayName: varchar("display_name").notNull(), // e.g., "GTL (Get the Look)", "Plain Text / Letter-Style Note"
+  description: text("description").notNull(), // Purpose and use case
+  structure: text("structure").notNull(), // Framework structure description
+  keyElements: text("key_elements"), // Key elements and guidelines
+  systemPrompt: text("system_prompt").notNull(), // AI prompt for this framework
+  isActive: varchar("is_active").default("true"),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Email image analysis table for storing uploaded email images and their framework analysis
+export const emailImageAnalysis = pgTable("email_image_analysis", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  imagePath: varchar("image_path").notNull(), // Path to uploaded image
+  selectedFramework: varchar("selected_framework").references(() => emailFrameworks.name).notNull(),
+  aiAnalysis: text("ai_analysis").notNull(), // Claude's analysis of the email
+  extractedElements: jsonb("extracted_elements"), // Structured data from analysis
+  confidence: integer("confidence"), // AI confidence score 0-100
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Create insert schemas
 export const insertProductSchema = createInsertSchema(products).omit({
   id: true,
@@ -216,6 +244,18 @@ export const insertSystemConfigurationSchema = createInsertSchema(systemConfigur
   updatedAt: true,
 });
 
+export const insertEmailFrameworkSchema = createInsertSchema(emailFrameworks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertEmailImageAnalysisSchema = createInsertSchema(emailImageAnalysis).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Export types
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
@@ -231,6 +271,10 @@ export type CopyFramework = typeof copyFrameworks.$inferSelect;
 export type InsertCopyFramework = z.infer<typeof insertCopyFrameworkSchema>;
 export type SystemConfiguration = typeof systemConfiguration.$inferSelect;
 export type InsertSystemConfiguration = z.infer<typeof insertSystemConfigurationSchema>;
+export type EmailFramework = typeof emailFrameworks.$inferSelect;
+export type InsertEmailFramework = z.infer<typeof insertEmailFrameworkSchema>;
+export type EmailImageAnalysis = typeof emailImageAnalysis.$inferSelect;
+export type InsertEmailImageAnalysis = z.infer<typeof insertEmailImageAnalysisSchema>;
 
 // Product launch briefs table for storing and improving AI training data
 export const productBriefs = pgTable("product_briefs", {

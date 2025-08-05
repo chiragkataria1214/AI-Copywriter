@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { GenerationMetadata } from '@/components/GenerationDetailsModal';
+import { EmailImageAnalyzer } from '@/components/EmailImageAnalyzer';
 
 interface SubPersona {
   label: string;
@@ -148,7 +149,25 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
   copyFrameworks,
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [emailFrameworks, setEmailFrameworks] = useState<any[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Load email frameworks on component mount
+  useEffect(() => {
+    const loadEmailFrameworks = async () => {
+      try {
+        const response = await fetch('/api/email-frameworks');
+        if (response.ok) {
+          const data = await response.json();
+          setEmailFrameworks(data);
+        }
+      } catch (error) {
+        console.error('Failed to load email frameworks:', error);
+      }
+    };
+
+    loadEmailFrameworks();
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -725,6 +744,11 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
           </CardContent>
         </Card>
       </div>
+
+      {/* Email Image Analyzer */}
+      {retentionPlatform === 'Email' && emailFrameworks.length > 0 && (
+        <EmailImageAnalyzer emailFrameworks={emailFrameworks} />
+      )}
 
       {/* Output Section */}
       <div className="space-y-4 sm:space-y-6">

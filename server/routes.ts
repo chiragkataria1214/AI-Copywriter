@@ -462,6 +462,121 @@ function registerConfigRoutes(app: Express) {
     }
   });
   
+  // Email frameworks endpoints
+  app.get("/api/email-frameworks", async (req, res) => {
+    try {
+      const frameworks = await storage.getAllEmailFrameworks();
+      res.json(frameworks);
+    } catch (error) {
+      console.error("Error fetching email frameworks:", error);
+      res.status(500).json({ error: "Failed to fetch email frameworks" });
+    }
+  });
+  
+  app.get("/api/email-frameworks/active", async (req, res) => {
+    try {
+      const frameworks = await storage.getActiveEmailFrameworks();
+      res.json(frameworks);
+    } catch (error) {
+      console.error("Error fetching active email frameworks:", error);
+      res.status(500).json({ error: "Failed to fetch active email frameworks" });
+    }
+  });
+  
+  app.get("/api/email-frameworks/:name", async (req, res) => {
+    try {
+      const { name } = req.params;
+      const framework = await storage.getEmailFramework(name);
+      if (!framework) {
+        return res.status(404).json({ error: "Email framework not found" });
+      }
+      res.json(framework);
+    } catch (error) {
+      console.error("Error fetching email framework:", error);
+      res.status(500).json({ error: "Failed to fetch email framework" });
+    }
+  });
+  
+  app.put("/api/email-frameworks/:name", requireAuth, async (req, res) => {
+    try {
+      const { name } = req.params;
+      const data = req.body;
+      const framework = await storage.updateEmailFramework(name, data);
+      res.json(framework);
+    } catch (error) {
+      console.error("Error updating email framework:", error);
+      res.status(400).json({ error: "Failed to update email framework" });
+    }
+  });
+  
+  // Email image analysis endpoints
+  app.post("/api/email-image-analysis", requireAuth, upload.single('image'), async (req, res) => {
+    try {
+      const { selectedFramework } = req.body;
+      const file = req.file;
+      
+      if (!file) {
+        return res.status(400).json({ error: "No image file provided" });
+      }
+      
+      if (!selectedFramework) {
+        return res.status(400).json({ error: "Selected framework is required" });
+      }
+      
+      // Get the framework details
+      const framework = await storage.getEmailFramework(selectedFramework);
+      if (!framework) {
+        return res.status(400).json({ error: "Invalid email framework selected" });
+      }
+      
+      // TODO: Analyze the image with Claude AI using the framework
+      // For now, create a placeholder analysis
+      const analysisData = {
+        userId: req.session.userId,
+        imagePath: file.path,
+        selectedFramework,
+        aiAnalysis: `Email analysis for ${framework.displayName} framework - placeholder analysis`,
+        extractedElements: {
+          subject: "Placeholder subject",
+          preheader: "Placeholder preheader",
+          ctaButtons: ["Shop Now"],
+          framework: framework.name
+        },
+        confidence: 85
+      };
+      
+      const analysis = await storage.saveEmailImageAnalysis(analysisData);
+      res.json(analysis);
+    } catch (error) {
+      console.error("Error analyzing email image:", error);
+      res.status(500).json({ error: "Failed to analyze email image" });
+    }
+  });
+  
+  app.get("/api/email-image-analysis", requireAuth, async (req, res) => {
+    try {
+      const analyses = await storage.getEmailImageAnalysisByUser(req.session.userId);
+      res.json(analyses);
+    } catch (error) {
+      console.error("Error fetching email analyses:", error);
+      res.status(500).json({ error: "Failed to fetch email analyses" });
+    }
+  });
+  
+  app.get("/api/email-image-analysis/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const analysis = await storage.getEmailImageAnalysis(id);
+      if (!analysis) {
+        return res.status(404).json({ error: "Email analysis not found" });
+      }
+      res.json(analysis);
+    } catch (error) {
+      console.error("Error fetching email analysis:", error);
+      res.status(500).json({ error: "Failed to fetch email analysis" });
+    }
+  });
+  
   // Get personas from database
   app.get('/personas', async (req, res) => {
     try {
