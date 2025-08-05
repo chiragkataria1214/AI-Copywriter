@@ -64,15 +64,15 @@ export function useAuth() {
   const isUnauthenticated = error && (error?.message?.includes('401') || error?.message?.includes('Authentication required'));
   
   // Debug authentication state - remove after fix
-  if (Math.random() < 0.1) { // Only log 10% of the time to reduce noise
-    console.log('useAuth debug:', {
-      user: user ? { id: (user as any).id, username: (user as any).username } : null,
-      error: error ? (error as any).message : null,
-      isAuthenticated,
-      isUnauthenticated,
-      isLoading
-    });
-  }
+  // if (Math.random() < 0.1) { // Only log 10% of the time to reduce noise
+  //   console.log('useAuth debug:', {
+  //     user: user ? { id: (user as any).id, username: (user as any).username } : null,
+  //     error: error ? (error as any).message : null,
+  //     isAuthenticated,
+  //     isUnauthenticated,
+  //     isLoading
+  //   });
+  // }
 
   return {
     user,

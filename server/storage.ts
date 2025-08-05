@@ -1087,14 +1087,14 @@ export class DatabaseStorage implements IStorage {
             sortOrder: fw.sortOrder !== undefined ? fw.sortOrder : index,
           };
 
-          console.log('DEBUG: Processing email framework for save:', {
-            index,
-            frameworkName: frameworkData.displayName,
-            hasImages: !!fw.images,
-            imagesCount: fw.images ? fw.images.length : 0,
-            images: fw.images,
-            frameworkData
-          });
+          // console.log('DEBUG: Processing email framework for save:', {
+          //   index,
+          //   frameworkName: frameworkData.displayName,
+          //   hasImages: !!fw.images,
+          //   imagesCount: fw.images ? fw.images.length : 0,
+          //   images: fw.images,
+          //   frameworkData
+          // });
 
           if (existingFw) {
             // Update existing framework

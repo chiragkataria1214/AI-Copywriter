@@ -477,9 +477,9 @@ export function OrganicSocialTab({
                     }
 
                     const data = await response.json();
-                    console.log('🔍 Social Captions API Response:', data);
-                    console.log('📝 Generated Captions Array:', data.captions);
-                    console.log('📊 Number of captions received:', data.captions?.length || 0);
+                    // console.log('🔍 Social Captions API Response:', data);
+                    // console.log('📝 Generated Captions Array:', data.captions);
+                    // console.log('📊 Number of captions received:', data.captions?.length || 0);
                     
                     // Ensure we have a valid array of captions
                     let captions = data.captions || [];
@@ -500,11 +500,11 @@ export function OrganicSocialTab({
                       captions = [captions];
                     }
                     
-                    if (captions && Array.isArray(captions)) {
-                      captions.forEach((caption: string, index: number) => {
-                        console.log(`📄 Caption ${index + 1}:`, caption);
-                      });
-                    }
+                    // if (captions && Array.isArray(captions)) {
+                    //   captions.forEach((caption: string, index: number) => {
+                    //     console.log(`📄 Caption ${index + 1}:`, caption);
+                    //   });
+                    // }
                     
                     setGeneratedCaptions(captions);
                   } catch (error) {

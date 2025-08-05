@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Mail, MessageSquare, FileText, Copy, Settings, Zap } from 'lucide-react';
+import { Mail, MessageSquare, FileText, Copy, Settings, Zap, Eye, Image } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -165,6 +165,9 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [emailFrameworks, setEmailFrameworks] = useState<EmailFramework[]>([]);
   const [loadingFrameworks, setLoadingFrameworks] = useState(false);
+  const [visualPreviewHtml, setVisualPreviewHtml] = useState<string>('');
+  const [showVisualPreview, setShowVisualPreview] = useState(false);
+  const [generatingPreview, setGeneratingPreview] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Load email frameworks on component mount
@@ -205,6 +208,54 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
     };
   }, []);
 
+  // Generate visual preview function
+  const generateVisualPreview = async () => {
+    if (!generatedRetentionCopy.trim()) return;
+    
+    setGeneratingPreview(true);
+    try {
+      const selectedFramework = getSelectedFramework();
+      const response = await fetch('/api/generate-retention-visual-preview', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          copyContent: generatedRetentionCopy,
+          platform: retentionPlatform,
+          emailType: retentionEmailType,
+          selectedFramework: selectedFramework
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate visual preview');
+      }
+
+      if (data.htmlContent) {
+        // Additional frontend cleaning to remove any remaining markdown
+        let cleanHtml = data.htmlContent;
+        
+        // Remove markdown code blocks if they still exist
+        cleanHtml = cleanHtml.replace(/^```[a-zA-Z]*\s*/gi, '').trim();
+        cleanHtml = cleanHtml.replace(/```\s*$/gi, '').trim();
+        cleanHtml = cleanHtml.replace(/^```/g, '').replace(/```$/g, '').trim();
+        
+        setVisualPreviewHtml(cleanHtml);
+        setShowVisualPreview(true);
+      }
+    } catch (error) {
+      console.error('Failed to generate visual preview:', error);
+      // Reset preview state on error
+      setVisualPreviewHtml('');
+      setShowVisualPreview(false);
+    } finally {
+      setGeneratingPreview(false);
+    }
+  };
+
   // Helper function to get selected framework details
   const getSelectedFramework = (): EmailFramework | null => {
     if (!retentionEmailType || emailFrameworks.length === 0) return null;
@@ -230,7 +281,10 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                 </Label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
-                    onClick={() => setRetentionPlatform('Email')}
+                    onClick={() => {
+                      setRetentionPlatform('Email');
+                      setShowVisualPreview(false); // Hide preview on platform change
+                    }}
                     className={`p-3 border-2 rounded-lg text-center transition-colors ${retentionPlatform === 'Email'
                         ? 'border-[#004182] bg-[#004182]/10 text-[#004182]'
                         : 'border-gray-300 hover:border-[#004182]'
@@ -240,7 +294,10 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                     <span className="text-sm font-medium">Email</span>
                   </button>
                   <button
-                    onClick={() => setRetentionPlatform('SMS')}
+                    onClick={() => {
+                      setRetentionPlatform('SMS');
+                      setShowVisualPreview(false); // Hide preview on platform change
+                    }}
                     className={`p-3 border-2 rounded-lg text-center transition-colors ${retentionPlatform === 'SMS'
                         ? 'border-[#004182] bg-[#004182]/10 text-[#004182]'
                         : 'border-gray-300 hover:border-[#004182]'
@@ -277,7 +334,7 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                     <SelectTrigger>
                       <SelectValue placeholder={loadingFrameworks ? "Loading frameworks..." : "Select email type"} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-60 overflow-y-auto">
                       {emailFrameworks.length > 0 ? (
                         emailFrameworks
                           .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -767,12 +824,17 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                 </p>
               </div>
 
+
+
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="w-full">
                       <Button
-                        onClick={() => generateRetentionCopyMutation.mutate()}
+                        onClick={() => {
+                          setShowVisualPreview(false); // Hide preview when generating new copy
+                          generateRetentionCopyMutation.mutate();
+                        }}
                         disabled={!retentionKeyMessage.trim() || generateRetentionCopyMutation.isPending || getGenerationDisabledState('emailSmsRetention').disabled}
                         className="w-full flex items-center justify-center space-x-2"
                       >
@@ -851,7 +913,7 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                   </div>
                 </div>
 
-                <div className="flex space-x-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     variant="outline"
                     onClick={() => copyToClipboard(generatedRetentionCopy, 'retention')}
@@ -859,6 +921,25 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                   >
                     <Copy size={16} />
                     <span>Copy</span>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={generateVisualPreview}
+                    disabled={generatingPreview}
+                    className="flex items-center space-x-2"
+                  >
+                    {generatingPreview ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                        <span>Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye size={16} />
+                        <span>Preview {retentionPlatform}</span>
+                      </>
+                    )}
                   </Button>
 
                   <Button
@@ -901,6 +982,47 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                   </Button>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Visual Preview */}
+        {showVisualPreview && visualPreviewHtml && (
+          <Card>
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
+                  <Image className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                  {retentionPlatform} Visual Preview
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowVisualPreview(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ×
+                </Button>
+              </div>
+
+              <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                  <p className="text-xs text-gray-600">
+                    Preview of how your {retentionPlatform.toLowerCase()} copy will appear
+                  </p>
+                </div>
+                <div className="bg-white relative">
+                  <iframe
+                    srcDoc={visualPreviewHtml}
+                    className={`w-full border-0 ${retentionPlatform === 'SMS' ? 'h-80' : 'h-96'}`}
+                    title={`${retentionPlatform} Preview`}
+                    sandbox="allow-same-origin allow-scripts"
+                    style={{ minHeight: retentionPlatform === 'SMS' ? '320px' : '384px' }}
+                  />
+                </div>
+              </div>
+
+            
             </CardContent>
           </Card>
         )}

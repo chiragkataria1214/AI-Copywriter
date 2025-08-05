@@ -5,7 +5,7 @@ import { registerJunipRoutes } from "./routes-junip";
 import { registerAdminRoutes } from "./routes-admin";
 import { storage } from "./storage";
 import multer from "multer";
-import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd, generateRetentionCopy, generateSocialCaptions, generateStorySequence, generateBrief } from "./anthropic";
+import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd, generateRetentionCopy, generateRetentionVisualPreview, generateSocialCaptions, generateStorySequence, generateBrief } from "./anthropic";
 import { analyzeInfluencerVoice, generateInfluencerStyleCopy, fetchInstagramContent } from "./influencer-analyzer";
 import { getTrainingConfig } from "./routes-training";
 import { z } from "zod";
@@ -1740,6 +1740,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Ensure we always return JSON, never HTML
       res.status(500).json({ 
         error: 'Failed to generate retention copy',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Generate retention copy visual preview endpoint (protected)
+  app.post('/api/generate-retention-visual-preview', requireAuth, async (req, res) => {
+    try {
+      const { 
+        copyContent,
+        platform,
+        emailType,
+        selectedFramework
+      } = req.body;
+      
+      console.log('Retention visual preview request:', { platform, emailType, copyContentLength: copyContent?.length });
+      
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(400).json({ message: 'Anthropic API key not configured' });
+      }
+      
+      if (!copyContent?.trim()) {
+        return res.status(400).json({ message: 'Copy content is required' });
+      }
+      
+      if (!platform) {
+        return res.status(400).json({ message: 'Platform is required' });
+      }
+      
+      // Get current training config for framework images
+      const trainingConfig = await getTrainingConfig();
+      
+      const result = await generateRetentionVisualPreview({
+        copyContent: copyContent.trim(),
+        platform,
+        emailType,
+        selectedFramework
+      }, trainingConfig);
+      
+      res.status(200).json({
+        htmlContent: result.htmlContent,
+        platform: result.platform,
+        emailType: result.emailType
+      });
+    } catch (error) {
+      console.error('Retention visual preview generation error:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate visual preview',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
