@@ -254,16 +254,17 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
               {/* Target Persona Section */}
               <div>
                 <Label className="block text-sm font-medium text-gray-700 mb-2">
-                  Target Persona
+                  Target Persona (Optional)
                 </Label>
                 <p className="text-xs text-gray-500 mb-3">
-                  Choose the primary audience for this retention campaign
+                  Choose the primary audience for this retention campaign, or leave blank for general audience
                 </p>
                 <Select value={concept} onValueChange={setConcept}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select target persona" />
+                    <SelectValue placeholder="Select target persona (optional)" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">None (General Audience)</SelectItem>
                     {Object.entries(personas).map(([key, persona]) => (
                       <SelectItem key={key} value={key}>
                         {(persona as any).label || key.replace(/([A-Z])/g, ' $1').trim()}
