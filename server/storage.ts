@@ -119,7 +119,7 @@ export interface IStorage {
   getActiveEmailFrameworks(): Promise<EmailFramework[]>;
   getEmailFramework(name: string): Promise<EmailFramework | undefined>;
   createEmailFramework(data: InsertEmailFramework): Promise<EmailFramework>;
-  updateEmailFramework(name: string, data: Partial<InsertEmailFramework>): Promise<EmailFramework>;
+  updateEmailFramework(id: string, data: Partial<InsertEmailFramework>): Promise<EmailFramework>;
   deleteEmailFramework(name: string): Promise<void>;
   
   // Email image analysis operations
@@ -1085,8 +1085,8 @@ export class DatabaseStorage implements IStorage {
     return framework;
   }
 
-  async updateEmailFramework(name: string, data: Partial<InsertEmailFramework>): Promise<EmailFramework> {
-    const [framework] = await db.update(emailFrameworks).set(data).where(eq(emailFrameworks.name, name)).returning();
+  async updateEmailFramework(id: string, data: Partial<InsertEmailFramework>): Promise<EmailFramework> {
+    const [framework] = await db.update(emailFrameworks).set(data).where(eq(emailFrameworks.id, id)).returning();
     return framework;
   }
 

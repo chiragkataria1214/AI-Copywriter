@@ -182,6 +182,7 @@ export const emailFrameworks = pgTable("email_frameworks", {
   description: text("description").notNull(), // Purpose and use case
   structure: text("structure").notNull(), // Framework structure description
   keyElements: text("key_elements"), // Key elements and guidelines
+  frameworkContent: text("framework_content"), // Detailed framework content and examples
   systemPrompt: text("system_prompt").notNull(), // AI prompt for this framework
   isActive: varchar("is_active").default("true"),
   sortOrder: integer("sort_order").default(0),

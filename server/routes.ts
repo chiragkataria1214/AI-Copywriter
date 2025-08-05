@@ -472,6 +472,35 @@ function registerConfigRoutes(app: Express) {
       res.status(500).json({ error: "Failed to fetch email frameworks" });
     }
   });
+
+  app.put("/api/email-frameworks/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { structure, keyElements, frameworkContent, systemPrompt } = req.body;
+      
+      // Validate required fields
+      if (!id) {
+        return res.status(400).json({ error: "Framework ID is required" });
+      }
+
+      // Update the framework
+      const updatedFramework = await storage.updateEmailFramework(id, {
+        structure,
+        keyElements,
+        frameworkContent,
+        systemPrompt,
+      });
+
+      if (!updatedFramework) {
+        return res.status(404).json({ error: "Framework not found" });
+      }
+
+      res.json({ success: true, framework: updatedFramework });
+    } catch (error) {
+      console.error("Error updating email framework:", error);
+      res.status(500).json({ error: "Failed to update email framework" });
+    }
+  });
   
   app.get("/api/email-frameworks/active", async (req, res) => {
     try {

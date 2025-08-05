@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { TrainingConfig } from '@shared/training-config';
-import { ChevronDown, ChevronRight, Target, FileText, Image, Mail, Sparkles, Lock, Eye, Upload, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Target, FileText, Image, Mail, Sparkles, Lock, Eye, Upload, X, Check } from 'lucide-react';
 import { GenerationDetailsModal, GenerationMetadata } from '@/components/GenerationDetailsModal';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -205,6 +205,47 @@ export const StationPromptsTab: React.FC<StationPromptsTabProps> = ({
 
     // Reset the input
     event.target.value = '';
+  };
+
+  // Update framework field locally
+  const updateFrameworkField = (frameworkName: string, field: string, value: string) => {
+    setEmailFrameworks(prev => prev.map(framework => 
+      framework.name === frameworkName 
+        ? { ...framework, [field]: value }
+        : framework
+    ));
+  };
+
+  // Save framework changes to database
+  const saveFrameworkChanges = async (frameworkName: string) => {
+    const framework = emailFrameworks.find(f => f.name === frameworkName);
+    if (!framework) return;
+
+    try {
+      const updateData = {
+        structure: framework.structure,
+        keyElements: framework.keyElements,
+        frameworkContent: framework.frameworkContent,
+        systemPrompt: framework.systemPrompt,
+      };
+
+      await apiRequest(`/api/email-frameworks/${framework.id}`, {
+        method: 'PUT',
+        body: updateData,
+      });
+
+      toast({
+        title: "Framework Updated",
+        description: `${framework.displayName} has been updated successfully.`,
+      });
+    } catch (error) {
+      console.error('Failed to save framework changes:', error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save framework changes. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
 
@@ -1218,47 +1259,146 @@ To see actual AI responses, generate content using this station.`,
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-gray-900 mb-3 block">Email Framework Examples</Label>
+              <Label className="text-sm font-medium text-gray-900 mb-3 block">Email Framework Management</Label>
               <p className="text-sm text-gray-600 mb-4">
-                Upload email examples to train the AI for each framework type. The AI will analyze the design, structure, and copy patterns to improve framework-specific generation.
+                Configure framework content and upload examples to train the AI for better email generation.
               </p>
               
-              {/* Framework Upload Sections */}
+              {/* Framework Configuration Sections */}
               <div className="space-y-4 max-h-96 overflow-y-auto">
                 {emailFrameworks.map((framework) => (
-                  <div key={framework.name} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium text-gray-900">{framework.displayName}</h4>
-                        <p className="text-xs text-gray-500">{framework.description}</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          id={`framework-upload-${framework.name}`}
-                          onChange={(e) => handleEmailFrameworkImageUpload(e, framework.name)}
-                          disabled={effectiveUser?.role !== 'admin'}
-                        />
-                        <label 
-                          htmlFor={`framework-upload-${framework.name}`}
-                          className={`inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-                            effectiveUser?.role !== 'admin' 
-                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                              : 'bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400'
-                          }`}
-                        >
-                          <Upload size={12} className="mr-1.5" />
-                          Add Example
-                        </label>
+                  <div key={framework.name} className="border border-gray-200 rounded-lg">
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3">
+                            <h4 className="font-medium text-gray-900">{framework.displayName}</h4>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const newExpanded = new Set(expandedFrameworks);
+                                if (expandedFrameworks.has(framework.name)) {
+                                  newExpanded.delete(framework.name);
+                                } else {
+                                  newExpanded.add(framework.name);
+                                }
+                                setExpandedFrameworks(newExpanded);
+                              }}
+                              className="text-xs text-gray-500 hover:text-gray-700 p-1 h-auto"
+                            >
+                              {expandedFrameworks.has(framework.name) ? (
+                                <>
+                                  <ChevronDown size={14} className="mr-1" />
+                                  Collapse
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronRight size={14} className="mr-1" />
+                                  Expand & Edit
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">{framework.description}</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            id={`framework-upload-${framework.name}`}
+                            onChange={(e) => handleEmailFrameworkImageUpload(e, framework.name)}
+                            disabled={effectiveUser?.role !== 'admin'}
+                          />
+                          <label 
+                            htmlFor={`framework-upload-${framework.name}`}
+                            className={`inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                              effectiveUser?.role !== 'admin' 
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                : 'bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400'
+                            }`}
+                          >
+                            <Upload size={12} className="mr-1.5" />
+                            Add Example
+                          </label>
+                        </div>
                       </div>
                     </div>
-                    
-                    {/* Show existing examples count if any */}
-                    <div className="text-xs text-gray-500">
-                      Framework examples help the AI understand visual patterns and structure for better copy generation.
-                    </div>
+
+                    {/* Expanded Framework Editor */}
+                    {expandedFrameworks.has(framework.name) && (
+                      <div className="border-t border-gray-200 p-4 bg-gray-50">
+                        <div className="space-y-4">
+                          {/* Framework Structure */}
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700 mb-2 block">Framework Structure</Label>
+                            <Textarea
+                              value={framework.structure || ''}
+                              onChange={(e) => updateFrameworkField(framework.name, 'structure', e.target.value)}
+                              placeholder="e.g., Hero → Intro Module → Look Breakdown → Footer"
+                              className="text-sm"
+                              rows={2}
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+
+                          {/* Key Elements */}
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700 mb-2 block">Key Elements</Label>
+                            <Textarea
+                              value={framework.keyElements || ''}
+                              onChange={(e) => updateFrameworkField(framework.name, 'keyElements', e.target.value)}
+                              placeholder="e.g., Step-by-step product application, seasonal inspiration, pro tips"
+                              className="text-sm"
+                              rows={2}
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+
+                          {/* Framework Content */}
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700 mb-2 block">Framework Content & Examples</Label>
+                            <Textarea
+                              value={framework.frameworkContent || ''}
+                              onChange={(e) => updateFrameworkField(framework.name, 'frameworkContent', e.target.value)}
+                              placeholder="Detailed framework structure, examples, best practices..."
+                              className="text-sm font-mono"
+                              rows={12}
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Add detailed framework guidelines, structure examples, and best practices here.
+                            </p>
+                          </div>
+
+                          {/* System Prompt */}
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700 mb-2 block">AI System Prompt</Label>
+                            <Textarea
+                              value={framework.systemPrompt || ''}
+                              onChange={(e) => updateFrameworkField(framework.name, 'systemPrompt', e.target.value)}
+                              placeholder="Instructions for AI to generate this framework type..."
+                              className="text-sm"
+                              rows={4}
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+
+                          {/* Save Button */}
+                          <div className="flex justify-end pt-2">
+                            <Button
+                              onClick={() => saveFrameworkChanges(framework.name)}
+                              disabled={effectiveUser?.role !== 'admin'}
+                              className="text-sm"
+                            >
+                              <Check size={14} className="mr-1.5" />
+                              Save Changes
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
