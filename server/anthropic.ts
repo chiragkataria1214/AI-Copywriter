@@ -191,7 +191,7 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
   const { transcription, customBrief, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProduct } = request;
   
   // Validate required parameters
-  if (!concept) {
+  if (!concept || concept === 'none') {
     throw new Error('Concept is required and must be provided from database persona data.');
   }
   if (!targetAudience) {
@@ -257,9 +257,10 @@ FUNNEL ALIGNMENT REQUIREMENT:
 Ensure the ad copy creates a seamless transition from ad to landing page. The messaging should be congruent - if the landing page emphasizes certain benefits or uses specific language, mirror that in the ad copy to create expectation alignment and reduce bounce rate.
 ` : '';
 
-  // Detect mom personas and add mom-specific targeting
-  const isMomPersona = safeConcept.toLowerCase().includes('mom') || 
-                      (safeSubPersona && safeSubPersona.toLowerCase().includes('mom'));
+  // Detect mom personas and add mom-specific targeting - skip if concept is 'none'
+  const isMomPersona = safeConcept && safeConcept !== 'none' && 
+                      (safeConcept.toLowerCase().includes('mom') || 
+                      (safeSubPersona && safeSubPersona.toLowerCase().includes('mom')));
   
   const momTargetingSection = isMomPersona ? `
 
@@ -464,7 +465,7 @@ export async function generateLandingPageCopy(request: LandingPageRequest, train
   const { landingPageType, productBrief, concept, subPersona, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle, transcription } = request;
   
   // Validate required parameters
-  if (!concept) {
+  if (!concept || concept === 'none') {
     throw new Error('Concept is required and must be provided from database persona data.');
   }
   
@@ -989,7 +990,7 @@ export async function generateCustomCopy(request: CustomCopyRequest, trainingCon
   const { customRequest, concept, subPersona, brandDrBalance, selectedProduct, useJonesBrandGuide } = request;
   
   // Validate required parameters
-  if (!concept) {
+  if (!concept || concept === 'none') {
     throw new Error('Concept is required and must be provided from database persona data.');
   }
   
@@ -1119,10 +1120,7 @@ export function buildAISettingsContext(trainingConfig: TrainingConfig, request: 
 }) {
   const { concept, subPersona = '', selectedProduct = '', selectedProducts = [], brandDrBalance = 50, useJonesBrandGuide = true } = request;
   
-  // Validate required concept parameter
-  if (!concept) {
-    throw new Error('Concept is required and must be provided from database persona data.');
-  }
+  // Handle optional personas - if concept is 'none' or empty, skip persona targeting
   
   let context = '';
   
@@ -1221,8 +1219,8 @@ export function buildAISettingsContext(trainingConfig: TrainingConfig, request: 
       context += '\n';
     }
     
-    // Persona Pillars
-    if (concept && trainingConfig.personaPillars && trainingConfig.personaPillars[concept]) {
+    // Persona Pillars - skip if concept is 'none' or empty
+    if (concept && concept !== 'none' && trainingConfig.personaPillars && trainingConfig.personaPillars[concept]) {
       const persona = trainingConfig.personaPillars[concept];
       context += `TARGET PERSONA - ${concept.toUpperCase()}:\n`;
       if (persona.description) {
