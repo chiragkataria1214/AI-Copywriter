@@ -8,23 +8,48 @@
 ## 1. GTL (Get the Look)
 **Purpose:** Show how to recreate a full look or theme using multiple products.
 
-**Structure:**
-- Hero: Hed / Dek / CTA
-- Intro Module: Look inspiration or occasion (seasonal, no-makeup makeup look inspired, minimalist, etc.)
-- Look Breakdown Module:
-  - One row per product used, these could be featured as steps to get the look
-  - Short description on how to apply or the product benefit for the routine
-  - CTA per product and CTA at the end of the section
-- Optional Add-On: Pro tip on how to combine with other products or application technique with other tools
-- Footer: Hed / Dek / CTA featuring a product category, product launch or application tools. Depends on the season.
+**Framework:**
+Hero: Hed / Dek / CTA
+Intro Module: Look inspiration or occasion (seasonal, no-makeup makeup look inspired, minimalist, etc.)
+Look Breakdown Module:
+One row per product used, these could be featured as steps to get the look
+Short description on how to apply or the product benefit for the routine
+CTA per product and CTA at the end of the section
+Optional Add-On: Pro tip on how to combine with other products or application technique with other tools
 
-**Example Structure:**
-- SL: Natural, Everyday Makeup / PH: That Takes Just 5-Minutes
-- Hero: Hed + Sub + Dek + CTA
-- Section 1: Get The Look (product breakdown with CTAs)
-- Section 2: Bobbi's Quote
-- Section 3: [CUSTOMERS ONLY] Make It Your Own
-- Footer: Kits For Every Occasion
+Footer: Hed / Dek / CTA featuring a product category, product launch or application tools. Depends on the season.
+
+**EXAMPLE:**
+SL: Natural, Everyday Makeup
+PH: That Takes Just 5-Minutes
+SL2: Get The Look: Fresh-Faced & Natural
+PH2: Perfect for Everyday
+Hero:
+Hed: Natural, Everyday Makeup
+Sub: With The NEW Hero Kit
+Dek: Try this fresh and fast daily routine with the 5 award-winning products from our latest kit.
+CTA: Shop Now
+Section 1:
+Hed: Get The Look
+Eye Cream: Dab on to moisturize and refresh your under eyes.
+Mini Miracle Balm:
+Flushed: Apply to cheeks and lips for a natural pop of color.
+Magic Hour: Highlight by sweeping onto your cheekbones and chin.
+The Best Pencil in Brown: Create soft definition on your upper and lower lash lines.
+The Mascara: Finish the look with a coat or two for lift and definition.
+CTA: Shop The Hero Kit
+Section 2 Bobbi's Quote
+Dek: "I curated The Hero Kit to include my favorite basics that I use consistently. It's perfect for any Jones Road newbie - it has all of the fundamentals in one pouch." - Bobbi Brown
+Section 3: [CUSTOMERS ONLY]
+Hed: Make It Your Own
+Sub: By Adding Warmth and Color
+The Bronzer in Dusty Rose
+The Best Blush in POP
+CTA [under each]: Shop Now
+Footer:
+Hed: Kits For Every Occasion
+Dek: Discover more skincare and beauty essentials, all bundled together.
+CTA: Shop Kits
 
 ---
 
