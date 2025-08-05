@@ -270,6 +270,8 @@ export interface StaticAdAnalysisRequest {
   brandDrBalance: number;
   selectedProduct?: string;
   useJonesBrandGuide?: boolean;
+  outputFormat?: string;
+  analysisFocus?: string;
 }
 
 export async function generateAdCopy(request: AdCopyRequest, trainingConfig: TrainingConfig) {
@@ -947,7 +949,7 @@ Please revise the content applying the improvement instructions while maintainin
 }
 
 export async function analyzeStaticAd(request: StaticAdAnalysisRequest, _trainingConfig: TrainingConfig) {
-  const { staticAdImage, concept, brandDrBalance, selectedProduct, useJonesBrandGuide } = request;
+  const { staticAdImage, concept, brandDrBalance, selectedProduct, useJonesBrandGuide, outputFormat, analysisFocus } = request;
   
   const brandPercent = brandDrBalance;
   const drPercent = 100 - brandPercent;
@@ -1017,17 +1019,44 @@ IMPORTANT: Return your response in structured JSON format with the following str
       "framework": "Framework used (e.g., BENEFIT DRIVEN, SOCIAL PROOF, etc.)"
     }
   ]
-}`;
+}
 
-  const userPrompt = `Please analyze this static ad image and create Jones Road Beauty variations targeting ${concept}.
+OUTPUT FORMAT: ${outputFormat || 'analysis-variations'}
+ANALYSIS FOCUS: ${analysisFocus || 'comprehensive'}`;
+
+  const getInstructions = () => {
+    const baseInstructions = `Please analyze this static ad image and create Jones Road Beauty variations targeting ${concept}.`;
+    
+    // Customize instructions based on outputFormat
+    if (outputFormat === 'analysis-only') {
+      return `${baseInstructions}
+
+INSTRUCTIONS:
+- Provide comprehensive analysis of what makes this ad effective
+- Focus on visual elements, copy effectiveness, and conversion optimization
+- DO NOT create variations - analysis only`;
+    } else if (outputFormat === 'variations-only') {
+      return `${baseInstructions}
+
+INSTRUCTIONS:
+- Create 3 compelling Jones Road variations that adapt the successful elements
+- Focus on authentic language that resonates with the target persona
+- Include specific headlines and primary text for each variation
+- Maintain Jones Road's "effortless beauty" positioning throughout
+- DO NOT provide detailed analysis - variations only`;
+    } else {
+      return `${baseInstructions}
 
 INSTRUCTIONS:
 - Provide comprehensive analysis of what makes this ad effective
 - Create 3 compelling Jones Road variations that adapt the successful elements
 - Focus on authentic language that resonates with the target persona
 - Include specific headlines and primary text for each variation
-- Maintain Jones Road's "effortless beauty" positioning throughout
-`;
+- Maintain Jones Road's "effortless beauty" positioning throughout`;
+    }
+  };
+
+  const userPrompt = getInstructions();
 
   try {
     const response = await anthropic.messages.create({
@@ -1063,11 +1092,27 @@ INSTRUCTIONS:
       const jsonString = jsonMatch ? jsonMatch[0] : content;
       parsedResponse = JSON.parse(jsonString);
       
-      return {
-        analysis: parsedResponse.analysis || 'Analysis not available',
-        variations: parsedResponse.variations || [],
-        rawResponse: content
-      };
+      // Handle different output formats
+      if (outputFormat === 'analysis-only') {
+        return {
+          analysis: parsedResponse.analysis || 'Analysis not available',
+          variations: [],
+          rawResponse: content
+        };
+      } else if (outputFormat === 'variations-only') {
+        return {
+          analysis: '', // No analysis for variations-only
+          variations: parsedResponse.variations || [],
+          rawResponse: content
+        };
+      } else {
+        // Default: analysis-variations
+        return {
+          analysis: parsedResponse.analysis || 'Analysis not available',
+          variations: parsedResponse.variations || [],
+          rawResponse: content
+        };
+      }
     } catch (parseError) {
       console.log('Failed to parse JSON, falling back to text formatting');
       
@@ -1079,6 +1124,7 @@ INSTRUCTIONS:
         .replace(/`([^`]+)`/g, '$1') // Remove code formatting
         .trim();
       
+      // For fallback, always return analysis with no variations
       return {
         analysis: cleanedContent,
         variations: [],
@@ -1760,6 +1806,7 @@ export async function generateSocialCaptions(request: {
   variations: number;
   selectedProduct?: string;
   concept?: string;
+  imageData?: string; // Add image data parameter
 }, trainingConfig: TrainingConfig) {
   
   const anthropic = new Anthropic({
@@ -1796,57 +1843,87 @@ ENGAGEMENT TACTICS:
 - Encourage user-generated content`;
 
   const platformGuidance = {
-    instagram: "Use 3-5 relevant hashtags, encourage saves/shares, ask engaging questions, use Instagram-specific language like 'swipe' or 'tap'",
-    facebook: "Focus on community building, longer captions, discussion starters, shareable content",
-    tiktok: "Use trending phrases, strong hooks, encourage duets/responses, casual conversational tone",
-    "multi-platform": "Create versatile content that can be adapted for different platforms"
+    instagram: "Use 1-3 relevant hashtags, encourage saves/shares, ask engaging questions",
+    facebook: "Longer captions (150-250 words), storytelling approach, community discussion",
+    tiktok: "Trendy language, strong hooks, call-to-actions for engagement",
+    "multi-platform": "Adaptable content that works across Instagram, Facebook, and TikTok"
   };
 
-  const toneGuidance = {
-    "authentic-personal": "Personal stories, vulnerable moments, relatable experiences",
-    "educational-expert": "Tips, tutorials, ingredient benefits, how-to content",
-    "fun-playful": "Lighthearted, humorous, entertaining content",
-    "inspirational": "Motivational, empowering, confidence-building messages",
-    "conversational": "Casual chat, friend-to-friend tone, everyday language"
-  };
+  // Determine content source for prompt
+  let contentSource = '';
+  let hasImageContent = false;
+  
+  if (request.transcription && request.transcription.trim()) {
+    contentSource = `CONTENT TRANSCRIPTION: ${request.transcription}`;
+  } else if (request.imageData) {
+    contentSource = 'CONTENT: Analyze the uploaded image to create captions';
+    hasImageContent = true;
+  } else {
+    throw new Error('Either transcription or image data is required');
+  }
 
-  const goalGuidance = {
-    "product-education": "Focus on product benefits, how-to-use, ingredients, results",
-    "brand-awareness": "Showcase brand values, mission, behind-the-scenes content",
-    "community-building": "Encourage interaction, user stories, shared experiences",
-    "behind-scenes": "Show process, team, authenticity, brand personality",
-    "user-generated": "Feature customer stories, reviews, transformations"
-  };
+  const userPrompt = `Create ${request.variations} unique social media captions for ${request.platform} based on this content:
 
-  const userPrompt = `Create ${request.variations} engaging social media captions based on this content:
+${contentSource}
 
-CONTENT: ${request.transcription}
-
+CONTENT TYPE: ${request.contentType}
 PLATFORM: ${request.platform}
 GOAL: ${request.goal}
 TONE: ${request.tone}
+VARIATIONS: ${request.variations}
 
 PLATFORM GUIDANCE: ${platformGuidance[request.platform as keyof typeof platformGuidance] || platformGuidance["multi-platform"]}
-TONE GUIDANCE: ${toneGuidance[request.tone as keyof typeof toneGuidance] || "Authentic and engaging"}
-GOAL GUIDANCE: ${goalGuidance[request.goal as keyof typeof goalGuidance] || "Create engaging content"}
+
+${request.selectedProduct ? `FEATURED PRODUCT: ${request.selectedProduct} - Incorporate this product naturally into the captions` : ''}
 
 REQUIREMENTS:
-- Create ${request.variations} distinct caption variations
+- Create exactly ${request.variations} distinct caption variations
 - Each should be 50-150 words (adjust for platform)
 - Include relevant hashtags where appropriate
 - Add engaging hooks and call-to-actions
 - Maintain Jones Road Beauty's authentic voice
 - Make each variation unique in approach and angle
+${hasImageContent ? '- Analyze the image content to create relevant captions that describe or relate to what is shown' : ''}
 
 Return as a JSON array of strings:
 ["Caption 1 text...", "Caption 2 text...", "Caption 3 text..."]`;
 
   try {
+    // Build message content with optional image
+    let messageContent: any[] = [{ type: 'text', text: userPrompt }];
+    
+    if (hasImageContent && request.imageData) {
+      // Process image data similar to generateAdCopy function
+      let processedImageData = request.imageData;
+      let mediaType = 'image/jpeg'; // default
+      
+      // Handle data URI format
+      if (request.imageData.startsWith('data:image/')) {
+        const mimeMatch = request.imageData.match(/^data:image\/([a-zA-Z0-9+/]+);base64,(.+)$/);
+        if (mimeMatch) {
+          mediaType = `image/${mimeMatch[1]}`;
+          processedImageData = mimeMatch[2];
+        }
+      }
+      
+      // Resize image if needed to prevent dimension errors
+      const { data: resizedImageData, mediaType: finalMediaType } = await resizeImageIfNeeded(processedImageData);
+      
+      messageContent.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: finalMediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+          data: resizedImageData
+        }
+      });
+    }
+
     const response = await anthropic.messages.create({
       model: DEFAULT_MODEL_STR,
       system: systemPrompt,
       max_tokens: 2048,
-      messages: [{ role: 'user', content: userPrompt }],
+      messages: [{ role: 'user', content: messageContent }],
     });
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
@@ -1909,6 +1986,7 @@ export async function generateStorySequence(request: {
   tone: string;
   selectedProduct?: string;
   concept?: string;
+  imageData?: string; // Add image data parameter
 }, trainingConfig: TrainingConfig) {
   
   const anthropic = new Anthropic({
@@ -1953,9 +2031,22 @@ STORY BEST PRACTICES:
     "conversational": "Casual chat, friend-to-friend tone, everyday language"
   };
 
+  // Determine content source for prompt
+  let contentSource = '';
+  let hasImageContent = false;
+  
+  if (request.transcription && request.transcription.trim()) {
+    contentSource = `CONTENT: ${request.transcription}`;
+  } else if (request.imageData) {
+    contentSource = 'CONTENT: Analyze the uploaded image to create story sequence';
+    hasImageContent = true;
+  } else {
+    throw new Error('Either transcription or image data is required');
+  }
+
   const userPrompt = `Create a ${request.length}-slide Instagram Story sequence based on this content:
 
-CONTENT: ${request.transcription}
+${contentSource}
 
 SEQUENCE TYPE: ${request.sequenceType}
 TONE: ${request.tone}
@@ -1963,6 +2054,8 @@ LENGTH: ${request.length} slides
 
 SEQUENCE GUIDANCE: ${sequenceTypeGuidance[request.sequenceType as keyof typeof sequenceTypeGuidance] || "Create engaging story content"}
 TONE GUIDANCE: ${toneGuidance[request.tone as keyof typeof toneGuidance] || "Authentic and engaging"}
+
+${request.selectedProduct ? `FEATURED PRODUCT: ${request.selectedProduct} - Incorporate this product naturally into the story sequence` : ''}
 
 REQUIREMENTS:
 - Create exactly ${request.length} slides
@@ -1972,6 +2065,7 @@ REQUIREMENTS:
 - Strong opening hook and closing call-to-action
 - Maintain Jones Road Beauty's authentic voice
 - Provide specific visual direction for each slide
+${hasImageContent ? '- Analyze the image content to create relevant story slides that describe or relate to what is shown' : ''}
 
 Return as JSON array with this structure:
 [
@@ -1985,64 +2079,85 @@ Return as JSON array with this structure:
 ]`;
 
   try {
+    // Build message content with optional image
+    let messageContent: any[] = [{ type: 'text', text: userPrompt }];
+    
+    if (hasImageContent && request.imageData) {
+      // Process image data similar to generateAdCopy function
+      let processedImageData = request.imageData;
+      let mediaType = 'image/jpeg'; // default
+      
+      // Handle data URI format
+      if (request.imageData.startsWith('data:image/')) {
+        const mimeMatch = request.imageData.match(/^data:image\/([a-zA-Z0-9+/]+);base64,(.+)$/);
+        if (mimeMatch) {
+          mediaType = `image/${mimeMatch[1]}`;
+          processedImageData = mimeMatch[2];
+        }
+      }
+      
+      // Resize image if needed to prevent dimension errors
+      const { data: resizedImageData, mediaType: finalMediaType } = await resizeImageIfNeeded(processedImageData);
+      
+      messageContent.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: finalMediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+          data: resizedImageData
+        }
+      });
+    }
+
     const response = await anthropic.messages.create({
       model: DEFAULT_MODEL_STR,
       system: systemPrompt,
       max_tokens: 2048,
-      messages: [{ role: 'user', content: userPrompt }],
+      messages: [{ role: 'user', content: messageContent }],
     });
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
     
     // Parse JSON response
     try {
-      // First try direct parsing
-      const sequence = JSON.parse(content);
-      if (Array.isArray(sequence)) {
-        return { sequence };
+      // Extract JSON from response - handle potential markdown wrapping
+      const jsonMatch = content.match(/\[[\s\S]*?\]/);
+      const jsonString = jsonMatch ? jsonMatch[0] : content;
+      const slides = JSON.parse(jsonString);
+      
+      if (Array.isArray(slides)) {
+        return { sequence: slides };
       }
     } catch (parseError) {
-      // Try to extract JSON from markdown code blocks
-      const jsonMatch = content.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
-      if (jsonMatch) {
+      // Try to extract from markdown code blocks
+      const codeBlockMatch = content.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
+      if (codeBlockMatch) {
         try {
-          const sequence = JSON.parse(jsonMatch[1]);
-          if (Array.isArray(sequence)) {
-            return { sequence };
+          const slides = JSON.parse(codeBlockMatch[1]);
+          if (Array.isArray(slides)) {
+            return { sequence: slides };
           }
         } catch (innerParseError) {
-          console.log('Failed to parse extracted JSON:', innerParseError);
+          console.log('Failed to parse code block JSON:', innerParseError);
         }
       }
       
-      // Try to find a JSON array pattern in the content
-      const arrayMatch = content.match(/\[[\s\S]*?\]/);
-      if (arrayMatch) {
-        try {
-          const sequence = JSON.parse(arrayMatch[0]);
-          if (Array.isArray(sequence)) {
-            return { sequence };
-          }
-        } catch (arrayParseError) {
-          console.log('Failed to parse array match:', arrayParseError);
-        }
-      }
+      // Fallback: create simple slides from content
+      console.log('Using fallback parsing for story sequence');
+      const fallbackSlides = [];
+      const lines = content.split('\n').filter(line => line.trim());
       
-      console.log('Failed to parse JSON, creating fallback sequence. Content:', content.substring(0, 200) + '...');
-      
-      // Fallback: create basic sequence structure
-      const slides = [];
-      for (let i = 1; i <= request.length; i++) {
-        slides.push({
-          slide: i,
-          type: i === 1 ? 'hook' : i === request.length ? 'cta' : 'content',
-          title: `Slide ${i}`,
-          content: `Story content for slide ${i} based on: ${request.transcription.substring(0, 100)}...`,
-          visualDirection: `Visual direction for slide ${i}`
+      for (let i = 0; i < Math.min(request.length, lines.length); i++) {
+        fallbackSlides.push({
+          slide: i + 1,
+          type: i === 0 ? 'hook' : i === request.length - 1 ? 'cta' : 'content',
+          title: `Slide ${i + 1}`,
+          content: lines[i].trim(),
+          visualDirection: hasImageContent ? 'Use the uploaded image as reference' : 'Show relevant visual content'
         });
       }
       
-      return { sequence: slides };
+      return { sequence: fallbackSlides };
     }
   } catch (error) {
     console.error('Story sequence generation error:', error);

@@ -132,7 +132,7 @@ export const StaticAdTab = ({
 
     const handleAnalyzeAd = () => {
         if (analyzeStaticAdMutation && staticAdImage) {
-            analyzeStaticAdMutation.mutate();
+            analyzeStaticAdMutation.mutate({ outputFormat, analysisFocus });
         }
     };
 

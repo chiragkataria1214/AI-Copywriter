@@ -1192,17 +1192,17 @@ export class DatabaseStorage implements IStorage {
   // Email frameworks operations
   async getAllEmailFrameworks(): Promise<EmailFramework[]> {
     const frameworks = await db.select().from(emailFrameworks).orderBy(emailFrameworks.sortOrder);
-    console.log('DEBUG: Loaded email frameworks from database:', {
-      count: frameworks.length,
-      frameworksWithImages: frameworks.filter(fw => fw.images && Array.isArray(fw.images) && fw.images.length > 0).length,
-      frameworks: frameworks.map(fw => ({
-        id: fw.id,
-        name: fw.name,
-        displayName: fw.displayName,
-        hasImages: !!fw.images,
-        imagesCount: Array.isArray(fw.images) ? fw.images.length : 0
-      }))
-    });
+    // console.log('DEBUG: Loaded email frameworks from database:', {
+    //   count: frameworks.length,
+    //   frameworksWithImages: frameworks.filter(fw => fw.images && Array.isArray(fw.images) && fw.images.length > 0).length,
+    //   frameworks: frameworks.map(fw => ({
+    //     id: fw.id,
+    //     name: fw.name,
+    //     displayName: fw.displayName,
+    //     hasImages: !!fw.images,
+    //     imagesCount: Array.isArray(fw.images) ? fw.images.length : 0
+    //   }))
+    // });
     return frameworks;
   }
 

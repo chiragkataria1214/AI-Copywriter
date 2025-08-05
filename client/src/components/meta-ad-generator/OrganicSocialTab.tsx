@@ -435,6 +435,12 @@ export function OrganicSocialTab({
                   setCaptionError(null);
 
                   try {
+                    // Prepare image data if available
+                    let imageData = null;
+                    if (organicImageFile && organicContentType === 'image') {
+                      imageData = organicImagePreview; // This contains the full data URI
+                    }
+
                     console.log('🚀 Sending Social Captions Request:', {
                       contentType: organicContentType,
                       transcription: organicVideoTranscription,
@@ -442,7 +448,8 @@ export function OrganicSocialTab({
                       goal: organicGoal,
                       tone: organicTone,
                       variations: captionVariations,
-                      selectedProduct: selectedProduct
+                      selectedProduct: selectedProduct,
+                      hasImageData: !!imageData
                     });
 
                     const response = await fetch('/api/generate-social-captions', {
@@ -456,7 +463,8 @@ export function OrganicSocialTab({
                         goal: organicGoal,
                         tone: organicTone,
                         variations: captionVariations,
-                        selectedProduct: selectedProduct
+                        selectedProduct: selectedProduct,
+                        imageData: imageData
                       })
                     });
 
@@ -879,13 +887,20 @@ export function OrganicSocialTab({
                   setStoryError(null);
 
                   try {
+                    // Prepare image data if available
+                    let imageData = null;
+                    if (storyImageFile && storyContentType === 'image') {
+                      imageData = storyImagePreview; // This contains the full data URI
+                    }
+
                     console.log('🚀 Sending Story Sequence Request:', {
                       contentType: storyContentType,
                       transcription: storyVideoTranscription,
                       sequenceType: storySequenceType,
                       length: storyLength,
                       tone: storyTone,
-                      selectedProduct: selectedProduct
+                      selectedProduct: selectedProduct,
+                      hasImageData: !!imageData
                     });
 
                     const response = await fetch('/api/generate-story-sequence', {
@@ -898,7 +913,8 @@ export function OrganicSocialTab({
                         sequenceType: storySequenceType,
                         length: storyLength,
                         tone: storyTone,
-                        selectedProduct: selectedProduct
+                        selectedProduct: selectedProduct,
+                        imageData: imageData
                       })
                     });
 

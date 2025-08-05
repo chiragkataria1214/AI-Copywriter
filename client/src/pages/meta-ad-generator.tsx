@@ -809,7 +809,7 @@ export default function MetaAdGenerator() {
 
   // Static ad analysis mutation
   const analyzeStaticAdMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({ outputFormat, analysisFocus }: { outputFormat?: string; analysisFocus?: string }) => {
       return await apiRequest('/api/analyze-static-ad', {
         method: 'POST',
         body: {
@@ -817,12 +817,29 @@ export default function MetaAdGenerator() {
           concept,
           brandDrBalance: brandDrBalance[0],
           selectedProduct,
-          useJonesBrandGuide
+          useJonesBrandGuide,
+          outputFormat,
+          analysisFocus
         }
       });
     },
     onSuccess: (data) => {
-      setStaticAdAnalysis(data.analysis || '');
+      // Handle different response formats
+      if (data.variations && data.variations.length > 0) {
+        // If we have variations, always store as structured JSON for the UI to parse
+        const combinedData = {
+          analysis: data.analysis || '',
+          variations: data.variations
+        };
+        setStaticAdAnalysis(JSON.stringify(combinedData));
+      } else if (data.analysis) {
+        // If we only have analysis text, store it as plain text
+        setStaticAdAnalysis(data.analysis);
+      } else {
+        // Fallback case
+        setStaticAdAnalysis('No analysis or variations generated.');
+      }
+      
       toast({
         title: "Ad Analysis Complete",
         description: "Static ad has been analyzed and Jones Road variations generated.",
@@ -1383,7 +1400,7 @@ export default function MetaAdGenerator() {
                       <TooltipTrigger asChild>
                         <div className="w-full">
                           <Button
-                            onClick={() => analyzeStaticAdMutation.mutate()}
+                            onClick={() => analyzeStaticAdMutation.mutate({ outputFormat: 'analysis-variations', analysisFocus: 'comprehensive' })}
                             disabled={!staticAdImage || analyzeStaticAdMutation.isPending || getGenerationDisabledState('staticAd').disabled}
                             className="w-full flex items-center justify-center space-x-2"
                           >

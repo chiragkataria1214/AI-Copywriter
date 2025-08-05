@@ -1755,17 +1755,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         goal, 
         tone, 
         variations, 
-        selectedProduct 
+        selectedProduct,
+        imageData // Add image data parameter
       } = req.body;
       
-      console.log('Social captions request:', { contentType, platform, goal, tone, variations, selectedProduct, transcriptionLength: transcription?.length });
+      console.log('Social captions request:', { contentType, platform, goal, tone, variations, selectedProduct, transcriptionLength: transcription?.length, hasImageData: !!imageData });
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
       }
       
-      if (!transcription || !transcription.trim()) {
-        return res.status(400).json({ message: 'Content transcription is required' });
+      // Updated validation: require either transcription OR image data
+      if (!transcription?.trim() && !imageData) {
+        return res.status(400).json({ message: 'Content transcription or image is required' });
       }
       
       // Get current training config
@@ -1773,13 +1775,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const result = await generateSocialCaptions({
         contentType: contentType || 'video',
-        transcription: transcription.trim(),
+        transcription: transcription?.trim() || '',
         platform: platform || 'instagram',
         goal: goal || 'product-education',
         tone: tone || 'authentic-personal',
         variations: variations || 3,
         selectedProduct: selectedProduct,
-        concept: 'lifeJuggler' // Default concept for social captions
+        concept: 'lifeJuggler', // Default concept for social captions
+        imageData: imageData // Pass image data to the function
       }, trainingConfig);
       
       res.json({
@@ -1803,17 +1806,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sequenceType, 
         length, 
         tone, 
-        selectedProduct 
+        selectedProduct,
+        imageData // Add image data parameter
       } = req.body;
       
-      console.log('Story sequence request:', { contentType, sequenceType, length, tone, selectedProduct, transcriptionLength: transcription?.length });
+      console.log('Story sequence request:', { contentType, sequenceType, length, tone, selectedProduct, transcriptionLength: transcription?.length, hasImageData: !!imageData });
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
       }
       
-      if (!transcription || !transcription.trim()) {
-        return res.status(400).json({ message: 'Content transcription is required' });
+      // Updated validation: require either transcription OR image data
+      if (!transcription?.trim() && !imageData) {
+        return res.status(400).json({ message: 'Content transcription or image is required' });
       }
       
       // Get current training config
@@ -1821,12 +1826,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const result = await generateStorySequence({
         contentType: contentType || 'video',
-        transcription: transcription.trim(),
+        transcription: transcription?.trim() || '',
         sequenceType: sequenceType || 'product-showcase',
         length: length || 5,
         tone: tone || 'authentic-personal',
         selectedProduct: selectedProduct,
-        concept: 'lifeJuggler' // Default concept for story sequences
+        concept: 'lifeJuggler', // Default concept for story sequences
+        imageData: imageData // Pass image data to the function
       }, trainingConfig);
       
       res.json({
@@ -1844,9 +1850,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Static ad analysis endpoint (protected)
   app.post('/api/analyze-static-ad', requireAuth, async (req, res) => {
     try {
-      const { staticAdImage, concept, brandDrBalance, selectedProduct, useJonesBrandGuide } = req.body;
+      const { staticAdImage, concept, brandDrBalance, selectedProduct, useJonesBrandGuide, outputFormat, analysisFocus } = req.body;
       
-      console.log('Static ad analysis request:', { concept, brandDrBalance, selectedProduct, useJonesBrandGuide, imageLength: staticAdImage?.length });
+      console.log('Static ad analysis request:', { concept, brandDrBalance, selectedProduct, useJonesBrandGuide, outputFormat, analysisFocus, imageLength: staticAdImage?.length });
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -1864,11 +1870,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         concept: concept || 'lifeJuggler',
         brandDrBalance: brandDrBalance || 50,
         selectedProduct: selectedProduct || undefined,
-        useJonesBrandGuide
+        useJonesBrandGuide,
+        outputFormat,
+        analysisFocus
       }, trainingConfig);
       
       res.json({
         analysis: result.analysis,
+        variations: result.variations || [],
         rawResponse: result.rawResponse // For debug purposes
       });
     } catch (error) {

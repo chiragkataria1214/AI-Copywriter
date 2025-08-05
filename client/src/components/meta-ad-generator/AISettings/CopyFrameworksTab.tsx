@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,30 +27,50 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
   const [expandedEmailFrameworks, setExpandedEmailFrameworks] = useState<Set<number>>(new Set());
   const [loadingEmailFrameworks, setLoadingEmailFrameworks] = useState(false);
   const { toast } = useToast();
+  const frameworksLoadedRef = useRef(false);
 
   // Load email frameworks from database on component mount
   useEffect(() => {
     const loadEmailFrameworks = async () => {
-      if (editingConfig?.copyFrameworks?.emailFrameworks && editingConfig.copyFrameworks.emailFrameworks.length > 0) {
-        return; // Don't load if already loaded
-      }
-
+      // Always load from API to ensure we have the latest data including images
+      console.log('DEBUG: Loading email frameworks from API...');
       setLoadingEmailFrameworks(true);
+      
       try {
         const response = await apiRequest('/api/email-frameworks');
+        console.log('DEBUG: Received email frameworks from API:', {
+          count: response?.length || 0,
+          frameworksWithImages: (response || []).filter((fw: any) => fw.images && Array.isArray(fw.images) && fw.images.length > 0).length,
+          frameworks: (response || []).map((fw: any) => ({
+            id: fw.id,
+            name: fw.name,
+            displayName: fw.displayName,
+            hasImages: !!fw.images,
+            imagesCount: Array.isArray(fw.images) ? fw.images.length : 0,
+            firstImageDataUriLength: fw.images && fw.images[0] ? fw.images[0].dataUri?.length : 0
+          }))
+        });
+        
         const emailFrameworks = (response || []).map((framework: any) => ({
           ...framework,
           isEnabled: framework.isActive === 'true' || framework.isActive === true
         }));
         
         // Update the editing config with loaded frameworks
-        setEditingConfig({
+        const updatedConfig = {
           ...editingConfig,
           copyFrameworks: {
             ...editingConfig?.copyFrameworks,
             emailFrameworks: emailFrameworks
           }
+        };
+        setEditingConfig(updatedConfig);
+        
+        console.log('DEBUG: Updated config with frameworks:', {
+          totalFrameworks: emailFrameworks.length,
+          frameworksWithImages: emailFrameworks.filter((fw: any) => fw.images && Array.isArray(fw.images) && fw.images.length > 0).length
         });
+        
       } catch (error) {
         console.error('Failed to load email frameworks:', error);
         toast({
@@ -64,7 +84,7 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
     };
 
     loadEmailFrameworks();
-  }, [editingConfig, setEditingConfig, toast]);
+  }, []); // Only run once on mount
 
   const toggleFramework = (index: number) => {
     const newExpanded = new Set(expandedFrameworks);
@@ -787,42 +807,70 @@ Your Skin But Better"
                             </div>
                             
                             {/* Current Images Display */}
+                            {(() => {
+                              console.log('DEBUG: Checking framework images for display:', {
+                                frameworkName: framework.displayName || framework.name,
+                                hasImages: !!framework.images,
+                                isArray: Array.isArray(framework.images),
+                                imagesLength: framework.images ? framework.images.length : 0,
+                                images: framework.images
+                              });
+                              return null;
+                            })()}
                             {framework.images && Array.isArray(framework.images) && framework.images.length > 0 && (
                               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
-                                {framework.images.map((image: any, imgIndex: number) => (
-                                  <div key={imgIndex} className="relative group border border-gray-200 rounded-lg overflow-hidden">
-                                    <img 
-                                      src={image.dataUri} 
-                                      alt={image.name || `Framework image ${imgIndex + 1}`}
-                                      className="w-full h-24 object-cover"
-                                    />
-                                    {effectiveUser?.role === 'admin' && (
-                                      <button
-                                        onClick={() => {
-                                          if (confirm('Remove this image?')) {
-                                            const updated = [...(editingConfig.copyFrameworks.emailFrameworks || [])];
-                                            const updatedImages = [...(updated[index].images || [])];
-                                            updatedImages.splice(imgIndex, 1);
-                                            updated[index] = { ...updated[index], images: updatedImages };
-                                            setEditingConfig({
-                                              ...editingConfig,
-                                              copyFrameworks: {
-                                                ...editingConfig.copyFrameworks,
-                                                emailFrameworks: updated
-                                              }
-                                            });
-                                          }
+                                {framework.images.map((image: any, imgIndex: number) => {
+                                  console.log('DEBUG: Rendering image in UI:', {
+                                    frameworkName: framework.displayName || framework.name,
+                                    imageIndex: imgIndex,
+                                    imageName: image.name,
+                                    hasDataUri: !!image.dataUri,
+                                    dataUriLength: image.dataUri?.length || 0,
+                                    dataUriStart: image.dataUri?.substring(0, 50) || 'N/A'
+                                  });
+                                  return (
+                                    <div key={imgIndex} className="relative group border border-gray-200 rounded-lg overflow-hidden">
+                                      <img 
+                                        src={image.dataUri} 
+                                        alt={image.name || `Framework image ${imgIndex + 1}`}
+                                        className="w-full h-24 object-cover"
+                                        onError={(e) => {
+                                          console.error('DEBUG: Image failed to load:', {
+                                            frameworkName: framework.displayName || framework.name,
+                                            imageIndex: imgIndex,
+                                            imageName: image.name,
+                                            src: image.dataUri?.substring(0, 100) || 'N/A'
+                                          });
                                         }}
-                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </button>
-                                    )}
-                                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 truncate">
-                                      {image.name || `Image ${imgIndex + 1}`}
+                                      />
+                                      {effectiveUser?.role === 'admin' && (
+                                        <button
+                                          onClick={() => {
+                                            if (confirm('Remove this image?')) {
+                                              const updated = [...(editingConfig.copyFrameworks.emailFrameworks || [])];
+                                              const updatedImages = [...(updated[index].images || [])];
+                                              updatedImages.splice(imgIndex, 1);
+                                              updated[index] = { ...updated[index], images: updatedImages };
+                                              setEditingConfig({
+                                                ...editingConfig,
+                                                copyFrameworks: {
+                                                  ...editingConfig.copyFrameworks,
+                                                  emailFrameworks: updated
+                                                }
+                                              });
+                                            }
+                                          }}
+                                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      )}
+                                      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 truncate">
+                                        {image.name || `Image ${imgIndex + 1}`}
+                                      </div>
                                     </div>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             )}
                             
@@ -886,14 +934,14 @@ Your Skin But Better"
                                               }
                                             });
                                             
-                                            console.log('DEBUG: Image added to framework', {
-                                              frameworkIndex: index,
-                                              frameworkName: framework.displayName || framework.name,
-                                              fileName: file.name,
-                                              imageId: newImage.id,
-                                              totalImages: [...currentImages, newImage].length,
-                                              updatedFramework: { ...updated[index], images: [...currentImages, newImage] }
-                                            });
+                                            // console.log('DEBUG: Image added to framework', {
+                                            //   frameworkIndex: index,
+                                            //   frameworkName: framework.displayName || framework.name,
+                                            //   fileName: file.name,
+                                            //   imageId: newImage.id,
+                                            //   totalImages: [...currentImages, newImage].length,
+                                            //   updatedFramework: { ...updated[index], images: [...currentImages, newImage] }
+                                            // });
                                             
                                             toast({
                                               title: "Image Added",
@@ -913,7 +961,7 @@ Your Skin But Better"
                                       className="inline-flex items-center px-3 py-2 border border-dashed border-gray-300 rounded-md text-sm text-gray-600 hover:bg-gray-50 hover:border-gray-400 cursor-pointer transition-colors"
                                     >
                                       <Upload className="w-4 h-4 mr-2" />
-                                      Upload Image ({(framework.images || []).length}/5)
+                                      Upload Image ({(framework.images && Array.isArray(framework.images) ? framework.images.length : 0)}/5)
                                     </label>
                                   </div>
                                 ) : (

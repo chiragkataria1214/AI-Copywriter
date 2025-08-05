@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -152,33 +153,77 @@ const BriefCreationTab = (props: any) => {
                         {/* Product Selection */}
                         {props.products && Object.keys(props.products).length > 0 && (
                             <div>
-                                <Label>Product Focus (Optional)</Label>
-                                <p className="text-sm text-gray-600 mb-2">
+                                <Label className="text-sm font-medium text-gray-700">Product Focus (Optional)</Label>
+                                <p className="text-sm text-gray-600 mb-3">
                                     Select a product to include specific product claims and benefits in your brief.
                                 </p>
-                                <div className="flex flex-wrap gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => props.setSelectedProduct && props.setSelectedProduct('')}
-                                        className={`px-3 py-1 rounded-full text-sm border transition-colors ${
-                                            !props.selectedProduct ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
-                                        }`}
-                                    >
-                                        All Products
-                                    </button>
-                                    {Object.entries(props.products).map(([productName, product]: [string, any]) => (
-                                        <button
-                                            key={productName}
-                                            type="button"
-                                            onClick={() => props.setSelectedProduct && props.setSelectedProduct(productName)}
-                                            className={`px-3 py-1 rounded-full text-sm border transition-colors ${
-                                                props.selectedProduct === productName ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
-                                            }`}
-                                        >
-                                            {product.displayName}
-                                        </button>
-                                    ))}
+                                
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                    {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].map((productName) => {
+                                        const product = props.products[productName];
+                                        if (!product) return null;
+                                        
+                                        const isSelected = props.selectedProduct === productName;
+                                        return (
+                                            <button
+                                                key={productName}
+                                                onClick={() => props.setSelectedProduct && props.setSelectedProduct(isSelected ? '' : productName)}
+                                                className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                                                    isSelected
+                                                        ? 'bg-[#004182] text-white border-2 border-[#004182] shadow-sm'
+                                                        : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-[#004182] hover:bg-blue-50'
+                                                }`}
+                                            >
+                                                <div className={`w-3 h-3 rounded-full mr-2 flex items-center justify-center ${
+                                                    isSelected ? 'bg-white' : 'bg-gray-300'
+                                                }`}>
+                                                    {isSelected && (
+                                                        <svg className="w-2 h-2 text-[#004182]" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                        </svg>
+                                                    )}
+                                                </div>
+                                                {product.displayName}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
+
+                                <div className="border-t border-gray-200 pt-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium text-gray-700">
+                                            Or choose from all products
+                                        </Label>
+                                        <Select value={props.selectedProduct || "all"} onValueChange={(value) => props.setSelectedProduct && props.setSelectedProduct(value === "all" ? "" : value)}>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="All products (no filtering)" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All products</SelectItem>
+                                                {Object.entries(props.products).map(([key, product]: [string, any]) => (
+                                                    <SelectItem key={key} value={key}>
+                                                        {product.displayName || product.name || key}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                {props.selectedProduct && (
+                                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <div className="flex items-center space-x-2">
+                                            <div className="w-5 h-5 bg-[#004182] rounded-full flex items-center justify-center">
+                                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                            <span className="text-sm text-gray-700">
+                                                AI will use product-specific claims and benefits for <strong>{props.products[props.selectedProduct]?.displayName || props.selectedProduct}</strong>
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </CardContent>
