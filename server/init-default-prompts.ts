@@ -119,7 +119,7 @@ REMEMBER: Your entire response must be valid JSON. No markdown, no explanatory t
 
 LANDING PAGE TYPE: {landingPageType}
 PRODUCT BRIEF: {productBrief}
-TARGET PERSONA: {concept} {subPersona}
+TARGET PERSONA: {concept}
 BRAND/DR BALANCE: {brandPercent}% brand voice, {drPercent}% direct response
 {adsContentSection}
 

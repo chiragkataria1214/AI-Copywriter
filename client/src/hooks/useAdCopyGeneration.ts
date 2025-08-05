@@ -37,7 +37,6 @@ export const useAdCopyGeneration = () => {
       transcription: string;
       customBrief: string;
       concept: string;
-      subPersona: string;
       targetAudience: string;
       landingPageUrl: string;
       brandDrBalance: number;

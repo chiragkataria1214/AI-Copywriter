@@ -40,7 +40,6 @@ export const PaidSocialTabs = (props: any) => {
                     getGenerationDisabledState={props.getGenerationDisabledState}
                     copyToClipboard={props.copyToClipboard}
                     selectedProduct={props.selectedProduct}
-                    subPersona={props.subPersona}
                     brandDrBalance={props.brandDrBalance}
                     setCurrentGenerationMetadata={props.setCurrentGenerationMetadata}
                     setShowGenerationDetails={props.setShowGenerationDetails}

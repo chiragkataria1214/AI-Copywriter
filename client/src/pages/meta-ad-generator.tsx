@@ -24,13 +24,8 @@ import { TrainingConfig } from '@shared/training-config';
 import { GenerationDetailsModal, GenerationMetadata } from '@/components/GenerationDetailsModal';
 import { Header, MainTabs, PaidSocialTabs, ProductLaunchTabs, AdCopyTab, StaticAdTab, OrganicSocialTab, LandingPageTab, CustomCopyTab, RetentionTab, AISettingsComponent } from '@/components/meta-ad-generator';
 
-interface SubPersona {
-  label: string;
-}
-
 interface Persona {
   label: string;
-  subPersonas?: Record<string, SubPersona>;
 }
 
 export default function MetaAdGenerator() {
@@ -172,7 +167,6 @@ export default function MetaAdGenerator() {
   const [uploadedImage, setUploadedImage] = useState<string>('');
   const [customBrief, setCustomBrief] = useState('');
   const [concept, setConcept] = useState('lifeJuggler');
-  const [subPersona, setSubPersona] = useState('newMom');
   const [targetAudience, setTargetAudience] = useState('');
   const [landingPageUrl, setLandingPageUrl] = useState('');
   const [selectedProduct, setSelectedProduct] = useState('');
@@ -528,17 +522,26 @@ export default function MetaAdGenerator() {
   };
 
   const deleteProductMutation = useMutation({
-    mutationFn: async (productId: string) => {
+    mutationFn: async ({ productId, productKey }: { productId: string; productKey?: string }) => {
       return await apiRequest(`/api/products/${productId}`, {
         method: 'DELETE',
       });
     },
-    onSuccess: () => {
+    onSuccess: (_, { productKey }) => {
       toast({
         title: "Product Deleted",
         description: "The product has been successfully deleted from the database.",
       });
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      
+      // Also remove from local productClaims state if productKey is provided
+      if (productKey) {
+        setProductClaims(prev => {
+          const updated = { ...prev };
+          delete updated[productKey];
+          return updated;
+        });
+      }
     },
     onError: (error) => {
       toast({
@@ -556,7 +559,6 @@ export default function MetaAdGenerator() {
         transcription,
         customBrief,
         concept,
-        subPersona,
         targetAudience: targetAudience || personas[concept]?.label || concept,
         landingPageUrl,
         brandDrBalance: brandDrBalance[0],
@@ -626,7 +628,6 @@ export default function MetaAdGenerator() {
           transcription,
           customBrief,
           concept,
-          subPersona,
           targetAudience: targetAudience || personas[concept]?.label || concept,
           brandDrBalance: brandDrBalance[0],
           selectedProduct,
@@ -715,7 +716,6 @@ export default function MetaAdGenerator() {
         body: {
           customRequest,
           concept,
-          subPersona,
           brandDrBalance: brandDrBalance[0],
           selectedProduct,
           useJonesBrandGuide
@@ -765,7 +765,6 @@ export default function MetaAdGenerator() {
           keywordsToInclude: retentionKeywordsToInclude,
           wordsToAvoid: retentionWordsToAvoid,
           concept,
-          subPersona,
           brandDrBalance: brandDrBalance[0],
           selectedProduct,
           useJonesBrandGuide
@@ -816,9 +815,9 @@ export default function MetaAdGenerator() {
         body: {
           staticAdImage,
           concept,
-          subPersona,
           brandDrBalance: brandDrBalance[0],
-          selectedProduct
+          selectedProduct,
+          useJonesBrandGuide
         }
       });
     },
@@ -853,7 +852,6 @@ export default function MetaAdGenerator() {
         landingPageType,
         productBrief,
         concept,
-        subPersona,
         useAdsContent: useAdsForLanding,
         adsContent: chosenAdsContent,
         brandDrBalance: brandDrBalance[0],
@@ -1017,8 +1015,6 @@ export default function MetaAdGenerator() {
                 concept={concept}
                 setConcept={setConcept}
                 personas={personas}
-                subPersona={subPersona}
-                setSubPersona={setSubPersona}
                 landingPageUrl={landingPageUrl}
                 setLandingPageUrl={setLandingPageUrl}
                 enableInfluencerMode={enableInfluencerMode}
@@ -1069,6 +1065,7 @@ export default function MetaAdGenerator() {
                 staticAdAnalysis={staticAdAnalysis}
                 setStaticAdAnalysis={setStaticAdAnalysis}
                 analyzeStaticAdMutation={analyzeStaticAdMutation}
+                debugInfo={debugInfo}
               />
             </TabsContent>
 
@@ -1121,6 +1118,7 @@ export default function MetaAdGenerator() {
                 stationPrompts={stationPrompts}
                 brandGuidelines={brandGuidelines}
                 copyFrameworks={copyFrameworks}
+                debugInfo={debugInfo}
               />
             </TabsContent>
 
@@ -1140,8 +1138,6 @@ export default function MetaAdGenerator() {
                 copiedLandingCopy={copiedLandingCopy}
                 concept={concept}
                 setConcept={setConcept}
-                subPersona={subPersona}
-                setSubPersona={setSubPersona}
                 personas={personas}
                 useJonesBrandGuide={useJonesBrandGuide}
                 setUseJonesBrandGuide={setUseJonesBrandGuide}
@@ -1167,6 +1163,7 @@ export default function MetaAdGenerator() {
                 stationPrompts={stationPrompts}
                 brandGuidelines={brandGuidelines}
                 copyFrameworks={copyFrameworks}
+                debugInfo={debugInfo}
               />
             </TabsContent>
             <TabsContent value="custom">
@@ -1181,7 +1178,6 @@ export default function MetaAdGenerator() {
                 setSelectedProduct={setSelectedProduct}
                 brandDrBalance={brandDrBalance}
                 setBrandDrBalance={setBrandDrBalance}
-                subPersona={subPersona}
                 personas={personas}
                 products={Object.values(products)}
                 generateCustomCopyMutation={generateCustomCopyMutation}
@@ -1195,6 +1191,7 @@ export default function MetaAdGenerator() {
                 stationPrompts={stationPrompts}
                 brandGuidelines={brandGuidelines}
                 copyFrameworks={copyFrameworks}
+                debugInfo={debugInfo}
               />
             </TabsContent>
 
@@ -1219,8 +1216,6 @@ export default function MetaAdGenerator() {
                 retentionCopyHistory={retentionCopyHistory}
                 concept={concept}
                 setConcept={setConcept}
-                subPersona={subPersona}
-                setSubPersona={setSubPersona}
                 brandDrBalance={brandDrBalance}
                 setBrandDrBalance={setBrandDrBalance}
                 selectedProduct={selectedProduct}
@@ -1241,6 +1236,7 @@ export default function MetaAdGenerator() {
                 stationPrompts={stationPrompts}
                 brandGuidelines={brandGuidelines}
                 copyFrameworks={copyFrameworks}
+                debugInfo={debugInfo}
               />
             </TabsContent>
 
@@ -1254,6 +1250,11 @@ export default function MetaAdGenerator() {
                 stationPrompts={stationPrompts}
                 brandGuidelines={brandGuidelines}
                 copyFrameworks={copyFrameworks}
+                selectedProduct={selectedProduct}
+                setSelectedProduct={setSelectedProduct}
+                concept={concept}
+                brandDrBalance={brandDrBalance}
+                useJonesBrandGuide={useJonesBrandGuide}
               />
             </TabsContent>
 
@@ -1374,22 +1375,7 @@ export default function MetaAdGenerator() {
                       </Select>
                     </div>
 
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">Sub-Persona</Label>
-                      <Select value={subPersona} onValueChange={setSubPersona}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select sub-persona" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">None (General)</SelectItem>
-                          {personas[concept]?.subPersonas && Object.entries(personas[concept].subPersonas).map(([key, subPersona]) => (
-                            <SelectItem key={key} value={key}>
-                              {(subPersona as any).label || key.replace(/([A-Z])/g, ' $1').trim()}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                 
                   </div>
 
                   <TooltipProvider>

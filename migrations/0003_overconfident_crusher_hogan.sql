@@ -1,0 +1,1 @@
+ALTER TABLE "email_frameworks" ADD COLUMN "images" jsonb;

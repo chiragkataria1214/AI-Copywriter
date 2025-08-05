@@ -462,7 +462,9 @@ function registerConfigRoutes(app: Express) {
     }
   });
   
-  // Email frameworks endpoints
+  // Email frameworks endpoints - Full CRUD operations
+  
+  // GET all email frameworks
   app.get("/api/email-frameworks", async (req, res) => {
     try {
       const frameworks = await storage.getAllEmailFrameworks();
@@ -473,35 +475,7 @@ function registerConfigRoutes(app: Express) {
     }
   });
 
-  app.put("/api/email-frameworks/:id", requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { structure, keyElements, frameworkContent, systemPrompt } = req.body;
-      
-      // Validate required fields
-      if (!id) {
-        return res.status(400).json({ error: "Framework ID is required" });
-      }
-
-      // Update the framework
-      const updatedFramework = await storage.updateEmailFramework(id, {
-        structure,
-        keyElements,
-        frameworkContent,
-        systemPrompt,
-      });
-
-      if (!updatedFramework) {
-        return res.status(404).json({ error: "Framework not found" });
-      }
-
-      res.json({ success: true, framework: updatedFramework });
-    } catch (error) {
-      console.error("Error updating email framework:", error);
-      res.status(500).json({ error: "Failed to update email framework" });
-    }
-  });
-  
+  // GET active email frameworks only
   app.get("/api/email-frameworks/active", async (req, res) => {
     try {
       const frameworks = await storage.getActiveEmailFrameworks();
@@ -512,6 +486,7 @@ function registerConfigRoutes(app: Express) {
     }
   });
   
+  // GET single email framework by name
   app.get("/api/email-frameworks/:name", async (req, res) => {
     try {
       const { name } = req.params;
@@ -525,16 +500,235 @@ function registerConfigRoutes(app: Express) {
       res.status(500).json({ error: "Failed to fetch email framework" });
     }
   });
+
+  // POST create new email framework
+  app.post("/api/email-frameworks", requireAdmin, async (req, res) => {
+    try {
+      const { 
+        name, 
+        displayName, 
+        description, 
+        structure, 
+        keyElements, 
+        frameworkContent, 
+        systemPrompt,
+        outputRequirements,
+        expectedLength,
+        isActive,
+        sortOrder 
+      } = req.body;
+      
+      // Validate required fields
+      if (!name || !displayName || !description || !structure || !systemPrompt) {
+        return res.status(400).json({ 
+          error: "Missing required fields: name, displayName, description, structure, systemPrompt" 
+        });
+      }
+
+      // Check if framework with this name already exists
+      const existingFramework = await storage.getEmailFramework(name);
+      if (existingFramework) {
+        return res.status(409).json({ error: "Framework with this name already exists" });
+      }
+
+      // Create the framework
+      const newFramework = await storage.createEmailFramework({
+        name,
+        displayName,
+        description,
+        structure,
+        keyElements,
+        frameworkContent,
+        systemPrompt,
+        outputRequirements,
+        expectedLength,
+        isActive: isActive || 'true',
+        sortOrder: sortOrder || 0,
+      });
+
+      res.status(201).json({ success: true, framework: newFramework });
+    } catch (error) {
+      console.error("Error creating email framework:", error);
+      res.status(500).json({ error: "Failed to create email framework" });
+    }
+  });
+
+  // PUT update email framework by ID
+  app.put("/api/email-frameworks/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { 
+        name,
+        displayName,
+        description,
+        structure, 
+        keyElements, 
+        frameworkContent, 
+        systemPrompt,
+        outputRequirements,
+        expectedLength,
+        isActive,
+        sortOrder 
+      } = req.body;
+      
+      // Validate required fields
+      if (!id) {
+        return res.status(400).json({ error: "Framework ID is required" });
+      }
+
+      // Update the framework
+      const updatedFramework = await storage.updateEmailFramework(id, {
+        name,
+        displayName,
+        description,
+        structure,
+        keyElements,
+        frameworkContent,
+        systemPrompt,
+        outputRequirements,
+        expectedLength,
+        isActive,
+        sortOrder,
+      });
+
+      if (!updatedFramework) {
+        return res.status(404).json({ error: "Framework not found" });
+      }
+
+      res.json({ success: true, framework: updatedFramework });
+    } catch (error) {
+      console.error("Error updating email framework:", error);
+      res.status(500).json({ error: "Failed to update email framework" });
+    }
+  });
+
+  // DELETE email framework by ID
+  app.delete("/api/email-frameworks/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Delete the framework
+      await storage.deleteEmailFrameworkById(id);
+
+      res.json({ success: true, message: "Framework deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting email framework:", error);
+      res.status(500).json({ error: "Failed to delete email framework" });
+    }
+  });
+
+  // POST seed email frameworks from template
+  app.post("/api/email-frameworks/seed", requireAdmin, async (req, res) => {
+    try {
+      const { seedEmailFrameworks } = await import('./seeds/email-frameworks-seed.js');
+      await seedEmailFrameworks();
+      res.json({ success: true, message: "Email frameworks seeded successfully" });
+    } catch (error) {
+      console.error("Error seeding email frameworks:", error);
+      res.status(500).json({ error: "Failed to seed email frameworks" });
+    }
+  });
   
   app.put("/api/email-frameworks/:name", requireAuth, async (req, res) => {
     try {
       const { name } = req.params;
       const data = req.body;
-      const framework = await storage.updateEmailFramework(name, data);
+      const framework = await storage.updateEmailFrameworkByName(name, data);
       res.json(framework);
     } catch (error) {
       console.error("Error updating email framework:", error);
       res.status(400).json({ error: "Failed to update email framework" });
+    }
+  });
+  
+  // Email framework image upload endpoint
+  app.post("/api/email-frameworks/:frameworkId/images", requireAdmin, upload.single('image'), async (req, res) => {
+    try {
+      const { frameworkId } = req.params;
+      const file = req.file;
+      
+      if (!file) {
+        return res.status(400).json({ error: "No image file provided" });
+      }
+      
+      // Validate file type
+      if (!file.mimetype.startsWith('image/')) {
+        return res.status(400).json({ error: 'Please upload a valid image file (JPG, PNG, etc.)' });
+      }
+      
+      // Validate file size (8MB limit)
+      if (file.size > 8 * 1024 * 1024) {
+        return res.status(400).json({ error: 'File size must be less than 8MB' });
+      }
+      
+      // Get the framework to check if it exists and get current images
+      const framework = await storage.getEmailFrameworkById(frameworkId);
+      if (!framework) {
+        return res.status(404).json({ error: "Email framework not found" });
+      }
+      
+      // Check if framework already has 5 images (max limit)
+      const currentImages = framework.images ? (Array.isArray(framework.images) ? framework.images : []) : [];
+      if (currentImages.length >= 5) {
+        return res.status(400).json({ error: "Maximum 5 images allowed per framework" });
+      }
+      
+      // Convert image to base64 for storage
+      const fs = await import('fs');
+      const imageBuffer = fs.readFileSync(file.path);
+      const base64Image = imageBuffer.toString('base64');
+      const mimeType = file.mimetype;
+      const dataUri = `data:${mimeType};base64,${base64Image}`;
+      
+      // Add the new image to the framework's images array
+      const updatedImages = [...currentImages, {
+        id: Date.now().toString(), // Simple ID for now
+        name: file.originalname,
+        dataUri: dataUri,
+        mimeType: mimeType,
+        size: file.size,
+        uploadedAt: new Date().toISOString()
+      }];
+      
+      // Update the framework with the new images
+      await storage.updateEmailFramework(frameworkId, { images: updatedImages });
+      
+      // Clean up the temporary file
+      fs.unlinkSync(file.path);
+      
+      res.json({ 
+        success: true, 
+        image: updatedImages[updatedImages.length - 1],
+        totalImages: updatedImages.length 
+      });
+    } catch (error) {
+      console.error("Error uploading framework image:", error);
+      res.status(500).json({ error: "Failed to upload image" });
+    }
+  });
+  
+  // Delete email framework image endpoint
+  app.delete("/api/email-frameworks/:frameworkId/images/:imageId", requireAdmin, async (req, res) => {
+    try {
+      const { frameworkId, imageId } = req.params;
+      
+      // Get the framework
+      const framework = await storage.getEmailFrameworkById(frameworkId);
+      if (!framework) {
+        return res.status(404).json({ error: "Email framework not found" });
+      }
+      
+      // Remove the image from the framework's images array
+      const currentImages = framework.images ? (Array.isArray(framework.images) ? framework.images : []) : [];
+      const updatedImages = currentImages.filter((img: any) => img.id !== imageId);
+      
+      // Update the framework
+      await storage.updateEmailFramework(frameworkId, { images: updatedImages });
+      
+      res.json({ success: true, totalImages: updatedImages.length });
+    } catch (error) {
+      console.error("Error deleting framework image:", error);
+      res.status(500).json({ error: "Failed to delete image" });
     }
   });
   
@@ -561,7 +755,7 @@ function registerConfigRoutes(app: Express) {
       // TODO: Analyze the image with Claude AI using the framework
       // For now, create a placeholder analysis
       const analysisData = {
-        userId: req.session.userId,
+        userId: (req.session as any).userId,
         imagePath: file.path,
         selectedFramework,
         aiAnalysis: `Email analysis for ${framework.displayName} framework - placeholder analysis`,
@@ -584,7 +778,7 @@ function registerConfigRoutes(app: Express) {
   
   app.get("/api/email-image-analysis", requireAuth, async (req, res) => {
     try {
-      const analyses = await storage.getEmailImageAnalysisByUser(req.session.userId);
+      const analyses = await storage.getEmailImageAnalysisByUser((req.session as any).userId);
       res.json(analyses);
     } catch (error) {
       console.error("Error fetching email analyses:", error);
@@ -1199,7 +1393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Demo ad copy generation endpoint (no auth required)
   app.post('/api/demo/generate-ad-copy', async (req, res) => {
     try {
-      const { transcription, customBrief, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage } = req.body;
+      const { transcription, customBrief, concept, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage } = req.body;
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -1212,7 +1406,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transcription,
         customBrief,
         concept,
-        subPersona,
         targetAudience,
         landingPageUrl,
         brandDrBalance,
@@ -1240,7 +1433,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/generate-ad-copy', requireAuth, async (req, res) => {
     try {
       const startTime = Date.now();
-      const { transcription, customBrief, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage } = req.body;
+      const { transcription, customBrief, concept, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage } = req.body;
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -1253,7 +1446,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transcription,
         customBrief,
         concept,
-        subPersona,
         targetAudience,
         landingPageUrl,
         brandDrBalance,
@@ -1270,7 +1462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: userId,
         inputText: transcription || concept || '',
         landingPageUrl: landingPageUrl || null,
-        targetPersona: subPersona || targetAudience || '',
+        targetPersona: targetAudience || '',
         brandDrBalance: brandDrBalance || 50,
         headlines: result.headlines,
         primaryText: result.primaryText,
@@ -1285,6 +1477,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         copyId: savedCopy.id, // Return ID for feedback tracking
         headlines: result.headlines,
         primaryText: result.primaryText,
+        debugInfo: result.debugInfo,
         performance: {
           estimatedCpc: 0.42,
           brandAlignment: 85
@@ -1328,9 +1521,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate custom copy endpoint (protected)
   app.post('/api/generate-custom-copy', requireAuth, async (req, res) => {
     try {
-      const { customRequest, concept, subPersona, brandDrBalance, selectedProduct, useJonesBrandGuide } = req.body;
+      const { customRequest, concept, brandDrBalance, selectedProduct, useJonesBrandGuide } = req.body;
       
-      console.log('Custom copy request:', { customRequest, concept, subPersona, brandDrBalance, selectedProduct, useJonesBrandGuide });
+      console.log('Custom copy request:', { customRequest, concept, brandDrBalance, selectedProduct, useJonesBrandGuide });
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -1346,7 +1539,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await generateCustomCopy({
         customRequest: customRequest.trim(),
         concept,
-        subPersona,
         brandDrBalance,
         selectedProduct,
         useJonesBrandGuide
@@ -1365,9 +1557,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Product Launch Brief generation endpoint (protected)
   app.post('/api/generate-brief', requireAuth, async (req, res) => {
     try {
-      const { notes, googleDriveLinks } = req.body;
+      const { 
+        notes, 
+        googleDriveLinks, 
+        selectedProduct, 
+        selectedProducts, 
+        concept, 
+        brandDrBalance, 
+        useJonesBrandGuide 
+      } = req.body;
       
-      console.log('Brief generation request:', { notes, googleDriveLinks });
+      console.log('Brief generation request:', { 
+        notes, 
+        googleDriveLinks, 
+        selectedProduct, 
+        selectedProducts, 
+        concept, 
+        brandDrBalance 
+      });
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -1385,7 +1592,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const result = await generateBrief({
         notes: notes.trim(),
-        googleDriveLinks: googleDriveLinks || []
+        googleDriveLinks: googleDriveLinks || [],
+        selectedProduct,
+        selectedProducts,
+        concept,
+        brandDrBalance,
+        useJonesBrandGuide
       }, trainingConfig);
       
       // Calculate generation time
@@ -1467,13 +1679,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         keywordsToInclude, 
         wordsToAvoid,
         concept,
-        subPersona,
         brandDrBalance,
         selectedProduct,
         useJonesBrandGuide
       } = req.body;
       
-      console.log('Retention copy request:', { keyMessage, platform, selectedProducts, audience, goal, campaignType, contentLength });
+      console.log('Retention copy request:', { keyMessage, platform, emailType, selectedProducts, audience, goal, campaignType, contentLength });
       
       if (!process.env.ANTHROPIC_API_KEY) {
         console.error('ANTHROPIC_API_KEY missing');
@@ -1488,10 +1699,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get current training config
       const trainingConfig = await getTrainingConfig();
       
+      // Fetch email framework details if emailType is provided
+      let selectedFramework = null;
+      if (platform === 'Email' && emailType) {
+        try {
+          const frameworks = await storage.getAllEmailFrameworks();
+          selectedFramework = frameworks.find(f => f.displayName === emailType);
+          console.log('Selected email framework:', selectedFramework?.displayName);
+        } catch (error) {
+          console.error('Failed to fetch email frameworks:', error);
+          // Continue without framework details - generation will still work
+        }
+      }
+      
       const result = await generateRetentionCopy({
         keyMessage: keyMessage.trim(),
         platform,
         emailType,
+        selectedFramework,
         selectedProducts,
         audience,
         goal,
@@ -1501,7 +1726,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         keywordsToInclude,
         wordsToAvoid,
         concept,
-        subPersona,
         brandDrBalance,
         selectedProduct,
         useJonesBrandGuide
@@ -1620,9 +1844,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Static ad analysis endpoint (protected)
   app.post('/api/analyze-static-ad', requireAuth, async (req, res) => {
     try {
-      const { staticAdImage, concept, subPersona, brandDrBalance, selectedProduct } = req.body;
+      const { staticAdImage, concept, brandDrBalance, selectedProduct, useJonesBrandGuide } = req.body;
       
-      console.log('Static ad analysis request:', { concept, subPersona, brandDrBalance, selectedProduct, imageLength: staticAdImage?.length });
+      console.log('Static ad analysis request:', { concept, brandDrBalance, selectedProduct, useJonesBrandGuide, imageLength: staticAdImage?.length });
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -1638,9 +1862,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await analyzeStaticAd({
         staticAdImage,
         concept: concept || 'lifeJuggler',
-        subPersona: subPersona || undefined,
         brandDrBalance: brandDrBalance || 50,
-        selectedProduct: selectedProduct || undefined
+        selectedProduct: selectedProduct || undefined,
+        useJonesBrandGuide
       }, trainingConfig);
       
       res.json({
@@ -1649,6 +1873,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Static ad analysis error:', error);
+      
+      // Provide more specific error messages for common issues
+      if (error instanceof Error) {
+        if (error.message.includes('Image processing failed')) {
+          return res.status(400).json({ 
+            message: 'Image too large or invalid format. Please try uploading a smaller image (under 10MB) or a different format.',
+            details: error.message
+          });
+        }
+        if (error.message.includes('image exceeds')) {
+          return res.status(400).json({ 
+            message: 'Image file size exceeds the maximum allowed limit. Please compress your image and try again.',
+            details: error.message
+          });
+        }
+      }
+      
       res.status(500).json({ message: 'Failed to analyze static ad' });
     }
   });
@@ -1656,9 +1897,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate landing page copy endpoint (protected)
   app.post('/api/generate-landing-copy', requireAuth, async (req, res) => {
     try {
-      const { landingPageType, productBrief, concept, subPersona, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle, transcription } = req.body;
+      const { landingPageType, productBrief, concept, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle, transcription } = req.body;
       
-      console.log('Landing copy request body:', { landingPageType, productBrief, concept, subPersona, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle, transcription: transcription ? 'included' : 'none' });
+      console.log('Landing copy request body:', { landingPageType, productBrief, concept, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle, transcription: transcription ? 'included' : 'none' });
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -1671,7 +1912,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         landingPageType,
         productBrief,
         concept,
-        subPersona,
         useAdsContent,
         adsContent,
         brandDrBalance,
@@ -1724,7 +1964,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           hasRiskReversal: !!result.riskReversal,
           productSpecific: !!selectedProduct
         },
-        rawResponse: result.rawResponse // For debug purposes
+        debugInfo: result.debugInfo // For debug purposes
       });
     } catch (error) {
       console.error('Generation error:', error);
@@ -1743,7 +1983,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           transcription: z.string().optional(),
           customBrief: z.string().optional(),
           concept: z.string().optional(),
-          subPersona: z.string().optional(),
           targetAudience: z.string().optional(),
           brandDrBalance: z.number().optional(),
           selectedProduct: z.string().optional(),
@@ -1889,7 +2128,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transcription: z.string().optional(),
         customBrief: z.string().optional(),
         concept: z.string().optional(),
-        subPersona: z.string().optional(),
         targetAudience: z.string().optional(),
         landingPageUrl: z.string().optional(),
         brandDrBalance: z.array(z.number()).optional(),
@@ -1923,7 +2161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 Product: ${data.selectedProduct || 'Jones Road Beauty products'}
 Transcription: ${data.transcription || ''}
 Custom Brief: ${data.customBrief || ''}
-Target Persona: ${data.concept} - ${data.subPersona}
+Target Persona: ${data.concept}
 Landing Page: ${data.landingPageUrl || 'None provided'}
 `;
 
@@ -1939,7 +2177,7 @@ Landing Page: ${data.landingPageUrl || 'None provided'}
         userId: userId,
         inputText: data.transcription || data.concept || '',
         landingPageUrl: data.landingPageUrl || null,
-        targetPersona: data.subPersona || data.targetAudience || '',
+        targetPersona: data.targetAudience || '',
         brandDrBalance: data.brandDrBalance?.[0] || 50,
         headlines: result.headlines,
         primaryText: result.primaryText,

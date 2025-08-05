@@ -91,6 +91,12 @@ interface OrganicSocialTabProps {
       frameworks?: string[];
     };
   };
+  debugInfo?: {
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null;
 }
 
 export function OrganicSocialTab({
@@ -140,7 +146,8 @@ export function OrganicSocialTab({
   modelSettings,
   stationPrompts,
   brandGuidelines,
-  copyFrameworks
+  copyFrameworks,
+  debugInfo
 }: OrganicSocialTabProps) {
   const [isGeneratingCaptions, setIsGeneratingCaptions] = useState(false);
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
@@ -524,7 +531,21 @@ export function OrganicSocialTab({
             <div className="space-y-4 sm:space-y-6">
               <Card>
                 <CardContent className="p-6">
-                  {generatedCaptions.length > 0 ? (
+                  {isGeneratingCaptions ? (
+                    <div className="text-center py-16">
+                      <div className="flex items-center justify-center mb-4">
+                        <div className="flex space-x-1">
+                          <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                          <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                          <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        </div>
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-600 mb-2">Generating Social Captions</h3>
+                      <p className="text-gray-500">
+                        Creating platform-optimized social media captions with hashtags and engagement hooks...
+                      </p>
+                    </div>
+                  ) : generatedCaptions.length > 0 ? (
                     <div>
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xl font-semibold text-gray-900">Generated Social Captions</h3>
@@ -538,11 +559,10 @@ export function OrganicSocialTab({
                               modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
                               temperature: modelSettings?.temperature || 0.7,
                               maxTokens: modelSettings?.maxTokens || 2000,
-                              systemPrompt: stationPrompts?.socialCaptions?.systemPrompt || 'Expert social media copywriter for Jones Road Beauty...',
-                              userPrompt: `Content Type: ${organicContentType}\nTranscription: ${organicVideoTranscription}\nPlatform: ${organicPlatform}\nGoal: ${organicGoal}\nTone: ${organicTone}\nVariations: ${captionVariations}\nSelected Product: ${selectedProduct}`,
-                              brandGuidelines: brandGuidelines?.guidelines || ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
-                              frameworks: copyFrameworks?.socialCaptions?.frameworks || ['Social media optimization', 'Engagement hooks', 'Platform-specific formatting'],
-                              selectedProduct: selectedProduct
+                              systemPrompt: debugInfo?.systemPrompt || stationPrompts?.socialCaptions?.systemPrompt || 'Expert social media copywriter for Jones Road Beauty...',
+                              userPrompt: debugInfo?.userPrompt || `Content Type: ${organicContentType}\nTranscription: ${organicVideoTranscription}\nPlatform: ${organicPlatform}\nGoal: ${organicGoal}\nTone: ${organicTone}\nVariations: ${captionVariations}\nSelected Product: ${selectedProduct}`,
+                              requestPayload: debugInfo?.requestPayload,
+                              rawResponse: debugInfo?.rawResponse
                             });
                             setShowGenerationDetails(true);
                           }}
@@ -959,7 +979,21 @@ export function OrganicSocialTab({
             <div className="space-y-4 sm:space-y-6">
               <Card>
                 <CardContent className="p-6">
-                  {generatedStorySequence.length > 0 ? (
+                  {isGeneratingStory ? (
+                    <div className="text-center py-16">
+                      <div className="flex items-center justify-center mb-4">
+                        <div className="flex space-x-1">
+                          <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                          <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                          <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        </div>
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-600 mb-2">Generating Story Sequence</h3>
+                      <p className="text-gray-500">
+                        Creating an engaging Instagram story sequence with visual directions and timing...
+                      </p>
+                    </div>
+                  ) : generatedStorySequence.length > 0 ? (
                     <div>
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xl font-semibold text-gray-900">Generated Story Sequence</h3>
@@ -973,11 +1007,10 @@ export function OrganicSocialTab({
                               modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
                               temperature: modelSettings?.temperature || 0.7,
                               maxTokens: modelSettings?.maxTokens || 2000,
-                              systemPrompt: stationPrompts?.storySequence?.systemPrompt || 'Expert Instagram story sequence creator for Jones Road Beauty...',
-                              userPrompt: `Content Type: ${storyContentType}\nTranscription: ${storyVideoTranscription}\nSequence Type: ${storySequenceType}\nLength: ${storyLength} slides\nTone: ${storyTone}\nSelected Product: ${selectedProduct}`,
-                              brandGuidelines: brandGuidelines?.guidelines || ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
-                              frameworks: copyFrameworks?.storySequence?.frameworks || ['Story narrative structure', 'Visual direction guidance', 'Engagement optimization'],
-                              selectedProduct: selectedProduct
+                              systemPrompt: debugInfo?.systemPrompt || stationPrompts?.storySequence?.systemPrompt || 'Expert Instagram story sequence creator for Jones Road Beauty...',
+                              userPrompt: debugInfo?.userPrompt || `Content Type: ${storyContentType}\nTranscription: ${storyVideoTranscription}\nSequence Type: ${storySequenceType}\nLength: ${storyLength} slides\nTone: ${storyTone}\nSelected Product: ${selectedProduct}`,
+                              requestPayload: debugInfo?.requestPayload,
+                              rawResponse: debugInfo?.rawResponse
                             });
                             setShowGenerationDetails(true);
                           }}

@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Trash2, ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { Sparkles, Trash2, ChevronDown, ChevronRight, Plus, Mail, Upload, Check, X } from 'lucide-react';
 import { TrainingConfig } from '@shared/training-config';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface CopyFrameworksTabProps {
   editingConfig: TrainingConfig;
@@ -20,6 +23,48 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
 }) => {
   const [showHeadlineFrameworks, setShowHeadlineFrameworks] = useState(false);
   const [expandedFrameworks, setExpandedFrameworks] = useState<Set<number>>(new Set());
+  const [showEmailFrameworks, setShowEmailFrameworks] = useState(false);
+  const [expandedEmailFrameworks, setExpandedEmailFrameworks] = useState<Set<number>>(new Set());
+  const [loadingEmailFrameworks, setLoadingEmailFrameworks] = useState(false);
+  const { toast } = useToast();
+
+  // Load email frameworks from database on component mount
+  useEffect(() => {
+    const loadEmailFrameworks = async () => {
+      if (editingConfig?.copyFrameworks?.emailFrameworks && editingConfig.copyFrameworks.emailFrameworks.length > 0) {
+        return; // Don't load if already loaded
+      }
+
+      setLoadingEmailFrameworks(true);
+      try {
+        const response = await apiRequest('/api/email-frameworks');
+        const emailFrameworks = (response || []).map((framework: any) => ({
+          ...framework,
+          isEnabled: framework.isActive === 'true' || framework.isActive === true
+        }));
+        
+        // Update the editing config with loaded frameworks
+        setEditingConfig({
+          ...editingConfig,
+          copyFrameworks: {
+            ...editingConfig?.copyFrameworks,
+            emailFrameworks: emailFrameworks
+          }
+        });
+      } catch (error) {
+        console.error('Failed to load email frameworks:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load email frameworks from database",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingEmailFrameworks(false);
+      }
+    };
+
+    loadEmailFrameworks();
+  }, [editingConfig, setEditingConfig, toast]);
 
   const toggleFramework = (index: number) => {
     const newExpanded = new Set(expandedFrameworks);
@@ -29,6 +74,17 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
       newExpanded.add(index);
     }
     setExpandedFrameworks(newExpanded);
+  };
+
+  // Add email framework toggle function
+  const toggleEmailFramework = (index: number) => {
+    const newExpanded = new Set(expandedEmailFrameworks);
+    if (expandedEmailFrameworks.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedEmailFrameworks(newExpanded);
   };
 
   const ToggleButton = ({ 
@@ -46,9 +102,9 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
     iconColor: string; 
     count?: number;
   }) => (
-    <button
+    <div
       onClick={onClick}
-      className="flex items-center justify-between w-full p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200 border border-gray-200"
+      className="flex items-center justify-between w-full p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200 border border-gray-200 cursor-pointer"
     >
       <div className="flex items-center space-x-3">
         <div className="flex items-center space-x-2">
@@ -67,7 +123,7 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
         )}
       </div>
       <div className="flex items-center space-x-3">
-        {effectiveUser?.role === 'admin' && (
+        {effectiveUser?.role === 'admin' && title === 'Meta Ads Frameworks' && (
           <Button
             onClick={(e) => {
               e.stopPropagation();
@@ -95,11 +151,45 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
             Add Framework
           </Button>
         )}
+        {effectiveUser?.role === 'admin' && title === 'Email Frameworks' && (
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              const newFramework = {
+                name: '',
+                displayName: '',
+                description: '',
+                structure: '',
+                keyElements: '',
+                frameworkContent: '',
+                systemPrompt: '',
+                outputRequirements: '',
+                expectedLength: 'medium',
+                isEnabled: true,
+                sortOrder: (editingConfig?.copyFrameworks?.emailFrameworks || []).length
+              };
+              const updated = [...(editingConfig?.copyFrameworks?.emailFrameworks || []), newFramework];
+              setEditingConfig({
+                ...editingConfig,
+                copyFrameworks: {
+                  ...editingConfig?.copyFrameworks,
+                  emailFrameworks: updated
+                }
+              });
+            }}
+            size="sm"
+            variant="outline"
+            className="text-xs bg-white hover:bg-gray-50"
+          >
+            <Plus className="w-3 h-3 mr-1" />
+            Add Framework
+          </Button>
+        )}
         <span className="text-xs text-gray-500 font-medium">
           {isOpen ? 'Collapse' : 'Expand'}
         </span>
       </div>
-    </button>
+    </div>
   );
 
   const FrameworkToggleButton = ({ 
@@ -172,13 +262,84 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
     </button>
   );
 
+  // Email Framework Toggle Button
+  const EmailFrameworkToggleButton = ({ 
+    isOpen, 
+    onClick, 
+    framework, 
+    index 
+  }: { 
+    isOpen: boolean; 
+    onClick: () => void; 
+    framework: any; 
+    index: number;
+  }) => (
+    <button
+      onClick={onClick}
+      className="flex items-center justify-between w-full p-3 bg-white hover:bg-gray-50 rounded-lg transition-colors duration-200 border border-gray-200"
+    >
+      <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
+          {isOpen ? (
+            <ChevronDown className="w-4 h-4 text-gray-500" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-gray-500" />
+          )}
+          <Mail className="w-4 h-4 text-green-500" />
+        </div>
+        <div className="text-left">
+          <span className="text-sm font-medium text-gray-900">
+            {framework.displayName || framework.name || `Email Framework ${index + 1}`}
+          </span>
+          {framework.description && !isOpen && (
+            <p className="text-xs text-gray-500 mt-1 line-clamp-1">
+              {framework.description}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center space-x-3">
+        <span className={`text-xs px-2 py-1 rounded-full ${
+          framework.isEnabled !== false 
+            ? 'bg-green-100 text-green-800' 
+            : 'bg-gray-100 text-gray-600'
+        }`}>
+          {framework.isEnabled !== false ? 'Enabled' : 'Disabled'}
+        </span>
+        {effectiveUser?.role === 'admin' && (
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              const updated = (editingConfig.copyFrameworks.emailFrameworks || []).filter((_, i) => i !== index);
+              setEditingConfig({
+                ...editingConfig,
+                copyFrameworks: {
+                  ...editingConfig.copyFrameworks,
+                  emailFrameworks: updated
+                }
+              });
+            }}
+            size="sm"
+            variant="ghost"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        )}
+        <span className="text-xs text-gray-500 font-medium">
+          {isOpen ? 'Collapse' : 'Expand'}
+        </span>
+      </div>
+    </button>
+  );
+
   return (
     <div className="space-y-6">
       <div>
         <ToggleButton
           isOpen={showHeadlineFrameworks}
           onClick={() => setShowHeadlineFrameworks(!showHeadlineFrameworks)}
-          title="Headline Frameworks"
+          title="Meta Ads Frameworks"
           icon={<Sparkles className="w-5 h-5" />}
           iconColor="text-purple-500"
           count={editingConfig?.copyFrameworks?.headlineFrameworks?.length || 0}
@@ -324,7 +485,7 @@ Your Skin But Better"
             {(!editingConfig?.copyFrameworks?.headlineFrameworks || editingConfig.copyFrameworks.headlineFrameworks.length === 0) && (
               <div className="text-center py-8 text-gray-500">
                 <Sparkles className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                <p className="text-sm">No headline frameworks configured</p>
+                <p className="text-sm">No meta ads frameworks configured</p>
                 {effectiveUser?.role === 'admin' && (
                   <p className="text-xs mt-1">Click "Add Framework" to create your first headline framework</p>
                 )}
@@ -334,56 +495,554 @@ Your Skin But Better"
         )}
       </div>
 
-      <div>
-        <Label className="text-sm font-medium text-gray-900">Copy Writing Rules (one per line)</Label>
+   {/* Email Frameworks Section */}
+   <div>
+        <ToggleButton
+          isOpen={showEmailFrameworks}
+          onClick={() => setShowEmailFrameworks(!showEmailFrameworks)}
+          title="Email Frameworks"
+          icon={<Mail className="w-5 h-5" />}
+          iconColor="text-green-500"
+          count={editingConfig?.copyFrameworks?.emailFrameworks?.length || 0}
+        />
+        
+        {showEmailFrameworks && (
+          <div className="mt-4 space-y-4 pl-4 border-l-2 border-green-100">
+            {loadingEmailFrameworks && (
+              <div className="text-center py-8 text-gray-500">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-4"></div>
+                <p>Loading email frameworks...</p>
+              </div>
+            )}
+
+            {(!editingConfig?.copyFrameworks?.emailFrameworks || editingConfig.copyFrameworks.emailFrameworks.length === 0) && !loadingEmailFrameworks ? (
+              <div className="text-center py-8 text-gray-500">
+                <Mail className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>No email frameworks found.</p>
+                {effectiveUser?.role === 'admin' && (
+                  <p className="text-xs mt-2">Click "Add Framework" to create your first email framework.</p>
+                )}
+              </div>
+            ) : !loadingEmailFrameworks ? (
+              <div className="space-y-4">
+                {(editingConfig.copyFrameworks.emailFrameworks || []).map((framework, index) => {
+                  const isExpanded = expandedEmailFrameworks.has(index);
+                  
+                  return (
+                    <div key={index} className="space-y-2">
+                      <EmailFrameworkToggleButton
+                        isOpen={isExpanded}
+                        onClick={() => toggleEmailFramework(index)}
+                        framework={framework}
+                        index={index}
+                      />
+                      
+                      {isExpanded && (
+                        <div className="ml-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                checked={framework.isEnabled !== false}
+                                onCheckedChange={(checked) => {
+                                  if (effectiveUser?.role !== 'admin') return;
+                                  const updated = [...(editingConfig.copyFrameworks.emailFrameworks || [])];
+                                  updated[index] = { ...updated[index], isEnabled: checked };
+                                  setEditingConfig({
+                                    ...editingConfig,
+                                    copyFrameworks: {
+                                      ...editingConfig.copyFrameworks,
+                                      emailFrameworks: updated
+                                    }
+                                  });
+                                }}
+                                disabled={effectiveUser?.role !== 'admin'}
+                              />
+                              <Label className="text-xs text-gray-600">
+                                {framework.isEnabled !== false ? 'Enabled' : 'Disabled'}
+                              </Label>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            {/* <div>
+                              <Label className="text-xs text-gray-600">Framework Name</Label>
+                              <Input
+                                value={framework.name || ''}
+                                onChange={(e) => {
+                                  if (effectiveUser?.role !== 'admin') return;
+                                  const updated = [...(editingConfig.copyFrameworks.emailFrameworks || [])];
+                                  updated[index] = { ...updated[index], name: e.target.value };
+                                  setEditingConfig({
+                                    ...editingConfig,
+                                    copyFrameworks: {
+                                      ...editingConfig.copyFrameworks,
+                                      emailFrameworks: updated
+                                    }
+                                  });
+                                }}
+                                className="mt-1"
+                                placeholder="e.g., GTL"
+                                disabled={effectiveUser?.role !== 'admin'}
+                              />
+                            </div> */}
+                            <div>
+                            <Label className="text-xs text-gray-600">Framework Name</Label>
+                              <Input
+                                value={framework.displayName || ''}
+                                onChange={(e) => {
+                                  if (effectiveUser?.role !== 'admin') return;
+                                  const updated = [...(editingConfig.copyFrameworks.emailFrameworks || [])];
+                                  updated[index] = { ...updated[index], displayName: e.target.value };
+                                  setEditingConfig({
+                                    ...editingConfig,
+                                    copyFrameworks: {
+                                      ...editingConfig.copyFrameworks,
+                                      emailFrameworks: updated
+                                    }
+                                  });
+                                }}
+                                className="mt-1"
+                                placeholder="e.g., Get the Look"
+                                disabled={effectiveUser?.role !== 'admin'}
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">Description</Label>
+                            <Textarea
+                              value={framework.description || ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [...(editingConfig.copyFrameworks.emailFrameworks || [])];
+                                updated[index] = { ...updated[index], description: e.target.value };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    emailFrameworks: updated
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              rows={2}
+                              placeholder="Brief description of this email framework..."
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+                          
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">Structure Template</Label>
+                            <Textarea
+                              value={framework.structure || ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [...(editingConfig.copyFrameworks.emailFrameworks || [])];
+                                updated[index] = { ...updated[index], structure: e.target.value };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    emailFrameworks: updated
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              rows={2}
+                              placeholder="e.g., Hero: Hed / Dek / CTA → Intro Module → Product Breakdown..."
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+                          
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">Key Elements</Label>
+                            <Textarea
+                              value={framework.keyElements || ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [...(editingConfig.copyFrameworks.emailFrameworks || [])];
+                                updated[index] = { ...updated[index], keyElements: e.target.value };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    emailFrameworks: updated
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              rows={2}
+                              placeholder="e.g., Product steps, application tips, seasonal inspiration..."
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+                          
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">Framework Content & Examples</Label>
+                            <Textarea
+                              value={framework.frameworkContent || ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [...(editingConfig.copyFrameworks.emailFrameworks || [])];
+                                updated[index] = { ...updated[index], frameworkContent: e.target.value };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    emailFrameworks: updated
+                                  }
+                                });
+                              }}
+                              className="mt-1 font-mono"
+                              rows={4}
+                              placeholder="Detailed framework structure, examples, best practices..."
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+                          
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">AI System Prompt</Label>
+                            <Textarea
+                              value={framework.systemPrompt || ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [...(editingConfig.copyFrameworks.emailFrameworks || [])];
+                                updated[index] = { ...updated[index], systemPrompt: e.target.value };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    emailFrameworks: updated
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              rows={3}
+                              placeholder="Instructions for AI to generate this framework type..."
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+                          
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">Output Requirements</Label>
+                            <Textarea
+                              value={framework.outputRequirements || ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [...(editingConfig.copyFrameworks.emailFrameworks || [])];
+                                updated[index] = { ...updated[index], outputRequirements: e.target.value };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    emailFrameworks: updated
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              rows={2}
+                              placeholder="Expected output format and requirements..."
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+                          
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">Expected Length</Label>
+                            <Input
+                              value={framework.expectedLength || ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [...(editingConfig.copyFrameworks.emailFrameworks || [])];
+                                updated[index] = { ...updated[index], expectedLength: e.target.value };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    emailFrameworks: updated
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              placeholder="e.g., short, medium, long, 300-500 words, 2-3 paragraphs, etc."
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Common options: short, medium, long, or specify custom like "300-500 words", "2-3 paragraphs"
+                            </p>
+                          </div>
+                          
+                          {/* Framework Images Section */}
+                          <div className="mt-4">
+                            <Label className="text-xs text-gray-600 mb-2 block">
+                              Visual Layout References (Max 5 images)
+                            </Label>
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                              <p className="text-xs text-blue-800 font-medium">📸 Image Guidelines</p>
+                              <p className="text-xs text-blue-700 mt-1">
+                                Upload email examples or layouts that represent this framework. These images will be sent to AI when generating copy to match the visual style.
+                              </p>
+                              <p className="text-xs text-blue-600 mt-2 font-medium">
+                                ⚠️ Remember to click "Save Changes" at the top after uploading images to persist them.
+                              </p>
+                            </div>
+                            
+                            {/* Current Images Display */}
+                            {framework.images && Array.isArray(framework.images) && framework.images.length > 0 && (
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
+                                {framework.images.map((image: any, imgIndex: number) => (
+                                  <div key={imgIndex} className="relative group border border-gray-200 rounded-lg overflow-hidden">
+                                    <img 
+                                      src={image.dataUri} 
+                                      alt={image.name || `Framework image ${imgIndex + 1}`}
+                                      className="w-full h-24 object-cover"
+                                    />
+                                    {effectiveUser?.role === 'admin' && (
+                                      <button
+                                        onClick={() => {
+                                          if (confirm('Remove this image?')) {
+                                            const updated = [...(editingConfig.copyFrameworks.emailFrameworks || [])];
+                                            const updatedImages = [...(updated[index].images || [])];
+                                            updatedImages.splice(imgIndex, 1);
+                                            updated[index] = { ...updated[index], images: updatedImages };
+                                            setEditingConfig({
+                                              ...editingConfig,
+                                              copyFrameworks: {
+                                                ...editingConfig.copyFrameworks,
+                                                emailFrameworks: updated
+                                              }
+                                            });
+                                          }
+                                        }}
+                                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 truncate">
+                                      {image.name || `Image ${imgIndex + 1}`}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {/* Upload Button */}
+                            {effectiveUser?.role === 'admin' && (
+                              <div className="space-y-2">
+                                {(!framework.images || framework.images.length < 5) ? (
+                                  <div>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      id={`framework-image-upload-${index}`}
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        
+                                        // Validate file type
+                                        if (!file.type.startsWith('image/')) {
+                                          toast({
+                                            title: "Invalid File",
+                                            description: "Please upload a valid image file (JPG, PNG, etc.)",
+                                            variant: "destructive",
+                                          });
+                                          return;
+                                        }
+                                        
+                                        // Validate file size (8MB limit)
+                                        if (file.size > 8 * 1024 * 1024) {
+                                          toast({
+                                            title: "File Too Large",
+                                            description: "File size must be less than 8MB",
+                                            variant: "destructive",
+                                          });
+                                          return;
+                                        }
+                                        
+                                        const reader = new FileReader();
+                                        reader.onload = (event) => {
+                                          const result = event.target?.result as string;
+                                          if (result) {
+                                            const updated = [...(editingConfig.copyFrameworks.emailFrameworks || [])];
+                                            const currentImages = updated[index].images || [];
+                                            const newImage = {
+                                              id: Date.now().toString(),
+                                              name: file.name,
+                                              dataUri: result,
+                                              mimeType: file.type,
+                                              size: file.size,
+                                              uploadedAt: new Date().toISOString()
+                                            };
+                                            updated[index] = { 
+                                              ...updated[index], 
+                                              images: [...currentImages, newImage] 
+                                            };
+                                            setEditingConfig({
+                                              ...editingConfig,
+                                              copyFrameworks: {
+                                                ...editingConfig.copyFrameworks,
+                                                emailFrameworks: updated
+                                              }
+                                            });
+                                            
+                                            console.log('DEBUG: Image added to framework', {
+                                              frameworkIndex: index,
+                                              frameworkName: framework.displayName || framework.name,
+                                              fileName: file.name,
+                                              imageId: newImage.id,
+                                              totalImages: [...currentImages, newImage].length,
+                                              updatedFramework: { ...updated[index], images: [...currentImages, newImage] }
+                                            });
+                                            
+                                            toast({
+                                              title: "Image Added",
+                                              description: `Added ${file.name} to framework. Don't forget to click "Save Changes" to persist your images.`,
+                                              variant: "default",
+                                            });
+                                          }
+                                        };
+                                        reader.readAsDataURL(file);
+                                        
+                                        // Reset the input
+                                        e.target.value = '';
+                                      }}
+                                    />
+                                    <label
+                                      htmlFor={`framework-image-upload-${index}`}
+                                      className="inline-flex items-center px-3 py-2 border border-dashed border-gray-300 rounded-md text-sm text-gray-600 hover:bg-gray-50 hover:border-gray-400 cursor-pointer transition-colors"
+                                    >
+                                      <Upload className="w-4 h-4 mr-2" />
+                                      Upload Image ({(framework.images || []).length}/5)
+                                    </label>
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-gray-500 italic">
+                                    Maximum of 5 images reached. Remove an image to add a new one.
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                            
+                            {effectiveUser?.role !== 'admin' && (
+                              <p className="text-xs text-gray-500 italic">Admin access required to manage images</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+      
+      {/* Copy Writing Rules Section - Improved UI */}
+      <div className="border border-gray-200 rounded-lg p-6 bg-white">
+        <div className="flex items-center mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <Label className="text-lg font-semibold text-gray-900">Copy Writing Rules</Label>
+              <p className="text-sm text-gray-600 mt-1">Define core copywriting guidelines (one per line)</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <p className="text-sm text-blue-800 font-medium">📝 Writing Guidelines</p>
+          <p className="text-sm text-blue-700 mt-1">
+            Set fundamental rules that apply to all copy generation. Each rule should be on its own line for clarity.
+          </p>
+        </div>
+
         <Textarea
           value={Array.isArray(editingConfig?.copyFrameworks?.primaryTextRules)
             ? editingConfig.copyFrameworks.primaryTextRules.join('\n')
             : ''}
-          onChange={(e) => effectiveUser?.role === 'admin' && setEditingConfig({
-            ...editingConfig,
-            copyFrameworks: {
-              ...editingConfig.copyFrameworks,
-              primaryTextRules: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+          onChange={(e) => {
+            if (effectiveUser?.role === 'admin') {
+              setEditingConfig({
+                ...editingConfig,
+                copyFrameworks: {
+                  ...editingConfig.copyFrameworks,
+                  primaryTextRules: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                }
+              });
             }
-          })}
-          className="mt-1"
-          rows={4}
+          }}
+          className="mt-1 text-gray-900 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+          rows={6}
           placeholder="Headlines: Maximum 5 words, must fit in 1 line on mobile
 Primary text: 15-25 words optimal for Meta ads
-Keep sentences to 8-12 words for mobile comprehension"
+Keep sentences to 8-12 words for mobile comprehension
+Use active voice and direct language
+Include clear value propositions
+Test emotional triggers and rational benefits"
           disabled={effectiveUser?.role !== 'admin'}
         />
+        
+        {effectiveUser?.role !== 'admin' && (
+          <p className="text-xs text-gray-500 mt-2 italic">Admin access required to edit copy writing rules</p>
+        )}
       </div>
 
-      {/* Listicle Framework Section */}
+      {/* Listicle Framework Section - Improved UI */}
       <div className="border border-gray-200 rounded-lg p-6 bg-white">
         <div className="flex items-center mb-4">
-          <span className="w-3 h-3 bg-gray-600 rounded-full mr-2"></span>
-          <Label className="text-sm font-medium text-gray-900">Listicle Framework (Based on Real Examples)</Label>
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
+              <span className="text-purple-600 font-bold text-sm">#</span>
+            </div>
+            <div>
+              <Label className="text-lg font-semibold text-gray-900">Listicle Framework</Label>
+              <p className="text-sm text-gray-600 mt-1">Based on real examples and proven patterns</p>
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-4">
-          <div>
-            <Label className="text-xs font-medium text-gray-900 mb-2 block">Content Structure Sequence</Label>
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+          <p className="text-sm text-purple-800 font-medium">📋 Listicle Structure Guide</p>
+          <p className="text-sm text-purple-700 mt-1">
+            Configure the framework for creating engaging list-based content that follows proven conversion patterns.
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
+            <div className="flex items-center mb-3">
+              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                <span className="text-green-600 font-bold text-xs">1</span>
+              </div>
+              <Label className="text-sm font-semibold text-gray-900">Content Structure Sequence</Label>
+            </div>
+            <p className="text-xs text-gray-600 mb-3">Define the logical flow of your listicle content</p>
             <Textarea
               value={Array.isArray(editingConfig?.copyFrameworks?.listicleFramework?.contentSequence)
                 ? editingConfig.copyFrameworks.listicleFramework.contentSequence.join('\n')
                 : ''}
-              onChange={(e) => effectiveUser?.role !== 'admin' && setEditingConfig({
-                ...editingConfig,
-                copyFrameworks: {
-                  ...editingConfig.copyFrameworks,
-                  listicleFramework: {
-                    ...editingConfig.copyFrameworks?.listicleFramework,
-                    contentSequence: e.target.value.split('\n').map(item => item.trim()).filter(Boolean),
-                    reasonStructure: editingConfig.copyFrameworks?.listicleFramework?.reasonStructure || [],
-                    optimizationRules: editingConfig.copyFrameworks?.listicleFramework?.optimizationRules || [],
-                    realExamples: editingConfig.copyFrameworks?.listicleFramework?.realExamples || [],
-                  }
+              onChange={(e) => {
+                if (effectiveUser?.role === 'admin') {
+                  setEditingConfig({
+                    ...editingConfig,
+                    copyFrameworks: {
+                      ...editingConfig.copyFrameworks,
+                      listicleFramework: {
+                        ...editingConfig.copyFrameworks?.listicleFramework,
+                        contentSequence: e.target.value.split('\n').map(item => item.trim()).filter(Boolean),
+                        reasonStructure: editingConfig.copyFrameworks?.listicleFramework?.reasonStructure || [],
+                        optimizationRules: editingConfig.copyFrameworks?.listicleFramework?.optimizationRules || [],
+                        realExamples: editingConfig.copyFrameworks?.listicleFramework?.realExamples || [],
+                      }
+                    }
+                  });
                 }
-              })}
-              className="mt-1 text-gray-900 border-gray-300 focus:border-gray-500"
+              }}
+              className="text-gray-900 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
               rows={6}
               placeholder="1. IMMEDIATE PROBLEM SOLVER - addresses main pain point
 2. UNIQUE ADVANTAGE - what makes this different
@@ -395,26 +1054,36 @@ Keep sentences to 8-12 words for mobile comprehension"
             />
           </div>
 
-          <div>
-            <Label className="text-xs font-medium text-gray-900 mb-2 block">Each Reason Structure Format</Label>
+          <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
+            <div className="flex items-center mb-3">
+              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                <span className="text-blue-600 font-bold text-xs">2</span>
+              </div>
+              <Label className="text-sm font-semibold text-gray-900">Each Reason Structure Format</Label>
+            </div>
+            <p className="text-xs text-gray-600 mb-3">Template for structuring individual list items</p>
             <Textarea
               value={Array.isArray(editingConfig?.copyFrameworks?.listicleFramework?.reasonStructure)
                 ? editingConfig.copyFrameworks.listicleFramework.reasonStructure.join('\n')
                 : ''}
-              onChange={(e) => effectiveUser?.role !== 'admin' && setEditingConfig({
-                ...editingConfig,
-                copyFrameworks: {
-                  ...editingConfig.copyFrameworks,
-                  listicleFramework: {
-                    ...editingConfig.copyFrameworks?.listicleFramework,
-                    reasonStructure: e.target.value.split('\n').map(item => item.trim()).filter(Boolean),
-                    contentSequence: editingConfig.copyFrameworks?.listicleFramework?.contentSequence || [],
-                    optimizationRules: editingConfig.copyFrameworks?.listicleFramework?.optimizationRules || [],
-                    realExamples: editingConfig.copyFrameworks?.listicleFramework?.realExamples || [],
-                  }
+              onChange={(e) => {
+                if (effectiveUser?.role === 'admin') {
+                  setEditingConfig({
+                    ...editingConfig,
+                    copyFrameworks: {
+                      ...editingConfig.copyFrameworks,
+                      listicleFramework: {
+                        ...editingConfig.copyFrameworks?.listicleFramework,
+                        reasonStructure: e.target.value.split('\n').map(item => item.trim()).filter(Boolean),
+                        contentSequence: editingConfig.copyFrameworks?.listicleFramework?.contentSequence || [],
+                        optimizationRules: editingConfig.copyFrameworks?.listicleFramework?.optimizationRules || [],
+                        realExamples: editingConfig.copyFrameworks?.listicleFramework?.realExamples || [],
+                      }
+                    }
+                  });
                 }
-              })}
-              className="mt-1 text-gray-900 border-gray-300 focus:border-gray-500"
+              }}
+              className="text-gray-900 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
               rows={5}
               placeholder="- CLEAR BENEFIT STATEMENT (10-20 words): Direct, specific value
 - BRIEF EXPLANATION (30-60 words): Why this matters, how it works
@@ -425,26 +1094,36 @@ Keep sentences to 8-12 words for mobile comprehension"
             />
           </div>
 
-          <div>
-            <Label className="text-xs font-medium text-gray-900 mb-2 block">Optimization Rules</Label>
+          <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
+            <div className="flex items-center mb-3">
+              <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center mr-3">
+                <span className="text-orange-600 font-bold text-xs">3</span>
+              </div>
+              <Label className="text-sm font-semibold text-gray-900">Optimization Rules</Label>
+            </div>
+            <p className="text-xs text-gray-600 mb-3">Guidelines for creating high-converting listicle content</p>
             <Textarea
               value={Array.isArray(editingConfig?.copyFrameworks?.listicleFramework?.optimizationRules)
                 ? editingConfig.copyFrameworks.listicleFramework.optimizationRules.join('\n')
                 : ''}
-              onChange={(e) => effectiveUser?.role !== 'admin' && setEditingConfig({
-                ...editingConfig,
-                copyFrameworks: {
-                  ...editingConfig.copyFrameworks,
-                  listicleFramework: {
-                    ...editingConfig.copyFrameworks?.listicleFramework,
-                    optimizationRules: e.target.value.split('\n').map(item => item.trim()).filter(Boolean),
-                    contentSequence: editingConfig.copyFrameworks?.listicleFramework?.contentSequence || [],
-                    reasonStructure: editingConfig.copyFrameworks?.listicleFramework?.reasonStructure || [],
-                    realExamples: editingConfig.copyFrameworks?.listicleFramework?.realExamples || [],
-                  }
+              onChange={(e) => {
+                if (effectiveUser?.role === 'admin') {
+                  setEditingConfig({
+                    ...editingConfig,
+                    copyFrameworks: {
+                      ...editingConfig.copyFrameworks,
+                      listicleFramework: {
+                        ...editingConfig.copyFrameworks?.listicleFramework,
+                        optimizationRules: e.target.value.split('\n').map(item => item.trim()).filter(Boolean),
+                        contentSequence: editingConfig.copyFrameworks?.listicleFramework?.contentSequence || [],
+                        reasonStructure: editingConfig.copyFrameworks?.listicleFramework?.reasonStructure || [],
+                        realExamples: editingConfig.copyFrameworks?.listicleFramework?.realExamples || [],
+                      }
+                    }
+                  });
                 }
-              })}
-              className="mt-1 text-gray-900 border-gray-300 focus:border-gray-500"
+              }}
+              className="text-gray-900 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
               rows={5}
               placeholder="Maximum 100 words per reason section (concise and scannable)
 Lead with benefits, support with facts - not the other way around
@@ -455,26 +1134,36 @@ Each reason should stand alone and deliver immediate value"
             />
           </div>
 
-          <div>
-            <Label className="text-xs font-medium text-gray-900 mb-2 block">Real Example Patterns to Emulate</Label>
+          <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
+            <div className="flex items-center mb-3">
+              <div className="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
+                <span className="text-yellow-600 font-bold text-xs">4</span>
+              </div>
+              <Label className="text-sm font-semibold text-gray-900">Real Example Patterns to Emulate</Label>
+            </div>
+            <p className="text-xs text-gray-600 mb-3">Successful examples and tone references</p>
             <Textarea
               value={Array.isArray(editingConfig?.copyFrameworks?.listicleFramework?.realExamples)
                 ? editingConfig.copyFrameworks.listicleFramework.realExamples.join('\n')
                 : ''}
-              onChange={(e) => effectiveUser?.role !== 'admin' && setEditingConfig({
-                ...editingConfig,
-                copyFrameworks: {
-                  ...editingConfig.copyFrameworks,
-                  listicleFramework: {
-                    ...editingConfig.copyFrameworks?.listicleFramework,
-                    realExamples: e.target.value.split('\n').map(item => item.trim()).filter(Boolean),
-                    contentSequence: editingConfig.copyFrameworks?.listicleFramework?.contentSequence || [],
-                    reasonStructure: editingConfig.copyFrameworks?.listicleFramework?.reasonStructure || [],
-                    optimizationRules: editingConfig.copyFrameworks?.listicleFramework?.optimizationRules || [],
-                  }
+              onChange={(e) => {
+                if (effectiveUser?.role === 'admin') {
+                  setEditingConfig({
+                    ...editingConfig,
+                    copyFrameworks: {
+                      ...editingConfig.copyFrameworks,
+                      listicleFramework: {
+                        ...editingConfig.copyFrameworks?.listicleFramework,
+                        realExamples: e.target.value.split('\n').map(item => item.trim()).filter(Boolean),
+                        contentSequence: editingConfig.copyFrameworks?.listicleFramework?.contentSequence || [],
+                        reasonStructure: editingConfig.copyFrameworks?.listicleFramework?.reasonStructure || [],
+                        optimizationRules: editingConfig.copyFrameworks?.listicleFramework?.optimizationRules || [],
+                      }
+                    }
+                  });
                 }
-              })}
-              className="mt-1 text-gray-900 border-gray-300 focus:border-gray-500"
+              }}
+              className="text-gray-900 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
               rows={4}
               placeholder="Grüns: 'Better Poops (Seriously)' - direct, honest, conversational
 Loop: 'Blocks Out The Loudest Tools - 24dB Reduction' - specific benefit + proof
@@ -484,6 +1173,12 @@ Tone: Educational but approachable, like explaining to a friend who asked"
             />
           </div>
         </div>
+        
+        {effectiveUser?.role !== 'admin' && (
+          <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+            <p className="text-xs text-gray-500 italic">Admin access required to edit listicle framework settings</p>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -652,6 +1347,8 @@ Tone: Educational but approachable, like explaining to a friend who asked"
           </div>
         </div>
       </div>
+
+   
     </div>
-  );
+    );
 }; 

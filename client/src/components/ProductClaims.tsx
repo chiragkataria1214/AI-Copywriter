@@ -66,6 +66,7 @@ export const ProductClaims: React.FC<ProductClaimsProps> = ({
                   setProductClaims({
                     ...productClaims,
                     [productKey]: {
+                      displayName: newProductName.trim(),
                       approvedClaims: [''],
                       prohibitedClaims: [''],
                       enabledApproved: [true],
@@ -85,7 +86,7 @@ export const ProductClaims: React.FC<ProductClaimsProps> = ({
       )}
 
       <div className="space-y-6">
-        {Object.keys(productClaims.productClaims).map((productKey) => (
+        {Object.keys(productClaims).map((productKey) => (
           <div key={productKey} className="border rounded-lg p-4">
             <div className="flex justify-between items-center mb-4">
               <h4 className="text-md font-semibold text-gray-800 capitalize">{productKey.replace(/-/g, ' ')}</h4>
@@ -105,10 +106,10 @@ export const ProductClaims: React.FC<ProductClaimsProps> = ({
               <div>
                 <Label className="text-sm font-medium text-green-700 mb-2 block">Approved Claims</Label>
                 <div className="space-y-2">
-                  {(productClaims.productClaims[productKey].approvedClaims || []).map((claim: string, index: number) => (
+                  {(productClaims[productKey].approvedClaims || []).map((claim: string, index: number) => (
                     <div key={index} className="flex items-center space-x-2">
                       <Switch
-                        checked={productClaims.productClaims[productKey].enabledApproved[index]}
+                        checked={productClaims[productKey].enabledApproved[index]}
                         onCheckedChange={(checked) => handleClaimSwitch(productKey, index, 'approved', checked)}
                         disabled={!isAdmin}
                       />
@@ -143,10 +144,10 @@ export const ProductClaims: React.FC<ProductClaimsProps> = ({
               <div>
                 <Label className="text-sm font-medium text-red-700 mb-2 block">Prohibited Claims</Label>
                 <div className="space-y-2">
-                  {(productClaims.productClaims[productKey].prohibitedClaims || []).map((claim: string, index: number) => (
+                  {(productClaims[productKey].prohibitedClaims || []).map((claim: string, index: number) => (
                     <div key={index} className="flex items-center space-x-2">
                       <Switch
-                        checked={productClaims.productClaims[productKey].enabledProhibited[index]}
+                        checked={productClaims[productKey].enabledProhibited[index]}
                         onCheckedChange={(checked) => handleClaimSwitch(productKey, index, 'prohibited', checked)}
                         disabled={!isAdmin}
                       />

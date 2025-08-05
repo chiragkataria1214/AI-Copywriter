@@ -10,14 +10,10 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { GenerationMetadata } from '@/components/GenerationDetailsModal';
-
-interface SubPersona {
-  label: string;
-}
+import { apiRequest } from '@/lib/queryClient';
 
 interface Persona {
   label: string;
-  subPersonas?: Record<string, SubPersona>;
 }
 
 interface Product {
@@ -30,6 +26,22 @@ interface RetentionCopyHistoryItem {
   platform: string;
   response: string;
   timestamp: Date;
+}
+
+interface EmailFramework {
+  id: string;
+  name: string;
+  displayName: string;
+  description: string;
+  structure: string;
+  keyElements: string;
+  frameworkContent: string;
+  systemPrompt: string;
+  outputRequirements: string;
+  expectedLength: string;
+  images?: any[];
+  isActive: string;
+  sortOrder: number;
 }
 
 interface RetentionTabProps {
@@ -54,8 +66,6 @@ interface RetentionTabProps {
   // Shared state
   concept: string;
   setConcept: (value: string) => void;
-  subPersona: string;
-  setSubPersona: (value: string) => void;
   brandDrBalance: number[];
   setBrandDrBalance: (value: number[]) => void;
   selectedProduct: string;
@@ -103,6 +113,12 @@ interface RetentionTabProps {
       frameworks?: string[];
     };
   };
+  debugInfo?: {
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null;
 }
 
 export const RetentionTab: React.FC<RetentionTabProps> = ({
@@ -124,8 +140,6 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
   retentionCopyHistory,
   concept,
   setConcept,
-  subPersona,
-  setSubPersona,
   brandDrBalance,
   setBrandDrBalance,
   selectedProduct,
@@ -146,9 +160,36 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
   stationPrompts,
   brandGuidelines,
   copyFrameworks,
+  debugInfo,
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [emailFrameworks, setEmailFrameworks] = useState<EmailFramework[]>([]);
+  const [loadingFrameworks, setLoadingFrameworks] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Load email frameworks on component mount
+  useEffect(() => {
+    const loadEmailFrameworks = async () => {
+      if (emailFrameworks.length > 0) return; // Don't load if already loaded
+      
+      setLoadingFrameworks(true);
+      try {
+        const response = await apiRequest('/api/email-frameworks');
+        const frameworks = (response || []).filter((framework: EmailFramework) => 
+          framework.isActive === 'true'
+        );
+        setEmailFrameworks(frameworks);
+      } catch (error) {
+        console.error('Failed to load email frameworks:', error);
+        // Fallback to hardcoded frameworks if API fails
+        setEmailFrameworks([]);
+      } finally {
+        setLoadingFrameworks(false);
+      }
+    };
+
+    loadEmailFrameworks();
+  }, [emailFrameworks.length]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -163,6 +204,12 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Helper function to get selected framework details
+  const getSelectedFramework = (): EmailFramework | null => {
+    if (!retentionEmailType || emailFrameworks.length === 0) return null;
+    return emailFrameworks.find(framework => framework.displayName === retentionEmailType) || null;
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
@@ -226,28 +273,82 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                   <p className="text-xs text-gray-500 mb-3">
                     Choose the specific email framework that best fits your campaign goals
                   </p>
-                  <Select value={retentionEmailType} onValueChange={setRetentionEmailType}>
+                  <Select value={retentionEmailType} onValueChange={setRetentionEmailType} disabled={loadingFrameworks}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select email type" />
+                      <SelectValue placeholder={loadingFrameworks ? "Loading frameworks..." : "Select email type"} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="GTL (Get the Look)">GTL (Get the Look)</SelectItem>
-                      <SelectItem value="Plain Text / Letter-Style Note">Plain Text / Letter-Style Note</SelectItem>
-                      <SelectItem value="Product Spotlight / Hero Product">Product Spotlight / Hero Product</SelectItem>
-                      <SelectItem value="Product Roundup / Theme-Based Edit">Product Roundup / Theme-Based Edit</SelectItem>
-                      <SelectItem value="Back in Stock">Back in Stock</SelectItem>
-                      <SelectItem value="Product Launch">Product Launch</SelectItem>
-                      <SelectItem value="Teaser Email (Pre-Launch)">Teaser Email (Pre-Launch)</SelectItem>
-                      <SelectItem value="Retail Event / Pop-Up / IRL Activation">Retail Event / Pop-Up / IRL Activation</SelectItem>
-                      <SelectItem value="Promotional Email">Promotional Email</SelectItem>
-                      <SelectItem value="Set or Kit Email">Set or Kit Email</SelectItem>
-                      <SelectItem value="How-To (Problem/Solution)">How-To (Problem/Solution)</SelectItem>
-                      <SelectItem value="Duos or Product Combinations">Duos or Product Combinations</SelectItem>
-                      <SelectItem value="Shade Roundup">Shade Roundup</SelectItem>
-                      <SelectItem value="How to Use It (Product Tutorial)">How to Use It (Product Tutorial)</SelectItem>
-                      <SelectItem value="Social Proof">Social Proof</SelectItem>
+                      {emailFrameworks.length > 0 ? (
+                        emailFrameworks
+                          .sort((a, b) => a.sortOrder - b.sortOrder)
+                          .map((framework) => (
+                            <SelectItem key={framework.id} value={framework.displayName}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{framework.displayName}</span>
+                                <span className="text-xs text-gray-500 truncate max-w-xs">
+                                  {framework.description}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))
+                      ) : (
+                        // Fallback to hardcoded options if frameworks fail to load
+                        <>
+                          <SelectItem value="GTL (Get the Look)">GTL (Get the Look)</SelectItem>
+                          <SelectItem value="Plain Text / Letter-Style Note">Plain Text / Letter-Style Note</SelectItem>
+                          <SelectItem value="Product Spotlight / Hero Product">Product Spotlight / Hero Product</SelectItem>
+                          <SelectItem value="Product Roundup / Theme-Based Edit">Product Roundup / Theme-Based Edit</SelectItem>
+                          <SelectItem value="Back in Stock">Back in Stock</SelectItem>
+                          <SelectItem value="Product Launch">Product Launch</SelectItem>
+                          <SelectItem value="Teaser Email (Pre-Launch)">Teaser Email (Pre-Launch)</SelectItem>
+                          <SelectItem value="Retail Event / Pop-Up / IRL Activation">Retail Event / Pop-Up / IRL Activation</SelectItem>
+                          <SelectItem value="Promotional Email">Promotional Email</SelectItem>
+                          <SelectItem value="Set or Kit Email">Set or Kit Email</SelectItem>
+                          <SelectItem value="How-To (Problem/Solution)">How-To (Problem/Solution)</SelectItem>
+                          <SelectItem value="Duos or Product Combinations">Duos or Product Combinations</SelectItem>
+                          <SelectItem value="Shade Roundup">Shade Roundup</SelectItem>
+                          <SelectItem value="How to Use It (Product Tutorial)">How to Use It (Product Tutorial)</SelectItem>
+                          <SelectItem value="Social Proof">Social Proof</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
+                  {loadingFrameworks && (
+                    <p className="text-xs text-blue-600 mt-1 flex items-center">
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-2"></div>
+                      Loading email frameworks from database...
+                    </p>
+                  )}
+                  
+                  {/* Show selected framework details */}
+                  {retentionEmailType && getSelectedFramework() && (
+                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-start space-x-2">
+                        <Mail className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium text-blue-900 mb-1">
+                            {getSelectedFramework()?.displayName}
+                          </h4>
+                          <p className="text-xs text-blue-700 mb-2">
+                            {getSelectedFramework()?.description}
+                          </p>
+                          <div className="text-xs text-blue-600">
+                            <span className="font-medium">Structure:</span> {getSelectedFramework()?.structure}
+                          </div>
+                          {getSelectedFramework()?.keyElements && (
+                            <div className="text-xs text-blue-600 mt-1">
+                              <span className="font-medium">Key Elements:</span> {getSelectedFramework()?.keyElements}
+                            </div>
+                          )}
+                          {getSelectedFramework()?.expectedLength && (
+                            <div className="text-xs text-blue-600 mt-1">
+                              <span className="font-medium">Expected Length:</span> {getSelectedFramework()?.expectedLength}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -273,27 +374,7 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                   </SelectContent>
                 </Select>
 
-                {/* Sub-Persona Selection */}
-                {concept && personas[concept]?.subPersonas && (
-                  <div className="mt-3">
-                    <Label className="block text-sm font-medium text-gray-700 mb-2">
-                      Sub-Persona (Optional)
-                    </Label>
-                    <Select value={subPersona} onValueChange={setSubPersona}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose specific sub-persona" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None (General)</SelectItem>
-                        {personas[concept]?.subPersonas && Object.entries(personas[concept].subPersonas).map(([key, subPersona]) => (
-                          <SelectItem key={key} value={key}>
-                            {(subPersona as any).label || key.replace(/([A-Z])/g, ' $1').trim()}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+
               </div>
 
               {/* Product Selection for Retention */}
@@ -729,7 +810,33 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
       {/* Output Section */}
       <div className="space-y-4 sm:space-y-6">
         {/* Generated Copy */}
-        {generatedRetentionCopy && (
+        {generateRetentionCopyMutation.isPending ? (
+          <Card>
+            <CardContent className="p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                {retentionPlatform === 'SMS' ? <MessageSquare className="text-jones-primary mr-2 sm:mr-3" size={18} /> : <Mail className="text-jones-primary mr-2 sm:mr-3" size={18} />}
+                Generating {retentionPlatform} Copy
+              </h3>
+              
+              <div className="text-center py-12">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="flex space-x-1">
+                    <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                </div>
+                <p className="text-gray-600 font-medium mb-2">Creating {retentionPlatform} Copy</p>
+                <p className="text-sm text-gray-500">
+                  {retentionPlatform === 'SMS' 
+                    ? 'Crafting concise, action-driving SMS copy that respects character limits...'
+                    : 'Generating engaging email copy optimized for your selected framework and audience...'
+                  }
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : generatedRetentionCopy && (
           <Card>
             <CardContent className="p-4 sm:p-6">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -764,16 +871,10 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                         modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
                         temperature: modelSettings?.temperature || 0.7,
                         maxTokens: modelSettings?.maxTokens || 2000,
-                        systemPrompt: stationPrompts?.retention?.systemPrompt || 'Expert retention marketing copywriter for Jones Road Beauty...',
-                        userPrompt: `Platform: ${retentionPlatform}\nKey Message: ${retentionKeyMessage}\nProducts: ${retentionSelectedProducts.join(', ')}...`,
-                        brandGuidelines: brandGuidelines?.guidelines || ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
-                        frameworks: copyFrameworks?.retention?.frameworks || ['Retention marketing', 'Email optimization', 'SMS best practices'],
-                        personaSettings: {
-                          concept: concept,
-                          subPersona: subPersona
-                        },
-                        brandDrBalance: brandDrBalance[0],
-                        selectedProduct: selectedProduct
+                        systemPrompt: debugInfo?.systemPrompt || stationPrompts?.retention?.systemPrompt || 'Expert retention marketing copywriter for Jones Road Beauty...',
+                        userPrompt: debugInfo?.userPrompt || `Platform: ${retentionPlatform}\nKey Message: ${retentionKeyMessage}\nProducts: ${retentionSelectedProducts.join(', ')}`,
+                        requestPayload: debugInfo?.requestPayload,
+                        rawResponse: debugInfo?.rawResponse
                       });
                       setShowGenerationDetails(true);
                     }}

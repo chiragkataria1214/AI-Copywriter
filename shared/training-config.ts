@@ -15,6 +15,7 @@ export interface TrainingConfig {
   };
   productClaims: {
     [productName: string]: {
+      displayName?: string;
       approvedClaims: string[];
       prohibitedClaims: string[];
       enabledApproved?: boolean[];
@@ -35,6 +36,20 @@ export interface TrainingConfig {
       template: string;
       examples: string[];
       isEnabled?: boolean;
+    }>;
+    emailFrameworks?: Array<{
+      name: string;
+      displayName: string;
+      description: string;
+      structure: string;
+      keyElements: string;
+      frameworkContent: string;
+      systemPrompt: string;
+      outputRequirements: string;
+      expectedLength: string;
+      images?: any[];
+      isEnabled?: boolean;
+      sortOrder: number;
     }>;
     primaryTextRules: string[];
     brandDrBalance: {

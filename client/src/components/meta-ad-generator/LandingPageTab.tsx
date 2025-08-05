@@ -47,8 +47,6 @@ interface LandingPageTabProps {
   // Persona States
   concept: string;
   setConcept: (value: string) => void;
-  subPersona: string;
-  setSubPersona: (value: string) => void;
   personas: Record<string, any>;
 
   // Brand States
@@ -86,6 +84,12 @@ interface LandingPageTabProps {
   stationPrompts: any;
   brandGuidelines: any;
   copyFrameworks: any;
+  debugInfo?: {
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null;
 }
 
 export const LandingPageTab: React.FC<LandingPageTabProps> = ({
@@ -102,8 +106,6 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
   copiedLandingCopy,
   concept,
   setConcept,
-  subPersona,
-  setSubPersona,
   personas,
   useJonesBrandGuide,
   setUseJonesBrandGuide,
@@ -129,6 +131,7 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
   stationPrompts,
   brandGuidelines,
   copyFrameworks,
+  debugInfo,
 }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
@@ -214,21 +217,7 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                 </Select>
               </div>
 
-              {personas[concept]?.subPersonas && Object.keys(personas[concept].subPersonas!).length > 0 && (
-                <div>
-                  <Label htmlFor="subPersona" className="block text-sm font-medium text-gray-700 mb-2">Sub-Persona</Label>
-                  <Select value={subPersona} onValueChange={setSubPersona}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(personas[concept].subPersonas!).map(([key, subPersona]) => (
-                        <SelectItem key={key} value={key}>{(subPersona as any).label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+
             </div>
           </CardContent>
         </Card>
@@ -553,16 +542,10 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                     modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
                     temperature: modelSettings?.temperature || 0.7,
                     maxTokens: modelSettings?.maxTokens || 2000,
-                    systemPrompt: stationPrompts?.landingPage?.systemPrompt || 'Expert landing page copywriter specializing in Jones Road Beauty conversions...',
-                    userPrompt: `Type: ${landingPageType}\nProduct Brief: ${productBrief}\nMain Angle: ${mainAngle}...`,
-                    brandGuidelines: brandGuidelines?.guidelines || ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
-                    frameworks: copyFrameworks?.landingPage?.frameworks || ['Conversion optimization', 'Social proof integration', 'Mobile-first approach'],
-                    personaSettings: {
-                      concept: concept,
-                      subPersona: subPersona === 'none' ? undefined : subPersona
-                    },
-                    brandDrBalance: brandDrBalance[0],
-                    selectedProduct: selectedProduct
+                    systemPrompt: debugInfo?.systemPrompt || stationPrompts?.landingPage?.systemPrompt || 'Expert landing page copywriter specializing in Jones Road Beauty conversions...',
+                    userPrompt: debugInfo?.userPrompt || `Type: ${landingPageType}\nProduct Brief: ${productBrief}\nMain Angle: ${mainAngle}`,
+                    requestPayload: debugInfo?.requestPayload,
+                    rawResponse: debugInfo?.rawResponse
                   });
                   setShowGenerationDetails(true);
                 }}
@@ -573,7 +556,21 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
               </Button>
             </div>
 
-            {generatedLandingCopy.headline ? (
+            {generateLandingCopyMutation.isPending ? (
+              <div className="text-center py-12">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="flex space-x-1">
+                    <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                </div>
+                <p className="text-gray-600 font-medium mb-2">Generating Landing Page Copy</p>
+                <p className="text-sm text-gray-500">
+                  Creating high-converting landing page sections optimized for your product and audience...
+                </p>
+              </div>
+            ) : generatedLandingCopy.headline ? (
               <div className="space-y-4 sm:space-y-6">
                 <div className="border-l-4 border-jones-primary pl-3 sm:pl-4 group">
                   <div className="flex items-start justify-between">

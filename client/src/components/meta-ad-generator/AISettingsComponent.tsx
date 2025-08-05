@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Target, Copy, Rocket } from 'lucide-react';
+import { Settings, Target, Copy, Rocket, Loader2 } from 'lucide-react';
 import { TrainingConfig } from '@shared/training-config';
 import {
   BrandGuidelinesTab,
@@ -64,9 +64,6 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
                         AI Training Configuration
                       </h3>
                       <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-                        {loadTrainingConfigMutation.isPending && (
-                          <div className="text-sm text-gray-600">Loading configuration...</div>
-                        )}
                         {editingConfig && (
                           <Button
                             onClick={() => saveTrainingConfigMutation.mutate(editingConfig)}
@@ -166,6 +163,12 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
                           />
                         </TabsContent>
                       </Tabs>
+                    ) : loadTrainingConfigMutation.isPending ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <Loader2 size={48} className="mx-auto mb-4 text-blue-500 animate-spin" />
+                        <p className="text-lg font-medium text-gray-700">Loading configuration...</p>
+                        <p className="text-sm mt-2">Please wait while we fetch your AI training settings</p>
+                      </div>
                     ) : (
                       <div className="text-center py-8 text-gray-500">
                         <Settings size={48} className="mx-auto mb-4 text-gray-300" />
@@ -177,7 +180,7 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
                 </Card>
 
                 {/* Debug Information Section */}
-                <Card>
+                {/* <Card>
                   <CardContent className="p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                       <Target className="text-jones-primary mr-3" size={20} />
@@ -186,7 +189,6 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
 
                     {debugInfo ? (
                       <div className="space-y-6">
-                        {/* Request Payload */}
                         <div>
                           <h4 className="font-medium text-gray-900 mb-2">Request Payload</h4>
                           <div className="bg-gray-50 rounded-lg p-4 border">
@@ -196,7 +198,6 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
                           </div>
                         </div>
 
-                        {/* System Prompt */}
                         <div>
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="font-medium text-gray-900">System Prompt</h4>
@@ -216,7 +217,6 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
                           </div>
                         </div>
 
-                        {/* User Prompt */}
                         <div>
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="font-medium text-gray-900">User Prompt</h4>
@@ -236,7 +236,6 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
                           </div>
                         </div>
 
-                        {/* Raw Response */}
                         <div>
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="font-medium text-gray-900">Raw AI Response</h4>
@@ -264,7 +263,7 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
                       </div>
                     )}
                   </CardContent>
-                </Card>
+                </Card> */}
               </div>
     </>
   );

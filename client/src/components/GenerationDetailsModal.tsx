@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Copy, Settings, ChevronDown, ChevronRight, Eye, Clock, User, Cpu, FileText, Target, ShoppingBag } from 'lucide-react';
+import { Copy, Settings, ChevronDown, ChevronRight, Eye, Cpu, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export interface GenerationMetadata {
@@ -20,7 +20,6 @@ export interface GenerationMetadata {
   frameworks?: string[];
   personaSettings?: {
     concept: string;
-    subPersona?: string;
   };
   productClaims?: {
     approved: string[];
@@ -44,11 +43,7 @@ export function GenerationDetailsModal({ isOpen, onClose, metadata, onEditSettin
     payload: false,
     prompts: false,
     response: false,
-    model: false,
-    brand: false,
-    frameworks: false,
-    persona: false,
-    product: false
+    model: false
   });
   const { toast } = useToast();
 
@@ -65,10 +60,6 @@ export function GenerationDetailsModal({ isOpen, onClose, metadata, onEditSettin
       description: `${label} copied successfully`,
       duration: 2000,
     });
-  };
-
-  const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString();
   };
 
   return (
@@ -106,44 +97,6 @@ export function GenerationDetailsModal({ isOpen, onClose, metadata, onEditSettin
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Generation Overview */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-gray-500" />
-                <div>
-                  <div className="font-medium">Generated</div>
-                  <div className="text-gray-600">{formatTimestamp(metadata.timestamp)}</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Cpu className="h-4 w-4 text-gray-500" />
-                <div>
-                  <div className="font-medium">Model</div>
-                  <div className="text-gray-600">{metadata.modelUsed}</div>
-                </div>
-              </div>
-              {metadata.brandDrBalance !== undefined && (
-                <div className="flex items-center gap-2">
-                  <Target className="h-4 w-4 text-gray-500" />
-                  <div>
-                    <div className="font-medium">Brand/DR Balance</div>
-                    <div className="text-gray-600">{metadata.brandDrBalance}% Brand</div>
-                  </div>
-                </div>
-              )}
-              {metadata.selectedProduct && (
-                <div className="flex items-center gap-2">
-                  <ShoppingBag className="h-4 w-4 text-gray-500" />
-                  <div>
-                    <div className="font-medium">Product Focus</div>
-                    <div className="text-gray-600">{metadata.selectedProduct}</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
           {/* AI Prompts Section */}
           <Collapsible open={openSections.prompts} onOpenChange={() => toggleSection('prompts')}>
             <CollapsibleTrigger asChild>
@@ -188,7 +141,7 @@ export function GenerationDetailsModal({ isOpen, onClose, metadata, onEditSettin
                       Copy
                     </Button>
                   </div>
-                  <div className="bg-green-50 rounded-lg p-4 border border-green-200 max-h-64 overflow-y-auto">
+                  <div className="bg-green-50 rounded-lg p-4 border border-green-200">
                     <pre className="text-sm text-gray-700 whitespace-pre-wrap">
                       {metadata.userPrompt}
                     </pre>
@@ -238,137 +191,6 @@ export function GenerationDetailsModal({ isOpen, onClose, metadata, onEditSettin
               </div>
             </CollapsibleContent>
           </Collapsible>
-
-          {/* Brand Guidelines */}
-          {metadata.brandGuidelines && metadata.brandGuidelines.length > 0 && (
-            <Collapsible open={openSections.brand} onOpenChange={() => toggleSection('brand')}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full justify-between p-4 bg-white border rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    <span className="font-medium">Brand Guidelines Applied</span>
-                    <Badge variant="secondary">{metadata.brandGuidelines.length} rules</Badge>
-                  </div>
-                  {openSections.brand ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <div className="bg-white border rounded-lg p-4">
-                  <div className="space-y-2">
-                    {metadata.brandGuidelines.map((guideline, index) => (
-                      <div key={index} className="flex items-start gap-2">
-                        <div className="w-1.5 h-1.5 bg-[#004182] rounded-full mt-2 flex-shrink-0" />
-                        <span className="text-sm text-gray-700">{guideline}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          )}
-
-          {/* Copywriting Frameworks */}
-          {metadata.frameworks && metadata.frameworks.length > 0 && (
-            <Collapsible open={openSections.frameworks} onOpenChange={() => toggleSection('frameworks')}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full justify-between p-4 bg-white border rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    <span className="font-medium">Frameworks Used</span>
-                    <Badge variant="secondary">{metadata.frameworks.length} frameworks</Badge>
-                  </div>
-                  {openSections.frameworks ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <div className="bg-white border rounded-lg p-4">
-                  <div className="flex flex-wrap gap-2">
-                    {metadata.frameworks.map((framework, index) => (
-                      <Badge key={index} variant="outline">{framework}</Badge>
-                    ))}
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          )}
-
-          {/* Persona Settings */}
-          {metadata.personaSettings && (
-            <Collapsible open={openSections.persona} onOpenChange={() => toggleSection('persona')}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full justify-between p-4 bg-white border rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    <span className="font-medium">Persona Targeting</span>
-                    <Badge variant="secondary">Active</Badge>
-                  </div>
-                  {openSections.persona ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <div className="bg-white border rounded-lg p-4">
-                  <div className="space-y-3">
-                    <div>
-                      <div className="font-medium text-sm">Primary Persona</div>
-                      <div className="text-gray-600">{metadata.personaSettings.concept}</div>
-                    </div>
-                    {metadata.personaSettings.subPersona && (
-                      <div>
-                        <div className="font-medium text-sm">Sub-Persona</div>
-                        <div className="text-gray-600">{metadata.personaSettings.subPersona}</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          )}
-
-          {/* Product Claims */}
-          {metadata.productClaims && (metadata.productClaims.approved.length > 0 || metadata.productClaims.prohibited.length > 0) && (
-            <Collapsible open={openSections.product} onOpenChange={() => toggleSection('product')}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full justify-between p-4 bg-white border rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center gap-2">
-                    <ShoppingBag className="h-4 w-4" />
-                    <span className="font-medium">Product Claims</span>
-                    <Badge variant="secondary">
-                      {metadata.productClaims.approved.length + metadata.productClaims.prohibited.length} claims
-                    </Badge>
-                  </div>
-                  {openSections.product ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <div className="bg-white border rounded-lg p-4 space-y-4">
-                  {metadata.productClaims.approved.length > 0 && (
-                    <div>
-                      <div className="font-medium text-sm text-green-700 mb-2">Approved Claims</div>
-                      <div className="flex flex-wrap gap-1">
-                        {metadata.productClaims.approved.map((claim, index) => (
-                          <Badge key={index} variant="secondary" className="bg-green-50 text-green-700 border-green-200">
-                            {claim}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {metadata.productClaims.prohibited.length > 0 && (
-                    <div>
-                      <div className="font-medium text-sm text-red-700 mb-2">Prohibited Claims</div>
-                      <div className="flex flex-wrap gap-1">
-                        {metadata.productClaims.prohibited.map((claim, index) => (
-                          <Badge key={index} variant="secondary" className="bg-red-50 text-red-700 border-red-200">
-                            {claim}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          )}
 
           {/* Request Payload */}
           {metadata.requestPayload && (

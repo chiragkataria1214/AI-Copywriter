@@ -101,6 +101,23 @@ export function registerTrainingRoutes(app: Express, requireAdmin: any) {
         }
       }
 
+      console.log('DEBUG: About to save training config:', {
+        hasEmailFrameworks: !!updatedConfig.copyFrameworks?.emailFrameworks,
+        emailFrameworksCount: updatedConfig.copyFrameworks?.emailFrameworks?.length || 0,
+        frameworksWithImages: updatedConfig.copyFrameworks?.emailFrameworks?.filter(fw => fw.images && fw.images.length > 0).length || 0
+      });
+      
+      // Log each framework with images
+      if (updatedConfig.copyFrameworks?.emailFrameworks) {
+        updatedConfig.copyFrameworks.emailFrameworks.forEach((fw, index) => {
+          if (fw.images && fw.images.length > 0) {
+            console.log(`DEBUG: Framework ${index} (${fw.displayName || fw.name}) has ${fw.images.length} images:`, 
+              fw.images.map(img => ({ id: img.id, name: img.name, hasDataUri: !!img.dataUri }))
+            );
+          }
+        });
+      }
+
       await storage.saveTrainingConfiguration(updatedConfig);
       
       res.json({ message: "Training configuration updated successfully" });

@@ -76,6 +76,7 @@ export const ProductClaimsTab: React.FC<ProductClaimsTabProps> = ({
                       productClaims: {
                         ...editingConfig.productClaims,
                         [productKey]: {
+                          displayName: newProductName.trim(),
                           approvedClaims: [''],
                           prohibitedClaims: [''],
                           enabledApproved: [true],
@@ -161,7 +162,7 @@ export const ProductClaimsTab: React.FC<ProductClaimsTabProps> = ({
                             if (window.confirm(`Are you sure you want to delete the product '${displayName}'? This action cannot be undone.`)) {
                               const productId = products[productKey]?.id;
                               if (productId) {
-                                deleteProductMutation.mutate(productId);
+                                deleteProductMutation.mutate({ productId, productKey });
                               } else {
                                 const updatedClaims = { ...productClaims };
                                 delete updatedClaims[productKey];

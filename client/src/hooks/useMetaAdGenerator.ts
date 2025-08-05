@@ -4,13 +4,8 @@ import { apiRequest } from '@/lib/queryClient';
 import { toast } from '@/hooks/use-toast';
 import { TrainingConfig } from '@shared/training-config';
 
-interface SubPersona {
-  label: string;
-}
-
 interface Persona {
   label: string;
-  subPersonas?: Record<string, SubPersona>;
 }
 
 export interface GenerationMetadata {
@@ -25,7 +20,6 @@ export interface GenerationMetadata {
   frameworks: string[];
   personaSettings: {
     concept: string;
-    subPersona?: string;
   };
   brandDrBalance: number;
   selectedProduct: string;
@@ -56,7 +50,6 @@ export const useMetaAdGenerator = () => {
   
   // Persona and targeting states
   const [concept, setConcept] = useState('lifeJuggler');
-  const [subPersona, setSubPersona] = useState('newMom');
   const [targetAudience, setTargetAudience] = useState('');
   const [landingPageUrl, setLandingPageUrl] = useState('');
   const [selectedProduct, setSelectedProduct] = useState('');
@@ -332,8 +325,6 @@ export const useMetaAdGenerator = () => {
     setCustomBrief,
     concept,
     setConcept,
-    subPersona,
-    setSubPersona,
     targetAudience,
     setTargetAudience,
     landingPageUrl,

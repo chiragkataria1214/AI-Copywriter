@@ -44,7 +44,6 @@ interface StaticAdTabProps {
     getGenerationDisabledState?: (stationType: string) => { disabled: boolean; reason: string };
     copyToClipboard?: (text: string, type: string) => void;
     selectedProduct?: any;
-    subPersona?: string;
     brandDrBalance?: number;
     
     // View Details functionality
@@ -84,7 +83,6 @@ export const StaticAdTab = ({
     getGenerationDisabledState,
     copyToClipboard,
     selectedProduct,
-    subPersona,
     brandDrBalance,
     setCurrentGenerationMetadata,
     setShowGenerationDetails,
@@ -106,9 +104,9 @@ export const StaticAdTab = ({
             return;
         }
 
-        // Validate file size (10MB limit)
-        if (file.size > 10 * 1024 * 1024) {
-            alert('File size must be less than 10MB');
+        // Validate file size (8MB limit for better processing)
+        if (file.size > 8 * 1024 * 1024) {
+            alert('File size must be less than 8MB. For best results, try to keep images under 5MB.');
             return;
         }
 
@@ -365,9 +363,8 @@ export const StaticAdTab = ({
                                                         maxTokens: modelSettings?.maxTokens || 2000,
                                                         systemPrompt: stationPrompts?.staticAd?.systemPrompt || 'Expert static ad analyzer for Jones Road Beauty...',
                                                         userPrompt: `Analysis Focus: ${analysisFocus}\nOutput Format: ${outputFormat}\nTarget Persona: ${concept}\nSelected Product: ${selectedProduct}`,
-                                                        brandGuidelines: brandGuidelines?.guidelines || ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
-                                                        frameworks: copyFrameworks?.staticAd?.frameworks || ['Visual design analysis', 'Copy effectiveness scoring', 'Brand adaptation strategies'],
-                                                        selectedProduct: selectedProduct
+                                                        requestPayload: null,
+                                                        rawResponse: null
                                                     });
                                                     setShowGenerationDetails(true);
                                                 }}

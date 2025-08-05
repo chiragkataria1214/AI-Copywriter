@@ -11,13 +11,8 @@ import { ProductSelection } from '@/components/ProductSelection';
 import { Product } from '@shared/schema';
 import { UseMutationResult } from '@tanstack/react-query';
 
-interface SubPersona {
-  label: string;
-}
-
 interface Persona {
   label: string;
-  subPersonas?: Record<string, SubPersona>;
 }
 
 interface CustomCopyTabProps {
@@ -36,7 +31,6 @@ interface CustomCopyTabProps {
   setSelectedProduct: (value: string) => void;
   brandDrBalance: number[];
   setBrandDrBalance: (value: number[]) => void;
-  subPersona: string;
   
   // Data
   personas: Record<string, Persona>;
@@ -70,6 +64,12 @@ interface CustomCopyTabProps {
       frameworks?: string[];
     };
   };
+  debugInfo?: {
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null;
 }
 
 export function CustomCopyTab({
@@ -83,7 +83,6 @@ export function CustomCopyTab({
   setSelectedProduct,
   brandDrBalance,
   setBrandDrBalance,
-  subPersona,
   personas,
   products,
   generateCustomCopyMutation,
@@ -97,6 +96,7 @@ export function CustomCopyTab({
   stationPrompts,
   brandGuidelines,
   copyFrameworks,
+  debugInfo,
 }: CustomCopyTabProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
@@ -295,7 +295,30 @@ export function CustomCopyTab({
 
       {/* Output Section */}
       <div className="space-y-4 sm:space-y-6">
-        {generatedCustomResponse && (
+        {generateCustomCopyMutation.isPending ? (
+          <Card>
+            <CardContent className="p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Sparkles className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                Generating Custom Copy
+              </h3>
+              
+              <div className="text-center py-12">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="flex space-x-1">
+                    <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                </div>
+                <p className="text-gray-600 font-medium mb-2">Processing Your Request</p>
+                <p className="text-sm text-gray-500">
+                  Creating custom copy tailored to your specific requirements and brand guidelines...
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : generatedCustomResponse && (
           <Card>
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
@@ -336,16 +359,10 @@ export function CustomCopyTab({
                         modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
                         temperature: modelSettings?.temperature || 0.7,
                         maxTokens: modelSettings?.maxTokens || 2000,
-                        systemPrompt: stationPrompts?.customRequest?.systemPrompt || 'Expert marketing copywriter for Jones Road Beauty...',
-                        userPrompt: `Request: ${customRequest}\nAudience: ${concept}...`,
-                        brandGuidelines: brandGuidelines?.guidelines || ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
-                        frameworks: copyFrameworks?.customRequest?.frameworks || ['Flexible copywriting', 'Brand consistency', 'Strategic messaging'],
-                        personaSettings: {
-                          concept: concept,
-                          subPersona: subPersona === 'none' ? undefined : subPersona
-                        },
-                        brandDrBalance: brandDrBalance[0],
-                        selectedProduct: selectedProduct
+                        systemPrompt: debugInfo?.systemPrompt || stationPrompts?.customRequest?.systemPrompt || 'Expert marketing copywriter for Jones Road Beauty...',
+                        userPrompt: debugInfo?.userPrompt || `Request: ${customRequest}\nAudience: ${concept}`,
+                        requestPayload: debugInfo?.requestPayload,
+                        rawResponse: debugInfo?.rawResponse
                       });
                       setShowGenerationDetails(true);
                     }}

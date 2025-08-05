@@ -38,6 +38,7 @@ import {
   updateUserSchema
 } from "@shared/schema";
 import { type TrainingConfig } from "@shared/training-config";
+import { slugToDisplayName } from "@shared/utils";
 import { db } from "./db";
 import { eq, desc, and, count, avg, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -118,9 +119,12 @@ export interface IStorage {
   getAllEmailFrameworks(): Promise<EmailFramework[]>;
   getActiveEmailFrameworks(): Promise<EmailFramework[]>;
   getEmailFramework(name: string): Promise<EmailFramework | undefined>;
+  getEmailFrameworkById(id: string): Promise<EmailFramework | undefined>;
   createEmailFramework(data: InsertEmailFramework): Promise<EmailFramework>;
   updateEmailFramework(id: string, data: Partial<InsertEmailFramework>): Promise<EmailFramework>;
+  updateEmailFrameworkByName(name: string, data: Partial<InsertEmailFramework>): Promise<EmailFramework>;
   deleteEmailFramework(name: string): Promise<void>;
+  deleteEmailFrameworkById(id: string): Promise<void>;
   
   // Email image analysis operations
   saveEmailImageAnalysis(data: InsertEmailImageAnalysis): Promise<EmailImageAnalysis>;
@@ -510,12 +514,14 @@ export class DatabaseStorage implements IStorage {
       allPersonas,
       brandConfigs,
       copyFrameworksData,
+      emailFrameworksData,
       systemConfigs
     ] = await Promise.all([
       this.getAllProducts(),
       this.getAllPersonas(),
       this.getBrandConfiguration(),
       this.getCopyFrameworks(),
+      this.getAllEmailFrameworks(),
       this.getSystemConfiguration()
     ]);
 
@@ -599,6 +605,24 @@ export class DatabaseStorage implements IStorage {
     copyFrameworksObj.brandDrBalance.directResponse = copyFrameworksData
       .filter(f => f.frameworkType === 'direct_response_guideline' && f.isEnabled === 'true')
       .map(f => f.ruleText);
+
+    // Add email frameworks to copyFrameworks object (include all frameworks, not just active ones)
+    copyFrameworksObj.emailFrameworks = emailFrameworksData
+      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+      .map(f => ({
+        id: f.id,
+        name: f.name,
+        displayName: f.displayName,
+        description: f.description,
+        structure: f.structure,
+        keyElements: f.keyElements,
+        frameworkContent: f.frameworkContent,
+        systemPrompt: f.systemPrompt,
+        outputRequirements: f.outputRequirements,
+        expectedLength: f.expectedLength,
+        isEnabled: f.isActive === 'true',
+        sortOrder: f.sortOrder
+      }));
 
     // Get system prompts and model parameters from system configuration
     const systemPromptsObj: any = {};
@@ -752,7 +776,12 @@ export class DatabaseStorage implements IStorage {
         
         // Create product if it doesn't exist
         if (!product) {
-          [product] = await tx.insert(products).values({ name: productName, displayName: productName }).returning();
+          const claimData = productClaimsData[productName];
+          const displayName = claimData.displayName || slugToDisplayName(productName);
+          [product] = await tx.insert(products).values({ 
+            name: productName, 
+            displayName: displayName
+          }).returning();
         }
 
         // Instead of clearing all claims, we'll do a more targeted update
@@ -1022,6 +1051,100 @@ export class DatabaseStorage implements IStorage {
       }
       // #endregion
 
+      // #region Email Frameworks
+      if (frameworksData.emailFrameworks && Array.isArray(frameworksData.emailFrameworks)) {
+        const allDbEmailFrameworks = await tx.select().from(emailFrameworks);
+        const emailFrameworksToUpdate: { id: string; data: Partial<InsertEmailFramework> }[] = [];
+        const emailFrameworksToInsert: InsertEmailFramework[] = [];
+        const updatedEmailFrameworkIds = new Set<string>();
+
+        frameworksData.emailFrameworks.forEach((fw: any, index: number) => {
+          // Skip frameworks without proper identification
+          if (!fw.name && !fw.displayName) {
+            return;
+          }
+          
+          // Find existing framework by name or id
+          const existingFw = allDbEmailFrameworks.find(dbFw => 
+            (fw.id && dbFw.id === fw.id) || 
+            (fw.name && dbFw.name === fw.name) ||
+            (fw.displayName && dbFw.displayName === fw.displayName)
+          );
+          
+          const isEnabled = fw.isEnabled !== false;
+          const frameworkData = {
+            name: fw.name || fw.displayName?.toLowerCase().replace(/\s+/g, '_') || `framework_${index}`,
+            displayName: fw.displayName || fw.name || `Framework ${index + 1}`,
+            description: fw.description || '',
+            structure: fw.structure || '',
+            keyElements: fw.keyElements || '',
+            frameworkContent: fw.frameworkContent || '',
+            systemPrompt: fw.systemPrompt || '',
+            outputRequirements: fw.outputRequirements || '',
+            expectedLength: fw.expectedLength || 'medium',
+            images: fw.images || null,
+            isActive: isEnabled ? 'true' : 'false',
+            sortOrder: fw.sortOrder !== undefined ? fw.sortOrder : index,
+          };
+
+          console.log('DEBUG: Processing email framework for save:', {
+            index,
+            frameworkName: frameworkData.displayName,
+            hasImages: !!fw.images,
+            imagesCount: fw.images ? fw.images.length : 0,
+            images: fw.images,
+            frameworkData
+          });
+
+          if (existingFw) {
+            // Update existing framework
+            emailFrameworksToUpdate.push({
+              id: existingFw.id,
+              data: frameworkData
+            });
+            updatedEmailFrameworkIds.add(existingFw.id);
+          } else {
+            // Insert new framework
+            emailFrameworksToInsert.push(frameworkData);
+          }
+        });
+
+        // Disable email frameworks not in the new config
+        const emailFrameworksToDisable = allDbEmailFrameworks.filter(f => 
+          !updatedEmailFrameworkIds.has(f.id)
+        );
+        for (const fw of emailFrameworksToDisable) {
+          emailFrameworksToUpdate.push({ id: fw.id, data: { isActive: 'false' } });
+        }
+
+        // Perform email framework database operations
+        console.log('DEBUG: Database operations:', {
+          insertsCount: emailFrameworksToInsert.length,
+          updatesCount: emailFrameworksToUpdate.length,
+          inserts: emailFrameworksToInsert.map(fw => ({ name: fw.name, hasImages: !!fw.images, imagesCount: Array.isArray(fw.images) ? fw.images.length : 0 })),
+          updates: emailFrameworksToUpdate.map(upd => ({ id: upd.id, name: upd.data.name, hasImages: !!upd.data.images, imagesCount: Array.isArray(upd.data.images) ? upd.data.images.length : 0 }))
+        });
+        
+        if (emailFrameworksToInsert.length > 0) {
+          await tx.insert(emailFrameworks).values(emailFrameworksToInsert);
+          console.log('DEBUG: Inserted email frameworks:', emailFrameworksToInsert.length);
+        }
+        for (const update of emailFrameworksToUpdate) {
+          console.log('DEBUG: Updating framework:', {
+            id: update.id,
+            hasImages: !!update.data.images,
+            imagesCount: Array.isArray(update.data.images) ? update.data.images.length : 0,
+            updateData: update.data
+          });
+          await tx.update(emailFrameworks).set({
+            ...update.data,
+            updatedAt: new Date()
+          }).where(eq(emailFrameworks.id, update.id));
+        }
+        console.log('DEBUG: Completed email framework database operations');
+      }
+      // #endregion
+
       // #region System Configuration (Model, Prompts, etc.)
       const allDbSystemConfigs = await tx.select().from(systemConfiguration);
       const configsToUpsert: InsertSystemConfiguration[] = [];
@@ -1068,7 +1191,19 @@ export class DatabaseStorage implements IStorage {
 
   // Email frameworks operations
   async getAllEmailFrameworks(): Promise<EmailFramework[]> {
-    return await db.select().from(emailFrameworks).orderBy(emailFrameworks.sortOrder);
+    const frameworks = await db.select().from(emailFrameworks).orderBy(emailFrameworks.sortOrder);
+    console.log('DEBUG: Loaded email frameworks from database:', {
+      count: frameworks.length,
+      frameworksWithImages: frameworks.filter(fw => fw.images && Array.isArray(fw.images) && fw.images.length > 0).length,
+      frameworks: frameworks.map(fw => ({
+        id: fw.id,
+        name: fw.name,
+        displayName: fw.displayName,
+        hasImages: !!fw.images,
+        imagesCount: Array.isArray(fw.images) ? fw.images.length : 0
+      }))
+    });
+    return frameworks;
   }
 
   async getActiveEmailFrameworks(): Promise<EmailFramework[]> {
@@ -1080,18 +1215,38 @@ export class DatabaseStorage implements IStorage {
     return framework || undefined;
   }
 
+  async getEmailFrameworkById(id: string): Promise<EmailFramework | undefined> {
+    const [framework] = await db.select().from(emailFrameworks).where(eq(emailFrameworks.id, id));
+    return framework || undefined;
+  }
+
   async createEmailFramework(data: InsertEmailFramework): Promise<EmailFramework> {
     const [framework] = await db.insert(emailFrameworks).values(data).returning();
     return framework;
   }
 
   async updateEmailFramework(id: string, data: Partial<InsertEmailFramework>): Promise<EmailFramework> {
-    const [framework] = await db.update(emailFrameworks).set(data).where(eq(emailFrameworks.id, id)).returning();
+    const [framework] = await db.update(emailFrameworks).set({
+      ...data,
+      updatedAt: new Date()
+    }).where(eq(emailFrameworks.id, id)).returning();
+    return framework;
+  }
+
+  async updateEmailFrameworkByName(name: string, data: Partial<InsertEmailFramework>): Promise<EmailFramework> {
+    const [framework] = await db.update(emailFrameworks).set({
+      ...data,
+      updatedAt: new Date()
+    }).where(eq(emailFrameworks.name, name)).returning();
     return framework;
   }
 
   async deleteEmailFramework(name: string): Promise<void> {
     await db.delete(emailFrameworks).where(eq(emailFrameworks.name, name));
+  }
+
+  async deleteEmailFrameworkById(id: string): Promise<void> {
+    await db.delete(emailFrameworks).where(eq(emailFrameworks.id, id));
   }
 
   // Email image analysis operations

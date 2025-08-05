@@ -243,7 +243,7 @@ RED FLAGS TO AVOID:
 LANDING PAGE SPECIFICATIONS:
 LANDING PAGE TYPE: {landingPageType}
 PRODUCT BRIEF: {productBrief}  
-TARGET PERSONA: {concept} {subPersona}
+TARGET PERSONA: {concept}
 BRAND/DR BALANCE: {brandPercent}% brand voice, {drPercent}% direct response
 {adsContentSection}
 
@@ -397,7 +397,7 @@ QUALITY STANDARDS:
       configValue: `Analyze this static ad image and provide optimization insights for Jones Road Beauty copy variations.
 
 TARGET CONTEXT:
-TARGET PERSONA: {concept} {subPersona}
+TARGET PERSONA: {concept}
 BRAND/DR BALANCE: {brandPercent}% brand voice, {drPercent}% direct response
 PRODUCT FOCUS: {selectedProduct}
 
@@ -562,7 +562,7 @@ CUSTOMER CONTEXT:
 - Selected Products: {selectedProducts}
 - Keywords to Include: {keywordsToInclude}
 - Words to Avoid: {wordsToAvoid}
-- Target Persona: {concept} {subPersona}
+- Target Persona: {concept}
 - Brand/DR Balance: {brandDrBalance}% brand voice
 
 PLATFORM-SPECIFIC REQUIREMENTS:
@@ -745,7 +745,7 @@ OUTPUT EXCELLENCE STANDARDS:
 
 REQUEST DETAILS:
 CUSTOM REQUEST: {customRequest}
-TARGET PERSONA: {concept} {subPersona}
+TARGET PERSONA: {concept}
 SELECTED PRODUCT: {selectedProduct}
 BRAND/DR BALANCE: {brandDrBalance}% brand voice
 USE JONES BRAND GUIDE: {useJonesBrandGuide}

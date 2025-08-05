@@ -97,7 +97,11 @@ const BriefCreationTab = (props: any) => {
                 method: 'POST',
                 body: {
                     notes,
-                    googleDriveLinks
+                    googleDriveLinks,
+                    selectedProduct: props.selectedProduct,
+                    concept: props.concept,
+                    brandDrBalance: props.brandDrBalance,
+                    useJonesBrandGuide: props.useJonesBrandGuide
                 }
             });
 
@@ -144,6 +148,39 @@ const BriefCreationTab = (props: any) => {
                                 className="min-h-[300px] mt-2"
                             />
                         </div>
+                        
+                        {/* Product Selection */}
+                        {props.products && Object.keys(props.products).length > 0 && (
+                            <div>
+                                <Label>Product Focus (Optional)</Label>
+                                <p className="text-sm text-gray-600 mb-2">
+                                    Select a product to include specific product claims and benefits in your brief.
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => props.setSelectedProduct && props.setSelectedProduct('')}
+                                        className={`px-3 py-1 rounded-full text-sm border transition-colors ${
+                                            !props.selectedProduct ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        All Products
+                                    </button>
+                                    {Object.entries(props.products).map(([productName, product]: [string, any]) => (
+                                        <button
+                                            key={productName}
+                                            type="button"
+                                            onClick={() => props.setSelectedProduct && props.setSelectedProduct(productName)}
+                                            className={`px-3 py-1 rounded-full text-sm border transition-colors ${
+                                                props.selectedProduct === productName ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            {product.displayName}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 

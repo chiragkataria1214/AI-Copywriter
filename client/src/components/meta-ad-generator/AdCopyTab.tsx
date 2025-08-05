@@ -69,8 +69,6 @@ interface AdCopyTabProps {
     concept: string;
     setConcept: (value: string) => void;
     personas: any;
-    subPersona: string;
-    setSubPersona: (value: string) => void;
     landingPageUrl: string;
     setLandingPageUrl: (value: string) => void;
     enableInfluencerMode: boolean;
@@ -114,6 +112,12 @@ interface AdCopyTabProps {
     submitFeedbackMutation: any;
     selectedHeadlineIndex: number;
     setSelectedHeadlineIndex: (value: number) => void;
+    debugInfo?: {
+        systemPrompt: string;
+        userPrompt: string;
+        requestPayload: any;
+        rawResponse: string;
+    } | null;
 }
 
 export const AdCopyTab = ({
@@ -132,8 +136,6 @@ export const AdCopyTab = ({
     concept,
     setConcept,
     personas,
-    subPersona,
-    setSubPersona,
     landingPageUrl,
     setLandingPageUrl,
     enableInfluencerMode,
@@ -176,7 +178,8 @@ export const AdCopyTab = ({
     setFeedbackText,
     submitFeedbackMutation,
     selectedHeadlineIndex,
-    setSelectedHeadlineIndex
+    setSelectedHeadlineIndex,
+    debugInfo
 }: AdCopyTabProps) => {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
@@ -377,21 +380,7 @@ export const AdCopyTab = ({
                                 </Select>
                             </div>
 
-                            {personas[concept]?.subPersonas && Object.keys(personas[concept].subPersonas!).length > 0 && (
-                                <div>
-                                    <Label htmlFor="subPersona" className="block text-sm font-medium text-gray-700 mb-2">Sub-Persona</Label>
-                                    <Select value={subPersona} onValueChange={setSubPersona}>
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {Object.entries(personas[concept].subPersonas!).map(([key, s]: [string, any]) => (
-                                                <SelectItem key={key} value={key}>{s.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            )}
+
 
                             <div>
                                 <Label htmlFor="landingPageUrl" className="block text-sm font-medium text-gray-700 mb-2">
@@ -749,6 +738,20 @@ export const AdCopyTab = ({
                                     </div>
                                 ))}
                             </div>
+                        ) : generateAdCopyMutation.isPending ? (
+                            <div className="text-center py-12">
+                                <div className="flex items-center justify-center mb-4">
+                                    <div className="flex space-x-1">
+                                        <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                        <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                        <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                                    </div>
+                                </div>
+                                <p className="text-gray-600 font-medium mb-2">Generating Headlines</p>
+                                <p className="text-sm text-gray-500">
+                                    Creating multiple headline variations using proven copywriting frameworks...
+                                </p>
+                            </div>
                         ) : (
                             <div className="text-center py-8 text-gray-500">
                                 <FileText size={48} className="mx-auto mb-4 text-gray-300" />
@@ -802,16 +805,10 @@ export const AdCopyTab = ({
                                             modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
                                             temperature: modelSettings?.temperature || 0.7,
                                             maxTokens: modelSettings?.maxTokens || 2000,
-                                            systemPrompt: stationPrompts?.adCopy?.systemPrompt || 'Expert Meta ad copywriter specializing in Jones Road Beauty brand voice...',
-                                            userPrompt: `Target: ${concept}\nBrief: ${customBrief}\nTranscription: ${transcription}...`,
-                                            brandGuidelines: brandGuidelines?.guidelines || ['Educational tone', 'Make up, Simplified philosophy', 'Authentic messaging'],
-                                            frameworks: copyFrameworks?.adCopy?.frameworks || ['Benefit-driven', 'Social proof', 'Problem-focused'],
-                                            personaSettings: {
-                                                concept: concept,
-                                                subPersona: subPersona === 'none' ? undefined : subPersona
-                                            },
-                                            brandDrBalance: brandDrBalance[0],
-                                            selectedProduct: selectedProduct
+                                            systemPrompt: debugInfo?.systemPrompt || stationPrompts?.adCopy?.systemPrompt || 'Expert Meta ad copywriter specializing in Jones Road Beauty brand voice...',
+                                            userPrompt: debugInfo?.userPrompt || `Target: ${concept}\nBrief: ${customBrief}\nTranscription: ${transcription}`,
+                                            requestPayload: debugInfo?.requestPayload,
+                                            rawResponse: debugInfo?.rawResponse
                                         });
                                         setShowGenerationDetails(true);
                                     }}
@@ -851,6 +848,20 @@ export const AdCopyTab = ({
                                         </Badge>
                                     </div>
                                 </div>
+                            </div>
+                        ) : generateAdCopyMutation.isPending ? (
+                            <div className="text-center py-12">
+                                <div className="flex items-center justify-center mb-4">
+                                    <div className="flex space-x-1">
+                                        <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                        <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                        <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                                    </div>
+                                </div>
+                                <p className="text-gray-600 font-medium mb-2">Generating Primary Text</p>
+                                <p className="text-sm text-gray-500">
+                                    Crafting compelling ad copy that converts while maintaining brand voice...
+                                </p>
                             </div>
                         ) : (
                             <div className="text-center py-8 text-gray-500">

@@ -15,7 +15,6 @@ export interface GenerationMetadata {
   frameworks?: string[];
   personaSettings?: {
     concept: string;
-    subPersona?: string;
   };
   productClaims?: {
     approved: string[];
@@ -67,8 +66,8 @@ function detectImageType(base64String: string): string {
   return 'image/jpeg';
 }
 
-// Function to resize image if it exceeds Anthropic's dimension limits
-async function resizeImageIfNeeded(base64String: string, maxDimension: number = 8000): Promise<{ data: string; mediaType: string }> {
+// Function to resize image if it exceeds Anthropic's dimension or file size limits
+async function resizeImageIfNeeded(base64String: string, maxDimension: number = 8000, maxSizeBytes: number = 4.5 * 1024 * 1024): Promise<{ data: string; mediaType: string }> {
   try {
     // Extract base64 data (remove data URL prefix if present)
     let imageData = base64String;
@@ -95,43 +94,132 @@ async function resizeImageIfNeeded(base64String: string, maxDimension: number = 
     // Get image metadata
     const metadata = await sharp(buffer).metadata();
     
-    // Check if resizing is needed
-    if (metadata.width && metadata.height && 
-        (metadata.width > maxDimension || metadata.height > maxDimension)) {
+    // Check current file size
+    const currentSizeBytes = buffer.length;
+    console.log(`Image size: ${currentSizeBytes} bytes (${(currentSizeBytes / 1024 / 1024).toFixed(2)}MB), limit: ${(maxSizeBytes / 1024 / 1024).toFixed(2)}MB`);
+    
+    // Check if resizing or compression is needed
+    const needsDimensionResize = metadata.width && metadata.height && 
+        (metadata.width > maxDimension || metadata.height > maxDimension);
+    const needsSizeCompression = currentSizeBytes > maxSizeBytes;
+    
+    if (needsDimensionResize || needsSizeCompression) {
+      console.log(`Processing image: dimensions=${needsDimensionResize ? 'YES' : 'NO'}, size=${needsSizeCompression ? 'YES' : 'NO'}`);
       
-      console.log(`Resizing image from ${metadata.width}x${metadata.height} to fit within ${maxDimension}px`);
+      let sharpInstance = sharp(buffer);
       
-      // Resize while maintaining aspect ratio
-      const resizedBuffer = await sharp(buffer)
-        .resize(maxDimension, maxDimension, {
+      // Resize if needed
+      if (needsDimensionResize) {
+        console.log(`Resizing image from ${metadata.width}x${metadata.height} to fit within ${maxDimension}px`);
+        sharpInstance = sharpInstance.resize(maxDimension, maxDimension, {
           fit: 'inside',
           withoutEnlargement: true
-        })
-        .jpeg({ quality: 85 }) // Convert to JPEG for better compression
-        .toBuffer();
+        });
+      }
+      
+      // Start with high quality and reduce if needed
+      let quality = 85;
+      let processedBuffer: Buffer;
+      let currentDimension = maxDimension;
+      
+      // Progressive compression and resizing loop
+      do {
+        processedBuffer = await sharp(buffer)
+          .resize(currentDimension, currentDimension, {
+            fit: 'inside',
+            withoutEnlargement: true
+          })
+          .jpeg({ quality })
+          .toBuffer();
+        
+        console.log(`Compressed to ${processedBuffer.length} bytes with quality ${quality} and dimension ${currentDimension}`);
+        
+        // If still too large, try reducing quality first, then dimensions
+        if (processedBuffer.length > maxSizeBytes) {
+          if (quality > 20) {
+            quality -= 15;
+          } else if (currentDimension > 1000) {
+            // Reset quality and reduce dimensions
+            quality = 70;
+            currentDimension = Math.max(1000, Math.floor(currentDimension * 0.8));
+          } else {
+            // Final aggressive compression
+            quality = Math.max(10, quality - 10);
+          }
+        } else {
+          break;
+        }
+      } while (processedBuffer.length > maxSizeBytes && (quality > 10 || currentDimension > 500));
+      
+      // Final safety check - if still too large, apply most aggressive settings
+      if (processedBuffer.length > maxSizeBytes) {
+        console.log('Applying final aggressive compression...');
+        processedBuffer = await sharp(buffer)
+          .resize(800, 800, {
+            fit: 'inside',
+            withoutEnlargement: true
+          })
+          .jpeg({ 
+            quality: 10,
+            progressive: true,
+            optimiseScans: true,
+            trellisQuantisation: true,
+            overshootDeringing: true
+          })
+          .toBuffer();
+        
+        console.log(`Final aggressive compression: ${processedBuffer.length} bytes`);
+        
+        // Last resort - if still too large, throw an error
+        if (processedBuffer.length > maxSizeBytes) {
+          throw new Error(`Unable to compress image below ${(maxSizeBytes / 1024 / 1024).toFixed(1)}MB limit. Final size: ${(processedBuffer.length / 1024 / 1024).toFixed(2)}MB`);
+        }
+      }
       
       // Convert back to base64
       return {
-        data: resizedBuffer.toString('base64'),
-        mediaType: 'image/jpeg' // Always JPEG after resizing
+        data: processedBuffer.toString('base64'),
+        mediaType: 'image/jpeg' // Always JPEG after processing
       };
     }
     
-    // Return original if no resizing needed
+    // Return original if no processing needed
     return {
       data: imageData,
       mediaType: originalMediaType
     };
   } catch (error) {
-    console.error('Error resizing image:', error);
-    // Return original image if resizing fails
-    const fallbackData = base64String.startsWith('data:image/') 
-      ? base64String.split(',')[1] 
-      : base64String;
-    return {
-      data: fallbackData,
-      mediaType: detectImageType(base64String)
-    };
+    console.error('Error processing image:', error);
+    
+    // If processing fails, try a simple fallback compression
+    try {
+      console.log('Attempting fallback compression...');
+      const fallbackData = base64String.startsWith('data:image/') 
+        ? base64String.split(',')[1] 
+        : base64String;
+      
+      const buffer = Buffer.from(fallbackData, 'base64');
+      const compressedBuffer = await sharp(buffer)
+        .resize(1200, 1200, {
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .jpeg({ quality: 50 })
+        .toBuffer();
+      
+      if (compressedBuffer.length <= maxSizeBytes) {
+        console.log(`Fallback compression successful: ${compressedBuffer.length} bytes`);
+        return {
+          data: compressedBuffer.toString('base64'),
+          mediaType: 'image/jpeg'
+        };
+      }
+    } catch (fallbackError) {
+      console.error('Fallback compression also failed:', fallbackError);
+    }
+    
+    // If all else fails, throw an error rather than returning oversized image
+    throw new Error('Unable to process image to meet size requirements');
   }
 }
 
@@ -147,7 +235,6 @@ export interface AdCopyRequest {
   transcription: string;
   customBrief?: string;
   concept: string;
-  subPersona?: string;
   targetAudience: string;
   landingPageUrl?: string;
   brandDrBalance: number;
@@ -161,7 +248,6 @@ export interface LandingPageRequest {
   landingPageType: string;
   productBrief: string;
   concept: string;
-  subPersona?: string;
   useAdsContent: boolean;
   adsContent?: string;
   brandDrBalance: number;
@@ -173,7 +259,6 @@ export interface LandingPageRequest {
 export interface CustomCopyRequest {
   customRequest: string;
   concept: string;
-  subPersona?: string;
   brandDrBalance: number;
   selectedProduct?: string;
   useJonesBrandGuide: boolean;
@@ -182,13 +267,13 @@ export interface CustomCopyRequest {
 export interface StaticAdAnalysisRequest {
   staticAdImage: string;
   concept: string;
-  subPersona?: string;
   brandDrBalance: number;
   selectedProduct?: string;
+  useJonesBrandGuide?: boolean;
 }
 
 export async function generateAdCopy(request: AdCopyRequest, trainingConfig: TrainingConfig) {
-  const { transcription, customBrief, concept, subPersona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProduct } = request;
+  const { transcription, customBrief, concept, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProduct } = request;
   
   // Validate required parameters
   if (!concept || concept === 'none') {
@@ -204,12 +289,10 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
   const drPercent = 100 - brandPercent;
   const safeConcept = concept;
   const safeTargetAudience = targetAudience;
-  const safeSubPersona = subPersona || '';
   
   // Build comprehensive AI Settings context
   const aiSettingsContext = buildAISettingsContext(trainingConfig, {
     concept: safeConcept,
-    subPersona: safeSubPersona,
     selectedProduct,
     brandDrBalance: safeBrandDrBalance,
     useJonesBrandGuide
@@ -260,7 +343,7 @@ Ensure the ad copy creates a seamless transition from ad to landing page. The me
   // Detect mom personas and add mom-specific targeting - skip if concept is 'none'
   const isMomPersona = safeConcept && safeConcept !== 'none' && 
                       (safeConcept.toLowerCase().includes('mom') || 
-                      (safeSubPersona && safeSubPersona.toLowerCase().includes('mom')));
+                      (safeTargetAudience && safeTargetAudience.toLowerCase().includes('mom')));
   
   const momTargetingSection = isMomPersona ? `
 
@@ -462,7 +545,7 @@ Analyze the uploaded ad creative image to extract key visual elements, text over
 }
 
 export async function generateLandingPageCopy(request: LandingPageRequest, trainingConfig: TrainingConfig) {
-  const { landingPageType, productBrief, concept, subPersona, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle, transcription } = request;
+  const { landingPageType, productBrief, concept, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle, transcription } = request;
   
   // Validate required parameters
   if (!concept || concept === 'none') {
@@ -471,12 +554,10 @@ export async function generateLandingPageCopy(request: LandingPageRequest, train
   
   const safeBrandDrBalance = brandDrBalance || 50;
   const safeConcept = concept;
-  const safeSubPersona = subPersona || '';
   
   // Build comprehensive AI Settings context
   const aiSettingsContext = buildAISettingsContext(trainingConfig, {
     concept: safeConcept,
-    subPersona: safeSubPersona,
     selectedProduct,
     brandDrBalance: safeBrandDrBalance,
     useJonesBrandGuide: true
@@ -489,7 +570,6 @@ export async function generateLandingPageCopy(request: LandingPageRequest, train
     userPrompt: string,
     params: {
       concept?: string;
-      subPersona?: string;
       selectedProduct?: string;
       brandDrBalance?: number;
     },
@@ -506,8 +586,7 @@ export async function generateLandingPageCopy(request: LandingPageRequest, train
       brandGuidelines: trainingConfig?.brandGuidelines?.brandVoice || [],
       frameworks: trainingConfig?.copyFrameworks?.headlineFrameworks?.map(f => f.name) || [],
       personaSettings: params.concept ? {
-        concept: params.concept,
-        subPersona: params.subPersona
+        concept: params.concept
       } : undefined,
       productClaims: selectedProduct && trainingConfig?.productClaims?.[selectedProduct]
         ? {
@@ -536,7 +615,7 @@ export async function generateLandingPageCopy(request: LandingPageRequest, train
 ${aiSettingsContext}
 
 BRAND/DR BALANCE: ${safeBrandDrBalance}% brand voice, ${100 - safeBrandDrBalance}% direct response optimization
-TARGET PERSONA: ${safeConcept}${safeSubPersona ? ` (${safeSubPersona})` : ''}
+TARGET PERSONA: ${safeConcept}
 ${selectedProduct ? `PRODUCT FOCUS: ${selectedProduct}` : ''}`;
 
   // Use database user prompt template instead of hardcoded
@@ -551,7 +630,6 @@ ${selectedProduct ? `PRODUCT FOCUS: ${selectedProduct}` : ''}`;
     .replace('{landingPageType}', landingPageType)
     .replace('{productBrief}', productBrief || '')
     .replace('{concept}', safeConcept)
-    .replace('{subPersona}', safeSubPersona)
     .replace('{brandPercent}', safeBrandDrBalance.toString())
     .replace('{drPercent}', (100 - safeBrandDrBalance).toString())
     .replace('{adsContentSection}', useAdsContent && adsContent ? `\nADS CONTENT TO REFERENCE:\n${adsContent}\n` : '');
@@ -741,6 +819,12 @@ ${selectedProduct ? `PRODUCT FOCUS: ${selectedProduct}` : ''}`;
         totalWords: content.split(/\s+/).length,
         sectionCount: sections.length,
         avgSectionLength: sections.length > 0 ? Math.round(sections.reduce((sum, s) => sum + (s.wordCount || 0), 0) / sections.length) : 0
+      },
+      debugInfo: {
+        systemPrompt,
+        userPrompt,
+        requestPayload: request,
+        rawResponse: content
       }
     };
   } catch (error) {
@@ -757,7 +841,6 @@ export interface RevisionRequest {
     transcription?: string;
     customBrief?: string;
     concept?: string;
-    subPersona?: string;
     targetAudience?: string;
     brandDrBalance?: number;
     selectedProduct?: string;
@@ -831,7 +914,7 @@ ${context?.field ? `SPECIFIC FIELD: ${context.field}` : ''}
 
 ${context ? `
 CONTEXT:
-- Target Audience: ${context.concept}${context.subPersona ? ` (${context.subPersona})` : ''}
+- Target Audience: ${context.concept}${context.targetAudience ? ` (${context.targetAudience})` : ''}
 - Product: ${context.selectedProduct || 'General Jones Road Beauty'}
 - Brand/DR Balance: ${context.brandDrBalance || 50}% brand voice
 ${context.customBrief ? `- Custom Brief: ${context.customBrief}` : ''}
@@ -864,7 +947,7 @@ Please revise the content applying the improvement instructions while maintainin
 }
 
 export async function analyzeStaticAd(request: StaticAdAnalysisRequest, _trainingConfig: TrainingConfig) {
-  const { staticAdImage, concept, subPersona, brandDrBalance, selectedProduct } = request;
+  const { staticAdImage, concept, brandDrBalance, selectedProduct, useJonesBrandGuide } = request;
   
   const brandPercent = brandDrBalance;
   const drPercent = 100 - brandPercent;
@@ -872,21 +955,46 @@ export async function analyzeStaticAd(request: StaticAdAnalysisRequest, _trainin
   // Debug image format
   const detectedType = detectImageType(staticAdImage);
   const imagePreview = staticAdImage.substring(0, 50);
+  const originalSizeBytes = Buffer.from(staticAdImage.startsWith('data:') ? staticAdImage.split(',')[1] : staticAdImage, 'base64').length;
   console.log('Static ad image analysis:', {
     detectedType,
     imageLength: staticAdImage.length,
+    originalSizeBytes,
+    originalSizeMB: (originalSizeBytes / 1024 / 1024).toFixed(2),
     imagePreview,
     hasDataPrefix: staticAdImage.startsWith('data:')
   });
 
-  // Resize image if needed to prevent dimension errors
-  const { data: resizedImageData, mediaType: finalMediaType } = await resizeImageIfNeeded(staticAdImage);
+  // Resize and compress image if needed to prevent dimension and file size errors
+  let resizedImageData: string;
+  let finalMediaType: string;
   
-  // After resizing, the image is converted to JPEG format, so we need to use the correct media type
-  // const finalMediaType = "image/jpeg"; // resizeImageIfNeeded always converts to JPEG
+  try {
+    const result = await resizeImageIfNeeded(staticAdImage);
+    resizedImageData = result.data;
+    finalMediaType = result.mediaType;
+    
+    // Log final processed image size
+    const finalSizeBytes = Buffer.from(resizedImageData, 'base64').length;
+    console.log(`Final processed image: ${finalSizeBytes} bytes (${(finalSizeBytes / 1024 / 1024).toFixed(2)}MB), media type: ${finalMediaType}`);
+  } catch (imageError) {
+    console.error('Image processing failed:', imageError);
+    throw new Error(`Image processing failed: ${imageError instanceof Error ? imageError.message : 'Unable to compress image to required size'}`);
+  }
+  
+  // After processing, the image is converted to JPEG format for optimal compression
+  // const finalMediaType = "image/jpeg"; // resizeImageIfNeeded always converts to JPEG when processing
   
   // Get training configuration
   const config = await import('./routes-training').then(m => m.getTrainingConfig());
+  
+  // Build comprehensive AI Settings context including product claims
+  const aiSettingsContext = buildAISettingsContext(config, {
+    concept,
+    selectedProduct,
+    brandDrBalance,
+    useJonesBrandGuide
+  });
   
   // Use database system prompt instead of hardcoded fallback
   const baseSystemPrompt = config?.stationPrompts?.staticAd?.systemPrompt;
@@ -897,10 +1005,7 @@ export async function analyzeStaticAd(request: StaticAdAnalysisRequest, _trainin
   
   const systemPrompt = `${baseSystemPrompt}
 
-BRAND/DR BALANCE: ${brandPercent}% Brand Voice, ${drPercent}% Direct Response
-
-TARGET AUDIENCE: ${concept}${subPersona ? ` (${subPersona})` : ''}
-${selectedProduct ? `PRODUCT FOCUS: ${selectedProduct}` : ''}
+${aiSettingsContext}
 
 IMPORTANT: Return your response in structured JSON format with the following structure:
 {
@@ -914,7 +1019,7 @@ IMPORTANT: Return your response in structured JSON format with the following str
   ]
 }`;
 
-  const userPrompt = `Please analyze this static ad image and create Jones Road Beauty variations targeting ${concept}${subPersona ? ` (${subPersona})` : ''}.
+  const userPrompt = `Please analyze this static ad image and create Jones Road Beauty variations targeting ${concept}.
 
 INSTRUCTIONS:
 - Provide comprehensive analysis of what makes this ad effective
@@ -987,7 +1092,7 @@ INSTRUCTIONS:
 }
 
 export async function generateCustomCopy(request: CustomCopyRequest, trainingConfig: TrainingConfig) {
-  const { customRequest, concept, subPersona, brandDrBalance, selectedProduct, useJonesBrandGuide } = request;
+  const { customRequest, concept, brandDrBalance, selectedProduct, useJonesBrandGuide } = request;
   
   // Validate required parameters
   if (!concept || concept === 'none') {
@@ -996,12 +1101,10 @@ export async function generateCustomCopy(request: CustomCopyRequest, trainingCon
   
   const safeBrandDrBalance = brandDrBalance || 50;
   const safeConcept = concept;
-  const safeSubPersona = subPersona || '';
   
   // Build comprehensive AI Settings context
   const aiSettingsContext = buildAISettingsContext(trainingConfig, {
     concept: safeConcept,
-    subPersona: safeSubPersona,
     selectedProduct,
     brandDrBalance: safeBrandDrBalance,
     useJonesBrandGuide
@@ -1029,14 +1132,10 @@ YOUR TASK:
 Create copy that fulfills the user's specific request while maintaining Jones Road Beauty's authentic brand voice.`;
 
   // Define audience context based on concept
-  const getAudienceDescription = (concept: string, subPersona?: string) => {
+  const getAudienceDescription = (concept: string) => {
     // Audience descriptions should come from database persona data
     if (trainingConfig.personaPillars && trainingConfig.personaPillars[concept]) {
       let description = trainingConfig.personaPillars[concept].description || '';
-      
-      if (subPersona && subPersona.toLowerCase().includes('mom')) {
-        description += ". Specifically mothers dealing with changing needs and limited time for complex beauty routines";
-      }
       
       return description;
     }
@@ -1045,7 +1144,7 @@ Create copy that fulfills the user's specific request while maintaining Jones Ro
     throw new Error(`Persona '${concept}' not found in training configuration. Please ensure database contains proper persona data.`);
   };
 
-  const audienceDescription = getAudienceDescription(request.concept, request.subPersona);
+  const audienceDescription = getAudienceDescription(request.concept);
   const productContext = request.selectedProduct ? `\n\nPRODUCT CONTEXT: ${request.selectedProduct}` : '';
   const brandBalance = request.brandDrBalance || 50;
   
@@ -1112,13 +1211,12 @@ Create copy that fulfills this request while maintaining Jones Road Beauty's aut
 // Helper function to build comprehensive AI Settings context
 export function buildAISettingsContext(trainingConfig: TrainingConfig, request: {
   concept?: string;
-  subPersona?: string;
   selectedProduct?: string;
   selectedProducts?: string[];
   brandDrBalance?: number;
   useJonesBrandGuide?: boolean;
 }) {
-  const { concept, subPersona = '', selectedProduct = '', selectedProducts = [], brandDrBalance = 50, useJonesBrandGuide = true } = request;
+  const { concept = '', selectedProduct = '', selectedProducts = [], brandDrBalance = 50, useJonesBrandGuide = true } = request;
   
   // Handle optional personas - if concept is 'none' or empty, skip persona targeting
   
@@ -1234,9 +1332,6 @@ export function buildAISettingsContext(trainingConfig: TrainingConfig, request: 
           }
         });
       }
-      if (subPersona) {
-        context += `Sub-Persona: ${subPersona}\n`;
-      }
       context += '\n';
     }
     
@@ -1269,6 +1364,7 @@ export async function generateRetentionCopy(request: {
   keyMessage: string;
   platform: string;
   emailType?: string;
+  selectedFramework?: any;
   selectedProducts?: string[];
   audience?: string;
   goal?: string;
@@ -1277,7 +1373,6 @@ export async function generateRetentionCopy(request: {
   keywordsToInclude?: string[];
   wordsToAvoid?: string[];
   concept?: string;
-  subPersona?: string;
   brandDrBalance?: number;
   selectedProduct?: string;
   useJonesBrandGuide?: boolean;
@@ -1349,6 +1444,9 @@ Content Length Specifications:
 - Medium: ${request.platform === 'SMS' ? '100-160 characters total' : '150-300 words'}
 - Long: ${request.platform === 'SMS' ? 'Multiple messages (2-3 parts)' : '300-500 words'}
 
+🚨 LENGTH COMPLIANCE IS MANDATORY 🚨
+When a specific word count or length is provided (e.g., "20 words"), you MUST strictly adhere to that constraint. This overrides all other formatting requirements. Count every word carefully and do not exceed the specified limit under any circumstances.
+
 Tone Guidelines:
 - Friendly: Warm, conversational, approachable
 - Bold: Confident, direct, statement-making
@@ -1369,6 +1467,53 @@ Create ${request.platform?.toLowerCase() || 'email'} copy that authentically rep
 
 "${request.keyMessage}"
 
+${request.platform === 'Email' && request.selectedFramework ? `
+EMAIL FRAMEWORK REQUIREMENT:
+You MUST follow the "${request.selectedFramework.displayName}" email framework structure exactly. Here are the specific details:
+
+FRAMEWORK: ${request.selectedFramework.displayName}
+DESCRIPTION: ${request.selectedFramework.description}
+
+STRUCTURE: ${request.selectedFramework.structure}
+
+KEY ELEMENTS: ${request.selectedFramework.keyElements}
+
+FRAMEWORK CONTENT & EXAMPLES:
+${request.selectedFramework.frameworkContent}
+
+SYSTEM PROMPT GUIDANCE: ${request.selectedFramework.systemPrompt}
+
+OUTPUT REQUIREMENTS: ${request.selectedFramework.outputRequirements}
+
+EXPECTED LENGTH: ${request.selectedFramework.expectedLength}
+
+${request.selectedFramework.images && Array.isArray(request.selectedFramework.images) && request.selectedFramework.images.length > 0 ? `
+VISUAL LAYOUT REFERENCES:
+The framework includes ${request.selectedFramework.images.length} visual reference image(s) that show the desired email layout and design style. Use these images to understand the visual structure, content organization, and design approach that should be reflected in your copy generation. The images provide context for how the content should be structured and presented.
+
+Key visual insights to consider:
+- Email layout structure and content hierarchy
+- Visual emphasis and content flow
+- Design elements that should influence copy organization
+- Overall aesthetic and presentation style that the copy should complement
+` : ''}
+
+⚠️ CRITICAL LENGTH REQUIREMENT ⚠️
+Your response MUST strictly adhere to the expected length specified above. This is a hard constraint that takes ABSOLUTE PRIORITY over all other requirements. Count your words carefully and ensure you do not exceed the specified limit.
+
+Follow this framework structure precisely to ensure the email follows the proven format and converts effectively.
+` : request.platform === 'Email' && request.emailType ? `
+EMAIL FRAMEWORK REQUIREMENT:
+You MUST follow the "${request.emailType}" email framework structure. This framework has specific requirements for:
+- Content organization and flow
+- Section structure and messaging
+- Call-to-action placement and style
+- Tone and approach
+- Length and format expectations
+
+Research and apply the best practices for the "${request.emailType}" framework to ensure the email follows the proven structure and converts effectively.
+` : ''}
+
 CRITICAL: Return ONLY plain text email copy. NO JSON, NO markdown, NO special formatting.
 
        ${trainingConfig?.emailTemplates?.retention && trainingConfig.emailTemplates.retention.length > 0 ? `
@@ -1385,6 +1530,8 @@ CRITICAL: Return ONLY plain text email copy. NO JSON, NO markdown, NO special fo
        IMPORTANT: Your copy must be designed to work seamlessly with the provided email template design(s).
        Include image placeholders like "[IMAGE: Product photo]", "[IMAGE: Hero banner]", "[IMAGE: Logo]" etc. wherever images should be placed.
        ` : ''}
+
+🎯 WORD COUNT PRIORITY: If an exact word count is specified (like "20 words"), that constraint takes ABSOLUTE PRIORITY over all other requirements. Your response must not exceed that limit.
 
 Requirements:
 1. Follow the ${request.platform === 'SMS' ? 'SMS' : 'email'} format and character/word limits for ${request.contentLength?.toLowerCase() || 'short'} content
@@ -1497,6 +1644,57 @@ NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.`;
         });
       });
     }
+    
+    // Add framework images if available
+    if (request.selectedFramework?.images && Array.isArray(request.selectedFramework.images) && request.selectedFramework.images.length > 0) {
+      console.log(`Processing ${request.selectedFramework.images.length} framework image(s) for visual reference`);
+      
+      request.selectedFramework.images.forEach((image: any, index: number) => {
+        if (image.dataUri) {
+          // Extract media type and base64 data from data URI
+          let mediaType = 'image/jpeg'; // default
+          let cleanBase64 = image.dataUri;
+          
+          try {
+            if (image.dataUri.includes(',')) {
+              const parts = image.dataUri.split(',');
+              if (parts.length > 1) {
+                cleanBase64 = parts[1];
+                // Extract media type from data URL
+                const dataUrlPrefix = parts[0];
+                if (dataUrlPrefix.includes('image/png')) {
+                  mediaType = 'image/png';
+                } else if (dataUrlPrefix.includes('image/gif')) {
+                  mediaType = 'image/gif';
+                } else if (dataUrlPrefix.includes('image/webp')) {
+                  mediaType = 'image/webp';
+                } else if (dataUrlPrefix.includes('image/jpeg') || dataUrlPrefix.includes('image/jpg')) {
+                  mediaType = 'image/jpeg';
+                }
+                console.log(`Framework image ${index + 1}: Extracted media type from data URL: ${mediaType}`);
+              }
+            } else if (image.mimeType) {
+              // Use the stored mime type if available
+              mediaType = image.mimeType;
+              console.log(`Framework image ${index + 1}: Using stored media type: ${mediaType}`);
+            }
+          } catch (error) {
+            console.warn(`Framework image ${index + 1}: Could not detect image format, using default JPEG:`, error);
+          }
+
+          console.log(`Framework image ${index + 1}: Using media type: ${mediaType}, Base64 length: ${cleanBase64.length}`);
+
+          messageContent.push({
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: mediaType,
+              data: cleanBase64
+            }
+          });
+        }
+      });
+    }
 
     const response = await anthropic.messages.create({
       model: DEFAULT_MODEL_STR,
@@ -1510,6 +1708,17 @@ NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.`;
     if (!content || content.trim().length === 0) {
       throw new Error('Received empty response from Anthropic API');
     }
+
+    // Validate word count if a specific numeric constraint is provided
+    if (request.selectedFramework?.expectedLength && /^\d+\s*words?$/i.test(request.selectedFramework.expectedLength.trim())) {
+      const expectedWordCount = parseInt(request.selectedFramework.expectedLength.match(/\d+/)?.[0] || '0');
+      const actualWordCount = content.trim().split(/\s+/).length;
+      
+      if (actualWordCount > expectedWordCount * 1.2) { // Allow 20% tolerance
+        console.warn(`Word count validation failed: Expected ~${expectedWordCount} words, got ${actualWordCount} words`);
+        // Log but don't throw error to avoid breaking the user experience
+      }
+    }
     
     return {
       response: content.trim(),
@@ -1517,7 +1726,9 @@ NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.`;
         systemPrompt,
         userPrompt,
         requestPayload: request,
-        rawResponse: content
+        rawResponse: content,
+        wordCount: content.trim().split(/\s+/).length,
+        expectedLength: request.selectedFramework?.expectedLength
       }
     };
   } catch (error) {
@@ -1843,6 +2054,11 @@ Return as JSON array with this structure:
 interface BriefRequest {
   notes: string;
   googleDriveLinks?: string[];
+  selectedProduct?: string;
+  selectedProducts?: string[];
+  concept?: string;
+  brandDrBalance?: number;
+  useJonesBrandGuide?: boolean;
   metadata?: GenerationMetadata;
 }
 
@@ -1852,6 +2068,15 @@ export async function generateBrief(request: BriefRequest, trainingConfig: Train
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
 
+    // Build comprehensive AI Settings context including product claims
+    const aiSettingsContext = buildAISettingsContext(trainingConfig, {
+      concept: request.concept,
+      selectedProduct: request.selectedProduct,
+      selectedProducts: request.selectedProducts,
+      brandDrBalance: request.brandDrBalance,
+      useJonesBrandGuide: request.useJonesBrandGuide
+    });
+
     // Use system prompt from training config if available, otherwise use default
     let systemPrompt = trainingConfig.stationPrompts?.productLaunch?.systemPrompt || `You are an expert marketing strategist and brief writer specializing in product launches. Your role is to create comprehensive, strategic product launch briefs that guide successful campaign execution.
 
@@ -1859,6 +2084,9 @@ export async function generateBrief(request: BriefRequest, trainingConfig: Train
 Core Positioning: ${trainingConfig.brandGuidelines.corePositioning}
 
 `;
+
+    // Add AI Settings context (includes product claims, brand guidelines, etc.)
+    systemPrompt += `\n${aiSettingsContext}\n`;
 
     // Add brand voice rules if available and not using custom system prompt
     if (!trainingConfig.stationPrompts?.productLaunch?.systemPrompt && trainingConfig.brandGuidelines.brandVoice && trainingConfig.brandGuidelines.brandVoice.length > 0) {
@@ -1909,7 +2137,7 @@ Create a strategic product launch brief that synthesizes the provided informatio
     }
 
     // Use user prompt template from training config if available, otherwise use default
-    let userPrompt;
+    let userPrompt: string;
     if (trainingConfig.stationPrompts?.productLaunch?.userPromptTemplate) {
       userPrompt = trainingConfig.stationPrompts.productLaunch.userPromptTemplate
         .replace('{notes}', request.notes)

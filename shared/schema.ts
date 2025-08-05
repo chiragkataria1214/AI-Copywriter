@@ -184,6 +184,10 @@ export const emailFrameworks = pgTable("email_frameworks", {
   keyElements: text("key_elements"), // Key elements and guidelines
   frameworkContent: text("framework_content"), // Detailed framework content and examples
   systemPrompt: text("system_prompt").notNull(), // AI prompt for this framework
+  outputRequirements: text("output_requirements"), // Expected output format and structure
+  expectedLength: varchar("expected_length"), // Expected length (e.g., "short", "medium", "long", "500-800 words")
+  customLength: varchar("custom_length"), // Custom length specification when expectedLength is "custom"
+  images: jsonb("images"), // Array of image file paths for visual layout reference (max 5)
   isActive: varchar("is_active").default("true"),
   sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
