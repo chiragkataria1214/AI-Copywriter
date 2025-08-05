@@ -25,30 +25,12 @@ export const StationPromptsTab: React.FC<StationPromptsTabProps> = ({
   const [expandedStations, setExpandedStations] = useState<Set<string>>(new Set());
   const [showGenerationDetails, setShowGenerationDetails] = useState(false);
   const [currentGenerationMetadata, setCurrentGenerationMetadata] = useState<GenerationMetadata | null>(null);
-  const [emailTemplates, setEmailTemplates] = useState<string[]>([]);
-  const [emailTemplatePreviews, setEmailTemplatePreviews] = useState<string[]>([]);
+
   const [emailFrameworks, setEmailFrameworks] = useState<any[]>([]);
   const [expandedFrameworks, setExpandedFrameworks] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
-  // Load email templates on component mount
-  useEffect(() => {
-    const loadEmailTemplates = async () => {
-      try {
-        const data = await apiRequest('/api/email-templates');
-        if (data.templates && Array.isArray(data.templates)) {
-          setEmailTemplates(data.templates);
-          // Generate previews for existing templates
-          const previews = data.templates.map((template: string) => `data:image/jpeg;base64,${template}`);
-          setEmailTemplatePreviews(previews);
-        }
-      } catch (error) {
-        console.error('Failed to load email templates:', error);
-      }
-    };
 
-    loadEmailTemplates();
-  }, []);
 
   // Load email frameworks on component mount
   useEffect(() => {
@@ -66,29 +48,7 @@ export const StationPromptsTab: React.FC<StationPromptsTabProps> = ({
     loadEmailFrameworks();
   }, []);
 
-  // Save email templates to database
-  const saveEmailTemplates = async (templates: string[]) => {
-    try {
-      const data = await apiRequest('/api/email-templates', {
-        method: 'POST',
-        body: { templates },
-      });
 
-      if (data.success) {
-        toast({
-          title: "Templates Saved",
-          description: "Email templates have been saved successfully.",
-        });
-      }
-    } catch (error) {
-      console.error('Failed to save email templates:', error);
-      toast({
-        title: "Save Failed",
-        description: "Failed to save email templates. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
 
   // Helper function to extract and protect output structure from prompts
   const extractOutputStructure = (prompt: string) => {
@@ -182,82 +142,72 @@ export const StationPromptsTab: React.FC<StationPromptsTabProps> = ({
     }
   };;
 
-  // Email template upload handler
-  const handleEmailTemplateUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    if (files.length === 0) return;
+  // Email framework image upload handler
+  const handleEmailFrameworkImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, selectedFramework: string) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-    const newTemplates: string[] = [];
-    const newPreviews: string[] = [];
-    let filesProcessed = 0;
-    let validFiles = 0;
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please upload a valid image file (JPG, PNG, or GIF).",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    files.forEach((file) => {
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Invalid File Type",
-          description: `${file.name} is not a valid image file. Please upload JPG, PNG, or GIF files.`,
-          variant: "destructive"
-        });
-        return;
-      }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: "Please upload files smaller than 10MB.",
+        variant: "destructive"
+      });
+      return;
+    }
 
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: "File Too Large",
-          description: `${file.name} is too large. Please upload files smaller than 10MB.`,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      validFiles++;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        if (result) {
-          // Store base64 data without the data URI prefix for API
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const result = e.target?.result as string;
+      if (result) {
+        try {
           const base64Data = result.split(',')[1];
-          newTemplates.push(base64Data);
-          // Keep full data URI for preview
-          newPreviews.push(result);
           
-          filesProcessed++;
-          if (filesProcessed === validFiles) {
-            const updatedTemplates = [...emailTemplates, ...newTemplates];
-            setEmailTemplates(updatedTemplates);
-            setEmailTemplatePreviews(prev => [...prev, ...newPreviews]);
-            
-            // Save to database
-            saveEmailTemplates(updatedTemplates);
-            
-            toast({
-              title: "Email Templates Uploaded",
-              description: `${validFiles} template${validFiles > 1 ? 's' : ''} uploaded successfully. The AI will now analyze these designs when generating email copy.`,
-            });
-          }
+          // Analyze the image with AI and store in database
+          const analysisData = await apiRequest('/api/email-image-analysis', {
+            method: 'POST',
+            body: {
+              imageData: base64Data,
+              frameworkType: selectedFramework,
+              originalFilename: file.name
+            }
+          });
+
+          toast({
+            title: "Email Example Analyzed",
+            description: `Image tagged with ${emailFrameworks.find(f => f.name === selectedFramework)?.displayName} framework and analyzed by AI.`,
+          });
+
+          // Refresh frameworks to show the new analysis
+          const updatedFrameworks = await apiRequest('/api/email-frameworks');
+          setEmailFrameworks(updatedFrameworks);
+
+        } catch (error) {
+          console.error('Failed to analyze email image:', error);
+          toast({
+            title: "Analysis Failed",
+            description: "Failed to analyze the email image. Please try again.",
+            variant: "destructive"
+          });
         }
-      };
-      reader.readAsDataURL(file);
-    });
+      }
+    };
+    reader.readAsDataURL(file);
 
     // Reset the input
     event.target.value = '';
   };
 
-  const removeEmailTemplate = (index: number) => {
-    const updatedTemplates = emailTemplates.filter((_, i) => i !== index);
-    setEmailTemplates(updatedTemplates);
-    setEmailTemplatePreviews(prev => prev.filter((_, i) => i !== index));
-    
-    // Save to database
-    saveEmailTemplates(updatedTemplates);
-    
-    toast({
-      title: "Template Removed",
-      description: "Email template has been removed.",
-    });
-  };
+
 
   const showStationDetails = (stationId: string, stationName: string) => {
     const stationConfig = editingConfig?.stationPrompts?.[stationId];
@@ -1268,112 +1218,50 @@ To see actual AI responses, generate content using this station.`,
             </div>
 
             <div>
-              <Label className="text-sm font-medium text-gray-900 mb-3 block">Email Design Integration</Label>
+              <Label className="text-sm font-medium text-gray-900 mb-3 block">Email Framework Examples</Label>
+              <p className="text-sm text-gray-600 mb-4">
+                Upload email examples to train the AI for each framework type. The AI will analyze the design, structure, and copy patterns to improve framework-specific generation.
+              </p>
               
-              {/* Upload Area */}
-              <div className="border border-dashed border-gray-300 rounded-lg p-6 text-center mb-4">
-                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <div className="text-gray-700 font-medium mb-2">Upload Email Templates</div>
-                <p className="text-sm text-gray-500 mb-4">
-                  Upload designed email templates to ensure copy matches visual layout. The AI will analyze the design and create copy that fits perfectly.
-                </p>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  id="email-template-upload"
-                  onChange={handleEmailTemplateUpload}
-                  disabled={effectiveUser?.role !== 'admin'}
-                />
-                <label 
-                  htmlFor="email-template-upload"
-                  className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium transition-colors cursor-pointer ${
-                    effectiveUser?.role !== 'admin' 
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                      : 'bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400'
-                  }`}
-                >
-                  <Upload size={16} className="mr-2" />
-                  Browse Files
-                </label>
-                <p className="text-xs text-gray-400 mt-2">
-                  Supports JPG, PNG, GIF. Multiple files allowed. Max 10MB per file.
-                </p>
-              </div>
-
-              {/* Uploaded Templates Preview */}
-              {emailTemplatePreviews.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium text-gray-700">
-                      Uploaded Templates ({emailTemplatePreviews.length})
-                    </Label>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setEmailTemplates([]);
-                        setEmailTemplatePreviews([]);
-                        
-                        // Save empty array to database
-                        saveEmailTemplates([]);
-                        
-                        toast({
-                          title: "All Templates Removed",
-                          description: "All email templates have been cleared.",
-                        });
-                      }}
-                      className="text-xs text-gray-500 hover:text-gray-700"
-                      disabled={effectiveUser?.role !== 'admin'}
-                    >
-                      Clear All
-                    </Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto">
-                    {emailTemplatePreviews.map((preview, index) => (
-                      <div key={index} className="relative group border border-gray-200 rounded-lg overflow-hidden">
-                        <img 
-                          src={preview} 
-                          alt={`Email template ${index + 1}`}
-                          className="w-full h-24 object-cover"
+              {/* Framework Upload Sections */}
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {emailFrameworks.map((framework) => (
+                  <div key={framework.name} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h4 className="font-medium text-gray-900">{framework.displayName}</h4>
+                        <p className="text-xs text-gray-500">{framework.description}</p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          id={`framework-upload-${framework.name}`}
+                          onChange={(e) => handleEmailFrameworkImageUpload(e, framework.name)}
+                          disabled={effectiveUser?.role !== 'admin'}
                         />
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => removeEmailTemplate(index)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                            disabled={effectiveUser?.role !== 'admin'}
-                          >
-                            <X size={14} />
-                          </Button>
-                        </div>
-                        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 text-center">
-                          Template {index + 1}
-                        </div>
+                        <label 
+                          htmlFor={`framework-upload-${framework.name}`}
+                          className={`inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                            effectiveUser?.role !== 'admin' 
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                              : 'bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400'
+                          }`}
+                        >
+                          <Upload size={12} className="mr-1.5" />
+                          Add Example
+                        </label>
                       </div>
-                    ))}
-                  </div>
-                  
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                        <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <p className="text-sm text-blue-800 font-medium">
-                        Templates Ready for AI Analysis
-                      </p>
                     </div>
-                    <p className="text-xs text-blue-700 mt-1 ml-6">
-                      These templates will be analyzed by the AI when generating email copy to ensure perfect layout compatibility.
-                    </p>
+                    
+                    {/* Show existing examples count if any */}
+                    <div className="text-xs text-gray-500">
+                      Framework examples help the AI understand visual patterns and structure for better copy generation.
+                    </div>
                   </div>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
 
             <div>
