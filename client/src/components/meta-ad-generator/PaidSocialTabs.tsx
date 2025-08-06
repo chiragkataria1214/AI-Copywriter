@@ -39,7 +39,9 @@ export const PaidSocialTabs = (props: any) => {
                     analyzeStaticAdMutation={props.analyzeStaticAdMutation}
                     getGenerationDisabledState={props.getGenerationDisabledState}
                     copyToClipboard={props.copyToClipboard}
-                    selectedProduct={props.selectedProduct}
+                    selectedProducts={props.selectedProducts}
+                    setSelectedProducts={props.setSelectedProducts}
+                    products={props.products}
                     brandDrBalance={props.brandDrBalance}
                     setCurrentGenerationMetadata={props.setCurrentGenerationMetadata}
                     setShowGenerationDetails={props.setShowGenerationDetails}
@@ -47,6 +49,7 @@ export const PaidSocialTabs = (props: any) => {
                     stationPrompts={props.stationPrompts}
                     brandGuidelines={props.brandGuidelines}
                     copyFrameworks={props.copyFrameworks}
+                    debugInfo={props.staticAdDebugInfo}
                 />
             </TabsContent>
         </Tabs>

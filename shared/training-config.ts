@@ -51,6 +51,20 @@ export interface TrainingConfig {
       isEnabled?: boolean;
       sortOrder: number;
     }>;
+    landingPageFrameworks?: Array<{
+      name: string;
+      displayName: string;
+      description: string;
+      contentSequence: string[];
+      reasonStructure: string[];
+      optimizationRules: string[];
+      realExamples: string[];
+      systemPrompt: string;
+      outputRequirements: string;
+      images?: any[];
+      isEnabled?: boolean;
+      sortOrder: number;
+    }>;
     primaryTextRules: string[];
     brandDrBalance: {
       brandFirst: string[];

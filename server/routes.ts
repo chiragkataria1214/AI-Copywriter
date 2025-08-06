@@ -732,6 +732,161 @@ function registerConfigRoutes(app: Express) {
     }
   });
   
+  // Landing page frameworks endpoints - Full CRUD operations
+  
+  // GET all landing page frameworks
+  app.get("/api/landing-page-frameworks", async (req, res) => {
+    try {
+      const frameworks = await storage.getAllLandingPageFrameworks();
+      res.json(frameworks);
+    } catch (error) {
+      console.error("Error fetching landing page frameworks:", error);
+      res.status(500).json({ error: "Failed to fetch landing page frameworks" });
+    }
+  });
+
+  // GET active landing page frameworks only
+  app.get("/api/landing-page-frameworks/active", async (req, res) => {
+    try {
+      const frameworks = await storage.getActiveLandingPageFrameworks();
+      res.json(frameworks);
+    } catch (error) {
+      console.error("Error fetching active landing page frameworks:", error);
+      res.status(500).json({ error: "Failed to fetch active landing page frameworks" });
+    }
+  });
+  
+  // GET single landing page framework by name
+  app.get("/api/landing-page-frameworks/:name", async (req, res) => {
+    try {
+      const { name } = req.params;
+      const framework = await storage.getLandingPageFramework(name);
+      if (!framework) {
+        return res.status(404).json({ error: "Landing page framework not found" });
+      }
+      res.json(framework);
+    } catch (error) {
+      console.error("Error fetching landing page framework:", error);
+      res.status(500).json({ error: "Failed to fetch landing page framework" });
+    }
+  });
+
+  // POST create new landing page framework
+  app.post("/api/landing-page-frameworks", requireAdmin, async (req, res) => {
+    try {
+      const { 
+        name, 
+        displayName, 
+        description, 
+        contentSequence,
+        reasonStructure,
+        optimizationRules,
+        realExamples,
+        systemPrompt,
+        outputRequirements,
+        isActive,
+        sortOrder 
+      } = req.body;
+      
+      // Validate required fields
+      if (!name || !displayName || !description || !systemPrompt) {
+        return res.status(400).json({ 
+          error: "Missing required fields: name, displayName, description, systemPrompt" 
+        });
+      }
+
+      // Check if framework with this name already exists
+      const existingFramework = await storage.getLandingPageFramework(name);
+      if (existingFramework) {
+        return res.status(409).json({ error: "Framework with this name already exists" });
+      }
+
+      // Create the framework
+      const newFramework = await storage.createLandingPageFramework({
+        name,
+        displayName,
+        description,
+        contentSequence: contentSequence || [],
+        reasonStructure: reasonStructure || [],
+        optimizationRules: optimizationRules || [],
+        realExamples: realExamples || [],
+        systemPrompt,
+        outputRequirements,
+        isActive: isActive || 'true',
+        sortOrder: sortOrder || 0,
+      });
+
+      res.status(201).json({ success: true, framework: newFramework });
+    } catch (error) {
+      console.error("Error creating landing page framework:", error);
+      res.status(500).json({ error: "Failed to create landing page framework" });
+    }
+  });
+
+  // PUT update landing page framework by ID
+  app.put("/api/landing-page-frameworks/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { 
+        name,
+        displayName,
+        description,
+        contentSequence,
+        reasonStructure,
+        optimizationRules,
+        realExamples,
+        systemPrompt,
+        outputRequirements,
+        isActive,
+        sortOrder 
+      } = req.body;
+      
+      // Validate required fields
+      if (!id) {
+        return res.status(400).json({ error: "Framework ID is required" });
+      }
+
+      // Update the framework
+      const updatedFramework = await storage.updateLandingPageFramework(id, {
+        name,
+        displayName,
+        description,
+        contentSequence,
+        reasonStructure,
+        optimizationRules,
+        realExamples,
+        systemPrompt,
+        outputRequirements,
+        isActive,
+        sortOrder,
+      });
+
+      if (!updatedFramework) {
+        return res.status(404).json({ error: "Framework not found" });
+      }
+
+      res.json({ success: true, framework: updatedFramework });
+    } catch (error) {
+      console.error("Error updating landing page framework:", error);
+      res.status(500).json({ error: "Failed to update landing page framework" });
+    }
+  });
+
+  // DELETE landing page framework by ID
+  app.delete("/api/landing-page-frameworks/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Delete the framework
+      await storage.deleteLandingPageFrameworkById(id);
+
+      res.json({ success: true, message: "Framework deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting landing page framework:", error);
+      res.status(500).json({ error: "Failed to delete landing page framework" });
+    }
+  });
+  
   // Email image analysis endpoints
   app.post("/api/email-image-analysis", requireAuth, upload.single('image'), async (req, res) => {
     try {
@@ -1413,6 +1568,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         airLink,
         uploadedImage
       }, trainingConfig);
+      console.log('!!!!!!!!!!!result D ', result);
       
       res.json({
         copyId: 'demo-' + Date.now(), // Demo ID
@@ -1433,7 +1589,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/generate-ad-copy', requireAuth, async (req, res) => {
     try {
       const startTime = Date.now();
-      const { transcription, customBrief, concept, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage } = req.body;
+      const { transcription, customBrief, concept, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProducts } = req.body;
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -1451,8 +1607,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         brandDrBalance,
         useJonesBrandGuide,
         airLink,
-        uploadedImage
+        uploadedImage,
+        selectedProducts
       }, trainingConfig);
+      // console.log('!!!!!!!!!!!result D ', result);
       
       const generationTime = Date.now() - startTime;
 
@@ -1834,7 +1992,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }, trainingConfig);
       
       res.json({
-        captions: result?.captions || []
+        captions: result?.captions || [],
+        debugInfo: result?.debugInfo
       });
     } catch (error) {
       console.error('Social captions generation error:', error);
@@ -1884,7 +2043,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }, trainingConfig);
       
       res.json({
-        sequence: result?.sequence || []
+        sequence: result?.sequence || [],
+        debugInfo: result?.debugInfo
       });
     } catch (error) {
       console.error('Story sequence generation error:', error);
@@ -1898,7 +2058,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Static ad analysis endpoint (protected)
   app.post('/api/analyze-static-ad', requireAuth, async (req, res) => {
     try {
-      const { staticAdImage, concept, brandDrBalance, selectedProduct, useJonesBrandGuide, outputFormat, analysisFocus } = req.body;
+      const { staticAdImage, concept, brandDrBalance, selectedProduct, selectedProducts, useJonesBrandGuide, outputFormat, analysisFocus } = req.body;
       
       console.log('Static ad analysis request:', { concept, brandDrBalance, selectedProduct, useJonesBrandGuide, outputFormat, analysisFocus, imageLength: staticAdImage?.length });
       
@@ -1918,6 +2078,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         concept: concept || 'lifeJuggler',
         brandDrBalance: brandDrBalance || 50,
         selectedProduct: selectedProduct || undefined,
+        selectedProducts: selectedProducts || [],
         useJonesBrandGuide,
         outputFormat,
         analysisFocus
@@ -1926,7 +2087,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         analysis: result.analysis,
         variations: result.variations || [],
-        rawResponse: result.rawResponse // For debug purposes
+        rawResponse: result.rawResponse, // For debug purposes
+        debugInfo: result.debugInfo // Include debug information
       });
     } catch (error) {
       console.error('Static ad analysis error:', error);
@@ -2099,6 +2261,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid feedback data', errors: error.errors });
       }
       res.status(500).json({ message: 'Failed to save feedback' });
+    }
+  });
+
+  // Update generated copy content (protected)
+  app.put('/api/generated-copy/:id', requireAuth, async (req, res) => {
+    try {
+      const updateSchema = z.object({
+        headlines: z.array(z.object({
+          framework: z.string(),
+          copy: z.string()
+        })).optional(),
+        primaryText: z.string().optional(),
+      });
+
+      const { headlines, primaryText } = updateSchema.parse(req.body);
+      const copyId = req.params.id;
+      
+      if (!headlines && !primaryText) {
+        return res.status(400).json({ message: 'At least one field (headlines or primaryText) must be provided' });
+      }
+      
+      const updatedCopy = await storage.updateGeneratedCopy(copyId, {
+        headlines,
+        primaryText
+      });
+      
+      res.json({ 
+        message: 'Copy updated successfully',
+        copy: updatedCopy
+      });
+    } catch (error) {
+      console.error('Update copy error:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid copy data', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to update copy' });
     }
   });
 

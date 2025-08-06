@@ -50,8 +50,10 @@ import {
     Globe,
     ThumbsUp,
     Star,
-    ThumbsDown
+    ThumbsDown,
+    Save
 } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
 
 interface AdCopyTabProps {
     contentType: string;
@@ -84,8 +86,8 @@ interface AdCopyTabProps {
     brandDrBalance: number[];
     setBrandDrBalance: (value: number[]) => void;
     getBrandDrLabel: () => string;
-    selectedProduct: string;
-    setSelectedProduct: (value: string) => void;
+    selectedProducts: string[];
+    setSelectedProducts: (value: string[]) => void;
     products: any;
     generateAdCopy: () => void;
     generateAdCopyMutation: any;
@@ -110,6 +112,7 @@ interface AdCopyTabProps {
     feedbackText: string;
     setFeedbackText: (value: string) => void;
     submitFeedbackMutation: any;
+    saveCopyMutation: any;
     selectedHeadlineIndex: number;
     setSelectedHeadlineIndex: (value: number) => void;
     debugInfo?: {
@@ -151,8 +154,8 @@ export const AdCopyTab = ({
     brandDrBalance,
     setBrandDrBalance,
     getBrandDrLabel,
-    selectedProduct,
-    setSelectedProduct,
+    selectedProducts,
+    setSelectedProducts,
     products,
     generateAdCopy,
     generateAdCopyMutation,
@@ -177,10 +180,28 @@ export const AdCopyTab = ({
     feedbackText,
     setFeedbackText,
     submitFeedbackMutation,
+    saveCopyMutation,
     selectedHeadlineIndex,
     setSelectedHeadlineIndex,
     debugInfo
 }: AdCopyTabProps) => {
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
             {/* Input Section */}
@@ -566,74 +587,251 @@ export const AdCopyTab = ({
                                     Quick Select - Popular Products
                                 </Label>
                                 <p className="text-xs text-gray-500 mb-3">
-                                    Choose from our most frequently featured products for ad copy generation
+                                    Choose products to feature in your ad copy. You can select multiple products for comprehensive campaigns.
                                 </p>
                                 
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                    {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].map((productName) => {
-                                        const product = products[productName];
-                                        if (!product) return null;
-                                        
-                                        const isSelected = selectedProduct === productName;
-                                        return (
-                                            <button
-                                                key={productName}
-                                                onClick={() => setSelectedProduct(isSelected ? '' : productName)}
-                                                className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                                                    isSelected
-                                                        ? 'bg-[#004182] text-white border-2 border-[#004182] shadow-sm'
-                                                        : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-[#004182] hover:bg-blue-50'
-                                                }`}
-                                            >
-                                                <div className={`w-3 h-3 rounded-full mr-2 flex items-center justify-center ${
-                                                    isSelected ? 'bg-white' : 'bg-gray-300'
-                                                }`}>
-                                                    {isSelected && (
-                                                        <svg className="w-2 h-2 text-[#004182]" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                        </svg>
-                                                    )}
-                                                </div>
-                                                {product.displayName}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-
-                                <div className="border-t border-gray-200 pt-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-sm font-medium text-gray-700">
-                                            Or choose from all products
-                                        </Label>
-                                        <Select value={selectedProduct || "all"} onValueChange={(value) => setSelectedProduct(value === "all" ? "" : value)}>
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="All products (no filtering)" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">All products</SelectItem>
-                                                {Object.entries(products).map(([key, product]) => (
-                                                    <SelectItem key={key} value={key}>
-                                                        {(product as any).displayName || (product as any).name || key}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                <div className="mb-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <Label className="text-xs font-medium text-gray-600">Top Products</Label>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-xs text-blue-600 hover:text-blue-800 h-auto p-1"
+                                            onClick={() => {
+                                                const topProducts = ['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'];
+                                                const allTopSelected = topProducts.every(product => selectedProducts.includes(product));
+                                                
+                                                if (allTopSelected) {
+                                                    // Deselect all top products
+                                                    setSelectedProducts(selectedProducts.filter(p => !topProducts.includes(p)));
+                                                } else {
+                                                    // Select all top products
+                                                    const newSelection = [...new Set([...selectedProducts, ...topProducts])];
+                                                    setSelectedProducts(newSelection);
+                                                }
+                                            }}
+                                        >
+                                            {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].every(product => selectedProducts.includes(product)) ? 'Deselect Top 5' : 'Select Top 5'}
+                                        </Button>
+                                    </div>
+                                    
+                                    <div className="flex flex-wrap gap-2">
+                                        {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].map((productName) => {
+                                            const product = products[productName];
+                                            if (!product) return null;
+                                            
+                                            const isSelected = selectedProducts.includes(productName);
+                                            return (
+                                                <button
+                                                    key={productName}
+                                                    onClick={() => {
+                                                        if (selectedProducts.includes(productName)) {
+                                                            setSelectedProducts(selectedProducts.filter(p => p !== productName));
+                                                        } else {
+                                                            setSelectedProducts([...selectedProducts, productName]);
+                                                        }
+                                                    }}
+                                                    className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                                                        isSelected
+                                                            ? 'bg-[#004182] text-white border-2 border-[#004182] shadow-sm'
+                                                            : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-[#004182] hover:bg-blue-50'
+                                                    }`}
+                                                >
+                                                    <div className={`w-3 h-3 rounded-full mr-2 flex items-center justify-center ${
+                                                        isSelected ? 'bg-white' : 'bg-gray-300'
+                                                    }`}>
+                                                        {isSelected && (
+                                                            <svg className="w-2 h-2 text-[#004182]" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                    {product.displayName}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
-                                {selectedProduct && (
-                                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                        <div className="flex items-center space-x-2">
-                                            <div className="w-5 h-5 bg-[#004182] rounded-full flex items-center justify-center">
-                                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                </svg>
+                                {/* All Products - Dropdown */}
+                                <div className="border-t border-gray-200 pt-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <Label className="text-xs font-medium text-gray-600">All Products</Label>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-xs px-3 py-1 h-auto border-dashed hover:bg-blue-50 hover:border-blue-400 transition-all duration-200"
+                                            onClick={() => {
+                                                const allProductNames = Object.keys(products);
+                                                if (selectedProducts.length === allProductNames.length) {
+                                                    setSelectedProducts([]);
+                                                } else {
+                                                    setSelectedProducts(allProductNames);
+                                                }
+                                            }}
+                                        >
+                                            {selectedProducts.length === Object.keys(products).length ? "Deselect All" : "Select All"}
+                                        </Button>
+                                    </div>
+
+                                    {/* Multi-Select Dropdown */}
+                                    <div className="relative" ref={dropdownRef}>
+                                        <Button
+                                            variant="outline"
+                                            className="w-full justify-between text-left font-normal"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                setIsDropdownOpen(!isDropdownOpen);
+                                            }}
+                                        >
+                                            <span className="text-sm">
+                                                {(() => {
+                                                    if (selectedProducts.length === 0) {
+                                                        return "Choose products...";
+                                                    } else if (selectedProducts.length === 1) {
+                                                        return products[selectedProducts[0]]?.displayName || selectedProducts[0];
+                                                    } else {
+                                                        return `${selectedProducts.length} products selected`;
+                                                    }
+                                                })()}
+                                            </span>
+                                            <svg className={`w-4 h-4 opacity-50 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </Button>
+                                        
+                                        {isDropdownOpen && (
+                                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                                {/* Popular Products Section */}
+                                                <div className="border-b border-gray-100 bg-blue-50 px-3 py-2">
+                                                    <div className="text-xs font-semibold text-blue-800 mb-2">★ Popular Products</div>
+                                                    {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].map((productName) => {
+                                                        const product = products[productName];
+                                                        if (!product) return null;
+                                                        
+                                                        const isSelected = selectedProducts.includes(productName);
+                                                        return (
+                                                            <div
+                                                                key={productName}
+                                                                className="flex items-center px-1 py-1.5 hover:bg-blue-100 cursor-pointer rounded"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (selectedProducts.includes(productName)) {
+                                                                        setSelectedProducts(selectedProducts.filter(p => p !== productName));
+                                                                    } else {
+                                                                        setSelectedProducts([...selectedProducts, productName]);
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center mr-3 transition-colors ${
+                                                                    isSelected 
+                                                                        ? 'bg-blue-500 border-blue-500' 
+                                                                        : 'border-blue-300'
+                                                                }`}>
+                                                                    {isSelected && (
+                                                                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                                        </svg>
+                                                                    )}
+                                                                </div>
+                                                                <span className="text-sm font-medium text-blue-900">{product.displayName}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                {/* All Other Products */}
+                                                <div className="px-3 py-2">
+                                                    <div className="text-xs font-semibold text-gray-600 mb-2">All Products</div>
+                                                    {Object.entries(products)
+                                                        .filter(([key]) => !['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].includes(key))
+                                                        .map(([key, product]) => {
+                                                            const isSelected = selectedProducts.includes(key);
+                                                            return (
+                                                                <div
+                                                                    key={key}
+                                                                    className="flex items-center px-1 py-1.5 hover:bg-gray-50 cursor-pointer rounded"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if (selectedProducts.includes(key)) {
+                                                                            setSelectedProducts(selectedProducts.filter(p => p !== key));
+                                                                        } else {
+                                                                            setSelectedProducts([...selectedProducts, key]);
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center mr-3 transition-colors ${
+                                                                        isSelected 
+                                                                            ? 'bg-blue-500 border-blue-500' 
+                                                                            : 'border-gray-300'
+                                                                    }`}>
+                                                                        {isSelected && (
+                                                                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                                            </svg>
+                                                                        )}
+                                                                    </div>
+                                                                    <span className="text-sm">{(product as any).displayName}</span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                </div>
                                             </div>
-                                            <p className="text-sm font-medium text-[#004182]">
-                                                Selected: {products[selectedProduct]?.displayName}
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Selected Products Summary */}
+                                {selectedProducts.length > 0 && (
+                                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center space-x-2">
+                                                <div className="w-5 h-5 bg-[#004182] rounded-full flex items-center justify-center">
+                                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                                <p className="text-sm font-medium text-[#004182]">
+                                                    {selectedProducts.length} Product{selectedProducts.length !== 1 ? 's' : ''} Selected
+                                                </p>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-xs text-blue-700 hover:text-blue-900 hover:bg-blue-100 h-6 px-2"
+                                                onClick={() => setSelectedProducts([])}
+                                            >
+                                                Clear all
+                                            </Button>
+                                        </div>
+                                        
+                                        <div className="flex flex-wrap gap-2">
+                                            {selectedProducts.map((productName) => {
+                                                const productLabel = products[productName]?.displayName || productName;
+                                                return (
+                                                    <Badge 
+                                                        key={productName} 
+                                                        variant="secondary" 
+                                                        className="text-xs bg-white text-blue-800 border border-blue-200 hover:bg-blue-50 transition-colors"
+                                                    >
+                                                        {productLabel}
+                                                    </Badge>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedProducts.length === 0 && (
+                                    <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                                        <div className="flex items-center space-x-2 text-gray-500">
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <p className="text-sm">
+                                                No products selected - AI will generate general copy without specific product focus
                                             </p>
                                         </div>
-                                       
                                     </div>
                                 )}
                             </div>
@@ -816,6 +1014,17 @@ export const AdCopyTab = ({
                                 >
                                     <Settings size={14} />
                                     <span>View Details</span>
+                                </Button>
+
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={!currentCopyId || saveCopyMutation.isPending}
+                                    onClick={() => saveCopyMutation.mutate()}
+                                    className="flex items-center space-x-1"
+                                >
+                                    <Save size={14} />
+                                    <span>{saveCopyMutation.isPending ? 'Saving...' : 'Save'}</span>
                                 </Button>
                             </div>
                         </div>
@@ -1059,12 +1268,12 @@ export const AdCopyTab = ({
                                                 <div className="w-28 h-28 bg-white rounded-full shadow-lg flex items-center justify-center mb-3 mx-auto border border-gray-100">
                                                     <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #004182 0%, #003366 100%)' }}>
                                                         <span className="text-white font-bold text-base">
-                                                            {products[selectedProduct]?.displayName?.split(' ').map((word: string) => word.charAt(0)).join('').slice(0, 3) || 'JR'}
+                                                            {products[selectedProducts[0]]?.displayName?.split(' ').map((word: string) => word.charAt(0)).join('').slice(0, 3) || 'JR'}
                                                         </span>
                                                     </div>
                                                 </div>
                                                 <div className="text-gray-500 text-xs font-medium">
-                                                    {products[selectedProduct]?.displayName || 'Jones Road Beauty'}
+                                                    {products[selectedProducts[0]]?.displayName || 'Jones Road Beauty'}
                                                 </div>
                                             </div>
                                         </>
@@ -1078,7 +1287,7 @@ export const AdCopyTab = ({
                                             JONESROADBEAUTY.COM
                                         </div>
                                         <div className="font-medium text-[15px] text-gray-900 mb-3 leading-tight">
-                                            {products[selectedProduct]?.displayName || 'Discover Your Perfect Beauty Match'}
+                                            {products[selectedProducts[0]]?.displayName || 'Discover Your Perfect Beauty Match'}
                                         </div>
                                         <Button
                                             size="sm"

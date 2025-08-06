@@ -406,6 +406,42 @@ export default function MetaAdGenerator() {
     requestPayload: any;
     rawResponse: string;
   } | null>(null);
+  const [staticAdDebugInfo, setStaticAdDebugInfo] = useState<{
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null>(null);
+  const [socialCaptionsDebugInfo, setSocialCaptionsDebugInfo] = useState<{
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null>(null);
+  const [storySequenceDebugInfo, setStorySequenceDebugInfo] = useState<{
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null>(null);
+  const [landingPageDebugInfo, setLandingPageDebugInfo] = useState<{
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null>(null);
+  const [customRequestDebugInfo, setCustomRequestDebugInfo] = useState<{
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null>(null);
+  const [retentionDebugInfo, setRetentionDebugInfo] = useState<{
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null>(null);
   const [influencerHandle, setInfluencerHandle] = useState('');
   const [voiceAnalysisMethod, setVoiceAnalysisMethod] = useState('combined');
   const [influencerBrandBalance, setInfluencerBrandBalance] = useState([50]);
@@ -565,7 +601,7 @@ export default function MetaAdGenerator() {
         useJonesBrandGuide,
         airLink,
         uploadedImage,
-        selectedProduct
+        selectedProducts
       };
 
       const result = await apiRequest('/api/generate-ad-copy', {
@@ -642,7 +678,7 @@ export default function MetaAdGenerator() {
         body: payload
       });
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       // Update the appropriate content with revised version
       if (selectedItemForRevision) {
         const { type, index, field } = selectedItemForRevision;
@@ -651,8 +687,32 @@ export default function MetaAdGenerator() {
           const newHeadlines = [...generatedHeadlines];
           newHeadlines[index] = { ...newHeadlines[index], copy: data.revisedContent };
           setGeneratedHeadlines(newHeadlines);
+          
+          // Save updated headlines to database if we have a copyId
+          if (currentCopyId) {
+            try {
+              await apiRequest(`/api/generated-copy/${currentCopyId}`, {
+                method: 'PUT',
+                body: { headlines: newHeadlines }
+              });
+            } catch (error) {
+              console.warn('Failed to save headline updates to database:', error);
+            }
+          }
         } else if (type === 'primaryText') {
           setGeneratedPrimaryText(data.revisedContent);
+          
+          // Save updated primary text to database if we have a copyId
+          if (currentCopyId) {
+            try {
+              await apiRequest(`/api/generated-copy/${currentCopyId}`, {
+                method: 'PUT',
+                body: { primaryText: data.revisedContent }
+              });
+            } catch (error) {
+              console.warn('Failed to save primary text updates to database:', error);
+            }
+          }
         } else if (type === 'landingCopy' && field) {
           setGeneratedLandingCopy(prev => ({
             ...prev,
@@ -672,7 +732,7 @@ export default function MetaAdGenerator() {
 
       toast({
         title: "Content Revised Successfully",
-        description: "Your content has been improved based on your feedback.",
+        description: "Your content has been improved and saved.",
       });
     },
     onError: (error) => {
@@ -708,19 +768,62 @@ export default function MetaAdGenerator() {
     },
   });
 
+  // Save generated copy changes mutation
+  const saveCopyMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentCopyId) {
+        throw new Error('No copy ID available for saving');
+      }
+      return await apiRequest(`/api/generated-copy/${currentCopyId}`, {
+        method: 'PUT',
+        body: { 
+          headlines: generatedHeadlines,
+          primaryText: generatedPrimaryText
+        }
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Changes Saved",
+        description: "Your ad copy changes have been saved successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Save Failed",
+        description: "Failed to save changes. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
   // Custom request mutation
   const generateCustomCopyMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('/api/generate-custom-copy', {
+      const payload = {
+        customRequest,
+        concept,
+        brandDrBalance: brandDrBalance[0],
+        selectedProduct,
+        useJonesBrandGuide
+      };
+
+      const result = await apiRequest('/api/generate-custom-copy', {
         method: 'POST',
-        body: {
-          customRequest,
-          concept,
-          brandDrBalance: brandDrBalance[0],
-          selectedProduct,
-          useJonesBrandGuide
-        }
+        body: payload
       });
+
+      // Store debug information
+      if (result.debugInfo) {
+        setCustomRequestDebugInfo({
+          systemPrompt: result.debugInfo.systemPrompt,
+          userPrompt: result.debugInfo.userPrompt,
+          requestPayload: payload,
+          rawResponse: result.debugInfo.rawResponse
+        });
+      }
+
+      return result;
     },
     onSuccess: (data) => {
       setGeneratedCustomResponse(data.response || '');
@@ -776,7 +879,7 @@ export default function MetaAdGenerator() {
 
       // Store debug information for retention copy
       if (data.debugInfo) {
-        setDebugInfo({
+        setRetentionDebugInfo({
           systemPrompt: data.debugInfo.systemPrompt,
           userPrompt: data.debugInfo.userPrompt,
           requestPayload: data.debugInfo.requestPayload,
@@ -810,18 +913,33 @@ export default function MetaAdGenerator() {
   // Static ad analysis mutation
   const analyzeStaticAdMutation = useMutation({
     mutationFn: async ({ outputFormat, analysisFocus }: { outputFormat?: string; analysisFocus?: string }) => {
-      return await apiRequest('/api/analyze-static-ad', {
+      const payload = {
+        staticAdImage,
+        concept,
+        brandDrBalance: brandDrBalance[0],
+        selectedProduct,
+        selectedProducts,
+        useJonesBrandGuide,
+        outputFormat,
+        analysisFocus
+      };
+
+      const result = await apiRequest('/api/analyze-static-ad', {
         method: 'POST',
-        body: {
-          staticAdImage,
-          concept,
-          brandDrBalance: brandDrBalance[0],
-          selectedProduct,
-          useJonesBrandGuide,
-          outputFormat,
-          analysisFocus
-        }
+        body: payload
       });
+
+      // Store debug information
+      if (result.debugInfo) {
+        setStaticAdDebugInfo({
+          systemPrompt: result.debugInfo.systemPrompt,
+          userPrompt: result.debugInfo.userPrompt,
+          requestPayload: payload,
+          rawResponse: result.debugInfo.rawResponse
+        });
+      }
+
+      return result;
     },
     onSuccess: (data) => {
       // Handle different response formats
@@ -882,6 +1000,16 @@ export default function MetaAdGenerator() {
         method: 'POST',
         body: requestBody
       });
+
+      // Store debug information
+      if (response.debugInfo) {
+        setLandingPageDebugInfo({
+          systemPrompt: response.debugInfo.systemPrompt,
+          userPrompt: response.debugInfo.userPrompt,
+          requestPayload: requestBody,
+          rawResponse: response.debugInfo.rawResponse
+        });
+      }
 
       console.log('Landing page copy API response:', response);
       return response;
@@ -1047,8 +1175,8 @@ export default function MetaAdGenerator() {
                 brandDrBalance={brandDrBalance}
                 setBrandDrBalance={setBrandDrBalance}
                 getBrandDrLabel={getBrandDrLabel}
-                selectedProduct={selectedProduct}
-                setSelectedProduct={setSelectedProduct}
+                selectedProducts={selectedProducts}
+                setSelectedProducts={setSelectedProducts}
                 products={products}
                 generateAdCopy={generateAdCopy}
                 generateAdCopyMutation={generateAdCopyMutation}
@@ -1073,6 +1201,7 @@ export default function MetaAdGenerator() {
                 feedbackText={feedbackText}
                 setFeedbackText={setFeedbackText}
                 submitFeedbackMutation={submitFeedbackMutation}
+                saveCopyMutation={saveCopyMutation}
                 selectedHeadlineIndex={selectedHeadlineIndex}
                 setSelectedHeadlineIndex={setSelectedHeadlineIndex}
                 staticAdImage={staticAdImage}
@@ -1083,6 +1212,7 @@ export default function MetaAdGenerator() {
                 setStaticAdAnalysis={setStaticAdAnalysis}
                 analyzeStaticAdMutation={analyzeStaticAdMutation}
                 debugInfo={debugInfo}
+                staticAdDebugInfo={staticAdDebugInfo}
               />
             </TabsContent>
 
@@ -1129,6 +1259,11 @@ export default function MetaAdGenerator() {
                 generatedStorySequence={generatedStorySequence}
                 setGeneratedStorySequence={setGeneratedStorySequence}
                 selectedProduct={selectedProduct}
+                organicSelectedProducts={selectedProducts}
+                setOrganicSelectedProducts={setSelectedProducts}
+                storySelectedProducts={selectedProducts}
+                setStorySelectedProducts={setSelectedProducts}
+                products={products}
                 setCurrentGenerationMetadata={setCurrentGenerationMetadata}
                 setShowGenerationDetails={setShowGenerationDetails}
                 modelSettings={modelSettings}
@@ -1136,6 +1271,10 @@ export default function MetaAdGenerator() {
                 brandGuidelines={brandGuidelines}
                 copyFrameworks={copyFrameworks}
                 debugInfo={debugInfo}
+                socialCaptionsDebugInfo={socialCaptionsDebugInfo}
+                storySequenceDebugInfo={storySequenceDebugInfo}
+                setSocialCaptionsDebugInfo={setSocialCaptionsDebugInfo}
+                setStorySequenceDebugInfo={setStorySequenceDebugInfo}
               />
             </TabsContent>
 
@@ -1163,6 +1302,8 @@ export default function MetaAdGenerator() {
                 getBrandDrLabel={getBrandDrLabel}
                 selectedProduct={selectedProduct}
                 setSelectedProduct={setSelectedProduct}
+                selectedProducts={selectedProducts}
+                setSelectedProducts={setSelectedProducts}
                 products={products}
                 generatedHeadlines={generatedHeadlines}
                 generatedPrimaryText={generatedPrimaryText}
@@ -1181,6 +1322,7 @@ export default function MetaAdGenerator() {
                 brandGuidelines={brandGuidelines}
                 copyFrameworks={copyFrameworks}
                 debugInfo={debugInfo}
+                landingPageDebugInfo={landingPageDebugInfo}
               />
             </TabsContent>
             <TabsContent value="custom">
@@ -1193,6 +1335,8 @@ export default function MetaAdGenerator() {
                 setConcept={setConcept}
                 selectedProduct={selectedProduct}
                 setSelectedProduct={setSelectedProduct}
+                selectedProducts={selectedProducts}
+                setSelectedProducts={setSelectedProducts}
                 brandDrBalance={brandDrBalance}
                 setBrandDrBalance={setBrandDrBalance}
                 personas={personas}
@@ -1209,6 +1353,7 @@ export default function MetaAdGenerator() {
                 brandGuidelines={brandGuidelines}
                 copyFrameworks={copyFrameworks}
                 debugInfo={debugInfo}
+                customRequestDebugInfo={customRequestDebugInfo}
               />
             </TabsContent>
 
@@ -1254,6 +1399,7 @@ export default function MetaAdGenerator() {
                 brandGuidelines={brandGuidelines}
                 copyFrameworks={copyFrameworks}
                 debugInfo={debugInfo}
+                retentionDebugInfo={retentionDebugInfo}
               />
             </TabsContent>
 

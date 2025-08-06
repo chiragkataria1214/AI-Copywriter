@@ -119,6 +119,12 @@ interface RetentionTabProps {
     requestPayload: any;
     rawResponse: string;
   } | null;
+  retentionDebugInfo?: {
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null;
 }
 
 export const RetentionTab: React.FC<RetentionTabProps> = ({
@@ -161,6 +167,7 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
   brandGuidelines,
   copyFrameworks,
   debugInfo,
+  retentionDebugInfo,
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [emailFrameworks, setEmailFrameworks] = useState<EmailFramework[]>([]);
@@ -952,10 +959,10 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                         modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
                         temperature: modelSettings?.temperature || 0.7,
                         maxTokens: modelSettings?.maxTokens || 2000,
-                        systemPrompt: debugInfo?.systemPrompt || stationPrompts?.retention?.systemPrompt || 'Expert retention marketing copywriter for Jones Road Beauty...',
-                        userPrompt: debugInfo?.userPrompt || `Platform: ${retentionPlatform}\nKey Message: ${retentionKeyMessage}\nProducts: ${retentionSelectedProducts.join(', ')}`,
-                        requestPayload: debugInfo?.requestPayload,
-                        rawResponse: debugInfo?.rawResponse
+                        systemPrompt: retentionDebugInfo?.systemPrompt || stationPrompts?.retention?.systemPrompt || 'Expert retention marketing copywriter for Jones Road Beauty...',
+                        userPrompt: retentionDebugInfo?.userPrompt || `Platform: ${retentionPlatform}\nKey Message: ${retentionKeyMessage}\nProducts: ${retentionSelectedProducts.join(', ')}`,
+                        requestPayload: retentionDebugInfo?.requestPayload,
+                        rawResponse: retentionDebugInfo?.rawResponse
                       });
                       setShowGenerationDetails(true);
                     }}

@@ -151,46 +151,7 @@ export function GenerationDetailsModal({ isOpen, onClose, metadata, onEditSettin
             </CollapsibleContent>
           </Collapsible>
 
-          {/* Model Configuration */}
-          <Collapsible open={openSections.model} onOpenChange={() => toggleSection('model')}>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="w-full justify-between p-4 bg-white border rounded-lg hover:bg-gray-50">
-                <div className="flex items-center gap-2">
-                  <Cpu className="h-4 w-4" />
-                  <span className="font-medium">Model Configuration</span>
-                </div>
-                {openSections.model ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-2">
-              <div className="bg-white border rounded-lg p-4">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <div className="font-medium">Model</div>
-                    <div className="text-gray-600">{metadata.modelUsed}</div>
-                  </div>
-                  {metadata.temperature !== undefined && (
-                    <div>
-                      <div className="font-medium">Temperature</div>
-                      <div className="text-gray-600">{metadata.temperature}</div>
-                    </div>
-                  )}
-                  {metadata.maxTokens && (
-                    <div>
-                      <div className="font-medium">Max Tokens</div>
-                      <div className="text-gray-600">{metadata.maxTokens}</div>
-                    </div>
-                  )}
-                  {metadata.settingsVersion && (
-                    <div>
-                      <div className="font-medium">Settings Version</div>
-                      <div className="text-gray-600 font-mono text-xs">{metadata.settingsVersion}</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
+      
 
           {/* Request Payload */}
           {metadata.requestPayload && (
@@ -263,6 +224,46 @@ export function GenerationDetailsModal({ isOpen, onClose, metadata, onEditSettin
               </CollapsibleContent>
             </Collapsible>
           )}
+              {/* Model Configuration */}
+              <Collapsible open={openSections.model} onOpenChange={() => toggleSection('model')}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="w-full justify-between p-4 bg-white border rounded-lg hover:bg-gray-50">
+                <div className="flex items-center gap-2">
+                  <Cpu className="h-4 w-4" />
+                  <span className="font-medium">Model Configuration</span>
+                </div>
+                {openSections.model ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2">
+              <div className="bg-white border rounded-lg p-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <div className="font-medium">Model</div>
+                    <div className="text-gray-600">{metadata.modelUsed}</div>
+                  </div>
+                  {metadata.temperature !== undefined && (
+                    <div>
+                      <div className="font-medium">Temperature</div>
+                      <div className="text-gray-600">{metadata.temperature}</div>
+                    </div>
+                  )}
+                  {metadata.maxTokens && (
+                    <div>
+                      <div className="font-medium">Max Tokens</div>
+                      <div className="text-gray-600">{metadata.maxTokens}</div>
+                    </div>
+                  )}
+                  {metadata.settingsVersion && (
+                    <div>
+                      <div className="font-medium">Settings Version</div>
+                      <div className="text-gray-600 font-mono text-xs">{metadata.settingsVersion}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       </DialogContent>
     </Dialog>

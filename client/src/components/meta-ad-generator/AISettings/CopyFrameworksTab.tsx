@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Trash2, ChevronDown, ChevronRight, Plus, Mail, Upload, Check, X } from 'lucide-react';
+import { Sparkles, Trash2, ChevronDown, ChevronRight, Plus, Mail, Upload, Check, X, List } from 'lucide-react';
 import { TrainingConfig } from '@shared/training-config';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -28,6 +28,11 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
   const [loadingEmailFrameworks, setLoadingEmailFrameworks] = useState(false);
   const { toast } = useToast();
   const frameworksLoadedRef = useRef(false);
+
+  // Add landing page frameworks state
+  const [showLandingPageFrameworks, setShowLandingPageFrameworks] = useState(false);
+  const [expandedLandingPageFrameworks, setExpandedLandingPageFrameworks] = useState<Set<number>>(new Set());
+  const [loadingLandingPageFrameworks, setLoadingLandingPageFrameworks] = useState(false);
 
   // Load email frameworks from database on component mount
   useEffect(() => {
@@ -86,6 +91,60 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
     loadEmailFrameworks();
   }, []); // Only run once on mount
 
+  // Load landing page frameworks from database on component mount
+  useEffect(() => {
+    const loadLandingPageFrameworks = async () => {
+      // Always load from API to ensure we have the latest data including images
+      console.log('DEBUG: Loading landing page frameworks from API...');
+      setLoadingLandingPageFrameworks(true);
+      
+      try {
+        const response = await apiRequest('/api/landing-page-frameworks');
+        console.log('DEBUG: Received landing page frameworks from API:', {
+          count: response?.length || 0,
+          frameworks: (response || []).map((fw: any) => ({
+            id: fw.id,
+            name: fw.name,
+            displayName: fw.displayName,
+            hasImages: !!fw.images,
+            imagesCount: Array.isArray(fw.images) ? fw.images.length : 0
+          }))
+        });
+        
+        const landingPageFrameworks = (response || []).map((framework: any) => ({
+          ...framework,
+          isEnabled: framework.isActive === 'true' || framework.isActive === true
+        }));
+        
+        // Update the editing config with loaded frameworks
+        const updatedConfig = {
+          ...editingConfig,
+          copyFrameworks: {
+            ...editingConfig?.copyFrameworks,
+            landingPageFrameworks: landingPageFrameworks
+          }
+        };
+        setEditingConfig(updatedConfig);
+        
+        console.log('DEBUG: Updated config with landing page frameworks:', {
+          totalFrameworks: landingPageFrameworks.length
+        });
+        
+      } catch (error) {
+        console.error('Failed to load landing page frameworks:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load landing page frameworks from database",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingLandingPageFrameworks(false);
+      }
+    };
+
+    loadLandingPageFrameworks();
+  }, []); // Only run once on mount
+
   const toggleFramework = (index: number) => {
     const newExpanded = new Set(expandedFrameworks);
     if (expandedFrameworks.has(index)) {
@@ -105,6 +164,17 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
       newExpanded.add(index);
     }
     setExpandedEmailFrameworks(newExpanded);
+  };
+
+  // Add landing page framework toggle function
+  const toggleLandingPageFramework = (index: number) => {
+    const newExpanded = new Set(expandedLandingPageFrameworks);
+    if (expandedLandingPageFrameworks.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedLandingPageFrameworks(newExpanded);
   };
 
   const ToggleButton = ({ 
@@ -194,6 +264,40 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
                 copyFrameworks: {
                   ...editingConfig?.copyFrameworks,
                   emailFrameworks: updated
+                }
+              });
+            }}
+            size="sm"
+            variant="outline"
+            className="text-xs bg-white hover:bg-gray-50"
+          >
+            <Plus className="w-3 h-3 mr-1" />
+            Add Framework
+          </Button>
+        )}
+        {effectiveUser?.role === 'admin' && title === 'Landing Page Frameworks' && (
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              const newFramework = {
+                name: '',
+                displayName: '',
+                description: '',
+                contentSequence: [],
+                reasonStructure: [],
+                optimizationRules: [],
+                realExamples: [],
+                systemPrompt: '',
+                outputRequirements: '',
+                isEnabled: true,
+                sortOrder: (editingConfig?.copyFrameworks?.landingPageFrameworks || []).length
+              };
+              const updated = [...(editingConfig?.copyFrameworks?.landingPageFrameworks || []), newFramework];
+              setEditingConfig({
+                ...editingConfig,
+                copyFrameworks: {
+                  ...editingConfig?.copyFrameworks,
+                  landingPageFrameworks: updated
                 }
               });
             }}
@@ -336,6 +440,77 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
                 copyFrameworks: {
                   ...editingConfig.copyFrameworks,
                   emailFrameworks: updated
+                }
+              });
+            }}
+            size="sm"
+            variant="ghost"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        )}
+        <span className="text-xs text-gray-500 font-medium">
+          {isOpen ? 'Collapse' : 'Expand'}
+        </span>
+      </div>
+    </button>
+  );
+
+  // Landing Page Framework Toggle Button
+  const LandingPageFrameworkToggleButton = ({ 
+    isOpen, 
+    onClick, 
+    framework, 
+    index 
+  }: { 
+    isOpen: boolean; 
+    onClick: () => void; 
+    framework: any; 
+    index: number;
+  }) => (
+    <button
+      onClick={onClick}
+      className="flex items-center justify-between w-full p-3 bg-white hover:bg-gray-50 rounded-lg transition-colors duration-200 border border-gray-200"
+    >
+      <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
+          {isOpen ? (
+            <ChevronDown className="w-4 h-4 text-gray-500" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-gray-500" />
+          )}
+          <List className="w-4 h-4 text-blue-500" />
+        </div>
+        <div className="text-left">
+          <span className="text-sm font-medium text-gray-900">
+            {framework.displayName || framework.name || `Landing Page Framework ${index + 1}`}
+          </span>
+          {framework.description && !isOpen && (
+            <p className="text-xs text-gray-500 mt-1 line-clamp-1">
+              {framework.description}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center space-x-3">
+        <span className={`text-xs px-2 py-1 rounded-full ${
+          framework.isEnabled !== false 
+            ? 'bg-green-100 text-green-800' 
+            : 'bg-gray-100 text-gray-600'
+        }`}>
+          {framework.isEnabled !== false ? 'Enabled' : 'Disabled'}
+        </span>
+        {effectiveUser?.role === 'admin' && (
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              const updated = (editingConfig.copyFrameworks.landingPageFrameworks || []).filter((_, i) => i !== index);
+              setEditingConfig({
+                ...editingConfig,
+                copyFrameworks: {
+                  ...editingConfig.copyFrameworks,
+                  landingPageFrameworks: updated
                 }
               });
             }}
@@ -987,6 +1162,281 @@ Your Skin But Better"
         )}
       </div>
       
+      {/* Landing Page Frameworks Section */}
+      <div>
+        <ToggleButton
+          isOpen={showLandingPageFrameworks}
+          onClick={() => setShowLandingPageFrameworks(!showLandingPageFrameworks)}
+          title="Landing Page Frameworks"
+          icon={<List className="w-5 h-5" />}
+          iconColor="text-blue-500"
+          count={editingConfig?.copyFrameworks?.landingPageFrameworks?.length || 0}
+        />
+        
+        {showLandingPageFrameworks && (
+          <div className="mt-4 space-y-4 pl-4 border-l-2 border-blue-100">
+            {loadingLandingPageFrameworks && (
+              <div className="text-center py-8 text-gray-500">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p>Loading landing page frameworks...</p>
+              </div>
+            )}
+
+            {(!editingConfig?.copyFrameworks?.landingPageFrameworks || editingConfig.copyFrameworks.landingPageFrameworks.length === 0) && !loadingLandingPageFrameworks ? (
+              <div className="text-center py-8 text-gray-500">
+                <List className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>No landing page frameworks found.</p>
+                {effectiveUser?.role === 'admin' && (
+                  <p className="text-xs mt-2">Click "Add Framework" to create your first landing page framework.</p>
+                )}
+              </div>
+            ) : !loadingLandingPageFrameworks ? (
+              <div className="space-y-4">
+                {(editingConfig.copyFrameworks.landingPageFrameworks || []).map((framework, index) => {
+                  const isExpanded = expandedLandingPageFrameworks.has(index);
+                  
+                  return (
+                    <div key={index} className="space-y-2">
+                      <LandingPageFrameworkToggleButton
+                        isOpen={isExpanded}
+                        onClick={() => toggleLandingPageFramework(index)}
+                        framework={framework}
+                        index={index}
+                      />
+                      
+                      {isExpanded && (
+                        <div className="ml-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                checked={framework.isEnabled !== false}
+                                onCheckedChange={(checked) => {
+                                  if (effectiveUser?.role !== 'admin') return;
+                                  const updated = [...(editingConfig.copyFrameworks.landingPageFrameworks || [])];
+                                  updated[index] = { ...updated[index], isEnabled: checked };
+                                  setEditingConfig({
+                                    ...editingConfig,
+                                    copyFrameworks: {
+                                      ...editingConfig.copyFrameworks,
+                                      landingPageFrameworks: updated
+                                    }
+                                  });
+                                }}
+                                disabled={effectiveUser?.role !== 'admin'}
+                              />
+                              <Label className="text-xs text-gray-600">
+                                {framework.isEnabled !== false ? 'Enabled' : 'Disabled'}
+                              </Label>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div>
+                              <Label className="text-xs text-gray-600">Framework Name</Label>
+                              <Input
+                                value={framework.displayName || ''}
+                                onChange={(e) => {
+                                  if (effectiveUser?.role !== 'admin') return;
+                                  const updated = [...(editingConfig.copyFrameworks.landingPageFrameworks || [])];
+                                  updated[index] = { ...updated[index], displayName: e.target.value };
+                                  setEditingConfig({
+                                    ...editingConfig,
+                                    copyFrameworks: {
+                                      ...editingConfig.copyFrameworks,
+                                      landingPageFrameworks: updated
+                                    }
+                                  });
+                                }}
+                                className="mt-1"
+                                placeholder="e.g., Listicle"
+                                disabled={effectiveUser?.role !== 'admin'}
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">Description</Label>
+                            <Textarea
+                              value={framework.description || ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [...(editingConfig.copyFrameworks.landingPageFrameworks || [])];
+                                updated[index] = { ...updated[index], description: e.target.value };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    landingPageFrameworks: updated
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              rows={2}
+                              placeholder="Brief description of this landing page framework..."
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+                          
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">Content Structure Sequence</Label>
+                            <Textarea
+                              value={Array.isArray(framework.contentSequence) ? framework.contentSequence.join('\n') : ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [...(editingConfig.copyFrameworks.landingPageFrameworks || [])];
+                                updated[index] = { 
+                                  ...updated[index], 
+                                  contentSequence: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    landingPageFrameworks: updated
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              rows={3}
+                              placeholder="1. IMMEDIATE PROBLEM SOLVER - addresses main pain point&#10;2. UNIQUE ADVANTAGE - what makes this different&#10;3. EASE OF USE - how simple/convenient it is"
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+                          
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">Each Reason Structure Format</Label>
+                            <Textarea
+                              value={Array.isArray(framework.reasonStructure) ? framework.reasonStructure.join('\n') : ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [...(editingConfig.copyFrameworks.landingPageFrameworks || [])];
+                                updated[index] = { 
+                                  ...updated[index], 
+                                  reasonStructure: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    landingPageFrameworks: updated
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              rows={3}
+                              placeholder="- CLEAR BENEFIT STATEMENT (10-20 words): Direct, specific value&#10;- BRIEF EXPLANATION (30-60 words): Why this matters, how it works"
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+                          
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">Optimization Rules</Label>
+                            <Textarea
+                              value={Array.isArray(framework.optimizationRules) ? framework.optimizationRules.join('\n') : ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [...(editingConfig.copyFrameworks.landingPageFrameworks || [])];
+                                updated[index] = { 
+                                  ...updated[index], 
+                                  optimizationRules: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    landingPageFrameworks: updated
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              rows={3}
+                              placeholder="Maximum 100 words per reason section (concise and scannable)&#10;Lead with benefits, support with facts - not the other way around"
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+                          
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">Real Example Patterns to Emulate</Label>
+                            <Textarea
+                              value={Array.isArray(framework.realExamples) ? framework.realExamples.join('\n') : ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [...(editingConfig.copyFrameworks.landingPageFrameworks || [])];
+                                updated[index] = { 
+                                  ...updated[index], 
+                                  realExamples: e.target.value.split('\n').map(item => item.trim()).filter(Boolean)
+                                };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    landingPageFrameworks: updated
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              rows={3}
+                              placeholder="Grüns: 'Better Poops (Seriously)' - direct, honest, conversational&#10;Loop: 'Blocks Out The Loudest Tools - 24dB Reduction' - specific benefit + proof"
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+                          
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">AI System Prompt</Label>
+                            <Textarea
+                              value={framework.systemPrompt || ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [...(editingConfig.copyFrameworks.landingPageFrameworks || [])];
+                                updated[index] = { ...updated[index], systemPrompt: e.target.value };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    landingPageFrameworks: updated
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              rows={3}
+                              placeholder="Instructions for AI to generate this framework type..."
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+                          
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">Output Requirements</Label>
+                            <Textarea
+                              value={framework.outputRequirements || ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [...(editingConfig.copyFrameworks.landingPageFrameworks || [])];
+                                updated[index] = { ...updated[index], outputRequirements: e.target.value };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    landingPageFrameworks: updated
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              rows={2}
+                              placeholder="Expected output format and requirements..."
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+      
       {/* Copy Writing Rules Section - Improved UI */}
       <div className="border border-gray-200 rounded-lg p-6 bg-white">
         <div className="flex items-center mb-4">
@@ -1036,196 +1486,6 @@ Test emotional triggers and rational benefits"
         
         {effectiveUser?.role !== 'admin' && (
           <p className="text-xs text-gray-500 mt-2 italic">Admin access required to edit copy writing rules</p>
-        )}
-      </div>
-
-      {/* Listicle Framework Section - Improved UI */}
-      <div className="border border-gray-200 rounded-lg p-6 bg-white">
-        <div className="flex items-center mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
-              <span className="text-purple-600 font-bold text-sm">#</span>
-            </div>
-            <div>
-              <Label className="text-lg font-semibold text-gray-900">Listicle Framework</Label>
-              <p className="text-sm text-gray-600 mt-1">Based on real examples and proven patterns</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
-          <p className="text-sm text-purple-800 font-medium">📋 Listicle Structure Guide</p>
-          <p className="text-sm text-purple-700 mt-1">
-            Configure the framework for creating engaging list-based content that follows proven conversion patterns.
-          </p>
-        </div>
-
-        <div className="space-y-6">
-          <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
-            <div className="flex items-center mb-3">
-              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                <span className="text-green-600 font-bold text-xs">1</span>
-              </div>
-              <Label className="text-sm font-semibold text-gray-900">Content Structure Sequence</Label>
-            </div>
-            <p className="text-xs text-gray-600 mb-3">Define the logical flow of your listicle content</p>
-            <Textarea
-              value={Array.isArray(editingConfig?.copyFrameworks?.listicleFramework?.contentSequence)
-                ? editingConfig.copyFrameworks.listicleFramework.contentSequence.join('\n')
-                : ''}
-              onChange={(e) => {
-                if (effectiveUser?.role === 'admin') {
-                  setEditingConfig({
-                    ...editingConfig,
-                    copyFrameworks: {
-                      ...editingConfig.copyFrameworks,
-                      listicleFramework: {
-                        ...editingConfig.copyFrameworks?.listicleFramework,
-                        contentSequence: e.target.value.split('\n').map(item => item.trim()).filter(Boolean),
-                        reasonStructure: editingConfig.copyFrameworks?.listicleFramework?.reasonStructure || [],
-                        optimizationRules: editingConfig.copyFrameworks?.listicleFramework?.optimizationRules || [],
-                        realExamples: editingConfig.copyFrameworks?.listicleFramework?.realExamples || [],
-                      }
-                    }
-                  });
-                }
-              }}
-              className="text-gray-900 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-              rows={6}
-              placeholder="1. IMMEDIATE PROBLEM SOLVER - addresses main pain point
-2. UNIQUE ADVANTAGE - what makes this different
-3. EASE OF USE - how simple/convenient it is
-4. DEEPER BENEFIT - secondary value that matters
-5. SOCIAL PROOF - real results from real people
-6. NATURAL CONCLUSION - why this makes sense now"
-              disabled={effectiveUser?.role !== 'admin'}
-            />
-          </div>
-
-          <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
-            <div className="flex items-center mb-3">
-              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                <span className="text-blue-600 font-bold text-xs">2</span>
-              </div>
-              <Label className="text-sm font-semibold text-gray-900">Each Reason Structure Format</Label>
-            </div>
-            <p className="text-xs text-gray-600 mb-3">Template for structuring individual list items</p>
-            <Textarea
-              value={Array.isArray(editingConfig?.copyFrameworks?.listicleFramework?.reasonStructure)
-                ? editingConfig.copyFrameworks.listicleFramework.reasonStructure.join('\n')
-                : ''}
-              onChange={(e) => {
-                if (effectiveUser?.role === 'admin') {
-                  setEditingConfig({
-                    ...editingConfig,
-                    copyFrameworks: {
-                      ...editingConfig.copyFrameworks,
-                      listicleFramework: {
-                        ...editingConfig.copyFrameworks?.listicleFramework,
-                        reasonStructure: e.target.value.split('\n').map(item => item.trim()).filter(Boolean),
-                        contentSequence: editingConfig.copyFrameworks?.listicleFramework?.contentSequence || [],
-                        optimizationRules: editingConfig.copyFrameworks?.listicleFramework?.optimizationRules || [],
-                        realExamples: editingConfig.copyFrameworks?.listicleFramework?.realExamples || [],
-                      }
-                    }
-                  });
-                }
-              }}
-              className="text-gray-900 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-              rows={5}
-              placeholder="- CLEAR BENEFIT STATEMENT (10-20 words): Direct, specific value
-- BRIEF EXPLANATION (30-60 words): Why this matters, how it works
-- SPECIFIC DETAILS (20-40 words): Numbers, features, proof points
-- NATURAL BENEFIT BRIDGE (15-25 words): What this means practically
-- OPTIONAL SOCIAL PROOF: Real customer quote if natural"
-              disabled={effectiveUser?.role !== 'admin'}
-            />
-          </div>
-
-          <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
-            <div className="flex items-center mb-3">
-              <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center mr-3">
-                <span className="text-orange-600 font-bold text-xs">3</span>
-              </div>
-              <Label className="text-sm font-semibold text-gray-900">Optimization Rules</Label>
-            </div>
-            <p className="text-xs text-gray-600 mb-3">Guidelines for creating high-converting listicle content</p>
-            <Textarea
-              value={Array.isArray(editingConfig?.copyFrameworks?.listicleFramework?.optimizationRules)
-                ? editingConfig.copyFrameworks.listicleFramework.optimizationRules.join('\n')
-                : ''}
-              onChange={(e) => {
-                if (effectiveUser?.role === 'admin') {
-                  setEditingConfig({
-                    ...editingConfig,
-                    copyFrameworks: {
-                      ...editingConfig.copyFrameworks,
-                      listicleFramework: {
-                        ...editingConfig.copyFrameworks?.listicleFramework,
-                        optimizationRules: e.target.value.split('\n').map(item => item.trim()).filter(Boolean),
-                        contentSequence: editingConfig.copyFrameworks?.listicleFramework?.contentSequence || [],
-                        reasonStructure: editingConfig.copyFrameworks?.listicleFramework?.reasonStructure || [],
-                        realExamples: editingConfig.copyFrameworks?.listicleFramework?.realExamples || [],
-                      }
-                    }
-                  });
-                }
-              }}
-              className="text-gray-900 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-              rows={5}
-              placeholder="Maximum 100 words per reason section (concise and scannable)
-Lead with benefits, support with facts - not the other way around
-Use specific details and numbers when possible (like '24dB reduction')
-Keep language clear and direct - avoid flowery marketing speak
-Each reason should stand alone and deliver immediate value"
-              disabled={effectiveUser?.role !== 'admin'}
-            />
-          </div>
-
-          <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
-            <div className="flex items-center mb-3">
-              <div className="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
-                <span className="text-yellow-600 font-bold text-xs">4</span>
-              </div>
-              <Label className="text-sm font-semibold text-gray-900">Real Example Patterns to Emulate</Label>
-            </div>
-            <p className="text-xs text-gray-600 mb-3">Successful examples and tone references</p>
-            <Textarea
-              value={Array.isArray(editingConfig?.copyFrameworks?.listicleFramework?.realExamples)
-                ? editingConfig.copyFrameworks.listicleFramework.realExamples.join('\n')
-                : ''}
-              onChange={(e) => {
-                if (effectiveUser?.role === 'admin') {
-                  setEditingConfig({
-                    ...editingConfig,
-                    copyFrameworks: {
-                      ...editingConfig.copyFrameworks,
-                      listicleFramework: {
-                        ...editingConfig.copyFrameworks?.listicleFramework,
-                        realExamples: e.target.value.split('\n').map(item => item.trim()).filter(Boolean),
-                        contentSequence: editingConfig.copyFrameworks?.listicleFramework?.contentSequence || [],
-                        reasonStructure: editingConfig.copyFrameworks?.listicleFramework?.reasonStructure || [],
-                        optimizationRules: editingConfig.copyFrameworks?.listicleFramework?.optimizationRules || [],
-                      }
-                    }
-                  });
-                }
-              }}
-              className="text-gray-900 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-              rows={4}
-              placeholder="Grüns: 'Better Poops (Seriously)' - direct, honest, conversational
-Loop: 'Blocks Out The Loudest Tools - 24dB Reduction' - specific benefit + proof
-Create: 'They're made with Creapure®, the highest-quality...' - quality focus
-Tone: Educational but approachable, like explaining to a friend who asked"
-              disabled={effectiveUser?.role !== 'admin'}
-            />
-          </div>
-        </div>
-        
-        {effectiveUser?.role !== 'admin' && (
-          <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-            <p className="text-xs text-gray-500 italic">Admin access required to edit listicle framework settings</p>
-          </div>
         )}
       </div>
 

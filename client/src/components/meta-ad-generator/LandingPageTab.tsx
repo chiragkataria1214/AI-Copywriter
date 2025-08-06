@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FileText, List, Target, Sparkles, Users, Settings, Globe, Check, Copy, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,23 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+
+interface LandingPageFramework {
+  id: string;
+  name: string;
+  displayName: string;
+  description: string;
+  contentSequence: string[];
+  reasonStructure: string[];
+  optimizationRules: string[];
+  realExamples: string[];
+  systemPrompt: string;
+  outputRequirements: string;
+  images?: any[];
+  isActive: string;
+  sortOrder: number;
+}
 
 interface LandingPageTabProps {
   // Landing Page States
@@ -59,6 +76,8 @@ interface LandingPageTabProps {
   // Product States
   selectedProduct: string;
   setSelectedProduct: (value: string) => void;
+  selectedProducts: string[];
+  setSelectedProducts: (value: string[]) => void;
   products: Record<string, any>;
 
   // Generated Ad States
@@ -90,6 +109,12 @@ interface LandingPageTabProps {
     requestPayload: any;
     rawResponse: string;
   } | null;
+  landingPageDebugInfo?: {
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null;
 }
 
 export const LandingPageTab: React.FC<LandingPageTabProps> = ({
@@ -114,6 +139,8 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
   getBrandDrLabel,
   selectedProduct,
   setSelectedProduct,
+  selectedProducts,
+  setSelectedProducts,
   products,
   generatedHeadlines,
   generatedPrimaryText,
@@ -132,7 +159,89 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
   brandGuidelines,
   copyFrameworks,
   debugInfo,
+  landingPageDebugInfo,
 }) => {
+  const [landingPageFrameworks, setLandingPageFrameworks] = useState<LandingPageFramework[]>([]);
+  const [loadingFrameworks, setLoadingFrameworks] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Load landing page frameworks on component mount
+  useEffect(() => {
+    const loadLandingPageFrameworks = async () => {
+      setLoadingFrameworks(true);
+      try {
+        const response = await apiRequest('/api/landing-page-frameworks/active');
+        setLandingPageFrameworks(response || []);
+      } catch (error) {
+        console.error('Failed to load landing page frameworks:', error);
+        // Fallback to default frameworks if API fails
+        setLandingPageFrameworks([
+          {
+            id: '1',
+            name: 'listicle',
+            displayName: 'Listicle',
+            description: 'List-based content with numbered benefits',
+            contentSequence: [],
+            reasonStructure: [],
+            optimizationRules: [],
+            realExamples: [],
+            systemPrompt: '',
+            outputRequirements: '',
+            isActive: 'true',
+            sortOrder: 0
+          },
+          {
+            id: '2',
+            name: 'trojan_horse',
+            displayName: 'Trojan Horse',
+            description: 'Story-driven approach connecting to benefits',
+            contentSequence: [],
+            reasonStructure: [],
+            optimizationRules: [],
+            realExamples: [],
+            systemPrompt: '',
+            outputRequirements: '',
+            isActive: 'true',
+            sortOrder: 1
+          },
+          {
+            id: '3',
+            name: 'multi_product',
+            displayName: 'Multi Product Page',
+            description: 'Showcase multiple products with cross-selling',
+            contentSequence: [],
+            reasonStructure: [],
+            optimizationRules: [],
+            realExamples: [],
+            systemPrompt: '',
+            outputRequirements: '',
+            isActive: 'true',
+            sortOrder: 2
+          }
+        ]);
+      } finally {
+        setLoadingFrameworks(false);
+      }
+    };
+
+    loadLandingPageFrameworks();
+  }, []);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
       {/* Input Section */}
@@ -145,52 +254,58 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
               Landing Page Type
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className={`relative border-2 rounded-lg p-4 cursor-pointer transition-colors ${landingPageType === 'listicle'
-                  ? 'border-jones-primary bg-jones-light'
-                  : 'border-gray-300 hover:border-jones-primary'
-                }`} onClick={() => setLandingPageType('listicle')}>
-                <div className="flex items-center justify-between mb-2">
-                  <List className={landingPageType === 'listicle' ? 'text-jones-primary' : 'text-gray-400'} size={24} />
-                  <div className={`w-4 h-4 border-2 rounded-full ${landingPageType === 'listicle'
-                      ? 'border-jones-primary bg-jones-primary'
-                      : 'border-gray-300'
-                    }`}></div>
-                </div>
-                <h4 className="font-semibold text-gray-900">Listicle</h4>
-                <p className="text-xs text-gray-500 mt-1">List-based content with numbered benefits</p>
+            {loadingFrameworks ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-jones-primary mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading framework options...</p>
               </div>
-
-              <div className={`relative border-2 rounded-lg p-4 cursor-pointer transition-colors ${landingPageType === 'trojanHorse'
-                  ? 'border-jones-primary bg-jones-light'
-                  : 'border-gray-300 hover:border-jones-primary'
-                }`} onClick={() => setLandingPageType('trojanHorse')}>
-                <div className="flex items-center justify-between mb-2">
-                  <Target className={landingPageType === 'trojanHorse' ? 'text-jones-primary' : 'text-gray-400'} size={24} />
-                  <div className={`w-4 h-4 border-2 rounded-full ${landingPageType === 'trojanHorse'
-                      ? 'border-jones-primary bg-jones-primary'
-                      : 'border-gray-300'
-                    }`}></div>
-                </div>
-                <h4 className="font-semibold text-gray-900">Trojan Horse</h4>
-                <p className="text-xs text-gray-500 mt-1">Story-driven approach connecting to benefits</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {landingPageFrameworks.map((framework) => {
+                  const isSelected = landingPageType === framework.name;
+                  const getFrameworkIcon = (name: string) => {
+                    switch (name) {
+                      case 'listicle':
+                        return List;
+                      case 'trojan_horse':
+                        return Target;
+                      case 'multi_product':
+                        return Sparkles;
+                      default:
+                        return FileText;
+                    }
+                  };
+                  
+                  const IconComponent = getFrameworkIcon(framework.name);
+                  
+                  return (
+                    <div
+                      key={framework.id}
+                      className={`relative border-2 rounded-lg p-4 cursor-pointer transition-colors ${
+                        isSelected
+                          ? 'border-jones-primary bg-jones-light'
+                          : 'border-gray-300 hover:border-jones-primary'
+                      }`}
+                      onClick={() => setLandingPageType(framework.name)}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <IconComponent 
+                          className={isSelected ? 'text-jones-primary' : 'text-gray-400'} 
+                          size={24} 
+                        />
+                        <div className={`w-4 h-4 border-2 rounded-full ${
+                          isSelected
+                            ? 'border-jones-primary bg-jones-primary'
+                            : 'border-gray-300'
+                        }`}></div>
+                      </div>
+                      <h4 className="font-semibold text-gray-900">{framework.displayName}</h4>
+                      <p className="text-xs text-gray-500 mt-1">{framework.description}</p>
+                    </div>
+                  );
+                })}
               </div>
-
-              <div className={`relative border-2 rounded-lg p-4 cursor-pointer transition-colors ${landingPageType === 'multiProduct'
-                  ? 'border-jones-primary bg-jones-light'
-                  : 'border-gray-300 hover:border-jones-primary'
-                }`} onClick={() => setLandingPageType('multiProduct')}>
-                <div className="flex items-center justify-between mb-2">
-                  <Sparkles className={landingPageType === 'multiProduct' ? 'text-jones-primary' : 'text-gray-400'} size={24} />
-                  <div className={`w-4 h-4 border-2 rounded-full ${landingPageType === 'multiProduct'
-                      ? 'border-jones-primary bg-jones-primary'
-                      : 'border-gray-300'
-                    }`}></div>
-                </div>
-                <h4 className="font-semibold text-gray-900">Multi Product Page</h4>
-                <p className="text-xs text-gray-500 mt-1">Showcase multiple products with cross-selling</p>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -266,39 +381,67 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
           <CardContent className="p-4 sm:p-6">
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
               <Sparkles className="text-jones-primary mr-2 sm:mr-3" size={18} />
-              Product Focus
+              Product Focus (Multi-Select)
             </h3>
 
             <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-3 block">
-                  Quick Select - Popular Products
-                </Label>
-                <p className="text-xs text-gray-500 mb-3">
-                  Choose from our most frequently featured products for landing page generation
-                </p>
+              <p className="text-xs text-gray-500 mb-4">
+                Select products to feature in your landing page. Multiple products can be selected for comprehensive landing page copy.
+              </p>
+
+              {/* Quick Select - Top Products */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-xs font-medium text-gray-600">Quick Select - Popular Products</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-blue-600 hover:text-blue-800 h-auto p-1"
+                    onClick={() => {
+                      const topProducts = ['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'];
+                      const allTopSelected = topProducts.every(product => selectedProducts.includes(product));
+                      
+                      if (allTopSelected) {
+                        // Deselect all top products
+                        setSelectedProducts(selectedProducts.filter(p => !topProducts.includes(p)));
+                      } else {
+                        // Select all top products
+                        const newSelection = [...new Set([...selectedProducts, ...topProducts])];
+                        setSelectedProducts(newSelection);
+                      }
+                    }}
+                  >
+                    {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].every(product => selectedProducts.includes(product)) ? 'Deselect Top 5' : 'Select Top 5'}
+                  </Button>
+                </div>
                 
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="flex flex-wrap gap-2">
                   {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].map((productName) => {
                     const product = products[productName];
                     if (!product) return null;
                     
-                    const isSelected = selectedProduct === productName;
+                    const isSelected = selectedProducts.includes(productName);
                     return (
                       <button
                         key={productName}
-                        onClick={() => setSelectedProduct(isSelected ? '' : productName)}
+                        onClick={() => {
+                          if (selectedProducts.includes(productName)) {
+                            setSelectedProducts(selectedProducts.filter(p => p !== productName));
+                          } else {
+                            setSelectedProducts([...selectedProducts, productName]);
+                          }
+                        }}
                         className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
                           isSelected
-                            ? 'bg-[#004182] text-white border-2 border-[#004182] shadow-sm'
-                            : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-[#004182] hover:bg-blue-50'
+                            ? 'bg-blue-500 text-white border-2 border-blue-500 shadow-sm'
+                            : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50'
                         }`}
                       >
                         <div className={`w-3 h-3 rounded-full mr-2 flex items-center justify-center ${
                           isSelected ? 'bg-white' : 'bg-gray-300'
                         }`}>
                           {isSelected && (
-                            <svg className="w-2 h-2 text-[#004182]" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-2 h-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                           )}
@@ -308,44 +451,190 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                     );
                   })}
                 </div>
+              </div>
 
-                <div className="border-t border-gray-200 pt-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-gray-700">
-                      Or choose from all products
-                    </Label>
-                    <Select value={selectedProduct || "all"} onValueChange={(value) => setSelectedProduct(value === "all" ? "" : value)}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="All products (no filtering)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All products</SelectItem>
-                        {Object.entries(products).map(([key, product]) => (
-                          <SelectItem key={key} value={key}>
-                            {(product as any).displayName || (product as any).name || key}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+              {/* All Products - Dropdown */}
+              <div className="border-t border-gray-200 pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <Label className="text-xs font-medium text-gray-600">All Products</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs px-3 py-1 h-auto border-dashed hover:bg-blue-50 hover:border-blue-400 transition-all duration-200"
+                    onClick={() => {
+                      const allProductNames = Object.keys(products);
+                      if (selectedProducts.length === allProductNames.length) {
+                        setSelectedProducts([]);
+                      } else {
+                        setSelectedProducts(allProductNames);
+                      }
+                    }}
+                  >
+                    {selectedProducts.length === Object.keys(products).length ? "Deselect All" : "Select All"}
+                  </Button>
                 </div>
 
-                {selectedProduct && (
-                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                {/* Multi-Select Dropdown */}
+                <div className="relative" ref={dropdownRef}>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between text-left font-normal"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsDropdownOpen(!isDropdownOpen);
+                    }}
+                  >
+                    <span className="text-sm">
+                      {(() => {
+                        if (selectedProducts.length === 0) {
+                          return "Choose products...";
+                        } else if (selectedProducts.length === 1) {
+                          return products[selectedProducts[0]]?.displayName || selectedProducts[0];
+                        } else {
+                          return `${selectedProducts.length} products selected`;
+                        }
+                      })()}
+                    </span>
+                    <svg className={`w-4 h-4 opacity-50 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </Button>
+                  
+                  {isDropdownOpen && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {/* Popular Products Section */}
+                      <div className="border-b border-gray-100 bg-blue-50 px-3 py-2">
+                        <div className="text-xs font-semibold text-blue-800 mb-2">★ Popular Products</div>
+                        {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].map((productName) => {
+                          const product = products[productName];
+                          if (!product) return null;
+                          
+                          const isSelected = selectedProducts.includes(productName);
+                          return (
+                            <div
+                              key={productName}
+                              className="flex items-center px-1 py-1.5 hover:bg-blue-100 cursor-pointer rounded"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (selectedProducts.includes(productName)) {
+                                  setSelectedProducts(selectedProducts.filter(p => p !== productName));
+                                } else {
+                                  setSelectedProducts([...selectedProducts, productName]);
+                                }
+                              }}
+                            >
+                              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center mr-3 transition-colors ${
+                                isSelected 
+                                  ? 'bg-blue-500 border-blue-500' 
+                                  : 'border-blue-300'
+                              }`}>
+                                {isSelected && (
+                                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                )}
+                              </div>
+                              <span className="text-sm font-medium text-blue-900">{product.displayName}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* All Other Products */}
+                      <div className="px-3 py-2">
+                        <div className="text-xs font-semibold text-gray-600 mb-2">All Products</div>
+                        {Object.entries(products)
+                          .filter(([productName]) => !['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].includes(productName))
+                          .map(([productName, product]) => {
+                            const isSelected = selectedProducts.includes(productName);
+                            return (
+                              <div
+                                key={productName}
+                                className="flex items-center px-1 py-1.5 hover:bg-gray-50 cursor-pointer rounded"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (selectedProducts.includes(productName)) {
+                                    setSelectedProducts(selectedProducts.filter(p => p !== productName));
+                                  } else {
+                                    setSelectedProducts([...selectedProducts, productName]);
+                                  }
+                                }}
+                              >
+                                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center mr-3 transition-colors ${
+                                  isSelected 
+                                    ? 'bg-blue-500 border-blue-500' 
+                                    : 'border-gray-300'
+                                }`}>
+                                  {isSelected && (
+                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  )}
+                                </div>
+                                <span className="text-sm">{(product as any).displayName}</span>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Selected Products Summary */}
+              {selectedProducts.length > 0 && (
+                <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-2">
-                      <div className="w-5 h-5 bg-[#004182] rounded-full flex items-center justify-center">
-                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       </div>
-                      <p className="text-sm font-medium text-[#004182]">
-                        Selected: {products[selectedProduct]?.displayName}
+                      <p className="text-sm font-semibold text-blue-900">
+                        {selectedProducts.length} Product{selectedProducts.length !== 1 ? 's' : ''} Selected
                       </p>
                     </div>
-                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-blue-700 hover:text-blue-900 hover:bg-blue-100 h-6 px-2"
+                      onClick={() => setSelectedProducts([])}
+                    >
+                      Clear all
+                    </Button>
                   </div>
-                )}
-              </div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProducts.map((productName) => {
+                      const product = products[productName];
+                      const productLabel = product?.displayName || productName;
+                      return (
+                        <Badge 
+                          key={productName} 
+                          variant="secondary" 
+                          className="text-xs bg-white text-blue-800 border border-blue-200 hover:bg-blue-50 transition-colors"
+                        >
+                          {productLabel}
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {selectedProducts.length === 0 && (
+                <div className="mt-4 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div className="flex items-center space-x-2 text-gray-500">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-sm">
+                      No products selected - AI will generate general landing page copy without specific product focus
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -542,10 +831,10 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                     modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
                     temperature: modelSettings?.temperature || 0.7,
                     maxTokens: modelSettings?.maxTokens || 2000,
-                    systemPrompt: debugInfo?.systemPrompt || stationPrompts?.landingPage?.systemPrompt || 'Expert landing page copywriter specializing in Jones Road Beauty conversions...',
-                    userPrompt: debugInfo?.userPrompt || `Type: ${landingPageType}\nProduct Brief: ${productBrief}\nMain Angle: ${mainAngle}`,
-                    requestPayload: debugInfo?.requestPayload,
-                    rawResponse: debugInfo?.rawResponse
+                    systemPrompt: landingPageDebugInfo?.systemPrompt || stationPrompts?.landingPage?.systemPrompt || 'Expert landing page copywriter specializing in Jones Road Beauty conversions...',
+                    userPrompt: landingPageDebugInfo?.userPrompt || `Type: ${landingPageType}\nProduct Brief: ${productBrief}\nMain Angle: ${mainAngle}`,
+                    requestPayload: landingPageDebugInfo?.requestPayload,
+                    rawResponse: landingPageDebugInfo?.rawResponse
                   });
                   setShowGenerationDetails(true);
                 }}

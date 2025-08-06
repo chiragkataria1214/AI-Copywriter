@@ -19,15 +19,19 @@ import {
     Input
 } from '@/components/ui/input';
 import {
+    Badge
+} from '@/components/ui/badge';
+import {
     Camera,
     Upload,
     Target,
     Check,
     X,
     Copy,
-    Settings
+    Settings,
+    Sparkles
 } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 interface StaticAdTabProps {
     personas: any;
@@ -43,7 +47,9 @@ interface StaticAdTabProps {
     analyzeStaticAdMutation?: any;
     getGenerationDisabledState?: (stationType: string) => { disabled: boolean; reason: string };
     copyToClipboard?: (text: string, type: string) => void;
-    selectedProduct?: any;
+    selectedProducts?: string[];
+    setSelectedProducts?: (value: string[]) => void;
+    products?: any;
     brandDrBalance?: number;
     
     // View Details functionality
@@ -67,6 +73,12 @@ interface StaticAdTabProps {
             frameworks?: string[];
         };
     };
+    debugInfo?: {
+        systemPrompt: string;
+        userPrompt: string;
+        requestPayload: any;
+        rawResponse: string;
+    } | null;
 }
 
 export const StaticAdTab = ({
@@ -82,17 +94,36 @@ export const StaticAdTab = ({
     analyzeStaticAdMutation,
     getGenerationDisabledState,
     copyToClipboard,
-    selectedProduct,
+    selectedProducts = [],
+    setSelectedProducts,
+    products = {},
     brandDrBalance,
     setCurrentGenerationMetadata,
     setShowGenerationDetails,
     modelSettings,
     stationPrompts,
     brandGuidelines,
-    copyFrameworks
+    copyFrameworks,
+    debugInfo
 }: StaticAdTabProps) => {
     const [analysisFocus, setAnalysisFocus] = useState('comprehensive');
     const [outputFormat, setOutputFormat] = useState('analysis-variations');
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -131,81 +162,69 @@ export const StaticAdTab = ({
     };
 
     const handleAnalyzeAd = () => {
-        if (analyzeStaticAdMutation && staticAdImage) {
-            analyzeStaticAdMutation.mutate({ outputFormat, analysisFocus });
+        if (analyzeStaticAdMutation?.mutate) {
+            analyzeStaticAdMutation.mutate({
+                concept,
+                analysisFocus,
+                outputFormat,
+                selectedProducts: selectedProducts || []
+            });
         }
-    };
-
-    const isAnalyzeDisabled = !staticAdImage || 
-        analyzeStaticAdMutation?.isPending || 
-        getGenerationDisabledState?.('staticAd')?.disabled;
-
-    const getButtonText = () => {
-        if (analyzeStaticAdMutation?.isPending) return 'Analyzing...';
-        if (!staticAdImage) return 'Upload Image First';
-        return 'Analyze Ad & Generate Variations';
-    };
-
-    const getDisabledReason = () => {
-        if (!staticAdImage) return 'Please upload an image first';
-        return getGenerationDisabledState?.('staticAd')?.reason;
     };
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
             {/* Input Section */}
             <div className="space-y-4 sm:space-y-6">
-                {/* Upload Section */}
+                {/* Image Upload Section */}
                 <Card>
                     <CardContent className="p-4 sm:p-6">
                         <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
                             <Camera className="text-jones-primary mr-2 sm:mr-3" size={18} />
-                            Upload Ad Creative
+                            Upload Ad Image
                         </h3>
 
-                        <div className="space-y-4 sm:space-y-6">
-                            <div>
-                                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                                    Static Ad Image
-                                </Label>
-                                
-                                {!staticAdImagePreview ? (
-                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                        <div className="space-y-4">
+                            {!staticAdImagePreview ? (
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-jones-primary transition-colors">
+                                    <Camera size={48} className="mx-auto mb-4 text-gray-400" />
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium text-gray-900">Upload an ad image to analyze</p>
+                                        <p className="text-xs text-gray-500">
+                                            JPG, PNG, or GIF up to 8MB. For best results, use high-quality images.
+                                        </p>
+                                    </div>
+                                    <div className="mt-4">
+                                        <Label htmlFor="static-ad-upload" className="cursor-pointer inline-flex items-center px-4 py-2 bg-jones-primary hover:bg-jones-secondary text-white rounded-md transition-colors">
+                                            <Upload size={16} className="mr-2" />
+                                            Choose Image
+                                        </Label>
                                         <Input
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
                                             id="static-ad-upload"
+                                            type="file"
+                                            className="sr-only"
+                                            accept=".jpg,.jpeg,.png,.gif,.webp"
                                             onChange={handleImageUpload}
                                         />
-                                        <label htmlFor="static-ad-upload" className="cursor-pointer">
-                                            <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                                            <p className="text-sm text-gray-600">
-                                                Click to upload an ad image (JPG, PNG)
-                                            </p>
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                Max file size: 10MB
-                                            </p>
-                                        </label>
                                     </div>
-                                ) : (
-                                    <div className="relative">
-                                        <img
-                                            src={staticAdImagePreview}
-                                            alt="Uploaded ad"
-                                            className="w-full h-48 object-cover rounded-lg border"
-                                        />
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            className="absolute top-2 right-2"
-                                            onClick={handleRemoveImage}
-                                        >
-                                            <X size={16} />
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
+                                </div>
+                            ) : (
+                                <div className="relative">
+                                    <img
+                                        src={staticAdImagePreview}
+                                        alt="Uploaded ad"
+                                        className="w-full max-h-96 object-contain rounded-lg border border-gray-200"
+                                    />
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={handleRemoveImage}
+                                        className="absolute top-2 right-2"
+                                    >
+                                        <X size={16} />
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -234,22 +253,22 @@ export const StaticAdTab = ({
                             </div>
 
                             <div>
-                                <Label className="text-sm font-medium text-gray-700">Analysis Focus</Label>
+                                <Label className="text-sm font-medium text-gray-700 mb-2">Analysis Focus</Label>
                                 <Select value={analysisFocus} onValueChange={setAnalysisFocus}>
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="visual">Visual Design Analysis</SelectItem>
-                                        <SelectItem value="copy">Copy Effectiveness</SelectItem>
-                                        <SelectItem value="adaptation">Jones Road Adaptation</SelectItem>
-                                        <SelectItem value="comprehensive">Comprehensive Review</SelectItem>
+                                        <SelectItem value="comprehensive">Comprehensive Analysis</SelectItem>
+                                        <SelectItem value="copy-focused">Copy-Focused</SelectItem>
+                                        <SelectItem value="design-focused">Design-Focused</SelectItem>
+                                        <SelectItem value="performance-prediction">Performance Prediction</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             <div>
-                                <Label className="text-sm font-medium text-gray-700">Output Format</Label>
+                                <Label className="text-sm font-medium text-gray-700 mb-2">Output Format</Label>
                                 <Select value={outputFormat} onValueChange={setOutputFormat}>
                                     <SelectTrigger>
                                         <SelectValue />
@@ -265,253 +284,529 @@ export const StaticAdTab = ({
                     </CardContent>
                 </Card>
 
-                <Button 
-                    className="w-full flex items-center justify-center space-x-2" 
-                    disabled={isAnalyzeDisabled}
-                    onClick={handleAnalyzeAd}
-                >
-                    <Camera size={16} />
-                    <span>{getButtonText()}</span>
-                </Button>
-
-                {isAnalyzeDisabled && (
-                    <p className="text-sm text-gray-500 text-center mt-2">
-                        {getDisabledReason()}
-                    </p>
-                )}
-            </div>
-
-            {/* Preview/Results Section */}
-            <div className="space-y-4 sm:space-y-6">
+                {/* Product Focus Section */}
                 <Card>
-                    <CardContent className="p-6">
-                        {analyzeStaticAdMutation?.isPending ? (
-                            <div className="text-center py-16">
-                                <div className="relative">
-                                    <div className="animate-spin rounded-full h-16 w-16 border-4 border-jones-light border-t-jones-primary mx-auto mb-4"></div>
-                                    <Camera size={32} className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-jones-primary" />
-                                </div>
-                                <h3 className="text-xl font-semibold text-gray-700 mb-2">Analyzing Your Ad</h3>
-                                <p className="text-gray-500 mb-4">
-                                    Our AI is examining the visual elements, copy effectiveness, and brand alignment...
+                    <CardContent className="p-4 sm:p-6">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <Sparkles className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                            Product Focus
+                        </h3>
+
+                        <div className="space-y-4">
+                            <div>
+                                <Label className="text-sm font-medium text-gray-700 mb-3 block">
+                                    Quick Select - Popular Products
+                                </Label>
+                                <p className="text-xs text-gray-500 mb-3">
+                                    Choose products that are featured in the ad. This helps provide more accurate analysis and better variations.
                                 </p>
-                                <div className="flex items-center justify-center space-x-2 text-sm text-gray-400">
-                                    <div className="flex space-x-1">
-                                        <div className="w-2 h-2 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                                        <div className="w-2 h-2 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                                        <div className="w-2 h-2 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                                
+                                <div className="mb-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <Label className="text-xs font-medium text-gray-600">Top Products</Label>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-xs text-blue-600 hover:text-blue-800 h-auto p-1"
+                                            onClick={() => {
+                                                const topProducts = ['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'];
+                                                const allTopSelected = topProducts.every(product => selectedProducts.includes(product));
+                                                
+                                                if (allTopSelected) {
+                                                    // Deselect all top products
+                                                    setSelectedProducts?.(selectedProducts.filter(p => !topProducts.includes(p)));
+                                                } else {
+                                                    // Select all top products
+                                                    const newSelection = [...new Set([...selectedProducts, ...topProducts])];
+                                                    setSelectedProducts?.(newSelection);
+                                                }
+                                            }}
+                                        >
+                                            {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].every(product => selectedProducts.includes(product)) ? 'Deselect Top 5' : 'Select Top 5'}
+                                        </Button>
                                     </div>
-                                    <span>Processing</span>
+                                    
+                                    <div className="flex flex-wrap gap-2">
+                                        {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].map((productName) => {
+                                            const product = products[productName];
+                                            if (!product) return null;
+                                            
+                                            const isSelected = selectedProducts.includes(productName);
+                                            return (
+                                                <button
+                                                    key={productName}
+                                                    onClick={() => {
+                                                        if (selectedProducts.includes(productName)) {
+                                                            setSelectedProducts?.(selectedProducts.filter(p => p !== productName));
+                                                        } else {
+                                                            setSelectedProducts?.([...selectedProducts, productName]);
+                                                        }
+                                                    }}
+                                                    className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                                                        isSelected
+                                                            ? 'bg-[#004182] text-white border-2 border-[#004182] shadow-sm'
+                                                            : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-[#004182] hover:bg-blue-50'
+                                                    }`}
+                                                >
+                                                    <div className={`w-3 h-3 rounded-full mr-2 flex items-center justify-center ${
+                                                        isSelected ? 'bg-white' : 'bg-gray-300'
+                                                    }`}>
+                                                        {isSelected && (
+                                                            <svg className="w-2 h-2 text-[#004182]" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                    {product.displayName}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                            </div>
-                        ) : !staticAdAnalysis ? (
-                            <div className="text-center py-16">
-                                <div className="relative mb-6">
-                                    <div className="w-20 h-20 bg-gradient-to-br from-jones-light to-jones-secondary rounded-full mx-auto flex items-center justify-center">
-                                        <Camera size={40} className="text-jones-primary" />
-                                    </div>
-                                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                        <Target size={16} className="text-blue-600" />
-                                    </div>
-                                </div>
-                                <h3 className="text-xl font-semibold text-gray-700 mb-2">Static Ad Analysis</h3>
-                                <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                                    Upload any static ad to get detailed analysis and Jones Road Beauty variations
-                                </p>
-                                <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">
-                                    <div className="flex items-center text-sm text-gray-600 bg-green-50 p-3 rounded-lg">
-                                        <Check size={16} className="mr-2 text-green-500 flex-shrink-0" />
-                                        <span>Visual design breakdown</span>
-                                    </div>
-                                    <div className="flex items-center text-sm text-gray-600 bg-green-50 p-3 rounded-lg">
-                                        <Check size={16} className="mr-2 text-green-500 flex-shrink-0" />
-                                        <span>Copy effectiveness scoring</span>
-                                    </div>
-                                    <div className="flex items-center text-sm text-gray-600 bg-green-50 p-3 rounded-lg">
-                                        <Check size={16} className="mr-2 text-green-500 flex-shrink-0" />
-                                        <span>Jones Road brand adaptations</span>
-                                    </div>
-                                    <div className="flex items-center text-sm text-gray-600 bg-green-50 p-3 rounded-lg">
-                                        <Check size={16} className="mr-2 text-green-500 flex-shrink-0" />
-                                        <span>Competitive positioning insights</span>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="space-y-6">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-lg font-semibold text-gray-900">Analysis Results</h3>
-                                    <div className="flex items-center space-x-2">
+
+                                {/* All Products - Dropdown */}
+                                <div className="border-t border-gray-200 pt-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <Label className="text-xs font-medium text-gray-600">All Products</Label>
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            onClick={() => copyToClipboard?.(staticAdAnalysis, 'static-analysis')}
+                                            className="text-xs px-3 py-1 h-auto border-dashed hover:bg-blue-50 hover:border-blue-400 transition-all duration-200"
+                                            onClick={() => {
+                                                const allProductNames = Object.keys(products);
+                                                if (selectedProducts.length === allProductNames.length) {
+                                                    setSelectedProducts?.([]);
+                                                } else {
+                                                    setSelectedProducts?.(allProductNames);
+                                                }
+                                            }}
                                         >
-                                            <Copy size={16} className="mr-2" />
-                                            Copy All
+                                            {selectedProducts.length === Object.keys(products).length ? "Deselect All" : "Select All"}
                                         </Button>
-                                        {setCurrentGenerationMetadata && setShowGenerationDetails && (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setCurrentGenerationMetadata({
-                                                        stationName: 'Static Ad Analysis',
-                                                        timestamp: new Date().toISOString(),
-                                                        modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
-                                                        temperature: modelSettings?.temperature || 0.7,
-                                                        maxTokens: modelSettings?.maxTokens || 2000,
-                                                        systemPrompt: stationPrompts?.staticAd?.systemPrompt || 'Expert static ad analyzer for Jones Road Beauty...',
-                                                        userPrompt: `Analysis Focus: ${analysisFocus}\nOutput Format: ${outputFormat}\nTarget Persona: ${concept}\nSelected Product: ${selectedProduct}`,
-                                                        requestPayload: null,
-                                                        rawResponse: null
-                                                    });
-                                                    setShowGenerationDetails(true);
-                                                }}
-                                                className="flex items-center space-x-1 text-xs"
-                                            >
-                                                <Settings size={12} />
-                                                <span>View Details</span>
-                                            </Button>
+                                    </div>
+
+                                    {/* Multi-Select Dropdown */}
+                                    <div className="relative" ref={dropdownRef}>
+                                        <Button
+                                            variant="outline"
+                                            className="w-full justify-between text-left font-normal"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                setIsDropdownOpen(!isDropdownOpen);
+                                            }}
+                                        >
+                                            <span className="text-sm">
+                                                {(() => {
+                                                    if (selectedProducts.length === 0) {
+                                                        return "Choose products...";
+                                                    } else if (selectedProducts.length === 1) {
+                                                        return products[selectedProducts[0]]?.displayName || selectedProducts[0];
+                                                    } else {
+                                                        return `${selectedProducts.length} products selected`;
+                                                    }
+                                                })()}
+                                            </span>
+                                            <svg className={`w-4 h-4 opacity-50 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </Button>
+                                        
+                                        {isDropdownOpen && (
+                                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                                {/* Popular Products Section */}
+                                                <div className="border-b border-gray-100 bg-blue-50 px-3 py-2">
+                                                    <div className="text-xs font-semibold text-blue-800 mb-2">★ Popular Products</div>
+                                                    {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].map((productName) => {
+                                                        const product = products[productName];
+                                                        if (!product) return null;
+                                                        
+                                                        const isSelected = selectedProducts.includes(productName);
+                                                        return (
+                                                            <div
+                                                                key={productName}
+                                                                className="flex items-center px-1 py-1.5 hover:bg-blue-100 cursor-pointer rounded"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (selectedProducts.includes(productName)) {
+                                                                        setSelectedProducts?.(selectedProducts.filter(p => p !== productName));
+                                                                    } else {
+                                                                        setSelectedProducts?.([...selectedProducts, productName]);
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center mr-3 transition-colors ${
+                                                                    isSelected 
+                                                                        ? 'bg-blue-500 border-blue-500' 
+                                                                        : 'border-blue-300'
+                                                                }`}>
+                                                                    {isSelected && (
+                                                                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                                        </svg>
+                                                                    )}
+                                                                </div>
+                                                                <span className="text-sm font-medium text-blue-900">{product.displayName}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                {/* All Other Products */}
+                                                <div className="px-3 py-2">
+                                                    <div className="text-xs font-semibold text-gray-600 mb-2">All Products</div>
+                                                    {Object.entries(products)
+                                                        .filter(([key]) => !['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].includes(key))
+                                                        .map(([key, product]) => {
+                                                            const isSelected = selectedProducts.includes(key);
+                                                            return (
+                                                                <div
+                                                                    key={key}
+                                                                    className="flex items-center px-1 py-1.5 hover:bg-gray-50 cursor-pointer rounded"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if (selectedProducts.includes(key)) {
+                                                                            setSelectedProducts?.(selectedProducts.filter(p => p !== key));
+                                                                        } else {
+                                                                            setSelectedProducts?.([...selectedProducts, key]);
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center mr-3 transition-colors ${
+                                                                        isSelected 
+                                                                            ? 'bg-blue-500 border-blue-500' 
+                                                                            : 'border-gray-300'
+                                                                    }`}>
+                                                                        {isSelected && (
+                                                                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                                            </svg>
+                                                                        )}
+                                                                    </div>
+                                                                    <span className="text-sm">{(product as any).displayName}</span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
 
-                                {/* Try to parse JSON response and display structured results */}
-                                {(() => {
-                                    try {
-                                        const jsonMatch = staticAdAnalysis.match(/\{[\s\S]*\}/);
-                                        const jsonString = jsonMatch ? jsonMatch[0] : null;
-                                        
-                                        if (jsonString) {
-                                            const parsedData = JSON.parse(jsonString);
-                                            
-                                            return (
-                                                <div className="space-y-6">
-                                                    {/* Analysis Section */}
-                                                    {parsedData.analysis && (
-                                                        <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-xl p-6 border border-blue-100 relative overflow-hidden">
-                                                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100/30 rounded-full -mr-16 -mt-16"></div>
-                                                            <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-100/30 rounded-full -ml-12 -mb-12"></div>
-                                                            <div className="flex items-center mb-6 relative z-10">
-                                                                <div className="bg-white rounded-full p-3 shadow-sm mr-4">
-                                                                    <Target className="text-blue-600" size={20} />
-                                                                </div>
-                                                                <div>
-                                                                    <h4 className="text-xl font-bold text-blue-900">Ad Analysis</h4>
-                                                                    <p className="text-sm text-blue-700">Comprehensive breakdown of ad effectiveness</p>
-                                                                </div>
-                                                            </div>
-                                                            <div className="relative z-10">
-                                                                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-5 border border-white/50 shadow-sm">
-                                                                    <div className="prose prose-blue max-w-none">
-                                                                        <div className="text-blue-900 leading-relaxed whitespace-pre-wrap text-base">
-                                                                            {parsedData.analysis}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Variations Section */}
-                                                    {parsedData.variations && parsedData.variations.length > 0 && (
-                                                        <div>
-                                                            <div className="flex items-center mb-6">
-                                                                <div className="flex items-center">
-                                                                    <Camera className="text-jones-primary mr-3" size={20} />
-                                                                    <h4 className="text-lg font-semibold text-gray-900">Jones Road Beauty Variations</h4>
-                                                                </div>
-                                                                <div className="ml-auto bg-jones-light text-jones-primary px-3 py-1 rounded-full text-xs font-medium">
-                                                                    {parsedData.variations.length} variations
-                                                                </div>
-                                                            </div>
-                                                            <div className="grid gap-6">
-                                                                {parsedData.variations.map((variation: any, index: number) => (
-                                                                    <div key={index} className="group bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-lg hover:border-jones-primary/20 transition-all duration-200">
-                                                                        <div className="flex items-center justify-between mb-6">
-                                                                            <div className="flex items-center">
-                                                                                <div className="bg-gradient-to-r from-jones-primary to-jones-secondary text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-4 shadow-sm">
-                                                                                    {index + 1}
-                                                                                </div>
-                                                                                <div className="flex flex-col">
-                                                                                    <span className="text-xs font-medium text-jones-primary bg-jones-light px-3 py-1 rounded-full">
-                                                                                        {variation.framework || 'Framework'}
-                                                                                    </span>
-                                                                                </div>
-                                                                            </div>
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="sm"
-                                                                                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-jones-light"
-                                                                                onClick={() => {
-                                                                                    const variationText = `Headline: ${variation.headline}\n\nPrimary Text: ${variation.primaryText}\n\nFramework: ${variation.framework}`;
-                                                                                    copyToClipboard?.(variationText, `variation-${index + 1}`);
-                                                                                }}
-                                                                            >
-                                                                                <Copy size={14} className="mr-1" />
-                                                                                <span className="text-xs">Copy</span>
-                                                                            </Button>
-                                                                        </div>
-                                                                        
-                                                                        {variation.headline && (
-                                                                            <div className="mb-6">
-                                                                                <Label className="text-sm font-semibold text-gray-800 mb-3 block flex items-center">
-                                                                                    <div className="w-2 h-2 bg-jones-primary rounded-full mr-2"></div>
-                                                                                    Headline
-                                                                                </Label>
-                                                                                <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 border-l-4 border-jones-primary relative overflow-hidden">
-                                                                                    <div className="absolute top-0 right-0 w-20 h-20 bg-jones-primary/5 rounded-full -mr-10 -mt-10"></div>
-                                                                                    <p className="font-semibold text-gray-900 leading-relaxed text-lg relative z-10">
-                                                                                        "{variation.headline}"
-                                                                                    </p>
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-                                                                        
-                                                                        {variation.primaryText && (
-                                                                            <div>
-                                                                                <Label className="text-sm font-semibold text-gray-800 mb-3 block flex items-center">
-                                                                                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                                                                                    Primary Text
-                                                                                </Label>
-                                                                                <div className="bg-white border border-gray-200 rounded-lg p-4 relative">
-                                                                                    <div className="absolute top-2 right-2 text-xs text-gray-400">
-                                                                                        {variation.primaryText.split(' ').length} words
-                                                                                    </div>
-                                                                                    <p className="text-gray-800 leading-relaxed whitespace-pre-wrap pr-16">
-                                                                                        {variation.primaryText}
-                                                                                    </p>
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                {/* Selected Products Summary */}
+                                {selectedProducts.length > 0 && (
+                                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center space-x-2">
+                                                <div className="w-5 h-5 bg-[#004182] rounded-full flex items-center justify-center">
+                                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                    </svg>
                                                 </div>
-                                            );
-                                        }
-                                    } catch (parseError) {
-                                        // Fallback to plain text display
-                                    }
-                                    
-                                    // Fallback: Display as formatted plain text
-                                    return (
-                                        <div className="bg-gray-50 rounded-lg p-6 border">
-                                            <div className="prose max-w-none">
-                                                <div className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
+                                                <p className="text-sm font-medium text-[#004182]">
+                                                    {selectedProducts.length} Product{selectedProducts.length !== 1 ? 's' : ''} Selected
+                                                </p>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-xs text-blue-700 hover:text-blue-900 hover:bg-blue-100 h-6 px-2"
+                                                onClick={() => setSelectedProducts?.([])}
+                                            >
+                                                Clear all
+                                            </Button>
+                                        </div>
+                                        
+                                        <div className="flex flex-wrap gap-2">
+                                            {selectedProducts.map((productName) => {
+                                                const productLabel = products[productName]?.displayName || productName;
+                                                return (
+                                                    <Badge 
+                                                        key={productName} 
+                                                        variant="secondary" 
+                                                        className="text-xs bg-white text-blue-800 border border-blue-200 hover:bg-blue-50 transition-colors"
+                                                    >
+                                                        {productLabel}
+                                                    </Badge>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedProducts.length === 0 && (
+                                    <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                                        <div className="flex items-center space-x-2 text-gray-500">
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <p className="text-sm">
+                                                No products selected - analysis will be general without product-specific insights
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Button
+                    onClick={handleAnalyzeAd}
+                    disabled={!staticAdImage || analyzeStaticAdMutation?.isPending || getGenerationDisabledState?.('staticAd')?.disabled}
+                    className="w-full text-white"
+                    style={{ backgroundColor: '#004182' }}
+                >
+                    {analyzeStaticAdMutation?.isPending ? (
+                        <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Analyzing...
+                        </>
+                    ) : (
+                        <>
+                            <Target className="mr-2" size={16} />
+                            Analyze Ad
+                        </>
+                    )}
+                </Button>
+            </div>
+
+            {/* Results Section */}
+            <div className="space-y-4 sm:space-y-6">
+                {staticAdAnalysis ? (
+                    <div className="space-y-4">
+                        {(() => {
+                            try {
+                                // Try to parse as JSON first
+                                const parsedResult = JSON.parse(staticAdAnalysis);
+                                
+                                return (
+                                    <>
+                                        {/* Analysis Section */}
+                                        {parsedResult.analysis && (
+                                            <Card>
+                                                <CardContent className="p-4 sm:p-6">
+                                                    <div className="flex flex-col space-y-3 mb-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                                                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
+                                                            <Target className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                                                            Ad Analysis
+                                                        </h3>
+                                                        <div className="flex items-center space-x-2">
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => copyToClipboard?.(parsedResult.analysis, 'analysis')}
+                                                                className="w-full sm:w-auto"
+                                                            >
+                                                                <Copy size={16} />
+                                                                <span className="ml-1">Copy</span>
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    setCurrentGenerationMetadata?.({
+                                                                        stationName: 'Static Ad Analysis',
+                                                                        timestamp: new Date().toISOString(),
+                                                                        modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
+                                                                        temperature: modelSettings?.temperature || 0.7,
+                                                                        maxTokens: modelSettings?.maxTokens || 2000,
+                                                                        systemPrompt: debugInfo?.systemPrompt || stationPrompts?.staticAd?.systemPrompt || 'Expert static ad analyzer for Jones Road Beauty...',
+                                                                        userPrompt: debugInfo?.userPrompt || `Analysis Focus: ${analysisFocus}\nOutput Format: ${outputFormat}\nTarget Persona: ${concept}\nSelected Products: ${selectedProducts.join(', ')}`,
+                                                                        requestPayload: debugInfo?.requestPayload,
+                                                                        rawResponse: debugInfo?.rawResponse
+                                                                    });
+                                                                    setShowGenerationDetails?.(true);
+                                                                }}
+                                                                className="flex items-center space-x-1 text-xs"
+                                                            >
+                                                                <Settings size={14} />
+                                                                <span>View Details</span>
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                                        <div className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed">
+                                                            {parsedResult.analysis}
+                                                        </div>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        )}
+
+                                        {/* Variations Section */}
+                                        {parsedResult.variations && parsedResult.variations.length > 0 && (
+                                            <Card>
+                                                <CardContent className="p-4 sm:p-6">
+                                                    <div className="flex flex-col space-y-3 mb-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                                                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
+                                                            <Sparkles className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                                                            Copy Variations ({parsedResult.variations.length})
+                                                        </h3>
+                                                        <div className="flex items-center space-x-2">
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    const allVariations = parsedResult.variations.map((v: any, i: number) => 
+                                                                        `VARIATION ${i + 1} (${v.framework || 'Framework'}):\n\nHeadline: ${v.headline}\n\n${v.primaryText}`
+                                                                    ).join('\n\n---\n\n');
+                                                                    copyToClipboard?.(allVariations, 'all-variations');
+                                                                }}
+                                                                className="w-full sm:w-auto"
+                                                            >
+                                                                <Copy size={16} />
+                                                                <span className="ml-1">Copy All</span>
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-4">
+                                                        {parsedResult.variations.map((variation: any, index: number) => (
+                                                            <div key={index} className="border border-gray-200 rounded-lg p-4 bg-white">
+                                                                <div className="flex items-center justify-between mb-3">
+                                                                    <div className="flex items-center space-x-3">
+                                                                        <Badge variant="secondary" className="text-xs font-medium">
+                                                                            Variation {index + 1}
+                                                                        </Badge>
+                                                                        {variation.framework && (
+                                                                            <Badge variant="outline" className="text-xs">
+                                                                                {variation.framework}
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => {
+                                                                            const variationText = `Headline: ${variation.headline}\n\n${variation.primaryText}`;
+                                                                            copyToClipboard?.(variationText, `variation-${index + 1}`);
+                                                                        }}
+                                                                        className="h-8 px-2"
+                                                                    >
+                                                                        <Copy size={14} />
+                                                                    </Button>
+                                                                </div>
+                                                                
+                                                                <div className="space-y-3">
+                                                                    {variation.headline && (
+                                                                        <div>
+                                                                            <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                                                                Headline
+                                                                            </Label>
+                                                                            <p className="text-sm font-semibold text-gray-900 mt-1">
+                                                                                {variation.headline}
+                                                                            </p>
+                                                                        </div>
+                                                                    )}
+                                                                    
+                                                                    {variation.primaryText && (
+                                                                        <div>
+                                                                            <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                                                                Primary Text
+                                                                            </Label>
+                                                                            <p className="text-sm text-gray-800 leading-relaxed mt-1">
+                                                                                {variation.primaryText}
+                                                                            </p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        )}
+                                    </>
+                                );
+                            } catch (error) {
+                                // If parsing fails, display as plain text (fallback)
+                                return (
+                                    <Card>
+                                        <CardContent className="p-4 sm:p-6">
+                                            <div className="flex flex-col space-y-3 mb-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                                                <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
+                                                    <Target className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                                                    Ad Analysis
+                                                </h3>
+                                                <div className="flex items-center space-x-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => copyToClipboard?.(staticAdAnalysis, 'static-ad-analysis')}
+                                                        className="w-full sm:w-auto"
+                                                    >
+                                                        <Copy size={16} />
+                                                        <span className="ml-1">Copy</span>
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        disabled={!staticAdAnalysis}
+                                                        onClick={() => {
+                                                            setCurrentGenerationMetadata?.({
+                                                                stationName: 'Static Ad Analysis',
+                                                                timestamp: new Date().toISOString(),
+                                                                modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
+                                                                temperature: modelSettings?.temperature || 0.7,
+                                                                maxTokens: modelSettings?.maxTokens || 2000,
+                                                                systemPrompt: debugInfo?.systemPrompt || stationPrompts?.staticAd?.systemPrompt || 'Expert static ad analyzer for Jones Road Beauty...',
+                                                                userPrompt: debugInfo?.userPrompt || `Analysis Focus: ${analysisFocus}\nOutput Format: ${outputFormat}\nTarget Persona: ${concept}\nSelected Products: ${selectedProducts.join(', ')}`,
+                                                                requestPayload: debugInfo?.requestPayload,
+                                                                rawResponse: debugInfo?.rawResponse
+                                                            });
+                                                            setShowGenerationDetails?.(true);
+                                                        }}
+                                                        className="flex items-center space-x-1 text-xs"
+                                                    >
+                                                        <Settings size={14} />
+                                                        <span>View Details</span>
+                                                    </Button>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                                <div className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed">
                                                     {staticAdAnalysis}
                                                 </div>
                                             </div>
-                                        </div>
-                                    );
-                                })()}
+                                        </CardContent>
+                                    </Card>
+                                );
+                            }
+                        })()}
+                    </div>
+                ) : analyzeStaticAdMutation?.isPending ? (
+                    <Card>
+                        <CardContent className="p-4 sm:p-6">
+                            <div className="text-center py-12">
+                                <div className="flex items-center justify-center mb-4">
+                                    <div className="flex space-x-1">
+                                        <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                        <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                        <div className="w-3 h-3 bg-jones-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                                    </div>
+                                </div>
+                                <p className="text-gray-600 font-medium mb-2">Analyzing Your Ad</p>
+                                <p className="text-sm text-gray-500">
+                                    Using AI to analyze your ad creative and generate insights...
+                                </p>
                             </div>
-                        )}
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <Card>
+                        <CardContent className="p-4 sm:p-6">
+                            <div className="text-center py-12">
+                                <Camera size={48} className="mx-auto mb-4 text-gray-300" />
+                                <p className="text-gray-600 font-medium mb-2">Upload an Ad to Analyze</p>
+                                <p className="text-sm text-gray-500">
+                                    Upload an ad image to get AI-powered analysis and copy variations
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </div>
     );

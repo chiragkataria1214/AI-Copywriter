@@ -198,6 +198,26 @@ export const emailFrameworks = pgTable("email_frameworks", {
 	unique("email_frameworks_name_key").on(table.name),
 ]);
 
+export const landingPageFrameworks = pgTable("landing_page_frameworks", {
+	id: varchar().default(gen_random_uuid).primaryKey().notNull(),
+	name: varchar().notNull(),
+	displayName: varchar("display_name").notNull(),
+	description: text().notNull(),
+	contentSequence: jsonb("content_sequence"),
+	reasonStructure: jsonb("reason_structure"),
+	optimizationRules: jsonb("optimization_rules"),
+	realExamples: jsonb("real_examples"),
+	systemPrompt: text("system_prompt").notNull(),
+	outputRequirements: text("output_requirements"),
+	images: jsonb("images"),
+	isActive: varchar("is_active").default('true'),
+	sortOrder: integer("sort_order").default(0),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	unique("landing_page_frameworks_name_key").on(table.name),
+]);
+
 export const productBriefs = pgTable("product_briefs", {
 	id: varchar().default(gen_random_uuid).primaryKey().notNull(),
 	userId: varchar("user_id"),

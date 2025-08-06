@@ -194,6 +194,25 @@ export const emailFrameworks = pgTable("email_frameworks", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Landing page frameworks table for different landing page types and their structures
+export const landingPageFrameworks = pgTable("landing_page_frameworks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(), // e.g., "listicle", "trojan_horse", "multi_product"
+  displayName: varchar("display_name").notNull(), // e.g., "Listicle", "Trojan Horse", "Multi Product Page"
+  description: text("description").notNull(), // Purpose and use case
+  contentSequence: jsonb("content_sequence"), // Array of content structure sequence
+  reasonStructure: jsonb("reason_structure"), // Array of each reason structure format
+  optimizationRules: jsonb("optimization_rules"), // Array of optimization rules
+  realExamples: jsonb("real_examples"), // Array of real example patterns to emulate
+  systemPrompt: text("system_prompt").notNull(), // AI prompt for this framework
+  outputRequirements: text("output_requirements"), // Expected output format and structure
+  images: jsonb("images"), // Array of image file paths for visual layout reference (max 5)
+  isActive: varchar("is_active").default("true"),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Email image analysis table for storing uploaded email images and their framework analysis
 export const emailImageAnalysis = pgTable("email_image_analysis", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -261,6 +280,12 @@ export const insertEmailImageAnalysisSchema = createInsertSchema(emailImageAnaly
   updatedAt: true,
 });
 
+export const insertLandingPageFrameworkSchema = createInsertSchema(landingPageFrameworks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Export types
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
@@ -278,6 +303,8 @@ export type SystemConfiguration = typeof systemConfiguration.$inferSelect;
 export type InsertSystemConfiguration = z.infer<typeof insertSystemConfigurationSchema>;
 export type EmailFramework = typeof emailFrameworks.$inferSelect;
 export type InsertEmailFramework = z.infer<typeof insertEmailFrameworkSchema>;
+export type LandingPageFramework = typeof landingPageFrameworks.$inferSelect;
+export type InsertLandingPageFramework = z.infer<typeof insertLandingPageFrameworkSchema>;
 export type EmailImageAnalysis = typeof emailImageAnalysis.$inferSelect;
 export type InsertEmailImageAnalysis = z.infer<typeof insertEmailImageAnalysisSchema>;
 

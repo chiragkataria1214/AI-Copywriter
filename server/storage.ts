@@ -20,6 +20,8 @@ import {
   type InsertSystemConfiguration,
   type EmailFramework,
   type InsertEmailFramework,
+  type LandingPageFramework,
+  type InsertLandingPageFramework,
   type EmailImageAnalysis,
   type InsertEmailImageAnalysis,
   users,
@@ -33,6 +35,7 @@ import {
   copyFrameworks,
   systemConfiguration,
   emailFrameworks,
+  landingPageFrameworks,
   emailImageAnalysis,
   adminCreateUserSchema,
   updateUserSchema
@@ -61,6 +64,7 @@ export interface IStorage {
   // Generated copy operations
   saveGeneratedCopy(data: InsertGeneratedCopy): Promise<GeneratedCopy>;
   updateCopyFeedback(id: string, rating: string, feedback?: string): Promise<void>;
+  updateGeneratedCopy(id: string, data: { headlines?: any; primaryText?: string }): Promise<GeneratedCopy>;
   getCopyHistory(userId: string, limit?: number): Promise<GeneratedCopy[]>;
   getCopyAnalytics(): Promise<any>;
   
@@ -125,6 +129,17 @@ export interface IStorage {
   updateEmailFrameworkByName(name: string, data: Partial<InsertEmailFramework>): Promise<EmailFramework>;
   deleteEmailFramework(name: string): Promise<void>;
   deleteEmailFrameworkById(id: string): Promise<void>;
+  
+  // Landing page frameworks operations
+  getAllLandingPageFrameworks(): Promise<LandingPageFramework[]>;
+  getActiveLandingPageFrameworks(): Promise<LandingPageFramework[]>;
+  getLandingPageFramework(name: string): Promise<LandingPageFramework | undefined>;
+  getLandingPageFrameworkById(id: string): Promise<LandingPageFramework | undefined>;
+  createLandingPageFramework(data: InsertLandingPageFramework): Promise<LandingPageFramework>;
+  updateLandingPageFramework(id: string, data: Partial<InsertLandingPageFramework>): Promise<LandingPageFramework>;
+  updateLandingPageFrameworkByName(name: string, data: Partial<InsertLandingPageFramework>): Promise<LandingPageFramework>;
+  deleteLandingPageFramework(name: string): Promise<void>;
+  deleteLandingPageFrameworkById(id: string): Promise<void>;
   
   // Email image analysis operations
   saveEmailImageAnalysis(data: InsertEmailImageAnalysis): Promise<EmailImageAnalysis>;
@@ -227,6 +242,14 @@ export class DatabaseStorage implements IStorage {
       .update(generatedCopy)
       .set({ rating, feedback })
       .where(eq(generatedCopy.id, id));
+  }
+
+  async updateGeneratedCopy(id: string, data: { headlines?: any; primaryText?: string }): Promise<GeneratedCopy> {
+    const [copy] = await db.update(generatedCopy)
+      .set(data)
+      .where(eq(generatedCopy.id, id))
+      .returning();
+    return copy;
   }
 
   async getCopyHistory(userId: string, limit: number = 50): Promise<GeneratedCopy[]> {
@@ -515,6 +538,7 @@ export class DatabaseStorage implements IStorage {
       brandConfigs,
       copyFrameworksData,
       emailFrameworksData,
+      landingPageFrameworksData,
       systemConfigs
     ] = await Promise.all([
       this.getAllProducts(),
@@ -522,6 +546,7 @@ export class DatabaseStorage implements IStorage {
       this.getBrandConfiguration(),
       this.getCopyFrameworks(),
       this.getAllEmailFrameworks(),
+      this.getAllLandingPageFrameworks(),
       this.getSystemConfiguration()
     ]);
 
@@ -620,6 +645,25 @@ export class DatabaseStorage implements IStorage {
         systemPrompt: f.systemPrompt,
         outputRequirements: f.outputRequirements,
         expectedLength: f.expectedLength,
+        isEnabled: f.isActive === 'true',
+        sortOrder: f.sortOrder
+      }));
+
+    // Add landing page frameworks to copyFrameworks object (include all frameworks, not just active ones)
+    copyFrameworksObj.landingPageFrameworks = landingPageFrameworksData
+      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+      .map(f => ({
+        id: f.id,
+        name: f.name,
+        displayName: f.displayName,
+        description: f.description,
+        contentSequence: f.contentSequence || [],
+        reasonStructure: f.reasonStructure || [],
+        optimizationRules: f.optimizationRules || [],
+        realExamples: f.realExamples || [],
+        systemPrompt: f.systemPrompt,
+        outputRequirements: f.outputRequirements,
+        images: f.images,
         isEnabled: f.isActive === 'true',
         sortOrder: f.sortOrder
       }));
@@ -1145,6 +1189,67 @@ export class DatabaseStorage implements IStorage {
       }
       // #endregion
 
+      // #region Landing Page Frameworks
+      if (frameworksData.landingPageFrameworks && Array.isArray(frameworksData.landingPageFrameworks)) {
+        const allDbLandingPageFrameworks = await tx.select().from(landingPageFrameworks);
+        const landingPageFrameworksToUpdate: { id: string; data: Partial<InsertLandingPageFramework> }[] = [];
+        const landingPageFrameworksToInsert: InsertLandingPageFramework[] = [];
+        const updatedLandingPageFrameworkIds = new Set<string>();
+
+        frameworksData.landingPageFrameworks.forEach((fw: any, index: number) => {
+          // Skip frameworks without proper identification
+          if (!fw.name && !fw.displayName) {
+            return;
+          }
+          
+          // Find existing framework by name or id
+          const existingFw = allDbLandingPageFrameworks.find(dbFw => 
+            (fw.id && dbFw.id === fw.id) || 
+            (fw.name && dbFw.name === fw.name) ||
+            (fw.displayName && dbFw.displayName === fw.displayName)
+          );
+          
+          const isEnabled = fw.isEnabled !== false;
+          const frameworkData = {
+            name: fw.name || fw.displayName?.toLowerCase().replace(/\s+/g, '_') || `framework_${index}`,
+            displayName: fw.displayName || fw.name || `Framework ${index + 1}`,
+            description: fw.description || '',
+            contentSequence: fw.contentSequence || [],
+            reasonStructure: fw.reasonStructure || [],
+            optimizationRules: fw.optimizationRules || [],
+            realExamples: fw.realExamples || [],
+            systemPrompt: fw.systemPrompt || '',
+            outputRequirements: fw.outputRequirements || '',
+            images: fw.images || null,
+            isActive: isEnabled ? 'true' : 'false',
+            sortOrder: fw.sortOrder !== undefined ? fw.sortOrder : index,
+          };
+
+          if (existingFw) {
+            landingPageFrameworksToUpdate.push({
+              id: existingFw.id,
+              data: frameworkData
+            });
+            updatedLandingPageFrameworkIds.add(existingFw.id);
+          } else {
+            landingPageFrameworksToInsert.push(frameworkData);
+          }
+        });
+        
+        if (landingPageFrameworksToInsert.length > 0) {
+          await tx.insert(landingPageFrameworks).values(landingPageFrameworksToInsert);
+          console.log('DEBUG: Inserted landing page frameworks:', landingPageFrameworksToInsert.length);
+        }
+        for (const update of landingPageFrameworksToUpdate) {
+          await tx.update(landingPageFrameworks).set({
+            ...update.data,
+            updatedAt: new Date()
+          }).where(eq(landingPageFrameworks.id, update.id));
+        }
+        console.log('DEBUG: Completed landing page framework database operations');
+      }
+      // #endregion
+
       // #region System Configuration (Model, Prompts, etc.)
       const allDbSystemConfigs = await tx.select().from(systemConfiguration);
       const configsToUpsert: InsertSystemConfiguration[] = [];
@@ -1247,6 +1352,55 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEmailFrameworkById(id: string): Promise<void> {
     await db.delete(emailFrameworks).where(eq(emailFrameworks.id, id));
+  }
+
+  // Landing page frameworks operations
+  async getAllLandingPageFrameworks(): Promise<LandingPageFramework[]> {
+    const frameworks = await db.select().from(landingPageFrameworks).orderBy(landingPageFrameworks.sortOrder);
+    return frameworks;
+  }
+
+  async getActiveLandingPageFrameworks(): Promise<LandingPageFramework[]> {
+    return await db.select().from(landingPageFrameworks).where(eq(landingPageFrameworks.isActive, 'true')).orderBy(landingPageFrameworks.sortOrder);
+  }
+
+  async getLandingPageFramework(name: string): Promise<LandingPageFramework | undefined> {
+    const [framework] = await db.select().from(landingPageFrameworks).where(eq(landingPageFrameworks.name, name));
+    return framework || undefined;
+  }
+
+  async getLandingPageFrameworkById(id: string): Promise<LandingPageFramework | undefined> {
+    const [framework] = await db.select().from(landingPageFrameworks).where(eq(landingPageFrameworks.id, id));
+    return framework || undefined;
+  }
+
+  async createLandingPageFramework(data: InsertLandingPageFramework): Promise<LandingPageFramework> {
+    const [framework] = await db.insert(landingPageFrameworks).values(data).returning();
+    return framework;
+  }
+
+  async updateLandingPageFramework(id: string, data: Partial<InsertLandingPageFramework>): Promise<LandingPageFramework> {
+    const [framework] = await db.update(landingPageFrameworks).set({
+      ...data,
+      updatedAt: new Date()
+    }).where(eq(landingPageFrameworks.id, id)).returning();
+    return framework;
+  }
+
+  async updateLandingPageFrameworkByName(name: string, data: Partial<InsertLandingPageFramework>): Promise<LandingPageFramework> {
+    const [framework] = await db.update(landingPageFrameworks).set({
+      ...data,
+      updatedAt: new Date()
+    }).where(eq(landingPageFrameworks.name, name)).returning();
+    return framework;
+  }
+
+  async deleteLandingPageFramework(name: string): Promise<void> {
+    await db.delete(landingPageFrameworks).where(eq(landingPageFrameworks.name, name));
+  }
+
+  async deleteLandingPageFrameworkById(id: string): Promise<void> {
+    await db.delete(landingPageFrameworks).where(eq(landingPageFrameworks.id, id));
   }
 
   // Email image analysis operations

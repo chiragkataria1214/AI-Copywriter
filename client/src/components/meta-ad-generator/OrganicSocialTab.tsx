@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Upload, Copy, Check, Target, Sparkles, Camera, FileText, AlertCircle, Settings } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { GenerationMetadata } from '@/components/GenerationDetailsModal';
+
+interface Product {
+  name: string;
+  displayName: string;
+}
 
 interface OrganicSocialTabProps {
   organicSocialType: string;
@@ -64,6 +70,17 @@ interface OrganicSocialTabProps {
   }>) => void;
   selectedProduct: string;
   
+  // Multi-select product props for Social Captions
+  organicSelectedProducts: string[];
+  setOrganicSelectedProducts: (products: string[]) => void;
+  
+  // Multi-select product props for Story Sequences  
+  storySelectedProducts: string[];
+  setStorySelectedProducts: (products: string[]) => void;
+  
+  // Products data
+  products: Record<string, Product>;
+  
   // New props for View Details functionality
   setCurrentGenerationMetadata: (metadata: GenerationMetadata) => void;
   setShowGenerationDetails: (show: boolean) => void;
@@ -97,6 +114,30 @@ interface OrganicSocialTabProps {
     requestPayload: any;
     rawResponse: string;
   } | null;
+  socialCaptionsDebugInfo?: {
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null;
+  storySequenceDebugInfo?: {
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null;
+  setSocialCaptionsDebugInfo?: (debugInfo: {
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null) => void;
+  setStorySequenceDebugInfo?: (debugInfo: {
+    systemPrompt: string;
+    userPrompt: string;
+    requestPayload: any;
+    rawResponse: string;
+  } | null) => void;
 }
 
 export function OrganicSocialTab({
@@ -141,18 +182,56 @@ export function OrganicSocialTab({
   generatedStorySequence,
   setGeneratedStorySequence,
   selectedProduct,
+  organicSelectedProducts,
+  setOrganicSelectedProducts,
+  storySelectedProducts,
+  setStorySelectedProducts,
+  products,
   setCurrentGenerationMetadata,
   setShowGenerationDetails,
   modelSettings,
   stationPrompts,
   brandGuidelines,
   copyFrameworks,
-  debugInfo
+  debugInfo,
+  socialCaptionsDebugInfo,
+  storySequenceDebugInfo,
+  setSocialCaptionsDebugInfo,
+  setStorySequenceDebugInfo
 }: OrganicSocialTabProps) {
   const [isGeneratingCaptions, setIsGeneratingCaptions] = useState(false);
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
   const [captionError, setCaptionError] = useState<string | null>(null);
   const [storyError, setStoryError] = useState<string | null>(null);
+  const [isCaptionDropdownOpen, setIsCaptionDropdownOpen] = useState(false);
+  const [isStoryDropdownOpen, setIsStoryDropdownOpen] = useState(false);
+  const captionDropdownRef = useRef<HTMLDivElement>(null);
+  const storyDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Defensive fallbacks for undefined arrays
+  const safeOrganicSelectedProducts = organicSelectedProducts || [];
+  const safeStorySelectedProducts = storySelectedProducts || [];
+  
+  // Defensive fallback for undefined products
+  const safeProducts = products || {};
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (captionDropdownRef.current && !captionDropdownRef.current.contains(event.target as Node)) {
+        setIsCaptionDropdownOpen(false);
+      }
+      if (storyDropdownRef.current && !storyDropdownRef.current.contains(event.target as Node)) {
+        setIsStoryDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
   return (
     <>
       {/* Sub-tabs for different types of organic social content */}
@@ -425,6 +504,275 @@ export function OrganicSocialTab({
                 </CardContent>
               </Card>
 
+              {/* Product Selection for Social Captions */}
+              <Card>
+                <CardContent className="p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <Target className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                    Products to Feature
+                  </h3>
+                  
+                  <div>
+                    <Label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Products (Multi-Select)
+                    </Label>
+                    <p className="text-xs text-gray-500 mb-4">
+                      Select products to mention in your social media captions. Leave empty for general brand content.
+                    </p>
+
+                    {/* Quick Select - Top Products */}
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <Label className="text-xs font-medium text-gray-600">Quick Select - Popular Products</Label>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs text-blue-600 hover:text-blue-800 h-auto p-1"
+                          onClick={() => {
+                            const topProducts = ['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'];
+                            const allTopSelected = topProducts.every(product => safeOrganicSelectedProducts.includes(product));
+                            
+                            if (allTopSelected) {
+                              // Deselect all top products
+                              setOrganicSelectedProducts(safeOrganicSelectedProducts.filter(p => !topProducts.includes(p)));
+                            } else {
+                              // Select all top products
+                              const newSelection = [...new Set([...safeOrganicSelectedProducts, ...topProducts])];
+                              setOrganicSelectedProducts(newSelection);
+                            }
+                          }}
+                        >
+                          {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].every(product => safeOrganicSelectedProducts.includes(product)) ? 'Deselect Top 5' : 'Select Top 5'}
+                        </Button>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2">
+                        {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].map((productName) => {
+                          const product = safeProducts[productName];
+                          if (!product) return null;
+                          
+                          const isSelected = safeOrganicSelectedProducts.includes(productName);
+                          return (
+                            <button
+                              key={productName}
+                              onClick={() => {
+                                if (safeOrganicSelectedProducts.includes(productName)) {
+                                  setOrganicSelectedProducts(safeOrganicSelectedProducts.filter(p => p !== productName));
+                                } else {
+                                  setOrganicSelectedProducts([...safeOrganicSelectedProducts, productName]);
+                                }
+                              }}
+                              className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                                isSelected
+                                  ? 'bg-blue-500 text-white border-2 border-blue-500 shadow-sm'
+                                  : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                              }`}
+                            >
+                              <div className={`w-3 h-3 rounded-full mr-2 flex items-center justify-center ${
+                                isSelected ? 'bg-white' : 'bg-gray-300'
+                              }`}>
+                                {isSelected && (
+                                  <svg className="w-2 h-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                )}
+                              </div>
+                              {product.displayName}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* All Products - Dropdown */}
+                    <div className="border-t border-gray-200 pt-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <Label className="text-xs font-medium text-gray-600">All Products</Label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs px-3 py-1 h-auto border-dashed hover:bg-blue-50 hover:border-blue-400 transition-all duration-200"
+                          onClick={() => {
+                            const allProductNames = Object.values(safeProducts).map((product: any) => product.name);
+                            if (safeOrganicSelectedProducts.length === allProductNames.length) {
+                              setOrganicSelectedProducts([]);
+                            } else {
+                              setOrganicSelectedProducts(allProductNames);
+                            }
+                          }}
+                        >
+                          {safeOrganicSelectedProducts.length === Object.values(safeProducts).length ? "Deselect All" : "Select All"}
+                        </Button>
+                      </div>
+
+                      {/* Multi-Select Dropdown */}
+                      <div className="relative" ref={captionDropdownRef}>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between text-left font-normal"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setIsCaptionDropdownOpen(!isCaptionDropdownOpen);
+                          }}
+                        >
+                          <span className="text-sm">
+                            {(() => {
+                              const allProducts = Object.values(safeProducts);
+                              const selectedFromDropdown = safeOrganicSelectedProducts.filter(productName => 
+                                allProducts.some((product: any) => product.name === productName)
+                              );
+                              if (selectedFromDropdown.length === 0) {
+                                return "Choose products...";
+                              } else if (selectedFromDropdown.length === 1) {
+                                return safeProducts[selectedFromDropdown[0]]?.displayName || selectedFromDropdown[0];
+                              } else {
+                                return `${selectedFromDropdown.length} products selected`;
+                              }
+                            })()}
+                          </span>
+                          <svg className={`w-4 h-4 opacity-50 transition-transform ${isCaptionDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </Button>
+                        
+                        {isCaptionDropdownOpen && (
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {/* Popular Products Section */}
+                            <div className="border-b border-gray-100 bg-blue-50 px-3 py-2">
+                              <div className="text-xs font-semibold text-blue-800 mb-2">★ Popular Products</div>
+                              {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].map((productName) => {
+                                const product = safeProducts[productName];
+                                if (!product) return null;
+                                
+                                const isSelected = safeOrganicSelectedProducts.includes(productName);
+                                return (
+                                  <div
+                                    key={productName}
+                                    className="flex items-center px-1 py-1.5 hover:bg-blue-100 cursor-pointer rounded"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (safeOrganicSelectedProducts.includes(productName)) {
+                                        setOrganicSelectedProducts(safeOrganicSelectedProducts.filter(p => p !== productName));
+                                      } else {
+                                        setOrganicSelectedProducts([...safeOrganicSelectedProducts, productName]);
+                                      }
+                                    }}
+                                  >
+                                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center mr-3 transition-colors ${
+                                      isSelected 
+                                        ? 'bg-blue-500 border-blue-500' 
+                                        : 'border-blue-300'
+                                    }`}>
+                                      {isSelected && (
+                                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                      )}
+                                    </div>
+                                    <span className="text-sm font-medium text-blue-900">{product.displayName}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            {/* All Other Products */}
+                            <div className="px-3 py-2">
+                              <div className="text-xs font-semibold text-gray-600 mb-2">All Products</div>
+                              {Object.values(safeProducts)
+                                .filter((product: any) => !['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].includes(product.name))
+                                .map((product: any) => {
+                                  const isSelected = safeOrganicSelectedProducts.includes(product.name);
+                                  return (
+                                    <div
+                                      key={product.name}
+                                      className="flex items-center px-1 py-1.5 hover:bg-gray-50 cursor-pointer rounded"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (safeOrganicSelectedProducts.includes(product.name)) {
+                                          setOrganicSelectedProducts(safeOrganicSelectedProducts.filter(p => p !== product.name));
+                                        } else {
+                                          setOrganicSelectedProducts([...safeOrganicSelectedProducts, product.name]);
+                                        }
+                                      }}
+                                    >
+                                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center mr-3 transition-colors ${
+                                        isSelected 
+                                          ? 'bg-blue-500 border-blue-500' 
+                                          : 'border-gray-300'
+                                      }`}>
+                                        {isSelected && (
+                                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                          </svg>
+                                        )}
+                                      </div>
+                                      <span className="text-sm">{product.displayName}</span>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Selected Products Summary */}
+                    {safeOrganicSelectedProducts.length > 0 && (
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200 mt-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <p className="text-sm font-semibold text-blue-900">
+                              {safeOrganicSelectedProducts.length} Product{safeOrganicSelectedProducts.length !== 1 ? 's' : ''} Selected
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs text-blue-700 hover:text-blue-900 hover:bg-blue-100 h-6 px-2"
+                            onClick={() => setOrganicSelectedProducts([])}
+                          >
+                            Clear all
+                          </Button>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2">
+                          {safeOrganicSelectedProducts.map((productValue) => {
+                            const productLabel = safeProducts[productValue]?.displayName || productValue;
+                            return (
+                              <Badge 
+                                key={productValue} 
+                                variant="secondary" 
+                                className="text-xs bg-white text-blue-800 border border-blue-200 hover:bg-blue-50 transition-colors"
+                              >
+                                {productLabel}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {safeOrganicSelectedProducts.length === 0 && (
+                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mt-4">
+                        <div className="flex items-center space-x-2 text-gray-500">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <p className="text-sm">
+                            No products selected - AI will generate general social captions without specific product focus
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
               <Button
                 className="w-full flex items-center justify-center space-x-2"
                 disabled={(!organicVideoTranscription && !organicImageFile) || isGeneratingCaptions}
@@ -448,7 +796,7 @@ export function OrganicSocialTab({
                       goal: organicGoal,
                       tone: organicTone,
                       variations: captionVariations,
-                      selectedProduct: selectedProduct,
+                      selectedProducts: safeOrganicSelectedProducts.length > 0 ? safeOrganicSelectedProducts : [selectedProduct].filter(Boolean),
                       hasImageData: !!imageData
                     });
 
@@ -463,7 +811,7 @@ export function OrganicSocialTab({
                         goal: organicGoal,
                         tone: organicTone,
                         variations: captionVariations,
-                        selectedProduct: selectedProduct,
+                        selectedProducts: safeOrganicSelectedProducts.length > 0 ? safeOrganicSelectedProducts : [selectedProduct].filter(Boolean),
                         imageData: imageData
                       })
                     });
@@ -480,6 +828,28 @@ export function OrganicSocialTab({
                     // console.log('🔍 Social Captions API Response:', data);
                     // console.log('📝 Generated Captions Array:', data.captions);
                     // console.log('📊 Number of captions received:', data.captions?.length || 0);
+                    
+                    // Store debug information
+                    const requestPayload = {
+                      contentType: organicContentType,
+                      transcription: organicVideoTranscription,
+                      platform: organicPlatform,
+                      goal: organicGoal,
+                      tone: organicTone,
+                      variations: captionVariations,
+                      selectedProducts: safeOrganicSelectedProducts.length > 0 ? safeOrganicSelectedProducts : [selectedProduct].filter(Boolean),
+                      imageData: imageData
+                    };
+                    
+                    // Store debug information from backend response
+                    if (data.debugInfo) {
+                      setSocialCaptionsDebugInfo?.({
+                        systemPrompt: data.debugInfo.systemPrompt,
+                        userPrompt: data.debugInfo.userPrompt,
+                        requestPayload: requestPayload,
+                        rawResponse: data.debugInfo.rawResponse
+                      });
+                    }
                     
                     // Ensure we have a valid array of captions
                     let captions = data.captions || [];
@@ -567,10 +937,10 @@ export function OrganicSocialTab({
                               modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
                               temperature: modelSettings?.temperature || 0.7,
                               maxTokens: modelSettings?.maxTokens || 2000,
-                              systemPrompt: debugInfo?.systemPrompt || stationPrompts?.socialCaptions?.systemPrompt || 'Expert social media copywriter for Jones Road Beauty...',
-                              userPrompt: debugInfo?.userPrompt || `Content Type: ${organicContentType}\nTranscription: ${organicVideoTranscription}\nPlatform: ${organicPlatform}\nGoal: ${organicGoal}\nTone: ${organicTone}\nVariations: ${captionVariations}\nSelected Product: ${selectedProduct}`,
-                              requestPayload: debugInfo?.requestPayload,
-                              rawResponse: debugInfo?.rawResponse
+                              systemPrompt: socialCaptionsDebugInfo?.systemPrompt || stationPrompts?.socialCaptions?.systemPrompt || 'Expert social media copywriter for Jones Road Beauty...',
+                              userPrompt: socialCaptionsDebugInfo?.userPrompt || `Content Type: ${organicContentType}\nTranscription: ${organicVideoTranscription}\nPlatform: ${organicPlatform}\nGoal: ${organicGoal}\nTone: ${organicTone}\nVariations: ${captionVariations}\nSelected Products: ${safeOrganicSelectedProducts.length > 0 ? safeOrganicSelectedProducts.join(', ') : selectedProduct || 'None'}`,
+                              requestPayload: socialCaptionsDebugInfo?.requestPayload,
+                              rawResponse: socialCaptionsDebugInfo?.rawResponse
                             });
                             setShowGenerationDetails(true);
                           }}
@@ -877,6 +1247,275 @@ export function OrganicSocialTab({
                 </CardContent>
               </Card>
 
+              {/* Product Selection for Story Sequences */}
+              <Card>
+                <CardContent className="p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <Target className="text-jones-primary mr-2 sm:mr-3" size={18} />
+                    Products to Feature
+                  </h3>
+                  
+                  <div>
+                    <Label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Products (Multi-Select)
+                    </Label>
+                    <p className="text-xs text-gray-500 mb-4">
+                      Select products to mention in your story sequence. Leave empty for general brand content.
+                    </p>
+
+                    {/* Quick Select - Top Products */}
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <Label className="text-xs font-medium text-gray-600">Quick Select - Popular Products</Label>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs text-blue-600 hover:text-blue-800 h-auto p-1"
+                          onClick={() => {
+                            const topProducts = ['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'];
+                            const allTopSelected = topProducts.every(product => safeStorySelectedProducts.includes(product));
+                            
+                            if (allTopSelected) {
+                              // Deselect all top products
+                              setStorySelectedProducts(safeStorySelectedProducts.filter(p => !topProducts.includes(p)));
+                            } else {
+                              // Select all top products
+                              const newSelection = [...new Set([...safeStorySelectedProducts, ...topProducts])];
+                              setStorySelectedProducts(newSelection);
+                            }
+                          }}
+                        >
+                          {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].every(product => safeStorySelectedProducts.includes(product)) ? 'Deselect Top 5' : 'Select Top 5'}
+                        </Button>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2">
+                        {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].map((productName) => {
+                          const product = safeProducts[productName];
+                          if (!product) return null;
+                          
+                          const isSelected = safeStorySelectedProducts.includes(productName);
+                          return (
+                            <button
+                              key={productName}
+                              onClick={() => {
+                                if (safeStorySelectedProducts.includes(productName)) {
+                                  setStorySelectedProducts(safeStorySelectedProducts.filter(p => p !== productName));
+                                } else {
+                                  setStorySelectedProducts([...safeStorySelectedProducts, productName]);
+                                }
+                              }}
+                              className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                                isSelected
+                                  ? 'bg-blue-500 text-white border-2 border-blue-500 shadow-sm'
+                                  : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                              }`}
+                            >
+                              <div className={`w-3 h-3 rounded-full mr-2 flex items-center justify-center ${
+                                isSelected ? 'bg-white' : 'bg-gray-300'
+                              }`}>
+                                {isSelected && (
+                                  <svg className="w-2 h-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                )}
+                              </div>
+                              {product.displayName}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* All Products - Dropdown */}
+                    <div className="border-t border-gray-200 pt-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <Label className="text-xs font-medium text-gray-600">All Products</Label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs px-3 py-1 h-auto border-dashed hover:bg-blue-50 hover:border-blue-400 transition-all duration-200"
+                          onClick={() => {
+                            const allProductNames = Object.values(safeProducts).map((product: any) => product.name);
+                            if (safeStorySelectedProducts.length === allProductNames.length) {
+                              setStorySelectedProducts([]);
+                            } else {
+                              setStorySelectedProducts(allProductNames);
+                            }
+                          }}
+                        >
+                          {safeStorySelectedProducts.length === Object.values(safeProducts).length ? "Deselect All" : "Select All"}
+                        </Button>
+                      </div>
+
+                      {/* Multi-Select Dropdown */}
+                      <div className="relative" ref={storyDropdownRef}>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between text-left font-normal"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setIsStoryDropdownOpen(!isStoryDropdownOpen);
+                          }}
+                        >
+                          <span className="text-sm">
+                            {(() => {
+                              const allProducts = Object.values(safeProducts);
+                              const selectedFromDropdown = safeStorySelectedProducts.filter(productName => 
+                                allProducts.some((product: any) => product.name === productName)
+                              );
+                              if (selectedFromDropdown.length === 0) {
+                                return "Choose products...";
+                              } else if (selectedFromDropdown.length === 1) {
+                                return safeProducts[selectedFromDropdown[0]]?.displayName || selectedFromDropdown[0];
+                              } else {
+                                return `${selectedFromDropdown.length} products selected`;
+                              }
+                            })()}
+                          </span>
+                          <svg className={`w-4 h-4 opacity-50 transition-transform ${isStoryDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </Button>
+                        
+                        {isStoryDropdownOpen && (
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {/* Popular Products Section */}
+                            <div className="border-b border-gray-100 bg-blue-50 px-3 py-2">
+                              <div className="text-xs font-semibold text-blue-800 mb-2">★ Popular Products</div>
+                              {['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].map((productName) => {
+                                const product = safeProducts[productName];
+                                if (!product) return null;
+                                
+                                const isSelected = safeStorySelectedProducts.includes(productName);
+                                return (
+                                  <div
+                                    key={productName}
+                                    className="flex items-center px-1 py-1.5 hover:bg-blue-100 cursor-pointer rounded"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (safeStorySelectedProducts.includes(productName)) {
+                                        setStorySelectedProducts(safeStorySelectedProducts.filter(p => p !== productName));
+                                      } else {
+                                        setStorySelectedProducts([...safeStorySelectedProducts, productName]);
+                                      }
+                                    }}
+                                  >
+                                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center mr-3 transition-colors ${
+                                      isSelected 
+                                        ? 'bg-blue-500 border-blue-500' 
+                                        : 'border-blue-300'
+                                    }`}>
+                                      {isSelected && (
+                                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                      )}
+                                    </div>
+                                    <span className="text-sm font-medium text-blue-900">{product.displayName}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            {/* All Other Products */}
+                            <div className="px-3 py-2">
+                              <div className="text-xs font-semibold text-gray-600 mb-2">All Products</div>
+                              {Object.values(safeProducts)
+                                .filter((product: any) => !['miracle-balm', 'what-the-foundation', 'the-mascara', 'just-enough-tinted-moisturizer', 'everyday-sunscreen-broad-spectrum-spf-30'].includes(product.name))
+                                .map((product: any) => {
+                                  const isSelected = safeStorySelectedProducts.includes(product.name);
+                                  return (
+                                    <div
+                                      key={product.name}
+                                      className="flex items-center px-1 py-1.5 hover:bg-gray-50 cursor-pointer rounded"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (safeStorySelectedProducts.includes(product.name)) {
+                                          setStorySelectedProducts(safeStorySelectedProducts.filter(p => p !== product.name));
+                                        } else {
+                                          setStorySelectedProducts([...safeStorySelectedProducts, product.name]);
+                                        }
+                                      }}
+                                    >
+                                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center mr-3 transition-colors ${
+                                        isSelected 
+                                          ? 'bg-blue-500 border-blue-500' 
+                                          : 'border-gray-300'
+                                      }`}>
+                                        {isSelected && (
+                                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                          </svg>
+                                        )}
+                                      </div>
+                                      <span className="text-sm">{product.displayName}</span>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Selected Products Summary */}
+                    {safeStorySelectedProducts.length > 0 && (
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200 mt-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <p className="text-sm font-semibold text-blue-900">
+                              {safeStorySelectedProducts.length} Product{safeStorySelectedProducts.length !== 1 ? 's' : ''} Selected
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs text-blue-700 hover:text-blue-900 hover:bg-blue-100 h-6 px-2"
+                            onClick={() => setStorySelectedProducts([])}
+                          >
+                            Clear all
+                          </Button>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2">
+                          {safeStorySelectedProducts.map((productValue) => {
+                            const productLabel = safeProducts[productValue]?.displayName || productValue;
+                            return (
+                              <Badge 
+                                key={productValue} 
+                                variant="secondary" 
+                                className="text-xs bg-white text-blue-800 border border-blue-200 hover:bg-blue-50 transition-colors"
+                              >
+                                {productLabel}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {safeStorySelectedProducts.length === 0 && (
+                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mt-4">
+                        <div className="flex items-center space-x-2 text-gray-500">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <p className="text-sm">
+                            No products selected - AI will generate general story sequence without specific product focus
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
               <Button
                 className="w-full flex items-center justify-center space-x-2"
                 disabled={(!storyVideoTranscription && !storyImageFile) || isGeneratingStory}
@@ -913,7 +1552,7 @@ export function OrganicSocialTab({
                         sequenceType: storySequenceType,
                         length: storyLength,
                         tone: storyTone,
-                        selectedProduct: selectedProduct,
+                        selectedProducts: safeStorySelectedProducts.length > 0 ? safeStorySelectedProducts : [selectedProduct].filter(Boolean),
                         imageData: imageData
                       })
                     });
@@ -930,6 +1569,27 @@ export function OrganicSocialTab({
                     // console.log('🔍 Story Sequence API Response:', data);
                     // console.log('📚 Generated Story Sequence Array:', data.sequence);
                     // console.log('📊 Number of slides received:', data.sequence?.length || 0);
+                    
+                    // Store debug information
+                    const requestPayload = {
+                      contentType: storyContentType,
+                      transcription: storyVideoTranscription,
+                      sequenceType: storySequenceType,
+                      length: storyLength,
+                      tone: storyTone,
+                      selectedProducts: safeStorySelectedProducts.length > 0 ? safeStorySelectedProducts : [selectedProduct].filter(Boolean),
+                      imageData: imageData
+                    };
+                    
+                    // Store debug information from backend response
+                    if (data.debugInfo) {
+                      setStorySequenceDebugInfo?.({
+                        systemPrompt: data.debugInfo.systemPrompt,
+                        userPrompt: data.debugInfo.userPrompt,
+                        requestPayload: requestPayload,
+                        rawResponse: data.debugInfo.rawResponse
+                      });
+                    }
                     
                     // Ensure we have a valid array of slides
                     let sequence = data.sequence || [];
@@ -1023,10 +1683,10 @@ export function OrganicSocialTab({
                               modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
                               temperature: modelSettings?.temperature || 0.7,
                               maxTokens: modelSettings?.maxTokens || 2000,
-                              systemPrompt: debugInfo?.systemPrompt || stationPrompts?.storySequence?.systemPrompt || 'Expert Instagram story sequence creator for Jones Road Beauty...',
-                              userPrompt: debugInfo?.userPrompt || `Content Type: ${storyContentType}\nTranscription: ${storyVideoTranscription}\nSequence Type: ${storySequenceType}\nLength: ${storyLength} slides\nTone: ${storyTone}\nSelected Product: ${selectedProduct}`,
-                              requestPayload: debugInfo?.requestPayload,
-                              rawResponse: debugInfo?.rawResponse
+                              systemPrompt: storySequenceDebugInfo?.systemPrompt || stationPrompts?.storySequence?.systemPrompt || 'Expert Instagram story sequence creator for Jones Road Beauty...',
+                              userPrompt: storySequenceDebugInfo?.userPrompt || `Content Type: ${storyContentType}\nTranscription: ${storyVideoTranscription}\nSequence Type: ${storySequenceType}\nLength: ${storyLength} slides\nTone: ${storyTone}\nSelected Products: ${safeStorySelectedProducts.length > 0 ? safeStorySelectedProducts.join(', ') : selectedProduct || 'None'}`,
+                              requestPayload: storySequenceDebugInfo?.requestPayload,
+                              rawResponse: storySequenceDebugInfo?.rawResponse
                             });
                             setShowGenerationDetails(true);
                           }}

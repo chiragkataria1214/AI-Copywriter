@@ -244,7 +244,7 @@ LANDING PAGE SPECIFICATIONS:
 LANDING PAGE TYPE: {landingPageType}
 PRODUCT BRIEF: {productBrief}  
 TARGET PERSONA: {concept}
-BRAND/DR BALANCE: {brandPercent}% brand voice, {drPercent}% direct response
+BRAND/Direct Response BALANCE: {brandPercent}% brand voice, {drPercent}% direct response
 {adsContentSection}
 
 FRAMEWORK SELECTION GUIDANCE:

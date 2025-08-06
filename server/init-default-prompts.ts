@@ -26,12 +26,6 @@ Your response must follow this exact JSON structure:
   "primaryText": "Your primary text content here - should be 2-3 paragraphs that tell a compelling story, address pain points, highlight benefits, and include a clear call-to-action."
 }
 
-BRAND VOICE GUIDELINES:
-- Authentic, relatable, and approachable
-- Avoid overly salesy or aggressive language
-- Focus on real-life benefits and situations
-- Use conversational tone that feels like advice from a friend
-- Emphasize natural beauty enhancement, not transformation
 
 HEADLINE FRAMEWORKS TO USE:
 1. BENEFIT_DRIVEN: Lead with the primary benefit or outcome
@@ -93,13 +87,6 @@ Your response must follow this exact JSON structure:
   "cta": "Compelling call-to-action text"
 }
 
-BRAND VOICE GUIDELINES:
-- Authentic, relatable, and approachable
-- Avoid overly salesy or aggressive language
-- Focus on real-life benefits and situations
-- Use conversational tone that feels like advice from a friend
-- Emphasize natural beauty enhancement, not transformation
-
 LANDING PAGE STRUCTURE:
 1. Compelling headline that addresses the main benefit
 2. Supporting subheadline for context
@@ -160,12 +147,6 @@ Your response must follow this exact JSON structure:
   }
 }
 
-BRAND VOICE GUIDELINES:
-- Authentic, relatable, and approachable
-- Avoid overly salesy or aggressive language
-- Focus on real-life benefits and situations
-- Use conversational tone that feels like advice from a friend
-- Emphasize natural beauty enhancement, not transformation
 
 STATIC AD PRINCIPLES:
 1. Keep text minimal - let visuals tell the story
@@ -212,13 +193,6 @@ Your response must follow this exact JSON structure:
   "Second caption variation - different angle and approach with hashtags", 
   "Third caption variation - unique perspective with call-to-action and hashtags"
 ]
-
-BRAND VOICE GUIDELINES:
-- Authentic, relatable, and approachable
-- Avoid overly salesy or aggressive language
-- Focus on real-life benefits and situations
-- Use conversational tone that feels like advice from a friend
-- Emphasize natural beauty enhancement, not transformation
 
 PLATFORM GUIDELINES:
 - Instagram: Use emojis, 3-5 relevant hashtags, encourage engagement
@@ -284,12 +258,6 @@ Your response must follow this exact JSON structure:
   }
 ]
 
-BRAND VOICE GUIDELINES:
-- Authentic, relatable, and approachable
-- Avoid overly salesy or aggressive language
-- Focus on real-life benefits and situations
-- Use conversational tone that feels like advice from a friend
-- Emphasize natural beauty enhancement, not transformation
 
 STORY STRUCTURE PRINCIPLES:
 1. Hook: Start with compelling opening that stops the scroll
@@ -349,13 +317,6 @@ When email template images are provided, you MUST:
 5. Ensure text length and formatting align with the template's layout
 6. Consider color schemes, typography, and overall aesthetic when crafting copy
 
-BRAND VOICE GUIDELINES:
-- Authentic, relatable, and approachable
-- Avoid overly salesy or aggressive language
-- Focus on real-life benefits and situations
-- Use conversational tone that feels like advice from a friend
-- Emphasize natural beauty enhancement, not transformation
-
 RETENTION BEST PRACTICES:
 - Email: Send times 10-11am EST, 2-3x/week max
 - SMS: Send times 2-4pm EST, 1-2x/week max, keep under 160 characters
@@ -407,12 +368,6 @@ You MUST return your response as plain text ONLY. Do not include any JSON format
 
 Provide a comprehensive response that directly fulfills the user's specific request while maintaining Jones Road Beauty's authentic brand voice and providing strategic value.
 
-BRAND VOICE GUIDELINES:
-- Authentic, relatable, and approachable
-- Avoid overly salesy or aggressive language
-- Focus on real-life benefits and situations
-- Use conversational tone that feels like advice from a friend
-- Emphasize natural beauty enhancement, not transformation
 
 CONTENT PRINCIPLES:
 - Address the user's specific request comprehensively
