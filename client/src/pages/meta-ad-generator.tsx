@@ -684,45 +684,98 @@ export default function MetaAdGenerator() {
       if (selectedItemForRevision) {
         const { type, index, field } = selectedItemForRevision;
 
-        if (type === 'headline' && index !== undefined) {
-          const newHeadlines = [...generatedHeadlines];
-          newHeadlines[index] = { ...newHeadlines[index], copy: data.revisedContent };
-          setGeneratedHeadlines(newHeadlines);
+        // Check if the AI returned a complete ad copy structure for ad copy revisions
+        const isAdCopyRevision = type === 'headline' || type === 'primaryText';
+        let parsedAdCopy = null;
+        
+        if (isAdCopyRevision) {
+          try {
+            // Try to parse the revised content as JSON (complete ad copy structure)
+            const jsonMatch = data.revisedContent.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              parsedAdCopy = JSON.parse(jsonMatch[0]);
+              
+              // Validate it has the expected ad copy structure
+              if (parsedAdCopy.headlines && Array.isArray(parsedAdCopy.headlines) && parsedAdCopy.primaryText) {
+                console.log('Detected complete ad copy structure in revision response');
+              } else {
+                parsedAdCopy = null;
+              }
+            }
+          } catch (error) {
+            // Not a JSON structure, treat as regular text revision
+            parsedAdCopy = null;
+          }
+        }
+
+        if (parsedAdCopy) {
+          // Update both headlines and primary text with the complete structure
+          const cleanedHeadlines = parsedAdCopy.headlines.slice(0, 5).map((item: any) => ({
+            framework: item.framework || 'GENERAL',
+            copy: (item.copy || '').replace(/^\*\*(.+)\*\*$/, '$1').replace(/^"(.+)"$/, '$1').trim()
+          })).filter((item: any) => item.copy.length > 0);
           
-          // Save updated headlines to database if we have a copyId
+          const cleanedPrimaryText = parsedAdCopy.primaryText.replace(/^\*\*(.+)\*\*$/, '$1').replace(/^"(.+)"$/, '$1').trim();
+          
+          setGeneratedHeadlines(cleanedHeadlines);
+          setGeneratedPrimaryText(cleanedPrimaryText);
+          
+          // Save both to database if we have a copyId
           if (currentCopyId) {
             try {
               await apiRequest(`/api/generated-copy/${currentCopyId}`, {
                 method: 'PUT',
-                body: { headlines: newHeadlines }
+                body: { 
+                  headlines: cleanedHeadlines,
+                  primaryText: cleanedPrimaryText
+                }
               });
             } catch (error) {
-              console.warn('Failed to save headline updates to database:', error);
+              console.warn('Failed to save complete ad copy updates to database:', error);
             }
           }
-        } else if (type === 'primaryText') {
-          setGeneratedPrimaryText(data.revisedContent);
-          
-          // Save updated primary text to database if we have a copyId
-          if (currentCopyId) {
-            try {
-              await apiRequest(`/api/generated-copy/${currentCopyId}`, {
-                method: 'PUT',
-                body: { primaryText: data.revisedContent }
-              });
-            } catch (error) {
-              console.warn('Failed to save primary text updates to database:', error);
+        } else {
+          // Handle individual field updates (original behavior)
+          if (type === 'headline' && index !== undefined) {
+            const newHeadlines = [...generatedHeadlines];
+            newHeadlines[index] = { ...newHeadlines[index], copy: data.revisedContent };
+            setGeneratedHeadlines(newHeadlines);
+            
+            // Save updated headlines to database if we have a copyId
+            if (currentCopyId) {
+              try {
+                await apiRequest(`/api/generated-copy/${currentCopyId}`, {
+                  method: 'PUT',
+                  body: { headlines: newHeadlines }
+                });
+              } catch (error) {
+                console.warn('Failed to save headline updates to database:', error);
+              }
             }
+          } else if (type === 'primaryText') {
+            setGeneratedPrimaryText(data.revisedContent);
+            
+            // Save updated primary text to database if we have a copyId
+            if (currentCopyId) {
+              try {
+                await apiRequest(`/api/generated-copy/${currentCopyId}`, {
+                  method: 'PUT',
+                  body: { primaryText: data.revisedContent }
+                });
+              } catch (error) {
+                console.warn('Failed to save primary text updates to database:', error);
+              }
+            }
+          } else if (type === 'landingCopy' && field) {
+            setGeneratedLandingCopy(prev => ({
+              ...prev,
+              [field]: data.revisedContent
+            }));
+          } else if (type === 'custom') {
+            setGeneratedCustomResponse(data.revisedContent);
+          } else if (type === 'retention') {
+            setGeneratedRetentionCopy(data.revisedContent);
           }
-        } else if (type === 'landingCopy' && field) {
-          setGeneratedLandingCopy(prev => ({
-            ...prev,
-            [field]: data.revisedContent
-          }));
-        } else if (type === 'custom') {
-          setGeneratedCustomResponse(data.revisedContent);
-        } else if (type === 'retention') {
-          setGeneratedRetentionCopy(data.revisedContent);
         }
       }
 
