@@ -358,6 +358,29 @@ FRAMEWORK APPLICATION:
 - Ensure each headline serves a distinct strategic purpose`;
 }
 
+export function buildLandingPageFrameworksSection(trainingConfig: TrainingConfig): string {
+  if (!trainingConfig.copyFrameworks?.landingPageFrameworks) {
+    return '';
+  }
+
+  return `
+
+LANDING PAGE FRAMEWORK GUIDANCE:
+Use these proven frameworks to structure compelling landing page copy:
+${trainingConfig.copyFrameworks.landingPageFrameworks.map(framework => `
+• ${framework.name}: ${framework.description}
+  Content Sequence: ${framework.contentSequence.join(' → ')}
+  Reason Structure: ${framework.reasonStructure.join(', ')}
+  Optimization Rules: ${framework.optimizationRules.join('; ')}
+  ${framework.realExamples && framework.realExamples.length > 0 ? `Examples: ${framework.realExamples.slice(0, 2).join(', ')}` : ''}`).join('')}
+
+FRAMEWORK APPLICATION:
+- Choose the framework that best matches your landing page type and audience
+- Follow the content sequence to ensure logical flow and persuasion
+- Apply optimization rules to maximize conversion potential
+- Use reason structures to build compelling arguments for your offer`;
+}
+
 // Helper function to build custom brief section
 export function buildCustomBriefSection(customBrief?: string): string {
   if (!customBrief || !customBrief.trim()) {

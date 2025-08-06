@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { type TrainingConfig } from '@shared/training-config';
 import sharp from 'sharp';
-import { buildTargetPersonaSection, buildSelectedProductsSection, buildAISettingsContext, buildLandingPageContext, buildCopyFrameworksSection, buildCustomBriefSection } from './anthropic-helpers';
+import { buildTargetPersonaSection, buildSelectedProductsSection, buildAISettingsContext, buildLandingPageContext, buildCopyFrameworksSection, buildLandingPageFrameworksSection, buildCustomBriefSection } from './anthropic-helpers';
 
 // Generation metadata interface for debugging/transparency
 export interface GenerationMetadata {
@@ -246,6 +246,7 @@ export interface LandingPageRequest {
   adsContent?: string;
   brandDrBalance: number;
   selectedProduct?: string;
+  selectedProducts?: string[];
   mainAngle?: string;
   transcription?: string;
 }
@@ -255,6 +256,7 @@ export interface CustomCopyRequest {
   concept: string;
   brandDrBalance: number;
   selectedProduct?: string;
+  selectedProducts?: string[];
   useJonesBrandGuide: boolean;
 }
 
@@ -283,33 +285,56 @@ export interface RevisionRequest {
     selectedProducts?: string[];
     field?: string;
     customRequest?: string;
+    useJonesBrandGuide?: boolean;
   };
 }
 
-export async function reviseContent(request: RevisionRequest): Promise<string> {
+export async function reviseContent(request: RevisionRequest, trainingConfig: TrainingConfig): Promise<string> {
   const { originalContent, revisionInstructions, contentType, context } = request;
   
-  const systemPrompt = `You are an expert copywriter specializing in improving content for Jones Road Beauty. 
+  // Map content types to station names for getting the appropriate system prompt
+  const contentTypeToStation: Record<string, string> = {
+    'headline': 'adCopy',
+    'primaryText': 'adCopy', 
+    'landingCopy': 'landingPage',
+    'custom': 'customRequest',
+    'retention': 'emailSmsRetention'
+  };
+  
+  const stationName = contentTypeToStation[contentType] || 'customRequest';
+  
+  // Get station-specific system prompt from training config
+  const baseSystemPrompt = trainingConfig?.stationPrompts?.[stationName]?.systemPrompt;
+  
+  // Build AI Settings context using the helper function
+  const aiSettingsContext = buildAISettingsContext(trainingConfig, {
+    concept: context?.concept || '',
+    selectedProduct: context?.selectedProduct,
+    selectedProducts: context?.selectedProducts,
+    brandDrBalance: context?.brandDrBalance || 50,
+    useJonesBrandGuide: context?.useJonesBrandGuide !== false // Default to true
+  });
 
-JONES ROAD BEAUTY BRAND GUIDELINES:
-- Core positioning: "Your Skin But Better" - natural, effortless enhancement
-- Brand voice: Natural, welcoming, authentic, conversational, never pushy or salesy
-- Tone: Educational and helpful, like a friend sharing beauty tips
-- Focus on enhancement and ease, not transformation or perfection
-- Use "moisturizing" not "hydrating" for makeup products
-- Avoid aggressive direct response language, sales pressure, or urgency tactics
-- Sound like Bobbi Brown sharing makeup philosophy, not a sales funnel
-- Emphasize real, achievable results and natural beauty
+  // Create revision-specific system prompt
+  let systemPrompt = '';
+  
+  if (baseSystemPrompt) {
+    // Use station-specific prompt as base and add revision context
+    systemPrompt = `You are an expert copywriter specializing in improving content. You will be revising ${contentType} copy based on specific improvement instructions.
 
-Your task is to revise ${contentType} copy based on specific improvement instructions while maintaining the Jones Road Beauty brand voice and style.
+${baseSystemPrompt}
+
+${aiSettingsContext}
+
+REVISION TASK:
+Your task is to revise ${contentType} copy based on specific improvement instructions while maintaining the brand voice and style established above.
 
 ${contentType === 'custom' ? `
 SPECIAL NOTES FOR CUSTOM COPY REVISION:
 - This could be any format: social media, email, brief, announcement, etc.
 - Maintain the original format and structure unless specifically asked to change it
-- Focus on the specific improvements requested while keeping Jones Road's authentic voice
+- Focus on the specific improvements requested while keeping the established brand voice
 - Be adaptable to any copywriting format or purpose
-- Keep the educational, helpful tone that matches Jones Road's approach
 - Use clean, plain text formatting without special characters like asterisks, hashtags, or markdown
 - Output should be clean and readable without formatting symbols
 ` : ''}
@@ -319,7 +344,6 @@ SPECIAL NOTES FOR RETENTION COPY REVISION:
 - This is ${context?.field === 'retention' ? 'email/SMS retention copy' : 'retention marketing content'}
 - Maintain platform-appropriate length and formatting (Email vs SMS)
 - Focus on customer retention and engagement principles
-- Keep Jones Road's "Your Skin But Better" philosophy and authentic voice
 - Use personalized, relationship-building language appropriate for existing customers
 - Balance promotional content with value-driven messaging
 - Include relevant product mentions if specific products were selected
@@ -333,11 +357,52 @@ ${context?.selectedProducts && context.selectedProducts.length > 0 ? `
 REVISION PRINCIPLES:
 - Keep the core message and structure intact (unless explicitly asked to change)
 - Apply the requested improvements precisely
-- Maintain natural, conversational tone
-- Ensure copy aligns with Jones Road's "effortless beauty" positioning
+- Maintain the established brand voice and tone
+- Use authentic language patterns that feel genuine
+- Ensure copy aligns with the brand positioning established above
+
+Return ONLY the revised content without explanations, special characters, or markdown formatting. Use clean, plain text only.`;
+  } else {
+    // Fallback system prompt if no station-specific prompt is found
+    systemPrompt = `You are an expert copywriter specializing in improving content. 
+
+${aiSettingsContext}
+
+Your task is to revise ${contentType} copy based on specific improvement instructions while maintaining the brand voice and style established above.
+
+${contentType === 'custom' ? `
+SPECIAL NOTES FOR CUSTOM COPY REVISION:
+- This could be any format: social media, email, brief, announcement, etc.
+- Maintain the original format and structure unless specifically asked to change it
+- Focus on the specific improvements requested while keeping the established brand voice
+- Be adaptable to any copywriting format or purpose
+- Use clean, plain text formatting without special characters like asterisks, hashtags, or markdown
+- Output should be clean and readable without formatting symbols
+` : ''}
+
+${contentType === 'retention' ? `
+SPECIAL NOTES FOR RETENTION COPY REVISION:
+- This is ${context?.field === 'retention' ? 'email/SMS retention copy' : 'retention marketing content'}
+- Maintain platform-appropriate length and formatting (Email vs SMS)
+- Focus on customer retention and engagement principles
+- Use personalized, relationship-building language appropriate for existing customers
+- Balance promotional content with value-driven messaging
+- Include relevant product mentions if specific products were selected
+- Ensure mobile-friendly formatting for both email and SMS
+- Use clean, plain text formatting without markdown or special characters
+${context?.selectedProducts && context.selectedProducts.length > 0 ? `
+- Feature these selected products appropriately: ${context.selectedProducts.join(', ')}
+` : ''}
+` : ''}
+
+REVISION PRINCIPLES:
+- Keep the core message and structure intact (unless explicitly asked to change)
+- Apply the requested improvements precisely
+- Maintain the established brand voice and tone
 - Use authentic language patterns that feel genuine
 
 Return ONLY the revised content without explanations, special characters, or markdown formatting. Use clean, plain text only.`;
+  }
 
   const userPrompt = `ORIGINAL CONTENT:
 "${originalContent}"
@@ -351,13 +416,13 @@ ${context?.field ? `SPECIFIC FIELD: ${context.field}` : ''}
 ${context ? `
 CONTEXT:
 - Target Audience: ${context.concept}${context.targetAudience ? ` (${context.targetAudience})` : ''}
-- Product: ${context.selectedProduct || 'General Jones Road Beauty'}
+- Product: ${context.selectedProduct || 'General brand content'}
 - Brand/DR Balance: ${context.brandDrBalance || 50}% brand voice
 ${context.customBrief ? `- Custom Brief: ${context.customBrief}` : ''}
 ${context.customRequest && contentType === 'custom' ? `- Original Request: ${context.customRequest}` : ''}
 ` : ''}
 
-Please revise the content applying the improvement instructions while maintaining Jones Road Beauty's brand voice and the original intent.`;
+Please revise the content applying the improvement instructions while maintaining the established brand voice and the original intent.`;
 
   try {
     const response = await anthropic.messages.create({
@@ -620,7 +685,9 @@ Analyze the uploaded ad creative image to extract key visual elements, text over
 }
 
 export async function generateLandingPageCopy(request: LandingPageRequest, trainingConfig: TrainingConfig) {
-  const { landingPageType, productBrief, concept, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle, transcription } = request;
+  const { landingPageType, productBrief, concept, useAdsContent, adsContent, brandDrBalance, selectedProduct, selectedProducts, mainAngle, transcription } = request;
+  
+
   
   // Validate required parameters
   if (!concept || concept === 'none') {
@@ -634,13 +701,90 @@ export async function generateLandingPageCopy(request: LandingPageRequest, train
   const aiSettingsContext = buildAISettingsContext(trainingConfig, {
     concept: safeConcept,
     selectedProduct,
+    selectedProducts,
     brandDrBalance: safeBrandDrBalance,
     useJonesBrandGuide: true
   });
   
-  // Build persona and product sections
+  // Build comprehensive sections using helper functions
   const targetPersonaSection = buildTargetPersonaSection(safeConcept, trainingConfig);
-  const selectedProductsSection = buildSelectedProductsSection(selectedProduct, [], trainingConfig);
+  const selectedProductsSection = buildSelectedProductsSection(selectedProduct, selectedProducts, trainingConfig);
+  const landingPageFrameworksSection = buildLandingPageFrameworksSection(trainingConfig);
+  
+
+  
+  // Build additional contextual sections
+  const transcriptionSection = transcription ? `
+TRANSCRIPTION CONTEXT:
+${transcription}
+
+TRANSCRIPTION INTEGRATION REQUIREMENT:
+- Use key insights, quotes, and messaging angles from the transcription
+- Maintain the authentic voice and tone established in the original content
+- Extract compelling hooks and benefit statements for landing page copy
+- Ensure messaging consistency between the source material and landing page
+` : '';
+
+  const adsContentSection = useAdsContent && adsContent ? `
+ADS CONTENT TO REFERENCE:
+${adsContent}
+
+AD-TO-LANDING PAGE ALIGNMENT:
+- Create seamless messaging flow from ad to landing page
+- Maintain consistent value propositions and benefit language
+- Ensure headline and angle alignment for reduced bounce rate
+- Use similar emotional hooks and persuasion elements
+` : '';
+
+  const mainAngleSection = mainAngle ? `
+
+MAIN ANGLE FOCUS:
+${mainAngle}
+
+ANGLE AMPLIFICATION REQUIREMENTS:
+- Make this angle the central theme throughout all landing page sections
+- Use this angle to inform headline strategy and messaging hierarchy
+- Ensure all benefit statements support and reinforce this main angle
+- Create compelling proof points that validate this specific angle
+` : '';
+
+  const productBriefSection = productBrief ? `
+PRODUCT BRIEF DETAILS:
+${productBrief}
+
+BRIEF INTEGRATION REQUIREMENTS:
+- Incorporate specific product details and unique selling points
+- Use brief information to create targeted benefit statements
+- Ensure technical accuracy while maintaining compelling copy
+- Highlight differentiators and competitive advantages mentioned in brief
+` : '';
+
+  const brandBalanceSection = `
+BRAND/DR BALANCE GUIDANCE:
+Brand Voice: ${safeBrandDrBalance}% | Direct Response: ${100 - safeBrandDrBalance}%
+
+${safeBrandDrBalance > 60 ? `
+BRAND-FIRST APPROACH (High Brand %):
+- Lead with brand storytelling and emotional connection
+- Use authentic, conversational tone throughout
+- Focus on brand values and lifestyle integration
+- Create aspirational messaging that builds brand affinity
+- Incorporate brand personality and voice characteristics
+` : safeBrandDrBalance < 40 ? `
+DIRECT RESPONSE APPROACH (High DR %):
+- Lead with clear, immediate benefits and results
+- Use urgency and scarcity elements where appropriate
+- Focus on problem/solution messaging
+- Create action-oriented copy with strong CTAs
+- Emphasize tangible outcomes and proof points
+` : `
+BALANCED APPROACH (Equal Brand/DR):
+- Blend brand storytelling with clear benefit communication
+- Use authentic voice while maintaining conversion focus
+- Balance emotional connection with logical persuasion
+- Create compelling narrative that drives action
+- Maintain brand integrity while optimizing for results
+`}`;
 
   // Use database system prompt instead of hardcoded
   const baseSystemPrompt = trainingConfig?.stationPrompts?.landingPage?.systemPrompt;
@@ -651,6 +795,8 @@ export async function generateLandingPageCopy(request: LandingPageRequest, train
   
   const systemPrompt = `${baseSystemPrompt}
 
+ ${landingPageFrameworksSection}
+
 ${aiSettingsContext}`;
 
   // Use database user prompt template instead of hardcoded
@@ -660,7 +806,14 @@ ${aiSettingsContext}`;
     throw new Error('Landing page user prompt template not found in training configuration. Please ensure database contains proper station prompt configuration.');
   }
 
-  // Replace template variables in user prompt
+  // Debug logging for selected products
+  console.log('=== LANDING PAGE SELECTED PRODUCTS DEBUG ===');
+  console.log('selectedProduct:', selectedProduct);
+  console.log('selectedProducts:', selectedProducts);
+  console.log('selectedProductsSection length:', selectedProductsSection.length);
+  console.log('selectedProductsSection preview:', selectedProductsSection.substring(0, 200) + '...');
+  
+  // Build comprehensive user prompt with template replacements and additional sections
   const userPrompt = baseUserPrompt
     .replace('{landingPageType}', landingPageType)
     .replace('{productBrief}', productBrief || '')
@@ -670,7 +823,18 @@ ${aiSettingsContext}`;
     .replace('{drPercent}', (100 - safeBrandDrBalance).toString())
     .replace('{adsContentSection}', useAdsContent && adsContent ? `\nADS CONTENT TO REFERENCE:\n${adsContent}\n` : '')
     .replace('{targetPersonaSection}', targetPersonaSection)
-    .replace('{selectedProductsSection}', selectedProductsSection);
+    .replace('{selectedProductsSection}', selectedProductsSection) + 
+    transcriptionSection + 
+    adsContentSection + 
+    mainAngleSection + 
+    productBriefSection + 
+    targetPersonaSection +
+    selectedProductsSection + 
+    brandBalanceSection;
+
+  console.log('=== FINAL USER PROMPT PREVIEW ===');
+  console.log(userPrompt.substring(0, 500) + '...');
+  console.log('=== END DEBUG ===');
 
   try {
     const response = await anthropic.messages.create({
@@ -1096,7 +1260,7 @@ INSTRUCTIONS:
 }
 
 export async function generateCustomCopy(request: CustomCopyRequest, trainingConfig: TrainingConfig) {
-  const { customRequest, concept, brandDrBalance, selectedProduct, useJonesBrandGuide } = request;
+  const { customRequest, concept, brandDrBalance, selectedProduct, selectedProducts, useJonesBrandGuide } = request;
   
   // Validate required parameters
   if (!concept || concept === 'none') {
@@ -1110,13 +1274,14 @@ export async function generateCustomCopy(request: CustomCopyRequest, trainingCon
   const aiSettingsContext = buildAISettingsContext(trainingConfig, {
     concept: safeConcept,
     selectedProduct,
+    selectedProducts,
     brandDrBalance: safeBrandDrBalance,
     useJonesBrandGuide
   });
   
   // Build persona and product sections
   const targetPersonaSection = buildTargetPersonaSection(safeConcept, trainingConfig);
-  const selectedProductsSection = buildSelectedProductsSection(selectedProduct, [], trainingConfig);
+  const selectedProductsSection = buildSelectedProductsSection(selectedProduct, request.selectedProducts, trainingConfig);
   
   // Use database system prompt instead of hardcoded fallback
   const baseSystemPrompt = trainingConfig?.stationPrompts?.customRequest?.systemPrompt;
@@ -1139,21 +1304,7 @@ OUTPUT FORMATTING GUIDELINES:
 YOUR TASK:
 Create copy that fulfills the user's specific request while maintaining Jones Road Beauty's authentic brand voice.`;
 
-  // Define audience context based on concept
-  const getAudienceDescription = (concept: string) => {
-    // Audience descriptions should come from database persona data
-    if (trainingConfig.personaPillars && trainingConfig.personaPillars[concept]) {
-      let description = trainingConfig.personaPillars[concept].description || '';
-      
-      return description;
-    }
-    
-    // No hardcoded fallbacks - throw error if persona not found in database
-    throw new Error(`Persona '${concept}' not found in training configuration. Please ensure database contains proper persona data.`);
-  };
 
-  const audienceDescription = getAudienceDescription(request.concept);
-  const productContext = request.selectedProduct ? `\n\nPRODUCT CONTEXT: ${request.selectedProduct}` : '';
   const brandBalance = request.brandDrBalance || 50;
   
   // Brand balance guidance should come from database copy frameworks
@@ -1172,8 +1323,9 @@ Create copy that fulfills the user's specific request while maintaining Jones Ro
   const userPrompt = `USER'S REQUEST:
 ${request.customRequest}
 
-TARGET AUDIENCE: ${audienceDescription}
-${productContext}
+${targetPersonaSection}
+
+${selectedProductsSection}
 
 BRAND/DR BALANCE: ${brandBalance}% brand voice - ${balanceGuidance}
 
@@ -1215,8 +1367,6 @@ Create copy that fulfills this request while maintaining Jones Road Beauty's aut
     throw new Error('Failed to generate custom copy');
   }
 }
-
-
 
 export async function generateRetentionCopy(request: {
   keyMessage: string;
@@ -1740,6 +1890,7 @@ export async function generateSocialCaptions(request: {
   tone: string;
   variations: number;
   selectedProduct?: string;
+  selectedProducts?: string[];
   concept?: string;
   imageData?: string; // Add image data parameter
 }, trainingConfig: TrainingConfig) {
@@ -1754,7 +1905,7 @@ export async function generateSocialCaptions(request: {
   // Build persona and product sections
   const safeConcept = request.concept || 'lifeJuggler';
   const targetPersonaSection = buildTargetPersonaSection(safeConcept, trainingConfig);
-  const selectedProductsSection = buildSelectedProductsSection(request.selectedProduct, [], trainingConfig);
+  const selectedProductsSection = buildSelectedProductsSection(request.selectedProduct, request.selectedProducts, trainingConfig);
   
   const systemPrompt = `You are a social media expert specializing in creating engaging organic social content for Jones Road Beauty. Your goal is to create authentic, platform-optimized captions that drive engagement and reflect the brand's "effortless beauty" philosophy.
 
@@ -1806,7 +1957,10 @@ VARIATIONS: ${request.variations}
 
 PLATFORM GUIDANCE: ${platformGuidance[request.platform as keyof typeof platformGuidance] || platformGuidance["multi-platform"]}
 
-${request.selectedProduct ? `FEATURED PRODUCT: ${request.selectedProduct} - Incorporate this product naturally into the captions` : ''}
+${targetPersonaSection}
+
+Incorporate this product naturally into the captions
+${selectedProductsSection}
 
 REQUIREMENTS:
 - Create exactly ${request.variations} distinct caption variations
@@ -1932,6 +2086,7 @@ export async function generateStorySequence(request: {
   length: number;
   tone: string;
   selectedProduct?: string;
+  selectedProducts?: string[];
   concept?: string;
   imageData?: string; // Add image data parameter
 }, trainingConfig: TrainingConfig) {
@@ -1946,7 +2101,7 @@ export async function generateStorySequence(request: {
   // Build persona and product sections
   const safeConcept = request.concept || 'lifeJuggler';
   const targetPersonaSection = buildTargetPersonaSection(safeConcept, trainingConfig);
-  const selectedProductsSection = buildSelectedProductsSection(request.selectedProduct, [], trainingConfig);
+  const selectedProductsSection = buildSelectedProductsSection(request.selectedProduct, request.selectedProducts, trainingConfig);
   
   const systemPrompt = `You are a social media strategist specializing in Instagram Stories for Jones Road Beauty. Your goal is to create engaging story sequences that drive engagement and showcase the brand's "effortless beauty" philosophy.
 
@@ -2000,7 +2155,10 @@ LENGTH: ${request.length} slides
 SEQUENCE GUIDANCE: ${sequenceTypeGuidance[request.sequenceType as keyof typeof sequenceTypeGuidance] || "Create engaging story content"}
 TONE GUIDANCE: ${toneGuidance[request.tone as keyof typeof toneGuidance] || "Authentic and engaging"}
 
-${request.selectedProduct ? `FEATURED PRODUCT: ${request.selectedProduct} - Incorporate this product naturally into the story sequence` : ''}
+${targetPersonaSection}
+
+Incorporate this product naturally into the captions
+${selectedProductsSection}
 
 REQUIREMENTS:
 - Create exactly ${request.length} slides

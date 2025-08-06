@@ -42,7 +42,7 @@ export function ProductSelection({
   // Convert dynamic products to the expected format or use fallback
   const products = dynamicProducts 
     ? Object.entries(dynamicProducts).map(([key, product]: [string, any]) => ({
-        value: product.name || key,
+        value: key, // Use the key from the API response, which matches the backend product claims keys
         label: product.displayName || product.name || product.label || key
       }))
     : fallbackProducts;

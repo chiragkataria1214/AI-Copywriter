@@ -601,6 +601,7 @@ export default function MetaAdGenerator() {
         useJonesBrandGuide,
         airLink,
         uploadedImage,
+        selectedProduct,
         selectedProducts
       };
 
@@ -805,6 +806,7 @@ export default function MetaAdGenerator() {
         concept,
         brandDrBalance: brandDrBalance[0],
         selectedProduct,
+        selectedProducts,
         useJonesBrandGuide
       };
 
@@ -990,7 +992,10 @@ export default function MetaAdGenerator() {
         useAdsContent: useAdsForLanding,
         adsContent: chosenAdsContent,
         brandDrBalance: brandDrBalance[0],
-        selectedProduct: landingPageType === 'multiProduct' ? selectedProducts.join(',') : selectedProduct,
+        selectedProduct: landingPageType === 'multiProduct' ? undefined : selectedProduct,
+        selectedProducts: landingPageType === 'multiProduct' ? selectedProducts : 
+          (selectedProducts && selectedProducts.length > 0 ? selectedProducts : 
+           (selectedProduct ? [selectedProduct] : [])),
         mainAngle
       };
 

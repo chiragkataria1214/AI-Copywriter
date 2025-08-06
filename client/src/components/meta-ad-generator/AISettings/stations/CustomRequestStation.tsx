@@ -13,21 +13,46 @@ interface CustomRequestStationProps {
   copyToClipboard: (text: string, label: string) => Promise<void>;
 }
 
-const StationToggleButton = ({ isOpen, onClick, title, icon, iconColor, description }: any) => (
+const StationToggleButton = ({ 
+  isOpen, 
+  onClick, 
+  title, 
+  icon, 
+  iconColor,
+  description
+}: { 
+  isOpen: boolean; 
+  onClick: () => void; 
+  title: string; 
+  icon: React.ReactNode; 
+  iconColor: string;
+  description: string;
+}) => (
   <div className="bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200 border border-gray-200">
-    <button onClick={onClick} className="flex items-center justify-between w-full p-4">
+    <button
+      onClick={onClick}
+      className="flex items-center justify-between w-full p-4"
+    >
       <div className="flex items-center space-x-3">
         <div className="flex items-center space-x-2">
-          {isOpen ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronRight className="w-4 h-4 text-gray-500" />}
+          {isOpen ? (
+            <ChevronDown className="w-4 h-4 text-gray-500" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-gray-500" />
+          )}
           <span className={iconColor}>{icon}</span>
         </div>
         <div className="text-left">
           <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          {!isOpen && <p className="text-sm text-gray-600 mt-1">{description}</p>}
+          {!isOpen && (
+            <p className="text-sm text-gray-600 mt-1">{description}</p>
+          )}
         </div>
       </div>
       <div className="flex items-center space-x-2">
-        <span className="text-xs text-gray-500 font-medium">{isOpen ? 'Collapse' : 'Expand'}</span>
+        <span className="text-xs text-gray-500 font-medium">
+          {isOpen ? 'Collapse' : 'Expand'}
+        </span>
       </div>
     </button>
   </div>
@@ -142,7 +167,14 @@ const EnhancedArrayField = ({ label, value, onChange, placeholder, rows = 4, dis
   );
 };
 
-export const CustomRequestStation: React.FC<CustomRequestStationProps> = ({ editingConfig, setEditingConfig, effectiveUser, expandedStations, setExpandedStations, copyToClipboard }) => {
+export const CustomRequestStation: React.FC<CustomRequestStationProps> = ({
+  editingConfig,
+  setEditingConfig,
+  effectiveUser,
+  expandedStations,
+  setExpandedStations,
+  copyToClipboard
+}) => {
   const toggleStation = (stationId: string) => {
     const newExpanded = new Set(expandedStations);
     if (expandedStations.has(stationId)) {
@@ -155,12 +187,384 @@ export const CustomRequestStation: React.FC<CustomRequestStationProps> = ({ edit
 
   return (
     <div className="border border-gray-200 rounded-lg">
-      <StationToggleButton isOpen={expandedStations.has('customRequest')} onClick={() => toggleStation('customRequest')} title="Custom Request Station" icon={<Sparkles className="w-5 h-5" />} iconColor="text-pink-500" description="Versatile copywriter for any custom marketing request" />
+      <StationToggleButton
+        isOpen={expandedStations.has('customRequest')}
+        onClick={() => toggleStation('customRequest')}
+        title="Custom Request Station"
+        icon={<Sparkles className="w-5 h-5" />}
+        iconColor="text-pink-500"
+        description="Versatile copywriter for any custom marketing request"
+      />
+      
       {expandedStations.has('customRequest') && (
         <div className="p-6 pt-4 border-t border-gray-100 space-y-6">
-          <ProtectedPromptEditor label="System Prompt" value={editingConfig?.stationPrompts?.customRequest?.systemPrompt || ''} onChange={(value) => setEditingConfig({...editingConfig, stationPrompts: {...editingConfig?.stationPrompts, customRequest: {...editingConfig?.stationPrompts?.customRequest, systemPrompt: value}}})} placeholder="You are a versatile copywriter capable of handling any custom marketing request..." rows={6} disabled={effectiveUser?.role !== 'admin'} copyToClipboard={copyToClipboard} />
-          <EnhancedTextField label="User Prompt Template" value={editingConfig?.stationPrompts?.customRequest?.userPromptTemplate || ''} onChange={(value) => effectiveUser?.role === 'admin' && setEditingConfig({...editingConfig, stationPrompts: {...editingConfig?.stationPrompts, customRequest: {...editingConfig?.stationPrompts?.customRequest, userPromptTemplate: value}}})} placeholder="Handle this custom request: [USER_REQUEST] for [BRAND/PRODUCT] with [SPECIFIC_REQUIREMENTS]..." rows={4} disabled={effectiveUser?.role !== 'admin'} bgColor="bg-green-50" borderColor="border-green-200" copyToClipboard={copyToClipboard} />
-          <EnhancedArrayField label="Request Type Guidelines" value={editingConfig?.stationPrompts?.customRequest?.requestTypeGuidelines || []} onChange={(value) => effectiveUser?.role === 'admin' && setEditingConfig({...editingConfig, stationPrompts: {...editingConfig?.stationPrompts, customRequest: {...editingConfig?.stationPrompts?.customRequest, requestTypeGuidelines: value}}})} placeholder="Product descriptions: Focus on benefits and use cases&#10;Social media captions: Platform-appropriate length and tone&#10;Blog posts: SEO-optimized with clear structure" rows={5} disabled={effectiveUser?.role !== 'admin'} bgColor="bg-rose-50" borderColor="border-rose-200" copyToClipboard={copyToClipboard} />
+          
+          {/* System Prompt Section */}
+          <div className="border border-gray-200 rounded-lg">
+            <button
+              onClick={() => {
+                const newExpanded = new Set(expandedStations);
+                if (expandedStations.has('customRequest-systemPrompt')) {
+                  newExpanded.delete('customRequest-systemPrompt');
+                } else {
+                  newExpanded.add('customRequest-systemPrompt');
+                }
+                setExpandedStations(newExpanded);
+              }}
+              className="flex items-center justify-between w-full p-4 bg-blue-50 hover:bg-blue-100 rounded-t-lg transition-colors duration-200"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  {expandedStations.has('customRequest-systemPrompt') ? (
+                    <ChevronDown className="w-4 h-4 text-blue-600" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-blue-600" />
+                  )}
+                  <span className="text-blue-600">🔧</span>
+                </div>
+                <div className="text-left">
+                  <h3 className="text-lg font-semibold text-blue-900">System Prompt Configuration</h3>
+                  {!expandedStations.has('customRequest-systemPrompt') && (
+                    <p className="text-sm text-blue-700 mt-1">Base System Prompt + AI Settings Context</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs text-blue-600 font-medium">
+                  {expandedStations.has('customRequest-systemPrompt') ? 'Collapse' : 'Expand'}
+                </span>
+              </div>
+            </button>
+
+            {expandedStations.has('customRequest-systemPrompt') && (
+              <div className="p-6 border-t border-gray-100 space-y-6">
+                {/* System Prompt Structure Explanation */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-800 font-medium">🔧 How System Prompt is Generated</p>
+                  <p className="text-sm text-blue-700 mt-1">
+                    The final system prompt sent to Claude combines: <strong>Base System Prompt</strong> + <strong>AI Settings Context</strong> (brand guidelines, product claims, persona pillars, etc.)
+                  </p>
+                </div>
+
+                {/* Base System Prompt - Editable */}
+                <ProtectedPromptEditor
+                  label="Base System Prompt (Editable)"
+                  value={editingConfig?.stationPrompts?.customRequest?.systemPrompt || ''}
+                  onChange={(value: string) => setEditingConfig({
+                    ...editingConfig,
+                    stationPrompts: {
+                      ...editingConfig?.stationPrompts,
+                      customRequest: {
+                        ...editingConfig?.stationPrompts?.customRequest,
+                        systemPrompt: value
+                      }
+                    }
+                  })}
+                  placeholder="You are a versatile copywriter capable of handling any custom marketing request..."
+                  rows={6}
+                  disabled={effectiveUser?.role !== 'admin'}
+                  copyToClipboard={copyToClipboard}
+                />
+
+                {/* AI Settings Context - Read-only preview */}
+                <div className="space-y-4 bg-white border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-gray-900">AI Settings Context (Auto-Generated - Read Only)</h4>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => copyToClipboard(`
+JONES ROAD BEAUTY BRAND GUIDELINES:
+Core Positioning: {corePositioning}
+
+Brand Voice Rules:
+- {brandVoiceRule1}
+- {brandVoiceRule2}
+- ...
+
+Key Terms & Phrases:
+- {keyTerm1}
+- {keyTerm2}
+- ...
+
+Approved Language:
+- {approvedPhrase1}
+- {approvedPhrase2}
+- ...
+
+Avoid These Phrases:
+- {avoidedPhrase1}
+- {avoidedPhrase2}
+- ...
+
+PRODUCT-SPECIFIC CLAIMS FOR {SELECTED_PRODUCT}:
+Approved Claims:
+- {approvedClaim1}
+- {approvedClaim2}
+- ...
+
+Prohibited Claims (Never Use):
+- {prohibitedClaim1}
+- {prohibitedClaim2}
+- ...
+
+TARGET PERSONA - {CONCEPT}:
+Description: {personaDescription}
+Key Pillars:
+- {pillar1}
+- {pillar2}
+- ...
+
+BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`, 'AI Settings Context Template')}
+                    >
+                      <Copy size={16} className="mr-1" />
+                      Copy Template
+                    </Button>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 max-h-64 overflow-y-auto">
+                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
+{`JONES ROAD BEAUTY BRAND GUIDELINES:
+Core Positioning: {corePositioning}
+
+Brand Voice Rules:
+- {brandVoiceRule1}
+- {brandVoiceRule2}
+- ...
+
+Key Terms & Phrases:
+- {keyTerm1}
+- {keyTerm2}
+- ...
+
+Approved Language:
+- {approvedPhrase1}
+- {approvedPhrase2}
+- ...
+
+Avoid These Phrases:
+- {avoidedPhrase1}
+- {avoidedPhrase2}
+- ...
+
+PRODUCT-SPECIFIC CLAIMS FOR {SELECTED_PRODUCT}:
+Approved Claims:
+- {approvedClaim1}
+- {approvedClaim2}
+- ...
+
+Prohibited Claims (Never Use):
+- {prohibitedClaim1}
+- {prohibitedClaim2}
+- ...
+
+TARGET PERSONA - {CONCEPT}:
+Description: {personaDescription}
+Key Pillars:
+- {pillar1}
+- {pillar2}
+- ...
+
+BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`}
+                    </pre>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-2">
+                    This context is automatically built from your Brand Guidelines, Product Claims, Persona Pillars, and request parameters. Configure these in their respective tabs above.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* User Prompt Section */}
+          <div className="border border-gray-200 rounded-lg">
+            <button
+              onClick={() => {
+                const newExpanded = new Set(expandedStations);
+                if (expandedStations.has('customRequest-userPrompt')) {
+                  newExpanded.delete('customRequest-userPrompt');
+                } else {
+                  newExpanded.add('customRequest-userPrompt');
+                }
+                setExpandedStations(newExpanded);
+              }}
+              className="flex items-center justify-between w-full p-4 bg-green-50 hover:bg-green-100 rounded-t-lg transition-colors duration-200"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  {expandedStations.has('customRequest-userPrompt') ? (
+                    <ChevronDown className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-green-600" />
+                  )}
+                  <span className="text-green-600">📝</span>
+                </div>
+                <div className="text-left">
+                  <h3 className="text-lg font-semibold text-green-900">User Prompt Configuration</h3>
+                  {!expandedStations.has('customRequest-userPrompt') && (
+                    <p className="text-sm text-green-700 mt-1">Base User Template + Dynamic Sections</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs text-green-600 font-medium">
+                  {expandedStations.has('customRequest-userPrompt') ? 'Collapse' : 'Expand'}
+                </span>
+              </div>
+            </button>
+
+            {expandedStations.has('customRequest-userPrompt') && (
+              <div className="p-6 border-t border-gray-100 space-y-6">
+                {/* User Prompt Structure Explanation */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <p className="text-sm text-green-800 font-medium">📝 How User Prompt is Generated</p>
+                  <p className="text-sm text-green-700 mt-1">
+                    The final user prompt combines: <strong>Base User Template</strong> + <strong>Dynamic Sections</strong> (request type guidelines, persona targeting, product focus, custom brief)
+                  </p>
+                </div>
+
+                {/* Base User Prompt Template - Editable */}
+                <EnhancedTextField
+                  label="Base User Prompt Template (Editable)"
+                  value={editingConfig?.stationPrompts?.customRequest?.userPromptTemplate || ''}
+                  onChange={(value: string) => effectiveUser?.role === 'admin' && setEditingConfig({
+                    ...editingConfig,
+                    stationPrompts: {
+                      ...editingConfig?.stationPrompts,
+                      customRequest: {
+                        ...editingConfig?.stationPrompts?.customRequest,
+                        userPromptTemplate: value
+                      }
+                    }
+                  })}
+                  placeholder="Handle this custom request: [USER_REQUEST] for [BRAND/PRODUCT] with [SPECIFIC_REQUIREMENTS]..."
+                  rows={4}
+                  disabled={effectiveUser?.role !== 'admin'}
+                  bgColor="bg-green-50"
+                  borderColor="border-green-200"
+                  copyToClipboard={copyToClipboard}
+                />
+
+                {/* Request Type Guidelines - Editable */}
+                <EnhancedArrayField
+                  label="Request Type Guidelines (Editable)"
+                  value={editingConfig?.stationPrompts?.customRequest?.requestTypeGuidelines || []}
+                  onChange={(value: string[]) => effectiveUser?.role === 'admin' && setEditingConfig({
+                    ...editingConfig,
+                    stationPrompts: {
+                      ...editingConfig?.stationPrompts,
+                      customRequest: {
+                        ...editingConfig?.stationPrompts?.customRequest,
+                        requestTypeGuidelines: value
+                      }
+                    }
+                  })}
+                  placeholder="Product descriptions: Focus on benefits and use cases&#10;Social media captions: Platform-appropriate length and tone&#10;Blog posts: SEO-optimized with clear structure"
+                  rows={5}
+                  disabled={effectiveUser?.role !== 'admin'}
+                  bgColor="bg-rose-50"
+                  borderColor="border-rose-200"
+                  copyToClipboard={copyToClipboard}
+                />
+
+                {/* Dynamic Sections - Read-only preview */}
+                <div className="space-y-4 bg-white border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-gray-900">Dynamic Sections (Auto-Generated - Read Only)</h4>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => copyToClipboard(`
+TARGET PERSONA - {CONCEPT}:
+Description: {personaDescription}
+Key Targeting Pillars:
+- {pillar1}
+- {pillar2}
+
+PERSONA-SPECIFIC REQUIREMENTS:
+- Tailor ALL content to speak directly to this persona
+- Use language patterns and scenarios this audience relates to
+- Address their specific pain points and motivations
+- Reference their lifestyle and daily challenges
+
+PRODUCT FOCUS:
+Primary Product: {selectedProductDisplayName}
+
+PRODUCT-SPECIFIC CLAIMS:
+{PRODUCT_NAME}:
+Approved Claims (USE THESE):
+- {approvedClaim1}
+- {approvedClaim2}
+
+Prohibited Claims (NEVER USE):
+- {prohibitedClaim1}
+- {prohibitedClaim2}
+
+CUSTOM BRIEF FOR THIS GENERATION:
+{customBrief}
+
+PRIORITY INSTRUCTION: Incorporate the specific instructions above into the content while maintaining brand voice and request type guidelines.`, 'Dynamic Sections Template')}
+                    >
+                      <Copy size={16} className="mr-1" />
+                      Copy Template
+                    </Button>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 max-h-80 overflow-y-auto">
+                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
+{`TARGET PERSONA - {CONCEPT}:
+Description: {personaDescription}
+Key Targeting Pillars:
+- {pillar1}
+- {pillar2}
+- ...
+
+PERSONA-SPECIFIC REQUIREMENTS:
+- Tailor ALL content to speak directly to this persona
+- Use language patterns and scenarios this audience relates to
+- Address their specific pain points and motivations
+- Reference their lifestyle and daily challenges
+
+PRODUCT FOCUS:
+Primary Product: {selectedProductDisplayName}
+
+PRODUCT-SPECIFIC CLAIMS:
+{PRODUCT_NAME}:
+Approved Claims (USE THESE):
+- {approvedClaim1}
+- {approvedClaim2}
+- ...
+
+Prohibited Claims (NEVER USE):
+- {prohibitedClaim1}
+- {prohibitedClaim2}
+- ...
+
+REQUEST TYPE GUIDELINES:
+{requestTypeGuideline1}
+{requestTypeGuideline2}
+...
+
+CUSTOM BRIEF FOR THIS GENERATION:
+{customBrief}
+
+PRIORITY INSTRUCTION: Incorporate the specific instructions above into the content while maintaining brand voice and request type guidelines.`}
+                    </pre>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-2">
+                    These sections are dynamically generated based on your selections: persona concept, selected products, request type guidelines, and custom brief. Only sections with data will be included.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <p className="text-sm text-amber-800 font-medium">⚡ Final Prompt Assembly</p>
+            <p className="text-sm text-amber-700 mt-1">
+              <strong>System Prompt:</strong> Base System Prompt + AI Settings Context + TARGET AUDIENCE: {`{targetAudience}`}
+              <br />
+              <strong>User Prompt:</strong> Base User Template + Target Persona Section + Selected Products Section + Request Type Guidelines + Custom Brief Section
+            </p>
+          </div>
         </div>
       )}
     </div>

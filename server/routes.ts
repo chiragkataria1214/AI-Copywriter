@@ -1589,7 +1589,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/generate-ad-copy', requireAuth, async (req, res) => {
     try {
       const startTime = Date.now();
-      const { transcription, customBrief, concept, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProducts } = req.body;
+      const { transcription, customBrief, concept, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProduct, selectedProducts } = req.body;
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -1608,6 +1608,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         useJonesBrandGuide,
         airLink,
         uploadedImage,
+        selectedProduct,
         selectedProducts
       }, trainingConfig);
       // console.log('!!!!!!!!!!!result D ', result);
@@ -1679,7 +1680,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate custom copy endpoint (protected)
   app.post('/api/generate-custom-copy', requireAuth, async (req, res) => {
     try {
-      const { customRequest, concept, brandDrBalance, selectedProduct, useJonesBrandGuide } = req.body;
+      const { customRequest, concept, brandDrBalance, selectedProduct, selectedProducts, useJonesBrandGuide } = req.body;
       
       // console.log('Custom copy request:', { customRequest, concept, brandDrBalance, selectedProduct, useJonesBrandGuide });
       
@@ -1699,6 +1700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         concept,
         brandDrBalance,
         selectedProduct,
+        selectedProducts,
         useJonesBrandGuide
       }, trainingConfig);
       
@@ -1962,6 +1964,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tone, 
         variations, 
         selectedProduct,
+        selectedProducts,
         imageData // Add image data parameter
       } = req.body;
       
@@ -1987,6 +1990,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tone: tone || 'authentic-personal',
         variations: variations || 3,
         selectedProduct: selectedProduct,
+        selectedProducts: selectedProducts,
         concept: 'lifeJuggler', // Default concept for social captions
         imageData: imageData // Pass image data to the function
       }, trainingConfig);
@@ -2014,6 +2018,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         length, 
         tone, 
         selectedProduct,
+        selectedProducts,
         imageData // Add image data parameter
       } = req.body;
       
@@ -2038,6 +2043,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         length: length || 5,
         tone: tone || 'authentic-personal',
         selectedProduct: selectedProduct,
+        selectedProducts: selectedProducts,
         concept: 'lifeJuggler', // Default concept for story sequences
         imageData: imageData // Pass image data to the function
       }, trainingConfig);
@@ -2116,7 +2122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate landing page copy endpoint (protected)
   app.post('/api/generate-landing-copy', requireAuth, async (req, res) => {
     try {
-      const { landingPageType, productBrief, concept, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle, transcription } = req.body;
+      const { landingPageType, productBrief, concept, useAdsContent, adsContent, brandDrBalance, selectedProduct, selectedProducts, mainAngle, transcription } = req.body;
       
       console.log('Landing copy request body:', { landingPageType, productBrief, concept, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle, transcription: transcription ? 'included' : 'none' });
       
@@ -2135,6 +2141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         adsContent,
         brandDrBalance,
         selectedProduct,
+        selectedProducts,
         mainAngle,
         transcription
       }, trainingConfig);
@@ -2207,7 +2214,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           selectedProduct: z.string().optional(),
           selectedProducts: z.array(z.string()).optional(),
           field: z.string().optional(),
-          customRequest: z.string().optional()
+          customRequest: z.string().optional(),
+          useJonesBrandGuide: z.boolean().optional()
         }).optional()
       });
 
@@ -2215,6 +2223,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
+      }
+
+      // Get training configuration from database
+      const trainingConfig = await storage.getTrainingConfiguration();
+      if (!trainingConfig) {
+        return res.status(500).json({ message: 'Training configuration not found' });
       }
 
       // Import and use revision function from anthropic module
@@ -2225,7 +2239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         revisionInstructions,
         contentType,
         context
-      });
+      }, trainingConfig);
       
       res.json({
         revisedContent,
