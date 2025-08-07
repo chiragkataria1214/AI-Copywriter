@@ -1,12 +1,17 @@
-export * from './Header';
-export * from './MainTabs';
-export * from './PaidSocialTabs';
-export * from './ProductLaunchTabs';
-export * from './AdCopyTab';
-export * from './StaticAdTab';
-export * from './OrganicSocialTab';
-export * from './LandingPageTab';
-export * from './CustomCopyTab';
-export * from './RetentionTab';
+// Core components
+export * from './core';
 
+// All tab components
+export * from './tabs';
+
+// AI Settings components
+export * from './ai-settings';
+
+// Shared types and utilities
+export * from './shared';
+
+// Main AI Settings component
 export * from './AISettingsComponent';
+
+// Optimized components
+export * from './optimized';

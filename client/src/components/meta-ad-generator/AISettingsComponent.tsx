@@ -13,7 +13,7 @@ import {
   StationPromptsTab,
   ProductLaunchTab,
   ModelSettingsTab
-} from './AISettings';
+} from './ai-settings';
 
 interface AISettingsComponentProps {
   editingConfig: TrainingConfig | null;
@@ -32,6 +32,7 @@ interface AISettingsComponentProps {
   reviewStats: any;
   debugInfo: any;
   copyToClipboard: (text: string, type: string) => Promise<void>;
+  personas?: Record<string, any>;
 }
 
 export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
@@ -50,7 +51,8 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
   deleteProductMutation,
   reviewStats,
   debugInfo,
-  copyToClipboard
+  copyToClipboard,
+  personas
 }) => {
   return (
     <>
@@ -71,7 +73,14 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
                             size="sm"
                             className="w-full sm:w-auto"
                           >
-                            {saveTrainingConfigMutation.isPending ? "Saving..." : "Save Changes"}
+                            {saveTrainingConfigMutation.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Saving Configuration...
+                              </>
+                            ) : (
+                              "Save Changes"
+                            )}
                           </Button>
                         )}
                       </div>
@@ -122,6 +131,7 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
                             editingConfig={editingConfig}
                             setEditingConfig={setEditingConfig}
                             effectiveUser={effectiveUser}
+                            personas={personas}
                           />
                         </TabsContent>
 
@@ -172,7 +182,7 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
                     ) : (
                       <div className="text-center py-8 text-gray-500">
                         <Settings size={48} className="mx-auto mb-4 text-gray-300" />
-                        <p>Load configuration to view and edit AI training settings</p>
+                        <p className="text-lg font-medium text-gray-700">Configuration will load automatically after admin access</p>
                         <p className="text-sm mt-2">This includes brand guidelines, copy frameworks, prompts, and model parameters</p>
                       </div>
                     )}

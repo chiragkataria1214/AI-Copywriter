@@ -1,0 +1,1 @@
+export { OrganicSocialTab } from './OrganicSocialTab';

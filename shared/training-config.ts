@@ -27,6 +27,13 @@ export interface TrainingConfig {
       pillars: string[];
       description?: string;
       enabledPillars?: boolean[];
+      subpersonas?: {
+        [subpersonaName: string]: {
+          description?: string;
+          pillars?: string[];
+          enabledPillars?: boolean[];
+        };
+      };
     };
   };
   copyFrameworks: {

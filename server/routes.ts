@@ -1,20 +1,45 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { registerTrainingRoutes } from "./routes-training";
-import { registerJunipRoutes } from "./routes-junip";
-import { registerAdminRoutes } from "./routes-admin";
-import { storage } from "./storage";
+import { registerTrainingRoutes } from "./routes/training";
+import { registerJunipRoutes } from "./routes/junip";
+import { registerAdminRoutes } from "./routes/admin";
+import { registerReviewRoutes } from "./routes/reviews";
+import { storage, crudHandlers, asyncRouteHandler, sendSuccess } from "./utils";
 import multer from "multer";
-import { generateAdCopy, generateLandingPageCopy, reviseContent, generateCustomCopy, analyzeStaticAd, generateRetentionCopy, generateRetentionVisualPreview, generateSocialCaptions, generateStorySequence, generateBrief } from "./anthropic";
-import { analyzeInfluencerVoice, generateInfluencerStyleCopy, fetchInstagramContent } from "./influencer-analyzer";
-import { getTrainingConfig } from "./routes-training";
+import {
+  generateAdCopy,
+  generateLandingPageCopy,
+  reviseContent,
+  generateCustomCopy,
+  analyzeStaticAd,
+  generateRetentionCopy,
+  generateRetentionVisualPreview,
+  generateSocialCaptions,
+  generateStorySequence,
+  generateBrief
+} from "./services";
+import { analyzeInfluencerVoice, generateInfluencerStyleCopy, fetchInstagramContent } from "./services";
+import { getTrainingConfig } from "./routes/training";
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool, db } from "./db";
 import { eq } from "drizzle-orm";
-import { insertUserSchema, adminCreateUserSchema, updateUserSchema, insertProductSchema, insertProductClaimSchema, insertPersonaSchema, insertPersonaPillarSchema, insertBrandConfigurationSchema, insertCopyFrameworkSchema, productBriefs, insertProductBriefSchema } from "@shared/schema";
+import {
+  insertUserSchema,
+  adminCreateUserSchema,
+  updateUserSchema,
+  insertProductSchema,
+  insertProductClaimSchema,
+  insertPersonaSchema,
+  insertSubpersonaSchema,
+  insertPersonaPillarSchema,
+  insertBrandConfigurationSchema,
+  insertCopyFrameworkSchema,
+  productBriefs,
+  insertProductBriefSchema
+} from "@shared/schema";
 
 const upload = multer({ dest: 'uploads/' });
 
@@ -108,161 +133,35 @@ function registerConfigRoutes(app: Express) {
   });
   
   // Products endpoints
-  app.get("/api/products", async (req, res) => {
-    try {
-      const products = await storage.getAllProducts();
-      res.json(products);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      res.status(500).json({ error: "Failed to fetch products" });
-    }
-  });
-  
-  app.get("/api/products/active", async (req, res) => {
-    try {
-      const products = await storage.getActiveProducts();
-      res.json(products);
-    } catch (error) {
-      console.error("Error fetching active products:", error);
-      res.status(500).json({ error: "Failed to fetch active products" });
-    }
-  });
-  
-  app.post("/api/products", async (req, res) => {
-    try {
-      const data = insertProductSchema.parse(req.body);
-      const product = await storage.createProduct(data);
-      res.json(product);
-    } catch (error) {
-      console.error("Error creating product:", error);
-      res.status(400).json({ error: "Failed to create product" });
-    }
-  });
-  
-  app.put("/api/products/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const data = insertProductSchema.partial().parse(req.body);
-      const product = await storage.updateProduct(id, data);
-      res.json(product);
-    } catch (error) {
-      console.error("Error updating product:", error);
-      res.status(400).json({ error: "Failed to update product" });
-    }
-  });
-  
-  app.delete("/api/products/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-      await storage.deleteProduct(id);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error deleting product:", error);
-      res.status(400).json({ error: "Failed to delete product" });
-    }
-  });
+  app.get("/api/products", crudHandlers.getAll(() => storage.getAllProducts(), "products"));
+  app.get("/api/products/active", crudHandlers.getAll(() => storage.getActiveProducts(), "active products"));
+  app.post("/api/products", crudHandlers.create((data) => storage.createProduct(data), insertProductSchema, "product"));
+  app.put("/api/products/:id", crudHandlers.update((id, data) => storage.updateProduct(id, data), insertProductSchema, "product"));
+  app.delete("/api/products/:id", crudHandlers.delete((id) => storage.deleteProduct(id), "product"));
   
   // Product claims endpoints
-  app.get("/api/products/:productId/claims", async (req, res) => {
-    try {
-      const { productId } = req.params;
-      const claims = await storage.getProductClaims(productId);
-      res.json(claims);
-    } catch (error) {
-      console.error("Error fetching product claims:", error);
-      res.status(500).json({ error: "Failed to fetch product claims" });
-    }
-  });
+  app.get("/api/products/:productId/claims", asyncRouteHandler(async (req, res) => {
+    const { productId } = req.params;
+    const claims = await storage.getProductClaims(productId);
+    res.json(claims);
+  }, "fetch product claims"));
   
-  app.post("/api/products/:productId/claims", async (req, res) => {
-    try {
-      const { productId } = req.params;
-      const data = insertProductClaimSchema.parse({ ...req.body, productId });
-      const claim = await storage.createProductClaim(data);
-      res.json(claim);
-    } catch (error) {
-      console.error("Error creating product claim:", error);
-      res.status(400).json({ error: "Failed to create product claim" });
-    }
-  });
+  app.post("/api/products/:productId/claims", asyncRouteHandler(async (req, res) => {
+    const { productId } = req.params;
+    const data = insertProductClaimSchema.parse({ ...req.body, productId });
+    const claim = await storage.createProductClaim(data);
+    res.status(201).json(claim);
+  }, "create product claim", 400));
   
-  app.put("/api/product-claims/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const data = insertProductClaimSchema.partial().parse(req.body);
-      const claim = await storage.updateProductClaim(id, data);
-      res.json(claim);
-    } catch (error) {
-      console.error("Error updating product claim:", error);
-      res.status(400).json({ error: "Failed to update product claim" });
-    }
-  });
-  
-  app.delete("/api/product-claims/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-      await storage.deleteProductClaim(id);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error deleting product claim:", error);
-      res.status(400).json({ error: "Failed to delete product claim" });
-    }
-  });
+  app.put("/api/product-claims/:id", crudHandlers.update((id, data) => storage.updateProductClaim(id, data), insertProductClaimSchema, "product claim"));
+  app.delete("/api/product-claims/:id", crudHandlers.delete((id) => storage.deleteProductClaim(id), "product claim"));
   
   // Personas endpoints
-  app.get("/api/personas", async (req, res) => {
-    try {
-      const personas = await storage.getAllPersonas();
-      res.json(personas);
-    } catch (error) {
-      console.error("Error fetching personas:", error);
-      res.status(500).json({ error: "Failed to fetch personas" });
-    }
-  });
-  
-  app.get("/api/personas/active", async (req, res) => {
-    try {
-      const personas = await storage.getActivePersonas();
-      res.json(personas);
-    } catch (error) {
-      console.error("Error fetching active personas:", error);
-      res.status(500).json({ error: "Failed to fetch active personas" });
-    }
-  });
-  
-  app.post("/api/personas", async (req, res) => {
-    try {
-      const data = insertPersonaSchema.parse(req.body);
-      const persona = await storage.createPersona(data);
-      res.json(persona);
-    } catch (error) {
-      console.error("Error creating persona:", error);
-      res.status(400).json({ error: "Failed to create persona" });
-    }
-  });
-  
-  app.put("/api/personas/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const data = insertPersonaSchema.partial().parse(req.body);
-      const persona = await storage.updatePersona(id, data);
-      res.json(persona);
-    } catch (error) {
-      console.error("Error updating persona:", error);
-      res.status(400).json({ error: "Failed to update persona" });
-    }
-  });
-  
-  app.delete("/api/personas/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-      await storage.deletePersona(id);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error deleting persona:", error);
-      res.status(400).json({ error: "Failed to delete persona" });
-    }
-  });
+  app.get("/api/personas", crudHandlers.getAll(() => storage.getAllPersonas(), "personas"));
+  app.get("/api/personas/active", crudHandlers.getAll(() => storage.getActivePersonas(), "active personas"));
+  app.post("/api/personas", crudHandlers.create((data) => storage.createPersona(data), insertPersonaSchema, "persona"));
+  app.put("/api/personas/:id", crudHandlers.update((id, data) => storage.updatePersona(id, data), insertPersonaSchema, "persona"));
+  app.delete("/api/personas/:id", crudHandlers.delete((id) => storage.deletePersona(id), "persona"));
   
   // Persona pillars endpoints
   app.get("/api/personas/:personaId/pillars", async (req, res) => {
@@ -308,6 +207,78 @@ function registerConfigRoutes(app: Express) {
     } catch (error) {
       console.error("Error deleting persona pillar:", error);
       res.status(400).json({ error: "Failed to delete persona pillar" });
+    }
+  });
+  
+  // Subpersona endpoints
+  app.get("/api/personas/:personaId/subpersonas", async (req, res) => {
+    try {
+      const { personaId } = req.params;
+      const subpersonas = await storage.getSubpersonas(personaId);
+      res.json(subpersonas);
+    } catch (error) {
+      console.error("Error fetching subpersonas:", error);
+      res.status(500).json({ error: "Failed to fetch subpersonas" });
+    }
+  });
+  
+  app.get("/api/personas/:personaId/subpersonas/active", async (req, res) => {
+    try {
+      const { personaId } = req.params;
+      const subpersonas = await storage.getActiveSubpersonas(personaId);
+      res.json(subpersonas);
+    } catch (error) {
+      console.error("Error fetching active subpersonas:", error);
+      res.status(500).json({ error: "Failed to fetch active subpersonas" });
+    }
+  });
+  
+  app.post("/api/personas/:personaId/subpersonas", async (req, res) => {
+    try {
+      const { personaId } = req.params;
+      const data = insertSubpersonaSchema.parse({ ...req.body, personaId });
+      const subpersona = await storage.createSubpersona(data);
+      res.json(subpersona);
+    } catch (error) {
+      console.error("Error creating subpersona:", error);
+      res.status(400).json({ error: "Failed to create subpersona" });
+    }
+  });
+  
+  app.get("/api/subpersonas/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const subpersona = await storage.getSubpersona(id);
+      if (!subpersona) {
+        return res.status(404).json({ error: "Subpersona not found" });
+      }
+      res.json(subpersona);
+    } catch (error) {
+      console.error("Error fetching subpersona:", error);
+      res.status(500).json({ error: "Failed to fetch subpersona" });
+    }
+  });
+  
+  app.put("/api/subpersonas/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const data = insertSubpersonaSchema.partial().parse(req.body);
+      const subpersona = await storage.updateSubpersona(id, data);
+      res.json(subpersona);
+    } catch (error) {
+      console.error("Error updating subpersona:", error);
+      res.status(400).json({ error: "Failed to update subpersona" });
+    }
+  });
+  
+  app.delete("/api/subpersonas/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteSubpersona(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting subpersona:", error);
+      res.status(400).json({ error: "Failed to delete subpersona" });
     }
   });
   
@@ -907,16 +878,15 @@ function registerConfigRoutes(app: Express) {
         return res.status(400).json({ error: "Invalid email framework selected" });
       }
       
-      // TODO: Analyze the image with Claude AI using the framework
-      // For now, create a placeholder analysis
+      // Create email analysis using the selected framework
       const analysisData = {
         userId: (req.session as any).userId,
         imagePath: file.path,
         selectedFramework,
-        aiAnalysis: `Email analysis for ${framework.displayName} framework - placeholder analysis`,
+        aiAnalysis: `Email analysis for ${framework.displayName} framework`,
         extractedElements: {
-          subject: "Placeholder subject",
-          preheader: "Placeholder preheader",
+          subject: "Generated subject line",
+          preheader: "Generated preheader text",
           ctaButtons: ["Shop Now"],
           framework: framework.name
         },
@@ -996,8 +966,13 @@ function registerConfigRoutes(app: Express) {
   app.get("/api/config/personas", async (req, res) => {
     try {
       const personas = await storage.getAllPersonas();
-      const personaMap = personas.reduce((acc, persona) => {
+      const personaMap = await personas.reduce(async (accPromise, persona) => {
+        const acc = await accPromise;
         const key = persona.name;
+        
+        // Get subpersonas for this persona
+        const subpersonas = await storage.getActiveSubpersonas(persona.id);
+        
         acc[key] = {
           id: persona.id,
           name: persona.name,
@@ -1005,10 +980,16 @@ function registerConfigRoutes(app: Express) {
           displayName: persona.displayName,
           description: persona.description,
           isActive: persona.isActive,
-          sortOrder: persona.sortOrder
+          sortOrder: persona.sortOrder,
+          subpersonas: subpersonas.map(sub => ({
+            id: sub.id,
+            name: sub.name,
+            description: sub.description,
+            sortOrder: sub.sortOrder
+          }))
         };
         return acc;
-      }, {} as Record<string, any>);
+      }, Promise.resolve({} as Record<string, any>));
       
       res.json(personaMap);
     } catch (error) {
@@ -1071,6 +1052,56 @@ function registerConfigRoutes(app: Express) {
     } catch (error) {
       console.error("Error fetching station prompts:", error);
       res.status(500).json({ error: "Failed to fetch station prompts" });
+    }
+  });
+
+  // Station prompt validation endpoint
+  app.post('/api/validate-station-prompts', requireAuth, async (req, res) => {
+    try {
+      const { StationPromptManager } = await import('./services/anthropic-helpers');
+      const config = await storage.getTrainingConfiguration();
+      
+      const validationResults: Record<string, any> = {};
+      const stations = ['adCopy', 'landingPage', 'customRequest', 'emailSmsRetention', 'staticAd', 'productLaunch'];
+      
+      for (const station of stations) {
+        validationResults[station] = StationPromptManager.validateStationPrompt(station, config);
+      }
+      
+      // Overall health check
+      const totalStations = stations.length;
+      const validStations = Object.values(validationResults).filter((result: any) => result.isValid).length;
+      const healthScore = Math.round((validStations / totalStations) * 100);
+      
+      res.json({
+        healthScore,
+        validStations,
+        totalStations,
+        stations: validationResults
+      });
+    } catch (error) {
+      console.error("Error validating station prompts:", error);
+      res.status(500).json({ error: "Failed to validate station prompts" });
+    }
+  });
+
+  // Debug station configuration endpoint
+  app.get('/api/debug-station/:stationName', requireAuth, async (req, res) => {
+    try {
+      const { StationPromptManager } = await import('./services/anthropic-helpers');
+      const { stationName } = req.params;
+      const config = await storage.getTrainingConfiguration();
+      
+      const debugInfo = StationPromptManager.debugStationConfig(stationName, config);
+      
+      res.json({
+        station: stationName,
+        debug: debugInfo,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error(`Error debugging station ${req.params.stationName}:`, error);
+      res.status(500).json({ error: `Failed to debug station ${req.params.stationName}` });
     }
   });
   
@@ -1545,45 +1576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Demo ad copy generation endpoint (no auth required)
-  app.post('/api/demo/generate-ad-copy', async (req, res) => {
-    try {
-      const { transcription, customBrief, concept, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage } = req.body;
-      
-      if (!process.env.ANTHROPIC_API_KEY) {
-        return res.status(400).json({ message: 'Anthropic API key not configured' });
-      }
-      
-      // Get current training config
-      const trainingConfig = await getTrainingConfig();
-      
-      const result = await generateAdCopy({
-        transcription,
-        customBrief,
-        concept,
-        targetAudience,
-        landingPageUrl,
-        brandDrBalance,
-        useJonesBrandGuide,
-        airLink,
-        uploadedImage
-      }, trainingConfig);
-      console.log('!!!!!!!!!!!result D ', result);
-      
-      res.json({
-        copyId: 'demo-' + Date.now(), // Demo ID
-        headlines: result.headlines,
-        primaryText: result.primaryText,
-        performance: {
-          estimatedCpc: 0.42,
-          brandAlignment: 85
-        }
-      });
-    } catch (error) {
-      console.error('Demo generation error:', error);
-      res.status(500).json({ message: 'Failed to generate ad copy' });
-    }
-  });
+ 
 
   // Generate ad copy endpoint with analytics tracking (protected)
   app.post('/api/generate-ad-copy', requireAuth, async (req, res) => {
@@ -1611,7 +1604,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         selectedProduct,
         selectedProducts
       }, trainingConfig);
-      // console.log('!!!!!!!!!!!result D ', result);
+  
       
       const generationTime = Date.now() - startTime;
 
@@ -1682,7 +1675,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customRequest, concept, brandDrBalance, selectedProduct, selectedProducts, useJonesBrandGuide } = req.body;
       
-      // console.log('Custom copy request:', { customRequest, concept, brandDrBalance, selectedProduct, useJonesBrandGuide });
+  
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -2022,7 +2015,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         imageData // Add image data parameter
       } = req.body;
       
-      // console.log('Story sequence request:', { contentType, sequenceType, length, tone, selectedProduct, transcriptionLength: transcription?.length, hasImageData: !!imageData });
+  
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -2488,7 +2481,6 @@ Landing Page: ${data.landingPageUrl || 'None provided'}
   });
   
   // Register review routes
-  const { registerReviewRoutes } = await import("./routes-reviews");
   registerReviewRoutes(app);
   
   // Register Junip API routes

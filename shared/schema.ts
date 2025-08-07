@@ -124,6 +124,18 @@ export const personas = pgTable("personas", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Subpersonas table for optional persona subdivisions
+export const subpersonas = pgTable("subpersonas", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  personaId: varchar("persona_id").references(() => personas.id, { onDelete: "cascade" }).notNull(),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  isActive: varchar("is_active").default("true"),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Persona pillars (the key messaging points for each persona)
 export const personaPillars = pgTable("persona_pillars", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -245,6 +257,12 @@ export const insertPersonaSchema = createInsertSchema(personas).omit({
   updatedAt: true,
 });
 
+export const insertSubpersonaSchema = createInsertSchema(subpersonas).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertPersonaPillarSchema = createInsertSchema(personaPillars).omit({
   id: true,
   createdAt: true,
@@ -293,6 +311,8 @@ export type ProductClaim = typeof productClaims.$inferSelect;
 export type InsertProductClaim = z.infer<typeof insertProductClaimSchema>;
 export type Persona = typeof personas.$inferSelect;
 export type InsertPersona = z.infer<typeof insertPersonaSchema>;
+export type Subpersona = typeof subpersonas.$inferSelect;
+export type InsertSubpersona = z.infer<typeof insertSubpersonaSchema>;
 export type PersonaPillar = typeof personaPillars.$inferSelect;
 export type InsertPersonaPillar = z.infer<typeof insertPersonaPillarSchema>;
 export type BrandConfiguration = typeof brandConfiguration.$inferSelect;

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/useToast';
 import { TrainingConfig } from '@shared/training-config';
 
 interface Persona {

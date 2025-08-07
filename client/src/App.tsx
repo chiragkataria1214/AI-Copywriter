@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Router, Route, Switch } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import SimpleMain from "@/pages/simple-main";
+import MetaAdGeneratorFinal from "@/pages/index";
 import UserManagement from "@/pages/user-management";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
@@ -52,7 +52,7 @@ function PublicRoute({ component: Component }: { component: React.ComponentType 
 
   if (isAuthenticated) {
     // Redirect to main app if already authenticated
-    return <SimpleMain />;
+    return <MetaAdGeneratorFinal />;
   }
 
   return <Component />;
@@ -73,10 +73,10 @@ function App() {
             
             {/* Protected routes - require authentication */}
             <Route path="/users" component={() => <ProtectedRoute component={UserManagement} />} />
-            <Route path="/" component={() => <ProtectedRoute component={SimpleMain} />} />
+            <Route path="/" component={() => <ProtectedRoute component={MetaAdGeneratorFinal} />} />
             
             {/* Catch-all route */}
-            <Route component={() => <ProtectedRoute component={SimpleMain} />} />
+            <Route component={() => <ProtectedRoute component={MetaAdGeneratorFinal} />} />
           </Switch>
         </Router>
       </TooltipProvider>
