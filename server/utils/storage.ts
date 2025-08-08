@@ -22,6 +22,8 @@ import {
   type InsertSystemConfiguration,
   type EmailFramework,
   type InsertEmailFramework,
+  type SmsFramework,
+  type InsertSmsFramework,
   type LandingPageFramework,
   type InsertLandingPageFramework,
   type EmailImageAnalysis,
@@ -38,6 +40,7 @@ import {
   copyFrameworks,
   systemConfiguration,
   emailFrameworks,
+  smsFrameworks,
   landingPageFrameworks,
   emailImageAnalysis,
   adminCreateUserSchema,
@@ -140,6 +143,17 @@ export interface IStorage {
   updateEmailFrameworkByName(name: string, data: Partial<InsertEmailFramework>): Promise<EmailFramework>;
   deleteEmailFramework(name: string): Promise<void>;
   deleteEmailFrameworkById(id: string): Promise<void>;
+
+  // SMS frameworks operations
+  getAllSmsFrameworks(): Promise<SmsFramework[]>;
+  getActiveSmsFrameworks(): Promise<SmsFramework[]>;
+  getSmsFramework(name: string): Promise<SmsFramework | undefined>;
+  getSmsFrameworkById(id: string): Promise<SmsFramework | undefined>;
+  createSmsFramework(data: InsertSmsFramework): Promise<SmsFramework>;
+  updateSmsFramework(id: string, data: Partial<InsertSmsFramework>): Promise<SmsFramework>;
+  updateSmsFrameworkByName(name: string, data: Partial<InsertSmsFramework>): Promise<SmsFramework>;
+  deleteSmsFramework(name: string): Promise<void>;
+  deleteSmsFrameworkById(id: string): Promise<void>;
   
   // Landing page frameworks operations
   getAllLandingPageFrameworks(): Promise<LandingPageFramework[]>;
@@ -584,6 +598,7 @@ export class DatabaseStorage implements IStorage {
       brandConfigs,
       copyFrameworksData,
       emailFrameworksData,
+      smsFrameworksData,
       landingPageFrameworksData,
       systemConfigs
     ] = await Promise.all([
@@ -592,6 +607,7 @@ export class DatabaseStorage implements IStorage {
       this.getBrandConfiguration(),
       this.getCopyFrameworks(),
       this.getAllEmailFrameworks(),
+      this.getAllSmsFrameworks(),
       this.getAllLandingPageFrameworks(),
       this.getSystemConfiguration()
     ]);
@@ -614,10 +630,11 @@ export class DatabaseStorage implements IStorage {
       const pillars = await this.getPersonaPillars(persona.id);
       const subpersonas = await this.getActiveSubpersonas(persona.id);
       
-      // Build subpersonas object
-      const subpersonasObj: { [key: string]: { description?: string, pillars?: string[] } } = {};
+      // Build subpersonas object with ID mapping
+      const subpersonasObj: { [key: string]: { id?: string, description?: string, pillars?: string[] } } = {};
       for (const subpersona of subpersonas) {
         subpersonasObj[subpersona.name] = {
+          id: subpersona.id,
           description: subpersona.description || undefined,
           pillars: [] // Subpersonas don't have their own pillars in this implementation
         };
@@ -706,6 +723,24 @@ export class DatabaseStorage implements IStorage {
         sortOrder: f.sortOrder
       }));
 
+    // Add SMS frameworks to copyFrameworks object
+    copyFrameworksObj.smsFrameworks = smsFrameworksData
+      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+      .map(f => ({
+        id: f.id,
+        name: f.name,
+        displayName: f.displayName,
+        description: f.description,
+        structure: f.structure,
+        keyElements: f.keyElements,
+        frameworkContent: f.frameworkContent,
+        systemPrompt: f.systemPrompt,
+        outputRequirements: f.outputRequirements,
+        expectedLength: f.expectedLength,
+        isEnabled: f.isActive === 'true',
+        sortOrder: f.sortOrder
+      }));
+
     // Add landing page frameworks to copyFrameworks object (include all frameworks, not just active ones)
     copyFrameworksObj.landingPageFrameworks = landingPageFrameworksData
       .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
@@ -750,7 +785,13 @@ export class DatabaseStorage implements IStorage {
         const field = parts[1];
         
         if (!stationPromptsObj[station]) stationPromptsObj[station] = {};
-        stationPromptsObj[station][field] = configValue;
+        // Attempt to parse JSON for nested objects (e.g., contextConfiguration)
+        try {
+          const maybeObject = JSON.parse(configValue);
+          stationPromptsObj[station][field] = maybeObject;
+        } catch {
+          stationPromptsObj[station][field] = configValue;
+        }
       } else if (configKey.startsWith('emailTemplates.')) {
         const key = configKey.replace('emailTemplates.', '');
         try {
@@ -761,6 +802,12 @@ export class DatabaseStorage implements IStorage {
         }
       }
     }
+
+    // Also read brand name and website from brand configuration table
+    const brandNameConfig = brandConfigs.find(c => c.configType === 'brand_name' && c.isEnabled === 'true');
+    const websiteConfig = brandConfigs.find(c => c.configType === 'website' && c.isEnabled === 'true');
+    if (brandNameConfig) brandGuidelines.brandName = brandNameConfig.configValue;
+    if (websiteConfig) brandGuidelines.website = websiteConfig.configValue;
 
     return {
       brandGuidelines,
@@ -779,691 +826,663 @@ export class DatabaseStorage implements IStorage {
     const startTime = Date.now();
     
     await db.transaction(async (tx) => {
-      // #region Brand Guidelines - OPTIMIZED
-      const { brandGuidelines } = config;
+      let t = Date.now();
+      await this.upsertBrandGuidelines(tx, config.brandGuidelines as any);
+      console.log(`Timing: upsertBrandGuidelines ${Date.now() - t}ms`);
 
-      // Get all existing brand configurations in one query
-      const allDbBrandConfigs = await tx.select().from(brandConfiguration);
-      const updatedConfigIds = new Set<string>();
+      t = Date.now();
+      await this.syncProductClaims(tx, config.productClaims as any);
+      console.log(`Timing: syncProductClaims ${Date.now() - t}ms`);
 
-      const guidelinesToInsert: InsertBrandConfiguration[] = [];
-      const guidelinesToUpdate: { id: string; data: Partial<InsertBrandConfiguration> }[] = [];
-      
-      // Core Positioning - treat as a special case, upsert
-      const corePositioningConfig = allDbBrandConfigs.find(c => c.configType === 'core_positioning');
-      if (brandGuidelines.corePositioning) {
-        if (corePositioningConfig) {
-          // Update existing
-          guidelinesToUpdate.push({ 
-            id: corePositioningConfig.id, 
-            data: { configValue: brandGuidelines.corePositioning, isEnabled: 'true' }
-          });
-          updatedConfigIds.add(corePositioningConfig.id);
-        } else {
-          // Insert new
-          guidelinesToInsert.push({
-            configType: 'core_positioning',
-            configValue: brandGuidelines.corePositioning,
-            isEnabled: 'true',
-          });
-        }
-      } else if (corePositioningConfig) {
-        // If it's empty in config but exists in db, mark as disabled
-        guidelinesToUpdate.push({ id: corePositioningConfig.id, data: { isEnabled: 'false' } });
-        updatedConfigIds.add(corePositioningConfig.id);
-      }
-      
-      // Other brand guidelines
-      const guidelineTypes: Array<'brand_voice' | 'key_terminology' | 'approved_language' | 'avoided_language'> = ['brand_voice', 'key_terminology', 'approved_language', 'avoided_language'];
-      
-      for (const type of guidelineTypes) {
-        const key = type.replace(/_([a-z])/g, (g) => g[1].toUpperCase()) as keyof typeof brandGuidelines;
-        const items = (brandGuidelines[key] as string[]) || [];
-        const enabledItems = brandGuidelines[`enabled${key.charAt(0).toUpperCase() + key.slice(1)}` as keyof typeof brandGuidelines] as boolean[] | undefined;
-        
-        const dbItemsForType = allDbBrandConfigs.filter(c => c.configType === type);
+      t = Date.now();
+      await this.syncPersonas(tx, config.personaPillars as any);
+      console.log(`Timing: syncPersonas ${Date.now() - t}ms`);
 
-        for (let i = 0; i < items.length; i++) {
-          const itemValue = items[i];
-          const isEnabled = enabledItems?.[i] !== false;
-          
-          // Skip null, undefined, or empty string values to prevent database constraint violations
-          if (!itemValue || itemValue.trim() === '') {
-            continue;
-          }
-          
-          // Check if a config for this item already exists (naive check by value)
-          const existingItem = dbItemsForType.find(dbItem => dbItem.configValue === itemValue);
+      t = Date.now();
+      await this.syncCopyFrameworks(tx, config.copyFrameworks as any);
+      console.log(`Timing: syncCopyFrameworks ${Date.now() - t}ms`);
 
-          if (existingItem) {
-            // Update existing item
-             guidelinesToUpdate.push({ 
-               id: existingItem.id, 
-               data: { isEnabled: isEnabled ? 'true' : 'false', sortOrder: i } 
-             });
-             updatedConfigIds.add(existingItem.id);
-          } else {
-            // Insert new item
-            guidelinesToInsert.push({
-              configType: type,
-              configValue: itemValue,
-              isEnabled: isEnabled ? 'true' : 'false',
-              sortOrder: i,
-            });
-          }
-        }
-      }
-      
-      // Now, delete any configs that were not in the new payload
-      const configsToDelete = allDbBrandConfigs.filter(c => !updatedConfigIds.has(c.id) && c.configType !== 'core_positioning'); // don't delete core positioning
-      
-      // OPTIMIZED: Batch DB operations
-      const operations: Promise<any>[] = [];
-      
-      if (guidelinesToInsert.length > 0) {
-        operations.push(tx.insert(brandConfiguration).values(guidelinesToInsert));
-      }
-      
-      // Batch updates using Promise.all for parallel execution
-      if (guidelinesToUpdate.length > 0) {
-        const updatePromises = guidelinesToUpdate.map(update =>
-          tx.update(brandConfiguration).set(update.data).where(eq(brandConfiguration.id, update.id))
-        );
-        operations.push(...updatePromises);
-      }
-      
-      // Batch disable operations
-      if (configsToDelete.length > 0) {
-        const disablePromises = configsToDelete.map(config =>
-          tx.update(brandConfiguration).set({ isEnabled: 'false' }).where(eq(brandConfiguration.id, config.id))
-        );
-        operations.push(...disablePromises);
-      }
-      
-      // Execute all brand guidelines operations in parallel
-      if (operations.length > 0) {
-        await Promise.all(operations);
-      }
-      console.log(`Brand Guidelines: ${Date.now() - startTime}ms`);
-      // #endregion
+      t = Date.now();
+      await this.syncEmailFrameworks(tx, (config.copyFrameworks as any)?.emailFrameworks);
+      console.log(`Timing: syncEmailFrameworks ${Date.now() - t}ms`);
 
-      // #region Product Claims - OPTIMIZED
-      const productClaimsStart = Date.now();
-      const { productClaims: productClaimsData } = config;
-      const allDbProducts = await tx.select().from(products);
-      
-      // Batch product creation
-      const productsToCreate: { name: string; displayName: string }[] = [];
-      const productMap = new Map<string, any>();
-      
-      for (const productName in productClaimsData) {
-        let product = allDbProducts.find(p => p.name === productName);
-        
-        if (!product) {
-          const claimData = productClaimsData[productName];
-          const displayName = claimData.displayName || slugToDisplayName(productName);
-          productsToCreate.push({ name: productName, displayName });
-        } else {
-          productMap.set(productName, product);
-        }
-      }
-      
-      // Create missing products in batch
-      if (productsToCreate.length > 0) {
-        const createdProducts = await tx.insert(products).values(productsToCreate).returning();
-        createdProducts.forEach((product, index) => {
-          productMap.set(productsToCreate[index].name, product);
-        });
-      }
+      t = Date.now();
+      await this.syncSmsFrameworks(tx, (config.copyFrameworks as any)?.smsFrameworks);
+      console.log(`Timing: syncSmsFrameworks ${Date.now() - t}ms`);
 
-      // Get all existing claims for all products at once
-      const productIds = Array.from(productMap.values()).map(p => p.id);
-      const allExistingClaims = productIds.length > 0 
-        ? await tx.select().from(productClaims).where(inArray(productClaims.productId, productIds))
-        : [];
-      
-      const allClaimsToInsert: InsertProductClaim[] = [];
-      const allClaimsToUpdate: { id: string; data: Partial<InsertProductClaim> }[] = [];
-      const allUpdatedClaimIds = new Set<string>();
+      t = Date.now();
+      await this.syncLandingPageFrameworks(tx, (config.copyFrameworks as any)?.landingPageFrameworks);
+      console.log(`Timing: syncLandingPageFrameworks ${Date.now() - t}ms`);
 
-      // Process all products
-      for (const productName in productClaimsData) {
-        const product = productMap.get(productName);
-        if (!product) continue;
-
-        const existingClaims = allExistingClaims.filter(c => c.productId === product.id);
-
-        const processClaims = (claims: string[], type: 'approved' | 'prohibited', enabledStates?: boolean[]) => {
-          claims.forEach((claimText: string, index: number) => {
-            if (!claimText || claimText.trim() === '') return;
-            
-            const isEnabled = enabledStates?.[index] !== false;
-            const existingClaim = existingClaims.find(c => c.claimType === type && c.claimText === claimText);
-
-            if (existingClaim) {
-              allClaimsToUpdate.push({
-                id: existingClaim.id,
-                data: { isEnabled: isEnabled ? 'true' : 'false', sortOrder: index }
-              });
-              allUpdatedClaimIds.add(existingClaim.id);
-            } else {
-              allClaimsToInsert.push({
-                productId: product.id,
-                claimType: type,
-                claimText: claimText,
-                isEnabled: isEnabled ? 'true' : 'false',
-                sortOrder: index,
-              });
-            }
-          });
-        };
-
-        const { approvedClaims, prohibitedClaims, enabledApproved, enabledProhibited } = productClaimsData[productName];
-        processClaims(approvedClaims, 'approved', enabledApproved);
-        processClaims(prohibitedClaims, 'prohibited', enabledProhibited);
-
-        // Mark unused claims for disabling
-        const claimsToDisable = existingClaims.filter(c => !allUpdatedClaimIds.has(c.id));
-        for (const claim of claimsToDisable) {
-          allClaimsToUpdate.push({ id: claim.id, data: { isEnabled: 'false' }});
-        }
-      }
-      
-      // Batch all product claims operations
-      const claimsOperations: Promise<any>[] = [];
-      
-      if (allClaimsToInsert.length > 0) {
-        claimsOperations.push(tx.insert(productClaims).values(allClaimsToInsert));
-      }
-      
-      if (allClaimsToUpdate.length > 0) {
-        const updatePromises = allClaimsToUpdate.map(update =>
-          tx.update(productClaims).set(update.data).where(eq(productClaims.id, update.id))
-        );
-        claimsOperations.push(...updatePromises);
-      }
-      
-      // Delete products that are in DB but not in the new config
-      const productsInConfig = Object.keys(productClaimsData);
-      const productsToDelete = allDbProducts.filter(p => !productsInConfig.includes(p.name));
-      if (productsToDelete.length > 0) {
-        const deletePromises = productsToDelete.map(product =>
-          tx.delete(products).where(eq(products.id, product.id))
-        );
-        claimsOperations.push(...deletePromises);
-      }
-      
-      // Execute all claims operations in parallel
-      if (claimsOperations.length > 0) {
-        await Promise.all(claimsOperations);
-      }
-      console.log(`Product Claims: ${Date.now() - productClaimsStart}ms`);
-      // #endregion
-
-      // #region Personas
-      const { personaPillars: personaData } = config;
-      const allDbPersonas = await tx.select().from(personas);
-
-      for (const personaName in personaData) {
-        let persona = allDbPersonas.find(p => p.name === personaName);
-
-        if (!persona) {
-          [persona] = await tx.insert(personas).values({ name: personaName, displayName: personaName }).returning();
-        }
-
-        // Update description if provided, even if it's an empty string
-        if (personaData[personaName].description !== undefined && persona.description !== personaData[personaName].description) {
-          await tx.update(personas).set({ description: personaData[personaName].description }).where(eq(personas.id, persona.id));
-        }
-
-        // More surgical update for persona pillars
-        const existingPillars = await tx.select().from(personaPillars).where(eq(personaPillars.personaId, persona.id));
-        const updatedPillarIds = new Set<string>();
-
-        const pillarsToInsert: InsertPersonaPillar[] = [];
-        const pillarsToUpdate: { id: string; data: Partial<InsertPersonaPillar> }[] = [];
-
-        const { pillars } = personaData[personaName];
-        if (pillars && pillars.length > 0) {
-          pillars.forEach((pillarText: string, index: number) => {
-            // Skip null, undefined, or empty string values to prevent database constraint violations
-            if (!pillarText || pillarText.trim() === '') {
-              return;
-            }
-            
-            const existingPillar = existingPillars.find(p => p.pillarText === pillarText);
-
-            if (existingPillar) {
-              // Update existing pillar
-              pillarsToUpdate.push({
-                id: existingPillar.id,
-                data: { isEnabled: 'true', sortOrder: index }
-              });
-              updatedPillarIds.add(existingPillar.id);
-            } else {
-              // Insert new pillar
-              pillarsToInsert.push({
-                personaId: persona.id,
-                pillarText: pillarText,
-                isEnabled: 'true',
-                sortOrder: index,
-              });
-            }
-          });
-        }
-        
-        // Disable pillars that are in DB but not in new config
-        const pillarsToDisable = existingPillars.filter(p => !updatedPillarIds.has(p.id));
-        for (const pillar of pillarsToDisable) {
-          pillarsToUpdate.push({ id: pillar.id, data: { isEnabled: 'false' } });
-        }
-        
-        if (pillarsToInsert.length > 0) {
-          await tx.insert(personaPillars).values(pillarsToInsert);
-        }
-        for (const update of pillarsToUpdate) {
-          await tx.update(personaPillars).set(update.data).where(eq(personaPillars.id, update.id));
-        }
-
-        // Handle subpersonas
-        if (personaData[personaName].subpersonas) {
-          const existingSubpersonas = await tx.select().from(subpersonas).where(eq(subpersonas.personaId, persona.id));
-          const updatedSubpersonaIds = new Set<string>();
-
-          const subpersonasToInsert: InsertSubpersona[] = [];
-          const subpersonasToUpdate: { id: string; data: Partial<InsertSubpersona> }[] = [];
-
-          let sortOrder = 0;
-          for (const subpersonaName in personaData[personaName].subpersonas!) {
-            const subpersonaData = personaData[personaName].subpersonas![subpersonaName];
-            
-            const existingSubpersona = existingSubpersonas.find(s => s.name === subpersonaName);
-
-            if (existingSubpersona) {
-              // Update existing subpersona
-              subpersonasToUpdate.push({
-                id: existingSubpersona.id,
-                data: { 
-                  description: subpersonaData.description || null,
-                  isActive: 'true',
-                  sortOrder
-                }
-              });
-              updatedSubpersonaIds.add(existingSubpersona.id);
-            } else {
-              // Insert new subpersona
-              subpersonasToInsert.push({
-                personaId: persona.id,
-                name: subpersonaName,
-                description: subpersonaData.description || null,
-                isActive: 'true',
-                sortOrder
-              });
-            }
-            sortOrder++;
-          }
-
-          // Disable subpersonas that are in DB but not in new config
-          const subpersonasToDisable = existingSubpersonas.filter(s => !updatedSubpersonaIds.has(s.id));
-          for (const subpersona of subpersonasToDisable) {
-            subpersonasToUpdate.push({ id: subpersona.id, data: { isActive: 'false' } });
-          }
-
-          if (subpersonasToInsert.length > 0) {
-            await tx.insert(subpersonas).values(subpersonasToInsert);
-          }
-          for (const update of subpersonasToUpdate) {
-            await tx.update(subpersonas).set(update.data).where(eq(subpersonas.id, update.id));
-          }
-        }
-      }
-
-      const personasInConfig = Object.keys(personaData);
-      const personasToDelete = allDbPersonas.filter(p => !personasInConfig.includes(p.name));
-      for (const persona of personasToDelete) {
-        await tx.delete(personas).where(eq(personas.id, persona.id));
-      }
-      // #endregion
-      
-      // #region Copy Frameworks
-      const { copyFrameworks: frameworksData } = config;
-      const allDbFrameworks = await tx.select().from(copyFrameworks);
-      const updatedFrameworkIds = new Set<string>();
-      
-      const frameworksToInsert: InsertCopyFramework[] = [];
-      const frameworksToUpdate: { id: string; data: Partial<InsertCopyFramework> }[] = [];
-
-      // Headline Frameworks
-      frameworksData.headlineFrameworks.forEach((fw: any, index: number) => {
-        // Skip frameworks with empty names to prevent database constraint violations
-        if (!fw.name || fw.name.trim() === '') {
-          return;
-        }
-        
-        const existingFw = allDbFrameworks.find(dbFw => dbFw.frameworkType === 'headline_framework' && dbFw.name === fw.name);
-        const isEnabled = fw.isEnabled !== false;
-        if (existingFw) {
-          frameworksToUpdate.push({
-            id: existingFw.id,
-            data: { 
-              name: fw.name,
-              description: fw.description,
-              template: fw.template,
-              examples: fw.examples,
-              isEnabled: isEnabled ? 'true' : 'false', 
-              sortOrder: index 
-            }
-          });
-          updatedFrameworkIds.add(existingFw.id);
-        } else {
-          frameworksToInsert.push({
-            frameworkType: 'headline_framework',
-            name: fw.name,
-            description: fw.description,
-            template: fw.template,
-            examples: fw.examples,
-            isEnabled: isEnabled ? 'true' : 'false',
-            sortOrder: index,
-          });
-        }
-      });
-
-      // Primary Text Rules
-      frameworksData.primaryTextRules.forEach((rule: string, index: number) => {
-        // Skip null, undefined, or empty string values to prevent database constraint violations
-        if (!rule || rule.trim() === '') {
-          return;
-        }
-        
-        const existingRule = allDbFrameworks.find(dbFw => dbFw.frameworkType === 'primary_text_rule' && dbFw.ruleText === rule);
-        const isEnabled = frameworksData.enabledPrimaryTextRules?.[index] !== false;
-        if (existingRule) {
-          frameworksToUpdate.push({ id: existingRule.id, data: { isEnabled: isEnabled ? 'true' : 'false', sortOrder: index }});
-          updatedFrameworkIds.add(existingRule.id);
-        } else {
-          frameworksToInsert.push({
-            frameworkType: 'primary_text_rule',
-            ruleText: rule,
-            isEnabled: isEnabled ? 'true' : 'false',
-            sortOrder: index,
-          });
-        }
-      });
-
-      // Brand First Guidelines
-      frameworksData.brandDrBalance.brandFirst.forEach((rule: string, index: number) => {
-        // Skip null, undefined, or empty string values to prevent database constraint violations
-        if (!rule || rule.trim() === '') {
-          return;
-        }
-        
-        const existingRule = allDbFrameworks.find(dbFw => dbFw.frameworkType === 'brand_first_guideline' && dbFw.ruleText === rule);
-        if (existingRule) {
-          frameworksToUpdate.push({ id: existingRule.id, data: { isEnabled: 'true', sortOrder: index }});
-          updatedFrameworkIds.add(existingRule.id);
-        } else {
-          frameworksToInsert.push({
-            frameworkType: 'brand_first_guideline',
-            ruleText: rule,
-            isEnabled: 'true',
-            sortOrder: index,
-          });
-        }
-      });
-
-      // Direct Response Guidelines
-      frameworksData.brandDrBalance.directResponse.forEach((rule: string, index: number) => {
-        // Skip null, undefined, or empty string values to prevent database constraint violations
-        if (!rule || rule.trim() === '') {
-          return;
-        }
-        
-        const existingRule = allDbFrameworks.find(dbFw => dbFw.frameworkType === 'direct_response_guideline' && dbFw.ruleText === rule);
-        if (existingRule) {
-          frameworksToUpdate.push({ id: existingRule.id, data: { isEnabled: 'true', sortOrder: index }});
-          updatedFrameworkIds.add(existingRule.id);
-        } else {
-          frameworksToInsert.push({
-            frameworkType: 'direct_response_guideline',
-            ruleText: rule,
-            isEnabled: 'true',
-            sortOrder: index,
-          });
-        }
-      });
-
-      // Disable headline frameworks not in the new config (removed frameworks)
-      const headlineFrameworksToDisable = allDbFrameworks.filter(f => 
-        f.frameworkType === 'headline_framework' && !updatedFrameworkIds.has(f.id)
-      );
-      for (const fw of headlineFrameworksToDisable) {
-        frameworksToUpdate.push({ id: fw.id, data: { isEnabled: 'false' } });
-      }
-
-      // Disable other framework types not in the new config
-      const otherFrameworksToDisable = allDbFrameworks.filter(f => 
-        f.frameworkType !== 'headline_framework' && !updatedFrameworkIds.has(f.id)
-      );
-      for (const fw of otherFrameworksToDisable) {
-        frameworksToUpdate.push({ id: fw.id, data: { isEnabled: 'false' } });
-      }
-
-      if (frameworksToInsert.length > 0) {
-        await tx.insert(copyFrameworks).values(frameworksToInsert);
-      }
-      for (const update of frameworksToUpdate) {
-        await tx.update(copyFrameworks).set(update.data).where(eq(copyFrameworks.id, update.id));
-      }
-      // #endregion
-
-      // #region Email Frameworks - OPTIMIZED
-      const emailFrameworksStart = Date.now();
-      if (frameworksData.emailFrameworks && Array.isArray(frameworksData.emailFrameworks)) {
-        const allDbEmailFrameworks = await tx.select().from(emailFrameworks);
-        const emailFrameworksToUpdate: { id: string; data: Partial<InsertEmailFramework> }[] = [];
-        const emailFrameworksToInsert: InsertEmailFramework[] = [];
-        const updatedEmailFrameworkIds = new Set<string>();
-
-        // Process frameworks data preparation
-        frameworksData.emailFrameworks.forEach((fw: any, index: number) => {
-          // Skip frameworks without proper identification
-          if (!fw.name && !fw.displayName) {
-            return;
-          }
-          
-          // Find existing framework by name or id
-          const existingFw = allDbEmailFrameworks.find(dbFw => 
-            (fw.id && dbFw.id === fw.id) || 
-            (fw.name && dbFw.name === fw.name) ||
-            (fw.displayName && dbFw.displayName === fw.displayName)
-          );
-          
-          const isEnabled = fw.isEnabled !== false;
-          const frameworkData = {
-            name: fw.name || fw.displayName?.toLowerCase().replace(/\s+/g, '_') || `framework_${index}`,
-            displayName: fw.displayName || fw.name || `Framework ${index + 1}`,
-            description: fw.description || '',
-            structure: fw.structure || '',
-            keyElements: fw.keyElements || '',
-            frameworkContent: fw.frameworkContent || '',
-            systemPrompt: fw.systemPrompt || '',
-            outputRequirements: fw.outputRequirements || '',
-            expectedLength: fw.expectedLength || 'medium',
-            images: fw.images || null,
-            isActive: isEnabled ? 'true' : 'false',
-            sortOrder: fw.sortOrder !== undefined ? fw.sortOrder : index,
-          };
-
-          if (existingFw) {
-            // Update existing framework
-            emailFrameworksToUpdate.push({
-              id: existingFw.id,
-              data: frameworkData
-            });
-            updatedEmailFrameworkIds.add(existingFw.id);
-          } else {
-            // Insert new framework
-            emailFrameworksToInsert.push(frameworkData);
-          }
-        });
-
-        // Disable email frameworks not in the new config
-        const emailFrameworksToDisable = allDbEmailFrameworks.filter(f => 
-          !updatedEmailFrameworkIds.has(f.id)
-        );
-        for (const fw of emailFrameworksToDisable) {
-          emailFrameworksToUpdate.push({ id: fw.id, data: { isActive: 'false' } });
-        }
-
-        // OPTIMIZED: Batch all email framework operations
-        const emailOperations: Promise<any>[] = [];
-        
-        if (emailFrameworksToInsert.length > 0) {
-          emailOperations.push(tx.insert(emailFrameworks).values(emailFrameworksToInsert));
-        }
-        
-        // Batch updates - this is the most critical optimization for large image data
-        if (emailFrameworksToUpdate.length > 0) {
-          const updatePromises = emailFrameworksToUpdate.map(update =>
-            tx.update(emailFrameworks).set({
-              ...update.data,
-              updatedAt: new Date()
-            }).where(eq(emailFrameworks.id, update.id))
-          );
-          emailOperations.push(...updatePromises);
-        }
-        
-        // Execute all email framework operations in parallel
-        if (emailOperations.length > 0) {
-          await Promise.all(emailOperations);
-        }
-        
-        console.log(`Email Frameworks: ${Date.now() - emailFrameworksStart}ms (${emailFrameworksToInsert.length} inserts, ${emailFrameworksToUpdate.length} updates)`);
-      }
-      // #endregion
-
-      // #region Landing Page Frameworks
-      if (frameworksData.landingPageFrameworks && Array.isArray(frameworksData.landingPageFrameworks)) {
-        const allDbLandingPageFrameworks = await tx.select().from(landingPageFrameworks);
-        const landingPageFrameworksToUpdate: { id: string; data: Partial<InsertLandingPageFramework> }[] = [];
-        const landingPageFrameworksToInsert: InsertLandingPageFramework[] = [];
-        const updatedLandingPageFrameworkIds = new Set<string>();
-
-        frameworksData.landingPageFrameworks.forEach((fw: any, index: number) => {
-          // Skip frameworks without proper identification
-          if (!fw.name && !fw.displayName) {
-            return;
-          }
-          
-          // Find existing framework by name or id
-          const existingFw = allDbLandingPageFrameworks.find(dbFw => 
-            (fw.id && dbFw.id === fw.id) || 
-            (fw.name && dbFw.name === fw.name) ||
-            (fw.displayName && dbFw.displayName === fw.displayName)
-          );
-          
-          const isEnabled = fw.isEnabled !== false;
-          const frameworkData = {
-            name: fw.name || fw.displayName?.toLowerCase().replace(/\s+/g, '_') || `framework_${index}`,
-            displayName: fw.displayName || fw.name || `Framework ${index + 1}`,
-            description: fw.description || '',
-            contentSequence: fw.contentSequence || [],
-            reasonStructure: fw.reasonStructure || [],
-            optimizationRules: fw.optimizationRules || [],
-            realExamples: fw.realExamples || [],
-            systemPrompt: fw.systemPrompt || '',
-            outputRequirements: fw.outputRequirements || '',
-            images: fw.images || null,
-            isActive: isEnabled ? 'true' : 'false',
-            sortOrder: fw.sortOrder !== undefined ? fw.sortOrder : index,
-          };
-
-          if (existingFw) {
-            landingPageFrameworksToUpdate.push({
-              id: existingFw.id,
-              data: frameworkData
-            });
-            updatedLandingPageFrameworkIds.add(existingFw.id);
-          } else {
-            landingPageFrameworksToInsert.push(frameworkData);
-          }
-        });
-        
-        if (landingPageFrameworksToInsert.length > 0) {
-          await tx.insert(landingPageFrameworks).values(landingPageFrameworksToInsert);
-          console.log('DEBUG: Inserted landing page frameworks:', landingPageFrameworksToInsert.length);
-        }
-        for (const update of landingPageFrameworksToUpdate) {
-          await tx.update(landingPageFrameworks).set({
-            ...update.data,
-            updatedAt: new Date()
-          }).where(eq(landingPageFrameworks.id, update.id));
-        }
-        console.log('DEBUG: Completed landing page framework database operations');
-      }
-      // #endregion
-
-      // #region System Configuration (Model, Prompts, etc.)
-      const allDbSystemConfigs = await tx.select().from(systemConfiguration);
-      const configsToUpsert: InsertSystemConfiguration[] = [];
-
-      const processSystemConfig = (prefix: string, configObject: Record<string, any>) => {
-        for (const key in configObject) {
-          const configKey = `${prefix}.${key}`;
-          const configValue = String(configObject[key]);
-          configsToUpsert.push({ configKey, configValue });
-        }
-      };
-      
-      const processNestedSystemConfig = (prefix: string, configObject: Record<string, Record<string, any>>) => {
-        for (const outerKey in configObject) {
-          for (const innerKey in configObject[outerKey]) {
-            const configKey = `${prefix}.${outerKey}.${innerKey}`;
-            const configValue = String(configObject[outerKey][innerKey]);
-            if(configValue) {
-              configsToUpsert.push({ configKey, configValue });
-            }
-          }
-        }
-      };
-
-      processSystemConfig('modelParameters', config.modelParameters);
-      processNestedSystemConfig('stationPrompts', config.stationPrompts);
-      
-      // Upsert logic
-      for (const config of configsToUpsert) {
-        const existingConfig = allDbSystemConfigs.find(dbC => dbC.configKey === config.configKey);
-        if (existingConfig) {
-          if (existingConfig.configValue !== config.configValue) {
-            await tx.update(systemConfiguration)
-              .set({ configValue: config.configValue })
-              .where(eq(systemConfiguration.configKey, config.configKey));
-          }
-        } else {
-          await tx.insert(systemConfiguration).values(config);
-        }
-      }
-      // #endregion
+      t = Date.now();
+      await this.upsertSystemConfiguration(tx, config);
+      console.log(`Timing: upsertSystemConfiguration ${Date.now() - t}ms`);
       
       const totalTime = Date.now() - startTime;
       console.log(`Training configuration saved successfully in ${totalTime}ms`);
     });
   }
 
+  // Helper methods extracted from saveTrainingConfiguration
+  private async upsertBrandGuidelines(tx: any, brandGuidelines: any): Promise<void> {
+    const allDbBrandConfigs = await tx.select().from(brandConfiguration);
+    const updatedConfigIds = new Set<string>();
+
+    const guidelinesToInsert: InsertBrandConfiguration[] = [];
+    const guidelinesToUpdate: { id: string; data: Partial<InsertBrandConfiguration> }[] = [];
+
+    const corePositioningConfig = allDbBrandConfigs.find((c: any) => c.configType === 'core_positioning');
+    if (brandGuidelines?.corePositioning) {
+      if (corePositioningConfig) {
+        guidelinesToUpdate.push({
+          id: corePositioningConfig.id,
+          data: { configValue: brandGuidelines.corePositioning, isEnabled: 'true' },
+        });
+        updatedConfigIds.add(corePositioningConfig.id);
+      } else {
+        guidelinesToInsert.push({
+          configType: 'core_positioning',
+          configValue: brandGuidelines.corePositioning,
+          isEnabled: 'true',
+        });
+      }
+    } else if (corePositioningConfig) {
+      guidelinesToUpdate.push({ id: corePositioningConfig.id, data: { isEnabled: 'false' } });
+      updatedConfigIds.add(corePositioningConfig.id);
+    }
+
+    const guidelineTypes: Array<'brand_voice' | 'key_terminology' | 'approved_language' | 'avoided_language'> = [
+      'brand_voice',
+      'key_terminology',
+      'approved_language',
+      'avoided_language',
+    ];
+
+    for (const type of guidelineTypes) {
+      const keyStr = type.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+      const items = (brandGuidelines?.[keyStr] as string[]) || [];
+      const enabledKey = `enabled${keyStr.charAt(0).toUpperCase() + keyStr.slice(1)}`;
+      const enabledItems = brandGuidelines?.[enabledKey] as boolean[] | undefined;
+
+      const dbItemsForType = allDbBrandConfigs.filter((c: any) => c.configType === type);
+
+      for (let i = 0; i < items.length; i++) {
+        const itemValue = items[i];
+        const isEnabled = enabledItems?.[i] !== false;
+        if (!itemValue || itemValue.trim() === '') continue;
+
+        const existingItem = dbItemsForType.find((dbItem: any) => dbItem.configValue === itemValue);
+        if (existingItem) {
+          guidelinesToUpdate.push({ id: existingItem.id, data: { isEnabled: isEnabled ? 'true' : 'false', sortOrder: i } });
+          updatedConfigIds.add(existingItem.id);
+        } else {
+          guidelinesToInsert.push({
+            configType: type,
+            configValue: itemValue,
+            isEnabled: isEnabled ? 'true' : 'false',
+            sortOrder: i,
+          });
+        }
+      }
+    }
+
+    const configsToDelete = allDbBrandConfigs.filter((c: any) => !updatedConfigIds.has(c.id) && c.configType !== 'core_positioning');
+
+    const operations: Promise<any>[] = [];
+    if (guidelinesToInsert.length > 0) {
+      operations.push(tx.insert(brandConfiguration).values(guidelinesToInsert));
+    }
+    if (guidelinesToUpdate.length > 0) {
+      const updatePromises = guidelinesToUpdate.map((update) =>
+        tx.update(brandConfiguration).set(update.data).where(eq(brandConfiguration.id, update.id))
+      );
+      operations.push(...updatePromises);
+    }
+    if (configsToDelete.length > 0) {
+      const disablePromises = configsToDelete.map((config: any) =>
+        tx.update(brandConfiguration).set({ isEnabled: 'false' }).where(eq(brandConfiguration.id, config.id))
+      );
+      operations.push(...disablePromises);
+    }
+    if (operations.length > 0) await Promise.all(operations);
+  }
+
+  private async syncProductClaims(tx: any, productClaimsData: any): Promise<void> {
+    const allDbProducts = await tx.select().from(products);
+    const productsToCreate: { name: string; displayName: string }[] = [];
+    const productMap = new Map<string, any>();
+    const allDbProductsByName = new Map<string, any>(allDbProducts.map((p: any) => [p.name, p]));
+
+    for (const productName in productClaimsData) {
+      const existing = allDbProductsByName.get(productName);
+      if (!existing) {
+        const claimData = productClaimsData[productName];
+        const displayName = claimData.displayName || slugToDisplayName(productName);
+        productsToCreate.push({ name: productName, displayName });
+      } else {
+        productMap.set(productName, existing);
+      }
+    }
+
+    if (productsToCreate.length > 0) {
+      const createdProducts = await tx.insert(products).values(productsToCreate).returning();
+      createdProducts.forEach((product: any, index: number) => {
+        productMap.set(productsToCreate[index].name, product);
+      });
+    }
+
+    const productIds = Array.from(productMap.values()).map((p: any) => p.id);
+    const allExistingClaims =
+      productIds.length > 0 ? await tx.select().from(productClaims).where(inArray(productClaims.productId, productIds)) : [];
+
+    const allClaimsToInsert: InsertProductClaim[] = [];
+    const allClaimsToUpdate: { id: string; data: Partial<InsertProductClaim> }[] = [];
+
+    // Build a fast lookup map of existing claims per product
+    const existingClaimsByProduct: Map<string, Map<string, any>> = new Map();
+    for (const c of allExistingClaims) {
+      const pid = (c as any).productId as string;
+      const key = `${(c as any).claimType}:${(c as any).claimText}`;
+      if (!existingClaimsByProduct.has(pid)) existingClaimsByProduct.set(pid, new Map());
+      existingClaimsByProduct.get(pid)!.set(key, c);
+    }
+
+    for (const productName in productClaimsData) {
+      const product = productMap.get(productName);
+      if (!product) continue;
+      const pid = product.id as string;
+      const existingMap = existingClaimsByProduct.get(pid) || new Map<string, any>();
+
+      const processedIds = new Set<string>();
+      const processClaims = (claims: string[], type: 'approved' | 'prohibited', enabledStates?: boolean[]) => {
+        for (let index = 0; index < (claims?.length || 0); index++) {
+          const claimText = claims[index];
+          if (!claimText || claimText.trim() === '') continue;
+          const isEnabled = enabledStates?.[index] !== false;
+          const desiredEnabled = isEnabled ? 'true' : 'false';
+          const key = `${type}:${claimText}`;
+          const existing = existingMap.get(key);
+          if (existing) {
+            processedIds.add(existing.id);
+            const needsEnabledUpdate = existing.isEnabled !== desiredEnabled;
+            const needsSortUpdate = existing.sortOrder !== index;
+            if (needsEnabledUpdate || needsSortUpdate) {
+              allClaimsToUpdate.push({ id: existing.id, data: { isEnabled: desiredEnabled, sortOrder: index } });
+            }
+          } else {
+            allClaimsToInsert.push({
+              productId: pid,
+              claimType: type,
+              claimText,
+              isEnabled: desiredEnabled,
+              sortOrder: index,
+            });
+          }
+        }
+      };
+
+      const { approvedClaims, prohibitedClaims, enabledApproved, enabledProhibited } = productClaimsData[productName];
+      processClaims(approvedClaims || [], 'approved', enabledApproved);
+      processClaims(prohibitedClaims || [], 'prohibited', enabledProhibited);
+
+      // Disable only those that are currently enabled and not processed
+      for (const existing of existingMap.values()) {
+        if (!processedIds.has(existing.id) && existing.isEnabled !== 'false') {
+          allClaimsToUpdate.push({ id: existing.id, data: { isEnabled: 'false' } });
+        }
+      }
+    }
+
+    const claimsOperations: Promise<any>[] = [];
+    if (allClaimsToInsert.length > 0) {
+      claimsOperations.push(tx.insert(productClaims).values(allClaimsToInsert));
+    }
+    if (allClaimsToUpdate.length > 0) {
+      const MAX_CONCURRENCY = 50;
+      for (let i = 0; i < allClaimsToUpdate.length; i += MAX_CONCURRENCY) {
+        const slice = allClaimsToUpdate.slice(i, i + MAX_CONCURRENCY);
+        claimsOperations.push(
+          Promise.all(
+            slice.map((update) => tx.update(productClaims).set(update.data).where(eq(productClaims.id, update.id)))
+          )
+        );
+      }
+    }
+
+    const productsInConfig = Object.keys(productClaimsData);
+    const allDbProductsAfter = await tx.select().from(products);
+    const productsToDelete = allDbProductsAfter.filter((p: any) => !productsInConfig.includes(p.name));
+    if (productsToDelete.length > 0) {
+      const deletePromises = productsToDelete.map((product: any) => tx.delete(products).where(eq(products.id, product.id)));
+      claimsOperations.push(...deletePromises);
+    }
+
+    if (claimsOperations.length > 0) {
+      await Promise.all(claimsOperations);
+    }
+  }
+
+  private async syncPersonas(tx: any, personaData: any): Promise<void> {
+    const allDbPersonas = await tx.select().from(personas);
+
+    for (const personaName in personaData) {
+      let persona = allDbPersonas.find((p: any) => p.name === personaName);
+      if (!persona) {
+        [persona] = await tx.insert(personas).values({ name: personaName, displayName: personaName }).returning();
+      }
+
+      if (personaData[personaName].description !== undefined && persona.description !== personaData[personaName].description) {
+        await tx.update(personas).set({ description: personaData[personaName].description }).where(eq(personas.id, persona.id));
+      }
+
+      const existingPillars = await tx.select().from(personaPillars).where(eq(personaPillars.personaId, persona.id));
+      const updatedPillarIds = new Set<string>();
+      const pillarsToInsert: InsertPersonaPillar[] = [];
+      const pillarsToUpdate: { id: string; data: Partial<InsertPersonaPillar> }[] = [];
+
+      const { pillars } = personaData[personaName];
+      if (pillars && pillars.length > 0) {
+        pillars.forEach((pillarText: string, index: number) => {
+          if (!pillarText || pillarText.trim() === '') return;
+          const existingPillar = existingPillars.find((p: any) => p.pillarText === pillarText);
+          if (existingPillar) {
+            pillarsToUpdate.push({ id: existingPillar.id, data: { isEnabled: 'true', sortOrder: index } });
+            updatedPillarIds.add(existingPillar.id);
+          } else {
+            pillarsToInsert.push({ personaId: persona.id, pillarText, isEnabled: 'true', sortOrder: index });
+          }
+        });
+      }
+
+      const pillarsToDisable = existingPillars.filter((p: any) => !updatedPillarIds.has(p.id));
+      for (const pillar of pillarsToDisable) {
+        pillarsToUpdate.push({ id: pillar.id, data: { isEnabled: 'false' } });
+      }
+
+      if (pillarsToInsert.length > 0) {
+        await tx.insert(personaPillars).values(pillarsToInsert);
+      }
+      for (const update of pillarsToUpdate) {
+        await tx.update(personaPillars).set(update.data).where(eq(personaPillars.id, update.id));
+      }
+
+      if (personaData[personaName].subpersonas) {
+        const existingSubpersonas = await tx.select().from(subpersonas).where(eq(subpersonas.personaId, persona.id));
+        const updatedSubpersonaIds = new Set<string>();
+        const subpersonasToInsert: InsertSubpersona[] = [];
+        const subpersonasToUpdate: { id: string; data: Partial<InsertSubpersona> }[] = [];
+
+        let sortOrder = 0;
+        for (const subpersonaName in personaData[personaName].subpersonas!) {
+          const subpersonaData = personaData[personaName].subpersonas![subpersonaName];
+          const existingSubpersona = existingSubpersonas.find((s: any) => s.name === subpersonaName);
+          if (existingSubpersona) {
+            subpersonasToUpdate.push({
+              id: existingSubpersona.id,
+              data: { description: subpersonaData.description || null, isActive: 'true', sortOrder },
+            });
+            updatedSubpersonaIds.add(existingSubpersona.id);
+          } else {
+            subpersonasToInsert.push({
+              personaId: persona.id,
+              name: subpersonaName,
+              description: subpersonaData.description || null,
+              isActive: 'true',
+              sortOrder,
+            });
+          }
+          sortOrder++;
+        }
+
+        const subpersonasToDisable = existingSubpersonas.filter((s: any) => !updatedSubpersonaIds.has(s.id));
+        for (const subpersona of subpersonasToDisable) {
+          subpersonasToUpdate.push({ id: subpersona.id, data: { isActive: 'false' } });
+        }
+
+        if (subpersonasToInsert.length > 0) {
+          await tx.insert(subpersonas).values(subpersonasToInsert);
+        }
+        for (const update of subpersonasToUpdate) {
+          await tx.update(subpersonas).set(update.data).where(eq(subpersonas.id, update.id));
+        }
+      }
+    }
+
+    const personasInConfig = Object.keys(personaData);
+    const allDbPersonasAfter = await tx.select().from(personas);
+    const personasToDelete = allDbPersonasAfter.filter((p: any) => !personasInConfig.includes(p.name));
+    for (const persona of personasToDelete) {
+      await tx.delete(personas).where(eq(personas.id, persona.id));
+    }
+  }
+
+  private async syncCopyFrameworks(tx: any, frameworksData: any): Promise<void> {
+    const allDbFrameworks = await tx.select().from(copyFrameworks);
+    const updatedFrameworkIds = new Set<string>();
+    const frameworksToInsert: InsertCopyFramework[] = [];
+    const frameworksToUpdate: { id: string; data: Partial<InsertCopyFramework> }[] = [];
+
+    (frameworksData?.headlineFrameworks || []).forEach((fw: any, index: number) => {
+      if (!fw.name || fw.name.trim() === '') return;
+      const existingFw = allDbFrameworks.find((dbFw: any) => dbFw.frameworkType === 'headline_framework' && dbFw.name === fw.name);
+      const isEnabled = fw.isEnabled !== false;
+      if (existingFw) {
+        frameworksToUpdate.push({
+          id: existingFw.id,
+          data: { name: fw.name, description: fw.description, template: fw.template, examples: fw.examples, isEnabled: isEnabled ? 'true' : 'false', sortOrder: index },
+        });
+        updatedFrameworkIds.add(existingFw.id);
+      } else {
+        frameworksToInsert.push({
+          frameworkType: 'headline_framework',
+          name: fw.name,
+          description: fw.description,
+          template: fw.template,
+          examples: fw.examples,
+          isEnabled: isEnabled ? 'true' : 'false',
+          sortOrder: index,
+        });
+      }
+    });
+
+    (frameworksData?.primaryTextRules || []).forEach((rule: string, index: number) => {
+      if (!rule || rule.trim() === '') return;
+      const existingRule = allDbFrameworks.find((dbFw: any) => dbFw.frameworkType === 'primary_text_rule' && dbFw.ruleText === rule);
+      const isEnabled = frameworksData.enabledPrimaryTextRules?.[index] !== false;
+      if (existingRule) {
+        frameworksToUpdate.push({ id: existingRule.id, data: { isEnabled: isEnabled ? 'true' : 'false', sortOrder: index } });
+        updatedFrameworkIds.add(existingRule.id);
+      } else {
+        frameworksToInsert.push({ frameworkType: 'primary_text_rule', ruleText: rule, isEnabled: isEnabled ? 'true' : 'false', sortOrder: index });
+      }
+    });
+
+    (frameworksData?.brandDrBalance?.brandFirst || []).forEach((rule: string, index: number) => {
+      if (!rule || rule.trim() === '') return;
+      const existingRule = allDbFrameworks.find((dbFw: any) => dbFw.frameworkType === 'brand_first_guideline' && dbFw.ruleText === rule);
+      if (existingRule) {
+        frameworksToUpdate.push({ id: existingRule.id, data: { isEnabled: 'true', sortOrder: index } });
+        updatedFrameworkIds.add(existingRule.id);
+      } else {
+        frameworksToInsert.push({ frameworkType: 'brand_first_guideline', ruleText: rule, isEnabled: 'true', sortOrder: index });
+      }
+    });
+
+    (frameworksData?.brandDrBalance?.directResponse || []).forEach((rule: string, index: number) => {
+      if (!rule || rule.trim() === '') return;
+      const existingRule = allDbFrameworks.find((dbFw: any) => dbFw.frameworkType === 'direct_response_guideline' && dbFw.ruleText === rule);
+      if (existingRule) {
+        frameworksToUpdate.push({ id: existingRule.id, data: { isEnabled: 'true', sortOrder: index } });
+        updatedFrameworkIds.add(existingRule.id);
+      } else {
+        frameworksToInsert.push({ frameworkType: 'direct_response_guideline', ruleText: rule, isEnabled: 'true', sortOrder: index });
+      }
+    });
+
+    const headlineFrameworksToDisable = allDbFrameworks.filter((f: any) => f.frameworkType === 'headline_framework' && !updatedFrameworkIds.has(f.id));
+    for (const fw of headlineFrameworksToDisable) {
+      frameworksToUpdate.push({ id: fw.id, data: { isEnabled: 'false' } });
+    }
+
+    const otherFrameworksToDisable = allDbFrameworks.filter((f: any) => f.frameworkType !== 'headline_framework' && !updatedFrameworkIds.has(f.id));
+    for (const fw of otherFrameworksToDisable) {
+      frameworksToUpdate.push({ id: fw.id, data: { isEnabled: 'false' } });
+    }
+
+    if (frameworksToInsert.length > 0) {
+      await tx.insert(copyFrameworks).values(frameworksToInsert);
+    }
+    for (const update of frameworksToUpdate) {
+      await tx.update(copyFrameworks).set(update.data).where(eq(copyFrameworks.id, update.id));
+    }
+  }
+
+  private async syncEmailFrameworks(tx: any, emailFrameworksArr: any[] | undefined): Promise<void> {
+    if (!emailFrameworksArr || !Array.isArray(emailFrameworksArr)) return;
+    const allDbEmailFrameworks = await tx.select().from(emailFrameworks);
+    const emailFrameworksToUpdate: { id: string; data: Partial<InsertEmailFramework> }[] = [];
+    const emailFrameworksToInsert: InsertEmailFramework[] = [];
+    const updatedEmailFrameworkIds = new Set<string>();
+
+    emailFrameworksArr.forEach((fw: any, index: number) => {
+      if (!fw.name && !fw.displayName) return;
+      const existingFw = allDbEmailFrameworks.find(
+        (dbFw: any) => (fw.id && dbFw.id === fw.id) || (fw.name && dbFw.name === fw.name) || (fw.displayName && dbFw.displayName === fw.displayName)
+      );
+      const isEnabled = fw.isEnabled !== false;
+      const frameworkData = {
+        name: fw.name || fw.displayName?.toLowerCase().replace(/\s+/g, '_') || `framework_${index}`,
+        displayName: fw.displayName || fw.name || `Framework ${index + 1}`,
+        description: fw.description || '',
+        structure: fw.structure || '',
+        keyElements: fw.keyElements || '',
+        frameworkContent: fw.frameworkContent || '',
+        systemPrompt: fw.systemPrompt || '',
+        outputRequirements: fw.outputRequirements || '',
+        expectedLength: fw.expectedLength || 'medium',
+        images: fw.images || null,
+        isActive: isEnabled ? 'true' : 'false',
+        sortOrder: fw.sortOrder !== undefined ? fw.sortOrder : index,
+      };
+      if (existingFw) {
+        emailFrameworksToUpdate.push({ id: existingFw.id, data: frameworkData });
+        updatedEmailFrameworkIds.add(existingFw.id);
+      } else {
+        emailFrameworksToInsert.push(frameworkData as InsertEmailFramework);
+      }
+    });
+
+    const emailFrameworksToDisable = allDbEmailFrameworks.filter((f: any) => !updatedEmailFrameworkIds.has(f.id));
+    for (const fw of emailFrameworksToDisable) {
+      emailFrameworksToUpdate.push({ id: fw.id, data: { isActive: 'false' } });
+    }
+
+    const emailOperations: Promise<any>[] = [];
+    if (emailFrameworksToInsert.length > 0) {
+      emailOperations.push(tx.insert(emailFrameworks).values(emailFrameworksToInsert));
+    }
+    if (emailFrameworksToUpdate.length > 0) {
+      const updatePromises = emailFrameworksToUpdate.map((update) =>
+        tx.update(emailFrameworks).set({ ...update.data, updatedAt: new Date() }).where(eq(emailFrameworks.id, update.id))
+      );
+      emailOperations.push(...updatePromises);
+    }
+    if (emailOperations.length > 0) await Promise.all(emailOperations);
+  }
+
+  private async syncSmsFrameworks(tx: any, smsFrameworksArr: any[] | undefined): Promise<void> {
+    if (!smsFrameworksArr || !Array.isArray(smsFrameworksArr)) return;
+    const allDbSmsFrameworks = await tx.select().from(smsFrameworks);
+    const smsFrameworksToUpdate: { id: string; data: Partial<InsertSmsFramework> }[] = [];
+    const smsFrameworksToInsert: InsertSmsFramework[] = [];
+    const updatedSmsFrameworkIds = new Set<string>();
+
+    smsFrameworksArr.forEach((fw: any, index: number) => {
+      if (!fw.name && !fw.displayName) return;
+      const existingFw = allDbSmsFrameworks.find(
+        (dbFw: any) => (fw.id && dbFw.id === fw.id) || (fw.name && dbFw.name === fw.name) || (fw.displayName && dbFw.displayName === fw.displayName)
+      );
+      const isEnabled = fw.isEnabled !== false;
+      const frameworkData: InsertSmsFramework = {
+        name: fw.name || fw.displayName?.toLowerCase().replace(/\s+/g, '_') || `framework_${index}`,
+        displayName: fw.displayName || fw.name || `Framework ${index + 1}`,
+        description: fw.description || '',
+        structure: fw.structure || '',
+        keyElements: fw.keyElements || '',
+        frameworkContent: fw.frameworkContent || '',
+        systemPrompt: fw.systemPrompt || '',
+        outputRequirements: fw.outputRequirements || '',
+        expectedLength: fw.expectedLength || 'short',
+        images: fw.images || null,
+        isActive: isEnabled ? 'true' : 'false',
+        sortOrder: fw.sortOrder !== undefined ? fw.sortOrder : index,
+      } as any;
+      if (existingFw) {
+        smsFrameworksToUpdate.push({ id: existingFw.id, data: frameworkData });
+        updatedSmsFrameworkIds.add(existingFw.id);
+      } else {
+        smsFrameworksToInsert.push(frameworkData);
+      }
+    });
+
+    const smsFrameworksToDisable = allDbSmsFrameworks.filter((f: any) => !updatedSmsFrameworkIds.has(f.id));
+    for (const fw of smsFrameworksToDisable) {
+      smsFrameworksToUpdate.push({ id: fw.id, data: { isActive: 'false' } });
+    }
+
+    const ops: Promise<any>[] = [];
+    if (smsFrameworksToInsert.length > 0) {
+      ops.push(tx.insert(smsFrameworks).values(smsFrameworksToInsert));
+    }
+    if (smsFrameworksToUpdate.length > 0) {
+      const updatePromises = smsFrameworksToUpdate.map((update) =>
+        tx.update(smsFrameworks).set({ ...update.data, updatedAt: new Date() }).where(eq(smsFrameworks.id, update.id))
+      );
+      ops.push(...updatePromises);
+    }
+    if (ops.length > 0) await Promise.all(ops);
+  }
+
+  private async syncLandingPageFrameworks(tx: any, landingPageFrameworksArr: any[] | undefined): Promise<void> {
+    if (!landingPageFrameworksArr || !Array.isArray(landingPageFrameworksArr)) return;
+    const allDbLandingPageFrameworks = await tx.select().from(landingPageFrameworks);
+    const landingPageFrameworksToUpdate: { id: string; data: Partial<InsertLandingPageFramework> }[] = [];
+    const landingPageFrameworksToInsert: InsertLandingPageFramework[] = [];
+    const updatedLandingPageFrameworkIds = new Set<string>();
+
+    landingPageFrameworksArr.forEach((fw: any, index: number) => {
+      if (!fw.name && !fw.displayName) return;
+      const existingFw = allDbLandingPageFrameworks.find(
+        (dbFw: any) => (fw.id && dbFw.id === fw.id) || (fw.name && dbFw.name === fw.name) || (fw.displayName && dbFw.displayName === fw.displayName)
+      );
+      const isEnabled = fw.isEnabled !== false;
+      const frameworkData = {
+        name: fw.name || fw.displayName?.toLowerCase().replace(/\s+/g, '_') || `framework_${index}`,
+        displayName: fw.displayName || fw.name || `Framework ${index + 1}`,
+        description: fw.description || '',
+        contentSequence: fw.contentSequence || [],
+        reasonStructure: fw.reasonStructure || [],
+        optimizationRules: fw.optimizationRules || [],
+        realExamples: fw.realExamples || [],
+        systemPrompt: fw.systemPrompt || '',
+        outputRequirements: fw.outputRequirements || '',
+        images: fw.images || null,
+        isActive: isEnabled ? 'true' : 'false',
+        sortOrder: fw.sortOrder !== undefined ? fw.sortOrder : index,
+      };
+      if (existingFw) {
+        landingPageFrameworksToUpdate.push({ id: existingFw.id, data: frameworkData });
+        updatedLandingPageFrameworkIds.add(existingFw.id);
+      } else {
+        landingPageFrameworksToInsert.push(frameworkData as InsertLandingPageFramework);
+      }
+    });
+
+    if (landingPageFrameworksToInsert.length > 0) {
+      await tx.insert(landingPageFrameworks).values(landingPageFrameworksToInsert);
+    }
+    for (const update of landingPageFrameworksToUpdate) {
+      await tx
+        .update(landingPageFrameworks)
+        .set({ ...update.data, updatedAt: new Date() })
+        .where(eq(landingPageFrameworks.id, update.id));
+    }
+  }
+
+  private async upsertSystemConfiguration(tx: any, config: TrainingConfig): Promise<void> {
+    const allDbSystemConfigs = await tx.select().from(systemConfiguration);
+    const allDbBrandConfigs = await tx.select().from(brandConfiguration);
+    const configsToUpsert: InsertSystemConfiguration[] = [];
+
+    const processSystemConfig = (prefix: string, configObject: Record<string, any>) => {
+      for (const key in configObject) {
+        const configKey = `${prefix}.${key}`;
+        const configValue = String(configObject[key]);
+        configsToUpsert.push({ configKey, configValue });
+      }
+    };
+
+    const processNestedSystemConfig = (prefix: string, configObject: Record<string, Record<string, any>>) => {
+      for (const outerKey in configObject) {
+        const inner = configObject[outerKey] || {};
+        for (const innerKey in inner) {
+          const configKey = `${prefix}.${outerKey}.${innerKey}`;
+          const rawValue = inner[innerKey];
+          const configValue = typeof rawValue === 'string' ? rawValue : JSON.stringify(rawValue);
+          if (configValue !== undefined && configValue !== null) {
+            configsToUpsert.push({ configKey, configValue: String(configValue) });
+          }
+        }
+      }
+    };
+
+    if (config.modelParameters) processSystemConfig('modelParameters', config.modelParameters as any);
+    if (config.stationPrompts) processNestedSystemConfig('stationPrompts', config.stationPrompts as any);
+
+    if (config.brandGuidelines) {
+      const { brandName, website } = config.brandGuidelines as any;
+      const existingBrandName = allDbBrandConfigs.find((c: any) => c.configType === 'brand_name');
+      if (brandName !== undefined) {
+        if (existingBrandName) {
+          await tx
+            .update(brandConfiguration)
+            .set({ configValue: String(brandName), isEnabled: 'true' })
+            .where(eq(brandConfiguration.id, existingBrandName.id));
+        } else if (String(brandName).trim() !== '') {
+          await tx.insert(brandConfiguration).values({
+            configType: 'brand_name',
+            configValue: String(brandName),
+            isEnabled: 'true',
+            sortOrder: 0,
+          });
+        }
+      }
+      const existingWebsite = allDbBrandConfigs.find((c: any) => c.configType === 'website');
+      if (website !== undefined) {
+        if (existingWebsite) {
+          await tx
+            .update(brandConfiguration)
+            .set({ configValue: String(website), isEnabled: 'true' })
+            .where(eq(brandConfiguration.id, existingWebsite.id));
+        } else if (String(website).trim() !== '') {
+          await tx.insert(brandConfiguration).values({
+            configType: 'website',
+            configValue: String(website),
+            isEnabled: 'true',
+            sortOrder: 0,
+          });
+        }
+      }
+    }
+
+    for (const cfg of configsToUpsert) {
+      const existingConfig = allDbSystemConfigs.find((dbC: any) => dbC.configKey === cfg.configKey);
+      if (existingConfig) {
+        if (existingConfig.configValue !== cfg.configValue) {
+          await tx.update(systemConfiguration).set({ configValue: cfg.configValue }).where(eq(systemConfiguration.configKey, cfg.configKey));
+        }
+      } else {
+        await tx.insert(systemConfiguration).values(cfg);
+      }
+    }
+
+    const newStationKeys = new Set(
+      configsToUpsert.filter((c) => c.configKey.startsWith('stationPrompts.')).map((c) => c.configKey)
+    );
+    const existingStationKeys = allDbSystemConfigs.filter((c: any) => c.configKey.startsWith('stationPrompts.')).map((c: any) => c.configKey);
+    const stationKeysToDelete = existingStationKeys.filter((k: string) => !newStationKeys.has(k));
+    for (const key of stationKeysToDelete) {
+      await tx.delete(systemConfiguration).where(eq(systemConfiguration.configKey, key));
+    }
+    if (stationKeysToDelete.length > 0) {
+      console.log(`Station Prompts: removed ${stationKeysToDelete.length} stale keys`);
+    }
+  }
+
   // Email frameworks operations
   async getAllEmailFrameworks(): Promise<EmailFramework[]> {
     const frameworks = await db.select().from(emailFrameworks).orderBy(emailFrameworks.sortOrder);
 
-    //   count: frameworks.length,
-    //   frameworksWithImages: frameworks.filter(fw => fw.images && Array.isArray(fw.images) && fw.images.length > 0).length,
-    //   frameworks: frameworks.map(fw => ({
-    //     id: fw.id,
-    //     name: fw.name,
-    //     displayName: fw.displayName,
-    //     hasImages: !!fw.images,
-    //     imagesCount: Array.isArray(fw.images) ? fw.images.length : 0
-    //   }))
-    // });
     return frameworks;
   }
 
@@ -1508,6 +1527,55 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEmailFrameworkById(id: string): Promise<void> {
     await db.delete(emailFrameworks).where(eq(emailFrameworks.id, id));
+  }
+
+  // SMS frameworks operations
+  async getAllSmsFrameworks(): Promise<SmsFramework[]> {
+    const frameworks = await db.select().from(smsFrameworks).orderBy(smsFrameworks.sortOrder);
+    return frameworks;
+  }
+
+  async getActiveSmsFrameworks(): Promise<SmsFramework[]> {
+    return await db.select().from(smsFrameworks).where(eq(smsFrameworks.isActive, 'true')).orderBy(smsFrameworks.sortOrder);
+  }
+
+  async getSmsFramework(name: string): Promise<SmsFramework | undefined> {
+    const [framework] = await db.select().from(smsFrameworks).where(eq(smsFrameworks.name, name));
+    return framework || undefined;
+  }
+
+  async getSmsFrameworkById(id: string): Promise<SmsFramework | undefined> {
+    const [framework] = await db.select().from(smsFrameworks).where(eq(smsFrameworks.id, id));
+    return framework || undefined;
+  }
+
+  async createSmsFramework(data: InsertSmsFramework): Promise<SmsFramework> {
+    const [framework] = await db.insert(smsFrameworks).values(data).returning();
+    return framework;
+  }
+
+  async updateSmsFramework(id: string, data: Partial<InsertSmsFramework>): Promise<SmsFramework> {
+    const [framework] = await db.update(smsFrameworks).set({
+      ...data,
+      updatedAt: new Date()
+    }).where(eq(smsFrameworks.id, id)).returning();
+    return framework;
+  }
+
+  async updateSmsFrameworkByName(name: string, data: Partial<InsertSmsFramework>): Promise<SmsFramework> {
+    const [framework] = await db.update(smsFrameworks).set({
+      ...data,
+      updatedAt: new Date()
+    }).where(eq(smsFrameworks.name, name)).returning();
+    return framework;
+  }
+
+  async deleteSmsFramework(name: string): Promise<void> {
+    await db.delete(smsFrameworks).where(eq(smsFrameworks.name, name));
+  }
+
+  async deleteSmsFrameworkById(id: string): Promise<void> {
+    await db.delete(smsFrameworks).where(eq(smsFrameworks.id, id));
   }
 
   // Landing page frameworks operations

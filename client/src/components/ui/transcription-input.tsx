@@ -11,7 +11,7 @@ interface TranscriptionInputProps {
 export function TranscriptionInput({ 
   value, 
   onChange, 
-  placeholder = "Paste your video transcription or ad concept here...", 
+  placeholder = "Paste your video transcription here...", 
   rows = 6,
   className = "w-full resize-none text-sm"
 }: TranscriptionInputProps) {

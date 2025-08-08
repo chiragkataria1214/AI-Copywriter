@@ -5,7 +5,7 @@ import { toast } from '@/hooks/useToast';
 interface UseGenerationMutationsProps {
   // Form state props needed for mutations
   staticAdImage?: string;
-  concept: string;
+  persona: string;
   brandDrBalance: number[];
   selectedProduct: string;
   selectedProducts: string[];
@@ -33,6 +33,7 @@ interface UseGenerationMutationsProps {
   setStaticAdAnalysis?: (analysis: string) => void;
   setGeneratedCustomResponse?: (response: string) => void;
   setGeneratedLandingCopy?: (copy: any) => void;
+  setLandingPageAnalysis?: (analysis: any) => void;
   setGeneratedRetentionCopy?: (copy: any) => void;
   
   // Debug info setters
@@ -56,7 +57,7 @@ export const useGenerationMutations = (props: UseGenerationMutationsProps) => {
 
       const payload = {
         staticAdImage: props.staticAdImage,
-        concept: props.concept,
+        persona: props.persona,
         brandDrBalance: props.brandDrBalance && props.brandDrBalance.length > 0 ? props.brandDrBalance[0] : 50,
         selectedProduct: props.selectedProduct,
         selectedProducts: selectedProducts || props.selectedProducts,
@@ -122,12 +123,12 @@ export const useGenerationMutations = (props: UseGenerationMutationsProps) => {
 
       const payload = {
         customRequest: props.customRequest,
-        concept: props.concept,
+        persona: props.persona,
         brandDrBalance: props.brandDrBalance && props.brandDrBalance.length > 0 ? props.brandDrBalance[0] : 50,
         selectedProduct: props.selectedProduct,
         selectedProducts: props.selectedProducts,
         useJonesBrandGuide: props.useJonesBrandGuide,
-        targetAudience: props.personas[props.concept]?.label || props.concept
+        targetAudience: props.personas[props.persona]?.label || props.persona
       };
 
       const result = await apiRequest('/api/generate-custom-copy', {
@@ -171,7 +172,7 @@ export const useGenerationMutations = (props: UseGenerationMutationsProps) => {
       const payload = {
         landingPageType: props.landingPageType,
         productBrief: props.productBrief,
-        concept: props.concept,
+        persona: props.persona,
         useAdsContent: props.useAdsForLanding,
         adsContent: props.useAdsForLanding ? {
           transcription: props.transcription,
@@ -202,7 +203,9 @@ export const useGenerationMutations = (props: UseGenerationMutationsProps) => {
       return result;
     },
     onSuccess: (data) => {
-      props.setGeneratedLandingCopy?.(data);
+      // Extract landingCopy and analysis from the response structure
+      props.setGeneratedLandingCopy?.(data.landingCopy || data);
+      props.setLandingPageAnalysis?.(data.analysis);
       
       toast({
         title: "Landing Page Copy Generated",
@@ -232,7 +235,7 @@ export const useGenerationMutations = (props: UseGenerationMutationsProps) => {
         contentLength: props.retentionContentLength,
         keywordsToInclude: props.retentionKeywordsToInclude,
         wordsToAvoid: props.retentionWordsToAvoid,
-        concept: props.concept,
+        persona: props.persona,
         brandDrBalance: props.brandDrBalance && props.brandDrBalance.length > 0 ? props.brandDrBalance[0] : 50,
         selectedProduct: props.selectedProduct,
         useJonesBrandGuide: props.useJonesBrandGuide
@@ -256,7 +259,8 @@ export const useGenerationMutations = (props: UseGenerationMutationsProps) => {
       return result;
     },
     onSuccess: (data) => {
-      props.setGeneratedRetentionCopy?.(data);
+      // Extract response from the response structure
+      props.setGeneratedRetentionCopy?.(data.response || data);
       
       toast({
         title: "Retention Copy Generated",

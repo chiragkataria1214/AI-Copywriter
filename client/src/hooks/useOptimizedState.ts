@@ -107,7 +107,8 @@ export const useUIState = () => {
       headlines: false,
       primaryText: false,
       landingCopy: false,
-      static: false
+      static: false,
+      retention: false
     }
   };
 

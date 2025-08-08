@@ -6,7 +6,7 @@ import { toast } from '@/hooks/useToast';
 interface UseAdCopyGenerationProps {
   transcription: string;
   customBrief: string;
-  concept: string;
+  persona: string;
   targetAudience: string;
   landingPageUrl: string;
   brandDrBalance: number[];
@@ -47,8 +47,8 @@ export const useAdCopyGeneration = (props: UseAdCopyGenerationProps) => {
       const payload = {
         transcription: props.transcription,
         customBrief: props.customBrief,
-        concept: props.concept,
-        targetAudience: props.targetAudience || props.personas[props.concept]?.label || props.concept,
+        persona: props.persona,
+        targetAudience: props.targetAudience || props.personas[props.persona]?.label || props.persona,
         landingPageUrl: props.landingPageUrl,
         brandDrBalance: props.brandDrBalance && props.brandDrBalance.length > 0 ? props.brandDrBalance[0] : 50,
         useJonesBrandGuide: props.useJonesBrandGuide,

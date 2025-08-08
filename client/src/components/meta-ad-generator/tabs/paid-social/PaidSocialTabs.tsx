@@ -93,8 +93,8 @@ export const PaidSocialTabs = (props: any) => {
             <TabsContent value="static-ad">
                 <StaticAdTab 
                     personas={props.personas}
-                    concept={formState?.concept || ''}
-                    setConcept={handleInputChange ? handleInputChange('concept') : () => {}}
+                        persona={formState?.persona || ''}
+    setPersona={handleInputChange ? handleInputChange('persona') : () => {}}
                     staticAdImage={formState?.staticAdImage || ''}
                     setStaticAdImage={handleInputChange ? handleInputChange('staticAdImage') : () => {}}
                     staticAdImagePreview={formState?.staticAdImagePreview || ''}

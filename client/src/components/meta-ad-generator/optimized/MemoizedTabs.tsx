@@ -71,6 +71,8 @@ export const MemoizedOrganicSocialTab = React.memo(({
   setOrganicSelectedProducts,
   storySelectedProducts,
   setStorySelectedProducts,
+  persona,
+  setPersona,
   products,
   setCurrentGenerationMetadata,
   setShowGenerationDetails,
@@ -135,6 +137,8 @@ export const MemoizedOrganicSocialTab = React.memo(({
         setOrganicSelectedProducts={setOrganicSelectedProducts}
         storySelectedProducts={storySelectedProducts}
         setStorySelectedProducts={setStorySelectedProducts}
+        persona={persona}
+        setPersona={setPersona}
         products={products}
         setCurrentGenerationMetadata={setCurrentGenerationMetadata}
         setShowGenerationDetails={setShowGenerationDetails}

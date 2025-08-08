@@ -1,8 +1,11 @@
 import React, { useState, useRef } from 'react';
+import EnhancedContextConfigurator from '@/components/meta-ad-generator/ai-settings/EnhancedContextConfigurator';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { TrainingConfig } from '@shared/training-config';
-import { ChevronDown, ChevronRight, Target, Copy, Plus } from 'lucide-react';
+import { TrainingConfig, VariableDefinition } from '@shared/training-config';
+import { ChevronDown, ChevronRight, Target, Copy, Plus, Eye } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import ContextInsertion from '@/components/meta-ad-generator/ai-settings/common/ContextInsertion';
 
 interface AdCopyStationProps {
   editingConfig: TrainingConfig;
@@ -60,44 +63,26 @@ const StationToggleButton = ({
 
 // Available variables for Ad Copy user prompt template replacement
 const AVAILABLE_VARIABLES = [
-  { 
-    key: 'transcription', 
-    label: 'Transcription', 
-    description: 'The input transcription or brief content from the user' 
+  {
+    key: 'apoo',
+    label: 'apoouidelines',
+    description: 'Brand guidelines from the brand guidelines section'
   },
-  { 
-    key: 'landingPageContext', 
-    label: 'Landing Page Context', 
-    description: 'Context scraped from the provided landing page URL' 
-  },
+  // { 
+  //   key: 'transcription', 
+  //   label: 'Transcription', 
+  //   description: 'The input transcription or brief content from the user' 
+  // },
+  // { 
+  //   key: 'landingPageContext', 
+  //   label: 'Landing Page Context', 
+  //   description: 'Context scraped from the provided landing page URL' 
+  // },
 ];
 
-// Available variables for system prompt (these would need backend implementation)
-const SYSTEM_PROMPT_VARIABLES = [
-  { 
-    key: 'targetAudience', 
-    label: 'Target Audience', 
-    description: 'The target audience specified in the request' 
-  },
-  { 
-    key: 'brandPercent', 
-    label: 'Brand Percentage', 
-    description: 'Brand voice percentage (e.g., "60")' 
-  },
-  { 
-    key: 'drPercent', 
-    label: 'DR Percentage', 
-    description: 'Direct response percentage (e.g., "40")' 
-  },
-  { 
-    key: 'concept', 
-    label: 'Concept/Persona', 
-    description: 'The selected persona concept (e.g., "lifeJuggler")' 
-  },
-];
 
 // Note: Other stations may have additional variables like:
-// Landing Page: {landingPageType}, {productBrief}, {mainAngle}, {concept}, {brandPercent}, {drPercent}, etc.
+// Landing Page: {landingPageType}, {productBrief}, {mainAngle}, {persona}, {brandPercent}, {drPercent}, etc.
 // These sections are auto-appended to Ad Copy (not replaced via variables):
 // - targetPersonaSection (persona targeting content)
 // - selectedProductsSection (product-specific content) 
@@ -110,7 +95,8 @@ interface VariableInsertionProps {
   value: string;
   onChange: (value: string) => void;
   position?: 'left' | 'right';
-  variables?: typeof AVAILABLE_VARIABLES;
+  variables?: VariableDefinition[];
+  buttonLabel?: string;
 }
 
 const VariableInsertion: React.FC<VariableInsertionProps> = ({ 
@@ -118,7 +104,8 @@ const VariableInsertion: React.FC<VariableInsertionProps> = ({
   value, 
   onChange, 
   position = 'left',
-  variables = AVAILABLE_VARIABLES 
+  variables = AVAILABLE_VARIABLES,
+  buttonLabel
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -128,7 +115,7 @@ const VariableInsertion: React.FC<VariableInsertionProps> = ({
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const variableString = `{${variableKey}}`;
+    const variableString = `{{${variableKey}}}`;
     
     const newValue = value.substring(0, start) + variableString + value.substring(end);
     onChange(newValue);
@@ -156,28 +143,26 @@ const VariableInsertion: React.FC<VariableInsertionProps> = ({
         className="mb-2 text-xs"
       >
         <Plus size={12} className="mr-1" />
-        Insert Variable
+        {buttonLabel || 'Insert Variable'}
       </Button>
       
       {isOpen && (
         <div className={dropdownClasses}>
           <div className="text-xs font-medium text-gray-700 mb-2 px-2">Available Variables:</div>
-          {variables.map((variable) => (
-            <button
-              key={variable.key}
-              onClick={() => insertVariable(variable.key)}
-              className="w-full text-left px-2 py-2 hover:bg-gray-50 rounded text-xs border-none bg-transparent"
-            >
-              <div className="font-mono text-blue-600">{`{${variable.key}}`}</div>
-              <div className="font-medium text-gray-900">{variable.label}</div>
-              <div className="text-gray-600 text-xs">{variable.description}</div>
-            </button>
-          ))}
-          <div className="border-t border-gray-100 mt-2 pt-2 px-2">
-            <div className="text-xs text-gray-500">
-              <strong>Note:</strong> Additional sections (persona, products, frameworks, etc.) are automatically appended to your template.
-            </div>
+          <div className="max-h-64 overflow-y-auto pr-1">
+            {variables.map((variable) => (
+              <button
+                key={variable.key}
+                onClick={() => insertVariable(variable.key)}
+                className="w-full text-left px-2 py-2 hover:bg-gray-50 rounded text-xs border-none bg-transparent"
+              >
+                <div className="font-mono text-blue-600">{`{{${variable.key}}}`}</div>
+                <div className="font-medium text-gray-900">{variable.label}</div>
+                <div className="text-gray-600 text-xs">{variable.description}</div>
+              </button>
+            ))}
           </div>
+        
         </div>
       )}
       
@@ -325,6 +310,23 @@ const generateSystemPromptPreview = (editingConfig: TrainingConfig): string => {
   return baseSystemPrompt + aiSettingsContext;
 };
 
+// Extracts the protected output structure section from a system prompt, if present
+const extractOutputStructure = (prompt: string) => {
+  const outputRequirementMatch = prompt.match(/(CRITICAL OUTPUT REQUIREMENT:[\s\S]*?Your response must follow this exact[^:]*structure:[^}]*})/i);
+  if (outputRequirementMatch) {
+    return outputRequirementMatch[1];
+  }
+  const arrayStructureMatch = prompt.match(/(CRITICAL OUTPUT REQUIREMENT:[\s\S]*?Your response must follow this exact[^:]*structure:[^}]*\])/i);
+  if (arrayStructureMatch) {
+    return arrayStructureMatch[1];
+  }
+  const textStructureMatch = prompt.match(/(CRITICAL OUTPUT REQUIREMENT:[\s\S]*?You MUST return your response as[^.]*\.)/i);
+  if (textStructureMatch) {
+    return textStructureMatch[1];
+  }
+  return null;
+};
+
 export const AdCopyStation: React.FC<AdCopyStationProps> = ({
   editingConfig,
   setEditingConfig,
@@ -335,6 +337,32 @@ export const AdCopyStation: React.FC<AdCopyStationProps> = ({
 }) => {
   const userPromptTextareaRef = useRef<HTMLTextAreaElement>(null);
   const systemPromptTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const stationConfig = editingConfig.stationPrompts?.adCopy;
+  const contextConfig = stationConfig?.contextConfiguration as any;
+  const [showUserPreview, setShowUserPreview] = useState(false);
+  const [showSystemPreview, setShowSystemPreview] = useState(false);
+
+  const getAllAvailableVariables = (): VariableDefinition[] => {
+    const regular = (contextConfig?.availableVariables || []) as VariableDefinition[];
+    const sections = (contextConfig?.contextSections || [])
+      .filter((s: any) => s.enabled)
+      .map((s: any) => ({
+        key: s.id,
+        label: `Context: ${s.name}`,
+        description: `Generated content from "${s.name}" context section: ${s.description}`,
+        type: 'string' as const,
+        category: 'context_section' as const,
+        required: s.required,
+      }));
+    const brandGuidelineVariables: VariableDefinition[] = [
+      { key: 'corePositioning', label: 'Core Positioning', description: 'Brand core positioning statement from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'brandVoice', label: 'Brand Voice', description: 'Brand voice rules and guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'keyTerminology', label: 'Key Terminology', description: 'Key terms and phrases from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'approvedLanguage', label: 'Approved Language', description: 'Approved language and phrases from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'avoidedLanguage', label: 'Avoided Language', description: 'Language and phrases to avoid from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+    ];
+    return [...regular, ...sections, ...brandGuidelineVariables];
+  };
   
   const toggleStation = (stationId: string) => {
     const newExpanded = new Set(expandedStations);
@@ -359,6 +387,13 @@ export const AdCopyStation: React.FC<AdCopyStationProps> = ({
       
       {expandedStations.has('adCopy') && (
         <div className="p-6 pt-4 border-t border-gray-100 space-y-6">
+          {/* Enhanced Context Configurator (shared) */}
+          <EnhancedContextConfigurator
+            stationKey={'adCopy'}
+            editingConfig={editingConfig}
+            setEditingConfig={setEditingConfig}
+            title="Enhanced Context Configuration"
+          />
           
           {/* System Prompt Section */}
           <div className="border border-gray-200 rounded-lg">
@@ -399,13 +434,7 @@ export const AdCopyStation: React.FC<AdCopyStationProps> = ({
 
             {expandedStations.has('adCopy-systemPrompt') && (
               <div className="p-6 border-t border-gray-100 space-y-6">
-                {/* System Prompt Structure Explanation */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-800 font-medium">🔧 How System Prompt is Generated</p>
-                  <p className="text-sm text-blue-700 mt-1">
-                    The final system prompt sent to Claude combines: <strong>Base System Prompt</strong> + <strong>AI Settings Context</strong> (brand guidelines, product claims, persona pillars, etc.)
-                  </p>
-                </div>
+      
 
                 {/* Base System Prompt - Editable */}
                 <div className="space-y-4 bg-white border rounded-lg p-4">
@@ -414,22 +443,42 @@ export const AdCopyStation: React.FC<AdCopyStationProps> = ({
                       <h4 className="font-medium text-gray-900">Base System Prompt (Editable)</h4>
                       <div className="flex items-center space-x-2">
                         {effectiveUser?.role === 'admin' && (
-                          <VariableInsertion
-                            textareaRef={systemPromptTextareaRef}
-                            value={editingConfig?.stationPrompts?.adCopy?.systemPrompt || ''}
-                            onChange={(newValue) => setEditingConfig({
-                              ...editingConfig,
-                              stationPrompts: {
-                                ...editingConfig?.stationPrompts,
-                                adCopy: {
-                                  ...editingConfig?.stationPrompts?.adCopy,
-                                  systemPrompt: newValue
+                          <>
+                            <VariableInsertion
+                              textareaRef={systemPromptTextareaRef}
+                              value={editingConfig?.stationPrompts?.adCopy?.systemPrompt || ''}
+                              onChange={(newValue) => setEditingConfig({
+                                ...editingConfig,
+                                stationPrompts: {
+                                  ...editingConfig?.stationPrompts,
+                                  adCopy: {
+                                    ...editingConfig?.stationPrompts?.adCopy,
+                                    systemPrompt: newValue
+                                  }
                                 }
-                              }
-                            })}
-                            position="right"
-                            variables={SYSTEM_PROMPT_VARIABLES}
-                          />
+                              })}
+                              position="right"
+                              variables={getAllAvailableVariables()}
+                              buttonLabel="Insert Variable"
+                            />
+                            <ContextInsertion
+                              textareaRef={systemPromptTextareaRef}
+                              value={editingConfig?.stationPrompts?.adCopy?.systemPrompt || ''}
+                              onChange={(newValue) => setEditingConfig({
+                                ...editingConfig,
+                                stationPrompts: {
+                                  ...editingConfig?.stationPrompts,
+                                  adCopy: {
+                                    ...editingConfig?.stationPrompts?.adCopy,
+                                    systemPrompt: newValue
+                                  }
+                                }
+                              })}
+                              position="right"
+                              variables={getAllAvailableVariables()}
+                              buttonLabel="Insert Context"
+                            />
+                          </>
                         )}
                         <Button 
                           variant="outline" 
@@ -439,6 +488,15 @@ export const AdCopyStation: React.FC<AdCopyStationProps> = ({
                         >
                           <Copy size={16} className="mr-1" />
                           Copy
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowSystemPreview(true)}
+                          title="View resolved system prompt"
+                        >
+                          <Eye size={16} className="mr-1" />
+                          Preview
                         </Button>
                       </div>
                     </div>
@@ -462,7 +520,7 @@ export const AdCopyStation: React.FC<AdCopyStationProps> = ({
                             }
                           }
                         })}
-                        className="text-gray-900 resize-y border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg p-4 transition-all duration-200"
+                        className="text-gray-900 resize-y border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg p-4 transition-all duration-200 font-mono text-sm min-h-[12rem]"
                         rows={8}
                         placeholder="You are an expert Meta advertising copywriter specializing in short-form direct response ads..."
                       />
@@ -470,29 +528,7 @@ export const AdCopyStation: React.FC<AdCopyStationProps> = ({
                   </div>
                 </div>
 
-                {/* Final System Prompt Preview - Shows actual resolved prompt */}
-                <div className="space-y-4 bg-white border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-gray-900">Final System Prompt Preview (With Resolved Values)</h4>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => copyToClipboard(generateSystemPromptPreview(editingConfig), 'Final System Prompt Preview')}
-                      disabled={!editingConfig?.stationPrompts?.adCopy?.systemPrompt}
-                    >
-                      <Copy size={16} className="mr-1" />
-                      Copy Preview
-                    </Button>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 max-h-64 overflow-y-auto">
-                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
-                      {generateSystemPromptPreview(editingConfig)}
-                    </pre>
-                  </div>
-                  <p className="text-xs text-gray-600 mt-2">
-                    This shows how the final system prompt will look with your current Brand Guidelines, Product Claims, and Persona Pillars. The Brand/DR balance will be set dynamically at request time.
-                  </p>
-                </div>
+                {/* Final System Prompt Preview removed; use Preview button */}
               </div>
             )}
           </div>
@@ -551,22 +587,42 @@ export const AdCopyStation: React.FC<AdCopyStationProps> = ({
                       <h4 className="font-medium text-gray-900">Base User Prompt Template (Editable)</h4>
                       <div className="flex items-center space-x-2">
                         {effectiveUser?.role === 'admin' && (
-                          <VariableInsertion
-                            textareaRef={userPromptTextareaRef}
-                            value={editingConfig?.stationPrompts?.adCopy?.userPromptTemplate || ''}
-                            onChange={(newValue) => setEditingConfig({
-                              ...editingConfig,
-                              stationPrompts: {
-                                ...editingConfig?.stationPrompts,
-                                adCopy: {
-                                  ...editingConfig?.stationPrompts?.adCopy,
-                                  userPromptTemplate: newValue
+                          <>
+                            <VariableInsertion
+                              textareaRef={userPromptTextareaRef}
+                              value={editingConfig?.stationPrompts?.adCopy?.userPromptTemplate || ''}
+                              onChange={(newValue) => setEditingConfig({
+                                ...editingConfig,
+                                stationPrompts: {
+                                  ...editingConfig?.stationPrompts,
+                                  adCopy: {
+                                    ...editingConfig?.stationPrompts?.adCopy,
+                                    userPromptTemplate: newValue
+                                  }
                                 }
-                              }
-                            })}
-                            position="right"
-                            variables={AVAILABLE_VARIABLES}
-                          />
+                              })}
+                              position="right"
+                              variables={getAllAvailableVariables()}
+                              buttonLabel="Insert Variable"
+                            />
+                            <VariableInsertion
+                              textareaRef={userPromptTextareaRef}
+                              value={editingConfig?.stationPrompts?.adCopy?.userPromptTemplate || ''}
+                              onChange={(newValue) => setEditingConfig({
+                                ...editingConfig,
+                                stationPrompts: {
+                                  ...editingConfig?.stationPrompts,
+                                  adCopy: {
+                                    ...editingConfig?.stationPrompts?.adCopy,
+                                    userPromptTemplate: newValue
+                                  }
+                                }
+                              })}
+                              position="right"
+                              variables={getAllAvailableVariables().filter((v) => (v as any).category === 'context_section')}
+                              buttonLabel="Insert Context"
+                            />
+                          </>
                         )}
                         <Button 
                           variant="outline" 
@@ -576,6 +632,15 @@ export const AdCopyStation: React.FC<AdCopyStationProps> = ({
                         >
                           <Copy size={16} className="mr-1" />
                           Copy
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowUserPreview(true)}
+                          title="View resolved user prompt"
+                        >
+                          <Eye size={16} className="mr-1" />
+                          Preview
                         </Button>
                       </div>
                     </div>
@@ -599,7 +664,7 @@ export const AdCopyStation: React.FC<AdCopyStationProps> = ({
                             }
                           }
                         })}
-                        className="text-gray-900 resize-y border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 rounded-lg p-4 transition-all duration-200"
+                        className="text-gray-900 resize-y border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 rounded-lg p-4 transition-all duration-200 font-mono text-sm min-h-[12rem]"
                         rows={6}
                         placeholder="Generate high-converting Meta/Facebook ad copy using data-informed optimization principles.&#10;&#10;CONTENT INPUTS:&#10;TRANSCRIPTION/BRIEF: {transcription}&#10;LANDING PAGE CONTEXT: {landingPageContext}&#10;&#10;[Additional template content...]"
                         disabled={false}
@@ -608,156 +673,53 @@ export const AdCopyStation: React.FC<AdCopyStationProps> = ({
                   </div>
                 </div>
 
-                {/* Dynamic Sections - Read-only preview */}
-                <div className="space-y-4 bg-white border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-gray-900">Dynamic Sections (Auto-Generated - Read Only)</h4>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => copyToClipboard(`
-TARGET PERSONA - {CONCEPT}:
-Description: {personaDescription}
-Key Targeting Pillars:
-- {pillar1}
-- {pillar2}
-
-PERSONA-SPECIFIC TARGETING REQUIREMENTS:
-- Tailor ALL headlines and primary text to speak directly to this persona
-- Use language patterns and scenarios this audience relates to
-- Address their specific pain points and motivations
-- Reference their lifestyle and daily challenges
-
-PRODUCT FOCUS:
-Primary Product: {selectedProductDisplayName}
-
-PRODUCT-SPECIFIC CLAIMS:
-{PRODUCT_NAME}:
-Approved Claims (USE THESE):
-- {approvedClaim1}
-- {approvedClaim2}
-
-Prohibited Claims (NEVER USE):
-- {prohibitedClaim1}
-- {prohibitedClaim2}
-
-PRODUCT-SPECIFIC REQUIREMENTS:
-- Feature the selected product(s) prominently in headlines and copy
-- Use ONLY the approved claims listed above for each product
-- NEVER use any of the prohibited claims listed above
-- Highlight unique benefits and selling points of these specific products
-- Create compelling product-focused calls-to-action
-- Ensure copy drives interest in these specific products
-
-HEADLINE FRAMEWORK GUIDANCE:
-Use these proven frameworks to create diverse headline variations:
-• {frameworkName1}: {frameworkDescription1}
-  Template: {frameworkTemplate1}
-  Examples: {example1}, {example2}
-
-FRAMEWORK APPLICATION:
-- Create headlines using different frameworks for testing variety
-- Match framework choice to the specific customer motivation being targeted
-- Ensure each headline serves a distinct strategic purpose
-
-CUSTOM BRIEF FOR THIS GENERATION:
-{customBrief}
-
-PRIORITY INSTRUCTION: Incorporate the specific instructions above into the ad copy while maintaining brand voice and framework structure.
-
-EXISTING AD CREATIVE ANALYSIS:
-{imageAnalysisInstructions}`, 'Dynamic Sections Template')}
-                    >
-                      <Copy size={16} className="mr-1" />
-                      Copy Template
-                    </Button>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 max-h-80 overflow-y-auto">
-                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
-{`TARGET PERSONA - {CONCEPT}:
-Description: {personaDescription}
-Key Targeting Pillars:
-- {pillar1}
-- {pillar2}
-- ...
-
-PERSONA-SPECIFIC TARGETING REQUIREMENTS:
-- Tailor ALL headlines and primary text to speak directly to this persona
-- Use language patterns and scenarios this audience relates to
-- Address their specific pain points and motivations
-- Reference their lifestyle and daily challenges
-
-PRODUCT FOCUS:
-Primary Product: {selectedProductDisplayName}
-
-PRODUCT-SPECIFIC CLAIMS:
-{PRODUCT_NAME}:
-Approved Claims (USE THESE):
-- {approvedClaim1}
-- {approvedClaim2}
-- ...
-
-Prohibited Claims (NEVER USE):
-- {prohibitedClaim1}
-- {prohibitedClaim2}
-- ...
-
-PRODUCT-SPECIFIC REQUIREMENTS:
-- Feature the selected product(s) prominently in headlines and copy
-- Use ONLY the approved claims listed above for each product
-- NEVER use any of the prohibited claims listed above
-- Highlight unique benefits and selling points of these specific products
-- Create compelling product-focused calls-to-action
-- Ensure copy drives interest in these specific products
-
-HEADLINE FRAMEWORK GUIDANCE:
-Use these proven frameworks to create diverse headline variations:
-• {frameworkName1}: {frameworkDescription1}
-  Template: {frameworkTemplate1}
-  Examples: {example1}, {example2}
-• {frameworkName2}: {frameworkDescription2}
-  Template: {frameworkTemplate2}
-  Examples: {example3}, {example4}
-- ...
-
-FRAMEWORK APPLICATION:
-- Create headlines using different frameworks for testing variety
-- Match framework choice to the specific customer motivation being targeted
-- Ensure each headline serves a distinct strategic purpose
-
-LANDING PAGE CONTEXT:
-{landingPageContent}
-
-FUNNEL ALIGNMENT REQUIREMENT:
-Ensure the ad copy creates a seamless transition from ad to landing page...
-
-CUSTOM BRIEF FOR THIS GENERATION:
-{customBrief}
-
-PRIORITY INSTRUCTION: Incorporate the specific instructions above into the ad copy while maintaining brand voice and framework structure.
-
-EXISTING AD CREATIVE ANALYSIS:
-{imageAnalysisInstructions}`}
-                    </pre>
-                  </div>
-                  <p className="text-xs text-gray-600 mt-2">
-                    These sections are dynamically generated based on your selections: persona concept, selected products, landing page URL, custom brief, and uploaded images. Only sections with data will be included.
-                  </p>
-                </div>
+                {/* Dynamic Sections removed as requested */}
               </div>
             )}
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <p className="text-sm text-amber-800 font-medium">⚡ Final Prompt Assembly</p>
-            <p className="text-sm text-amber-700 mt-1">
-              <strong>System Prompt:</strong> Base System Prompt + AI Settings Context + TARGET AUDIENCE: {`{targetAudience}`}
-              <br />
-              <strong>User Prompt:</strong> Base User Template + Landing Page Context + Target Persona Section + Selected Products Section + Copy Frameworks Section + Custom Brief Section + Image Analysis Section
-            </p>
-          </div>
+        
         </div>
       )}
+      {/* Resolved System Prompt Modal */}
+      <Dialog open={showSystemPreview} onOpenChange={setShowSystemPreview}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Resolved System Prompt</DialogTitle>
+          </DialogHeader>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 max-h-[60vh] overflow-y-auto">
+            <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
+              {generateSystemPromptPreview(editingConfig)}
+            </pre>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Resolved User Prompt Modal */}
+      <Dialog open={showUserPreview} onOpenChange={setShowUserPreview}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Resolved User Prompt</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 max-h-[40vh] overflow-y-auto">
+              <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
+                {editingConfig?.stationPrompts?.adCopy?.userPromptTemplate || ''}
+              </pre>
+            </div>
+            {extractOutputStructure(editingConfig?.stationPrompts?.adCopy?.systemPrompt || '') && (
+              <div className="border border-amber-200 bg-amber-50 rounded-lg p-3">
+                <div className="text-xs font-medium text-amber-800 mb-2">Output Structure</div>
+                <div className="bg-white border border-amber-200 rounded p-3 max-h-[30vh] overflow-y-auto">
+                  <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
+                    {extractOutputStructure(editingConfig?.stationPrompts?.adCopy?.systemPrompt || '')}
+                  </pre>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }; 

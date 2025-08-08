@@ -1,4 +1,5 @@
 // Shared utilities for meta-ad-generator components
+import { DEFAULT_BRAND_DR_BALANCE, DEFAULT_PERSONA_KEY, DEFAULT_USE_JONES_BRAND_GUIDE, DEFAULT_CONTENT_TYPE, DEFAULT_SOCIAL_PLATFORM, DEFAULT_SOCIAL_GOAL, DEFAULT_TONE, DEFAULT_VARIATIONS, DEFAULT_SEQUENCE_TYPE, DEFAULT_STORY_LENGTH, DEFAULT_RETENTION_PLATFORM, DEFAULT_RETENTION_EMAIL_TYPE } from '@shared/constants';
 
 /**
  * Creates prop setters from handleInputChange function
@@ -11,7 +12,7 @@ export function createPropSetters(handleInputChange: any) {
   
   return {
     // Common form setters
-    setConcept: handleInputChange('concept'),
+    setPersona: handleInputChange('persona'),
     setSelectedProduct: handleInputChange('selectedProduct'),
     setSelectedProducts: handleInputChange('selectedProducts'),
     setBrandDrBalance: handleInputChange('brandDrBalance'),
@@ -73,24 +74,24 @@ export function createPropSetters(handleInputChange: any) {
 export function extractFormState(formState: any) {
   return {
     // Core form values
-    concept: formState?.concept || 'lifeJuggler',
+  persona: formState?.persona || DEFAULT_PERSONA_KEY,
     selectedProduct: formState?.selectedProduct || '',
     selectedProducts: formState?.selectedProducts || [],
-    brandDrBalance: formState?.brandDrBalance || [50],
-    useJonesBrandGuide: formState?.useJonesBrandGuide ?? true,
+    brandDrBalance: formState?.brandDrBalance || [DEFAULT_BRAND_DR_BALANCE],
+    useJonesBrandGuide: formState?.useJonesBrandGuide ?? DEFAULT_USE_JONES_BRAND_GUIDE,
     transcription: formState?.transcription || '',
     customBrief: formState?.customBrief || '',
     targetAudience: formState?.targetAudience || '',
     uploadedImage: formState?.uploadedImage || '',
     airLink: formState?.airLink || '',
     landingPageUrl: formState?.landingPageUrl || '',
-    contentType: formState?.contentType || 'video',
+    contentType: formState?.contentType || DEFAULT_CONTENT_TYPE,
     
     // Influencer mode values
     enableInfluencerMode: formState?.enableInfluencerMode || false,
     influencerHandle: formState?.influencerHandle || '',
     voiceAnalysisMethod: formState?.voiceAnalysisMethod || 'combined',
-    influencerBrandBalance: formState?.influencerBrandBalance || [50],
+    influencerBrandBalance: formState?.influencerBrandBalance || [DEFAULT_BRAND_DR_BALANCE],
     
     // Landing page specific values
     landingPageType: formState?.landingPageType || 'listicle',
@@ -103,8 +104,8 @@ export function extractFormState(formState: any) {
     
     // Retention values
     retentionKeyMessage: formState?.retentionKeyMessage || '',
-    retentionPlatform: formState?.retentionPlatform || 'Email',
-    retentionEmailType: formState?.retentionEmailType || 'Product Spotlight / Hero Product',
+    retentionPlatform: formState?.retentionPlatform || DEFAULT_RETENTION_PLATFORM,
+    retentionEmailType: formState?.retentionEmailType || DEFAULT_RETENTION_EMAIL_TYPE,
     retentionSelectedProducts: formState?.retentionSelectedProducts || [],
     retentionAudience: formState?.retentionAudience || 'General audience',
     retentionGoal: formState?.retentionGoal || 'Drive Sales',
@@ -112,15 +113,23 @@ export function extractFormState(formState: any) {
     retentionWordsToAvoid: formState?.retentionWordsToAvoid || [],
     
     // Organic social values
-    organicContentType: formState?.organicContentType || 'video',
-    organicPlatform: formState?.organicPlatform || 'instagram',
-    organicGoal: formState?.organicGoal || 'product-education',
-    organicTone: formState?.organicTone || 'authentic-personal',
-    captionVariations: formState?.captionVariations || 3,
-    storyContentType: formState?.storyContentType || 'video',
-    storySequenceType: formState?.storySequenceType || 'product-showcase',
-    storyLength: formState?.storyLength || 5,
-    storyTone: formState?.storyTone || 'authentic-personal',
+    organicContentType: formState?.organicContentType || DEFAULT_CONTENT_TYPE,
+    organicPlatform: formState?.organicPlatform || DEFAULT_SOCIAL_PLATFORM,
+    organicGoal: formState?.organicGoal || DEFAULT_SOCIAL_GOAL,
+    organicTone: formState?.organicTone || DEFAULT_TONE,
+    captionVariations: formState?.captionVariations || DEFAULT_VARIATIONS,
+    organicVideoTranscription: formState?.organicVideoTranscription || '',
+    organicImagePreview: formState?.organicImagePreview || '',
+    organicSelectedProducts: formState?.organicSelectedProducts || [],
+    generatedCaptions: formState?.generatedCaptions || [],
+    storyContentType: formState?.storyContentType || DEFAULT_CONTENT_TYPE,
+    storySequenceType: formState?.storySequenceType || DEFAULT_SEQUENCE_TYPE,
+    storyLength: formState?.storyLength || DEFAULT_STORY_LENGTH,
+    storyTone: formState?.storyTone || DEFAULT_TONE,
+    storyVideoTranscription: formState?.storyVideoTranscription || '',
+    storyImagePreview: formState?.storyImagePreview || '',
+    storySelectedProducts: formState?.storySelectedProducts || [],
+    generatedStorySequence: formState?.generatedStorySequence || [],
     
     // Static ad values
     staticAdImage: formState?.staticAdImage || '',

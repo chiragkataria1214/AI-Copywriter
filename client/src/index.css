@@ -70,6 +70,20 @@
 }
 
 @layer utilities {
+  /* Text color utilities for brand palette */
+  .text-jones-primary {
+    color: var(--jones-primary);
+  }
+  .text-jones-secondary {
+    color: var(--jones-secondary);
+  }
+  .text-jones-accent {
+    color: var(--jones-accent);
+  }
+  .text-jones-light {
+    color: var(--jones-light);
+  }
+  
   .jones-primary {
     color: var(--jones-primary);
   }
@@ -110,6 +124,12 @@
   
   .border-jones-primary {
     border-color: var(--jones-primary);
+  }
+  .border-jones-secondary {
+    border-color: var(--jones-secondary);
+  }
+  .border-jones-accent {
+    border-color: var(--jones-accent);
   }
   
   .jones-secondary {

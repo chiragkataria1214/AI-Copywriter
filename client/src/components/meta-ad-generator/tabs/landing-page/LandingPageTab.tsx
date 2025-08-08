@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ProductSelection } from '@/components/common/ProductSelection';
 import { toast } from '@/hooks/useToast';
 import { apiRequest } from '@/lib/queryClient';
+import { TargetPersona } from '../../../common/TargetPersona';
 
 interface LandingPageFramework {
   id: string;
@@ -63,8 +64,8 @@ interface LandingPageTabProps {
   copiedLandingCopy: boolean;
 
   // Persona States
-  concept: string;
-  setConcept: (value: string) => void;
+  persona: string;
+  setPersona: (value: string) => void;
   personas: Record<string, any>;
 
   // Brand States
@@ -130,8 +131,8 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
   generatedLandingCopy,
   landingPageAnalysis,
   copiedLandingCopy,
-  concept,
-  setConcept,
+  persona,
+  setPersona,
   personas,
   useJonesBrandGuide,
   setUseJonesBrandGuide,
@@ -295,32 +296,12 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
         </Card>
 
         {/* Persona Selection */}
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Users className="text-jones-primary mr-2 sm:mr-3" size={18} />
-              Target Persona
-            </h3>
-
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="concept" className="block text-sm font-medium text-gray-700 mb-2">Primary Persona</Label>
-                <Select value={concept} onValueChange={setConcept}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(personas).map(([key, persona]) => (
-                      <SelectItem key={key} value={key}>{(persona as any).label || key}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-
-            </div>
-          </CardContent>
-        </Card>
+                      <TargetPersona
+                personas={personas}
+                persona={persona}
+                setPersona={setPersona}
+                title="Primary Persona"
+              />
 
         {/* Brand Guidelines */}
         <Card>

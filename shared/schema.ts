@@ -151,7 +151,7 @@ export const personaPillars = pgTable("persona_pillars", {
 export const brandConfiguration = pgTable("brand_configuration", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   configType: varchar("config_type", { 
-    enum: ["core_positioning", "brand_voice", "key_terminology", "approved_language", "avoided_language"] 
+    enum: ["core_positioning", "brand_voice", "key_terminology", "approved_language", "avoided_language", "brand_name", "website"] 
   }).notNull(),
   configValue: text("config_value").notNull(),
   isEnabled: varchar("is_enabled").default("true"),
@@ -200,6 +200,26 @@ export const emailFrameworks = pgTable("email_frameworks", {
   expectedLength: varchar("expected_length"), // Expected length (e.g., "short", "medium", "long", "500-800 words")
   customLength: varchar("custom_length"), // Custom length specification when expectedLength is "custom"
   images: jsonb("images"), // Array of image file paths for visual layout reference (max 5)
+  isActive: varchar("is_active").default("true"),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// SMS frameworks table for SMS types and their specific structures
+export const smsFrameworks = pgTable("sms_frameworks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(), // e.g., "product_launch", "product_spotlight"
+  displayName: varchar("display_name").notNull(), // e.g., "Product Launch", "Product Spotlight"
+  description: text("description").notNull(), // Purpose and use case
+  structure: text("structure").notNull(), // Framework structure description
+  keyElements: text("key_elements"), // Key elements and guidelines
+  frameworkContent: text("framework_content"), // Detailed framework content and examples
+  systemPrompt: text("system_prompt").notNull(), // AI prompt for this framework
+  outputRequirements: text("output_requirements"), // Expected output format and structure
+  expectedLength: varchar("expected_length"), // Expected length (e.g., "short")
+  customLength: varchar("custom_length"), // Optional custom length
+  images: jsonb("images"), // Keep parity; usually unused for SMS
   isActive: varchar("is_active").default("true"),
   sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
@@ -292,6 +312,12 @@ export const insertEmailFrameworkSchema = createInsertSchema(emailFrameworks).om
   updatedAt: true,
 });
 
+export const insertSmsFrameworkSchema = createInsertSchema(smsFrameworks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertEmailImageAnalysisSchema = createInsertSchema(emailImageAnalysis).omit({
   id: true,
   createdAt: true,
@@ -323,6 +349,8 @@ export type SystemConfiguration = typeof systemConfiguration.$inferSelect;
 export type InsertSystemConfiguration = z.infer<typeof insertSystemConfigurationSchema>;
 export type EmailFramework = typeof emailFrameworks.$inferSelect;
 export type InsertEmailFramework = z.infer<typeof insertEmailFrameworkSchema>;
+export type SmsFramework = typeof smsFrameworks.$inferSelect;
+export type InsertSmsFramework = z.infer<typeof insertSmsFrameworkSchema>;
 export type LandingPageFramework = typeof landingPageFrameworks.$inferSelect;
 export type InsertLandingPageFramework = z.infer<typeof insertLandingPageFrameworkSchema>;
 export type EmailImageAnalysis = typeof emailImageAnalysis.$inferSelect;

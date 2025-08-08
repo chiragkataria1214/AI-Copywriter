@@ -1,8 +1,11 @@
 import React, { useState, useRef } from 'react';
+import EnhancedContextConfigurator from '@/components/meta-ad-generator/ai-settings/EnhancedContextConfigurator';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { TrainingConfig } from '@shared/training-config';
+import { TrainingConfig, VariableDefinition } from '@shared/training-config';
 import { ChevronDown, ChevronRight, Sparkles, Lock, Copy, Plus } from 'lucide-react';
+import ProtectedPromptEditor from '@/components/meta-ad-generator/ai-settings/common/ProtectedPromptEditor';
+import { EnhancedArrayField, EnhancedTextField } from '@/components/meta-ad-generator/ai-settings/common/EnhancedFields';
 
 interface CustomRequestStationProps {
   editingConfig: TrainingConfig;
@@ -61,9 +64,9 @@ const StationToggleButton = ({
 // Available variables for Custom Request system prompt (limited since no user prompt template)
 const CUSTOM_REQUEST_SYSTEM_VARIABLES = [
   { 
-    key: 'concept', 
-    label: 'Concept/Persona', 
-    description: 'The selected persona concept (e.g., "lifeJuggler")' 
+    key: 'persona', 
+    label: 'Persona', 
+    description: 'The selected persona (e.g., "lifeJuggler")' 
   },
   { 
     key: 'brandPercent', 
@@ -77,92 +80,7 @@ const CUSTOM_REQUEST_SYSTEM_VARIABLES = [
   },
 ];
 
-interface VariableInsertionProps {
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
-  value: string;
-  onChange: (value: string) => void;
-  position?: 'left' | 'right';
-  variables?: typeof CUSTOM_REQUEST_SYSTEM_VARIABLES;
-}
-
-const VariableInsertion: React.FC<VariableInsertionProps> = ({ 
-  textareaRef, 
-  value, 
-  onChange, 
-  position = 'left',
-  variables = CUSTOM_REQUEST_SYSTEM_VARIABLES 
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const insertVariable = (variableKey: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const variableString = `{${variableKey}}`;
-    
-    const newValue = value.substring(0, start) + variableString + value.substring(end);
-    onChange(newValue);
-    
-    // Set cursor position after the inserted variable
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + variableString.length, start + variableString.length);
-    }, 0);
-    
-    setIsOpen(false);
-  };
-
-  const dropdownClasses = position === 'right' 
-    ? "absolute top-8 right-0 z-10 bg-white border border-gray-200 rounded-lg shadow-lg p-2 min-w-64"
-    : "absolute top-8 left-0 z-10 bg-white border border-gray-200 rounded-lg shadow-lg p-2 min-w-64";
-
-  return (
-    <div className="relative">
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => setIsOpen(!isOpen)}
-        className="mb-2 text-xs"
-      >
-        <Plus size={12} className="mr-1" />
-        Insert Variable
-      </Button>
-      
-      {isOpen && (
-        <div className={dropdownClasses}>
-          <div className="text-xs font-medium text-gray-700 mb-2 px-2">Available Variables:</div>
-          {variables.map((variable) => (
-            <button
-              key={variable.key}
-              onClick={() => insertVariable(variable.key)}
-              className="w-full text-left px-2 py-2 hover:bg-gray-50 rounded text-xs border-none bg-transparent"
-            >
-              <div className="font-mono text-blue-600">{`{${variable.key}}`}</div>
-              <div className="font-medium text-gray-900">{variable.label}</div>
-              <div className="text-gray-600 text-xs">{variable.description}</div>
-            </button>
-          ))}
-          <div className="border-t border-gray-100 mt-2 pt-2 px-2">
-            <div className="text-xs text-gray-500">
-              <strong>Note:</strong> Custom requests use direct user input, not template variables.
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Backdrop to close dropdown */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 z-5" 
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-    </div>
-  );
-};
+// Use shared VariableInsertion inside ProtectedPromptEditor
 
 // Helper function to generate a preview of the final system prompt with replaced variables
 const generateSystemPromptPreview = (editingConfig: TrainingConfig): string => {
@@ -297,125 +215,7 @@ const generateSystemPromptPreview = (editingConfig: TrainingConfig): string => {
   return baseSystemPrompt + aiSettingsContext;
 };
 
-const extractOutputStructure = (prompt: string) => {
-  const outputRequirementMatch = prompt.match(/(CRITICAL OUTPUT REQUIREMENT:[\s\S]*?Your response must follow this exact[^:]*structure:[^}]*})/i);
-  if (outputRequirementMatch) return outputRequirementMatch[1];
-  const arrayStructureMatch = prompt.match(/(CRITICAL OUTPUT REQUIREMENT:[\s\S]*?Your response must follow this exact[^:]*structure:[^}]*\])/i);
-  if (arrayStructureMatch) return arrayStructureMatch[1];
-  const textStructureMatch = prompt.match(/(CRITICAL OUTPUT REQUIREMENT:[\s\S]*?You MUST return your response as[^.]*\.)/i);
-  if (textStructureMatch) return textStructureMatch[1];
-  return null;
-};
-
-const getEditablePrompt = (prompt: string) => {
-  const structure = extractOutputStructure(prompt);
-  return structure ? prompt.replace(structure, '').trim() : prompt;
-};
-
-const reconstructPrompt = (editableContent: string, originalPrompt: string) => {
-  const structure = extractOutputStructure(originalPrompt);
-  if (structure) {
-    const lines = editableContent.split('\n');
-    const insertIndex = lines.findIndex(line => line.trim() === '') || 1;
-    const beforeStructure = lines.slice(0, insertIndex).join('\n');
-    const afterStructure = lines.slice(insertIndex).join('\n');
-    return `${beforeStructure}\n\n${structure}\n\n${afterStructure}`.trim();
-  }
-  return editableContent;
-};
-
-const ProtectedPromptEditor = ({ label, value, onChange, placeholder, rows = 8, disabled = false, copyToClipboard, textareaRef, variables }: any) => {
-  const outputStructure = extractOutputStructure(value);
-  const editableContent = getEditablePrompt(value);
-  const handleChange = (newEditableContent: string) => {
-    const reconstructedPrompt = reconstructPrompt(newEditableContent, value);
-    onChange(reconstructedPrompt);
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="space-y-4 bg-white border rounded-lg p-4">
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="font-medium text-gray-900">{label}</h4>
-            <div className="flex items-center space-x-2">
-              {!disabled && textareaRef && variables && (
-                <VariableInsertion
-                  textareaRef={textareaRef}
-                  value={editableContent}
-                  onChange={handleChange}
-                  position="right"
-                  variables={variables}
-                />
-              )}
-              <Button variant="outline" size="sm" onClick={() => copyToClipboard(value, label)} disabled={!value}>
-                <Copy size={16} className="mr-1" />Copy
-              </Button>
-            </div>
-          </div>
-          {disabled ? (
-            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 max-h-64 overflow-y-auto">
-              <pre className="text-sm text-gray-700 whitespace-pre-wrap">{editableContent || placeholder}</pre>
-            </div>
-          ) : (
-            <Textarea ref={textareaRef} value={editableContent} onChange={(e) => handleChange(e.target.value)} className="text-gray-900 resize-y border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg p-4 transition-all duration-200" rows={rows} placeholder={placeholder} disabled={disabled} />
-          )}
-        </div>
-      </div>
-      {outputStructure && (
-        <div className="border border-amber-200 bg-amber-50 rounded-lg p-4">
-          <div className="flex items-center space-x-2 mb-2">
-            <Lock className="w-4 h-4 text-amber-600" />
-            <span className="text-sm font-medium text-amber-800">Protected Output Structure</span>
-          </div>
-          <div className="bg-white border border-amber-200 rounded p-3">
-            <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">{outputStructure}</pre>
-          </div>
-          <p className="text-xs text-amber-700 mt-2">This section is protected to ensure frontend compatibility.</p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const EnhancedTextField = ({ label, value, onChange, placeholder, rows = 4, disabled = false, bgColor = "bg-blue-50", borderColor = "border-blue-200", copyToClipboard }: any) => (
-  <div className="space-y-4 bg-white border rounded-lg p-4">
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="font-medium text-gray-900">{label}</h4>
-        <Button variant="outline" size="sm" onClick={() => copyToClipboard(value, label)} disabled={!value}><Copy size={16} className="mr-1" />Copy</Button>
-      </div>
-      {disabled ? (
-        <div className={`${bgColor} rounded-lg p-4 ${borderColor} border max-h-64 overflow-y-auto`}>
-          <pre className="text-sm text-gray-700 whitespace-pre-wrap">{value || placeholder}</pre>
-        </div>
-      ) : (
-        <Textarea value={value} onChange={(e) => onChange(e.target.value)} className="text-gray-900 resize-y border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg p-4 transition-all duration-200" rows={rows} placeholder={placeholder} disabled={disabled} />
-      )}
-    </div>
-  </div>
-);
-
-const EnhancedArrayField = ({ label, value, onChange, placeholder, rows = 4, disabled = false, bgColor = "bg-green-50", borderColor = "border-green-200", copyToClipboard }: any) => {
-  const textValue = Array.isArray(value) ? value.join('\n') : '';
-  return (
-    <div className="space-y-4 bg-white border rounded-lg p-4">
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="font-medium text-gray-900">{label}</h4>
-          <Button variant="outline" size="sm" onClick={() => copyToClipboard(textValue, label)} disabled={!textValue}><Copy size={16} className="mr-1" />Copy</Button>
-        </div>
-        {disabled ? (
-          <div className={`${bgColor} rounded-lg p-4 ${borderColor} border max-h-64 overflow-y-auto`}>
-            <pre className="text-sm text-gray-700 whitespace-pre-wrap">{textValue || placeholder}</pre>
-          </div>
-        ) : (
-          <Textarea value={textValue} onChange={(e) => onChange(e.target.value.split('\n').map(item => item.trim()).filter(Boolean))} className="text-gray-900 resize-y border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg p-4 transition-all duration-200" rows={rows} placeholder={placeholder} disabled={disabled} />
-        )}
-      </div>
-    </div>
-  );
-};
+// Use shared ProtectedPromptEditor and Enhanced Fields
 
 export const CustomRequestStation: React.FC<CustomRequestStationProps> = ({
   editingConfig,
@@ -426,6 +226,30 @@ export const CustomRequestStation: React.FC<CustomRequestStationProps> = ({
   copyToClipboard
 }) => {
   const systemPromptTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const stationConfig = editingConfig.stationPrompts?.customRequest;
+  const contextConfig = stationConfig?.contextConfiguration as any;
+
+  const getAllAvailableVariables = (): VariableDefinition[] => {
+    const regular = (contextConfig?.availableVariables || []) as VariableDefinition[];
+    const sections = (contextConfig?.contextSections || [])
+      .filter((s: any) => s.enabled)
+      .map((s: any) => ({
+        key: s.id,
+        label: `Context: ${s.name}`,
+        description: `Generated content from "${s.name}" context section: ${s.description}`,
+        type: 'string' as const,
+        category: 'context_section' as const,
+        required: s.required,
+      }));
+    const brandGuidelineVariables: VariableDefinition[] = [
+      { key: 'corePositioning', label: 'Core Positioning', description: 'Brand core positioning statement from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'brandVoice', label: 'Brand Voice', description: 'Brand voice rules and guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'keyTerminology', label: 'Key Terminology', description: 'Key terms and phrases from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'approvedLanguage', label: 'Approved Language', description: 'Approved language and phrases from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'avoidedLanguage', label: 'Avoided Language', description: 'Language and phrases to avoid from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+    ];
+    return [...regular, ...sections, ...brandGuidelineVariables];
+  };
   
   const toggleStation = (stationId: string) => {
     const newExpanded = new Set(expandedStations);
@@ -450,6 +274,13 @@ export const CustomRequestStation: React.FC<CustomRequestStationProps> = ({
       
       {expandedStations.has('customRequest') && (
         <div className="p-6 pt-4 border-t border-gray-100 space-y-6">
+          {/* Enhanced Context Configurator (shared) */}
+          <EnhancedContextConfigurator
+            stationKey={'customRequest'}
+            editingConfig={editingConfig}
+            setEditingConfig={setEditingConfig}
+            title="Enhanced Context Configuration"
+          />
           
           {/* System Prompt Section */}
           <div className="border border-gray-200 rounded-lg">
@@ -490,13 +321,7 @@ export const CustomRequestStation: React.FC<CustomRequestStationProps> = ({
 
             {expandedStations.has('customRequest-systemPrompt') && (
               <div className="p-6 border-t border-gray-100 space-y-6">
-                {/* System Prompt Structure Explanation */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-800 font-medium">🔧 How System Prompt is Generated</p>
-                  <p className="text-sm text-blue-700 mt-1">
-                    The final system prompt sent to Claude combines: <strong>Base System Prompt</strong> + <strong>AI Settings Context</strong> (brand guidelines, product claims, persona pillars, etc.)
-                  </p>
-                </div>
+        
 
                 {/* Base System Prompt - Editable */}
                 <ProtectedPromptEditor
@@ -517,32 +342,11 @@ export const CustomRequestStation: React.FC<CustomRequestStationProps> = ({
                   disabled={effectiveUser?.role !== 'admin'}
                   copyToClipboard={copyToClipboard}
                   textareaRef={systemPromptTextareaRef}
-                  variables={CUSTOM_REQUEST_SYSTEM_VARIABLES}
+                  variables={getAllAvailableVariables()}
+                  contextConfiguration={editingConfig?.stationPrompts?.customRequest?.contextConfiguration as any}
                 />
 
-                {/* Final System Prompt Preview - Shows actual resolved prompt */}
-                <div className="space-y-4 bg-white border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-gray-900">Final System Prompt Preview (With Resolved Values)</h4>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => copyToClipboard(generateSystemPromptPreview(editingConfig), 'Final System Prompt Preview')}
-                      disabled={!editingConfig?.stationPrompts?.customRequest?.systemPrompt}
-                    >
-                      <Copy size={16} className="mr-1" />
-                      Copy Preview
-                    </Button>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 max-h-64 overflow-y-auto">
-                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
-                      {generateSystemPromptPreview(editingConfig)}
-                    </pre>
-                  </div>
-                  <p className="text-xs text-gray-600 mt-2">
-                    This shows how the final system prompt will look with your current Brand Guidelines, Product Claims, and Persona Pillars. The Brand/DR balance will be set dynamically at request time.
-                  </p>
-                </div>
+                {/* Final System Prompt Preview removed; use Preview button */}
               </div>
             )}
           </div>
@@ -646,7 +450,7 @@ export const CustomRequestStation: React.FC<CustomRequestStationProps> = ({
                       variant="outline" 
                       size="sm" 
                       onClick={() => copyToClipboard(`
-TARGET PERSONA - {CONCEPT}:
+TARGET PERSONA -
 Description: {personaDescription}
 Key Targeting Pillars:
 - {pillar1}
@@ -682,7 +486,7 @@ PRIORITY INSTRUCTION: Incorporate the specific instructions above into the conte
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 max-h-80 overflow-y-auto">
                     <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
-{`TARGET PERSONA - {CONCEPT}:
+{`TARGET PERSONA -
 Description: {personaDescription}
 Key Targeting Pillars:
 - {pillar1}
@@ -722,7 +526,7 @@ PRIORITY INSTRUCTION: Incorporate the specific instructions above into the conte
                     </pre>
                   </div>
                   <p className="text-xs text-gray-600 mt-2">
-                    These sections are dynamically generated based on your selections: persona concept, selected products, request type guidelines, and custom brief. Only sections with data will be included.
+                    These sections are dynamically generated based on your selections: persona, selected products, request type guidelines, and custom brief. Only sections with data will be included.
                   </p>
                 </div>
               </div>

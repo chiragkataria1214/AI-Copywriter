@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
+import EnhancedContextConfigurator from '@/components/meta-ad-generator/ai-settings/EnhancedContextConfigurator';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { TrainingConfig } from '@shared/training-config';
-import { ChevronDown, ChevronRight, FileText, Lock, Copy } from 'lucide-react';
+import { TrainingConfig, VariableDefinition } from '@shared/training-config';
+import { ChevronDown, ChevronRight, FileText, Lock, Copy, Eye, Plus } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import ContextInsertion from '@/components/meta-ad-generator/ai-settings/common/ContextInsertion';
 
 interface StorySequencesStationProps {
   editingConfig: TrainingConfig;
@@ -58,6 +61,114 @@ const StationToggleButton = ({
   </div>
 );
 
+interface VariableInsertionProps {
+  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  value: string;
+  onChange: (value: string) => void;
+  position?: 'left' | 'right';
+  variables?: VariableDefinition[];
+  buttonLabel?: string;
+}
+
+const VariableInsertion: React.FC<VariableInsertionProps> = ({
+  textareaRef,
+  value,
+  onChange,
+  position = 'left',
+  variables = [],
+  buttonLabel
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (!dropdownRef.current) return;
+      if (!dropdownRef.current.contains(e.target as Node)) setIsOpen(false);
+    };
+    if (isOpen) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [isOpen]);
+
+  const insertVariable = (variableKey: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const variableString = `{{${variableKey}}}`;
+
+    const newValue = value.substring(0, start) + variableString + value.substring(end);
+    onChange(newValue);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + variableString.length, start + variableString.length);
+    }, 0);
+
+    setIsOpen(false);
+  };
+
+  const dropdownClasses = position === 'right'
+    ? 'absolute top-8 right-0 z-10 bg-white border border-gray-200 rounded-lg shadow-lg p-2 min-w-64'
+    : 'absolute top-8 left-0 z-10 bg-white border border-gray-200 rounded-lg shadow-lg p-2 min-w-64';
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => setIsOpen(!isOpen)}
+        className="mb-2 text-xs"
+      >
+        <Plus size={12} className="mr-1" />
+        {buttonLabel || 'Insert Variable'}
+      </Button>
+
+      {isOpen && (
+        <div className={dropdownClasses}>
+          <div className="text-xs font-medium text-gray-700 mb-1 px-2">Available Variables</div>
+          <div className="px-2 pb-2">
+            <input
+              className="w-full text-xs border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              placeholder="Search..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          <div className="max-h-64 overflow-y-auto pr-1 space-y-1">
+            {(variables || [])
+              .filter(v => !query || v.key.toLowerCase().includes(query.toLowerCase()) || (v.label || '').toLowerCase().includes(query.toLowerCase()))
+              .map((variable) => (
+              <button
+                key={variable.key}
+                onClick={() => insertVariable(variable.key)}
+                className="w-full text-left px-2 py-2 hover:bg-gray-50 rounded text-xs border border-transparent hover:border-gray-200 bg-white"
+              >
+                <div className="font-mono text-blue-600">{`{{${variable.key}}}`}</div>
+                <div className="font-medium text-gray-900">{variable.label}</div>
+                <div className="text-gray-600 text-[11px]">{variable.description}</div>
+                {variable.category && (
+                  <span className={`mt-1 inline-block text-[10px] px-1.5 py-0.5 rounded-full ${
+                    variable.category === 'context_section' ? 'bg-purple-100 text-purple-700' :
+                    variable.category === 'brand_guideline' ? 'bg-orange-100 text-orange-700' :
+                    variable.category === 'system_generated' ? 'bg-green-100 text-green-700' :
+                    'bg-blue-100 text-blue-700'
+                  }`}>{variable.category}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {isOpen && <div className="fixed inset-0 z-0" />}
+    </div>
+  );
+};
+
 const extractOutputStructure = (prompt: string) => {
   const outputRequirementMatch = prompt.match(/(CRITICAL OUTPUT REQUIREMENT:[\s\S]*?Your response must follow this exact[^:]*structure:[^}]*})/i);
   if (outputRequirementMatch) return outputRequirementMatch[1];
@@ -85,7 +196,7 @@ const reconstructPrompt = (editableContent: string, originalPrompt: string) => {
   return editableContent;
 };
 
-const ProtectedPromptEditor = ({ label, value, onChange, placeholder, rows = 8, disabled = false, copyToClipboard }: any) => {
+const ProtectedPromptEditor = ({ label, value, onChange, placeholder, rows = 8, disabled = false, copyToClipboard, textareaRef, variables, contextConfiguration }: any) => {
   const outputStructure = extractOutputStructure(value);
   const editableContent = getEditablePrompt(value);
   const handleChange = (newEditableContent: string) => {
@@ -93,22 +204,65 @@ const ProtectedPromptEditor = ({ label, value, onChange, placeholder, rows = 8, 
     onChange(reconstructedPrompt);
   };
 
+  const computedVariables = React.useMemo(() => {
+    const base = variables || contextConfiguration?.availableVariables || [];
+    const result = [...base];
+    const addUnique = (v: any) => { if (!result.find((x: any) => x.key === v.key)) result.push(v); };
+    (contextConfiguration?.contextSections || [])
+      .filter((s: any) => s.enabled)
+      .forEach((s: any) => addUnique({ key: s.id, label: `Context: ${s.name}`, description: `Generated content from "${s.name}" context section: ${s.description}`, type: 'string', category: 'context_section', required: s.required }));
+    [
+      { key: 'corePositioning', label: 'Core Positioning', description: 'Brand core positioning statement', type: 'string', category: 'brand_guideline', required: false },
+      { key: 'brandVoice', label: 'Brand Voice', description: 'Brand voice rules and guidelines', type: 'string', category: 'brand_guideline', required: false },
+      { key: 'keyTerminology', label: 'Key Terminology', description: 'Key terms and phrases from brand guidelines', type: 'string', category: 'brand_guideline', required: false },
+      { key: 'approvedLanguage', label: 'Approved Language', description: 'Approved language and phrases', type: 'string', category: 'brand_guideline', required: false },
+      { key: 'avoidedLanguage', label: 'Avoided Language', description: 'Phrases to avoid', type: 'string', category: 'brand_guideline', required: false },
+    ].forEach(addUnique);
+    return result;
+  }, [variables, contextConfiguration]);
+
+  const contextCategories = new Set(['context_section', 'brand_guideline']);
+  const variableOptions = React.useMemo(() => computedVariables.filter((v: any) => !contextCategories.has(v?.category)), [computedVariables]);
+  const contextOptions = React.useMemo(() => computedVariables.filter((v: any) => contextCategories.has(v?.category)), [computedVariables]);
+
   return (
     <div className="space-y-4">
       <div className="space-y-4 bg-white border rounded-lg p-4">
         <div>
           <div className="flex items-center justify-between mb-2">
             <h4 className="font-medium text-gray-900">{label}</h4>
-            <Button variant="outline" size="sm" onClick={() => copyToClipboard(value, label)} disabled={!value}>
-              <Copy size={16} className="mr-1" />Copy
-            </Button>
+            <div className="flex items-center space-x-2">
+              {!disabled && (variables || contextConfiguration) && (
+                <>
+                  <VariableInsertion
+                    textareaRef={textareaRef}
+                    value={editableContent}
+                    onChange={handleChange}
+                    position="right"
+                    variables={variableOptions}
+                    buttonLabel="Insert Variable"
+                  />
+                  <ContextInsertion
+                    textareaRef={textareaRef}
+                    value={editableContent}
+                    onChange={handleChange}
+                    position="right"
+                    variables={contextOptions}
+                    buttonLabel="Insert Context"
+                  />
+                </>
+              )}
+              <Button variant="outline" size="sm" onClick={() => copyToClipboard(value, label)} disabled={!value}>
+                <Copy size={16} className="mr-1" />Copy
+              </Button>
+            </div>
           </div>
           {disabled ? (
             <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 max-h-64 overflow-y-auto">
               <pre className="text-sm text-gray-700 whitespace-pre-wrap">{editableContent || placeholder}</pre>
             </div>
           ) : (
-            <Textarea value={editableContent} onChange={(e) => handleChange(e.target.value)} className="text-gray-900 resize-y border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg p-4 transition-all duration-200" rows={rows} placeholder={placeholder} disabled={disabled} />
+          <Textarea ref={textareaRef} value={editableContent} onChange={(e) => handleChange(e.target.value)} className="text-gray-900 resize-y border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg p-4 transition-all duration-200" rows={rows} placeholder={placeholder} disabled={disabled} />
           )}
         </div>
       </div>
@@ -175,6 +329,30 @@ export const StorySequencesStation: React.FC<StorySequencesStationProps> = ({
   setExpandedStations,
   copyToClipboard
 }) => {
+  const systemPromptTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const stationConfig = editingConfig.stationPrompts?.storySequences;
+  const contextConfig = stationConfig?.contextConfiguration as any;
+  const getAllAvailableVariables = (): VariableDefinition[] => {
+    const regular = (contextConfig?.availableVariables || []) as VariableDefinition[];
+    const sections = (contextConfig?.contextSections || [])
+      .filter((s: any) => s.enabled)
+      .map((s: any) => ({
+        key: s.id,
+        label: `Context: ${s.name}`,
+        description: `Generated content from "${s.name}" context section: ${s.description}`,
+        type: 'string' as const,
+        category: 'context_section' as const,
+        required: s.required,
+      }));
+    const brandGuidelineVariables: VariableDefinition[] = [
+      { key: 'corePositioning', label: 'Core Positioning', description: 'Brand core positioning statement from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'brandVoice', label: 'Brand Voice', description: 'Brand voice rules and guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'keyTerminology', label: 'Key Terminology', description: 'Key terms and phrases from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'approvedLanguage', label: 'Approved Language', description: 'Approved language and phrases from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'avoidedLanguage', label: 'Avoided Language', description: 'Language and phrases to avoid from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+    ];
+    return [...regular, ...sections, ...brandGuidelineVariables];
+  };
   const toggleStation = (stationId: string) => {
     const newExpanded = new Set(expandedStations);
     if (expandedStations.has(stationId)) {
@@ -198,6 +376,13 @@ export const StorySequencesStation: React.FC<StorySequencesStationProps> = ({
       
       {expandedStations.has('storySequences') && (
         <div className="p-6 pt-4 border-t border-gray-100 space-y-6">
+          {/* Enhanced Context Configurator (shared) */}
+          <EnhancedContextConfigurator
+            stationKey={'storySequences'}
+            editingConfig={editingConfig}
+            setEditingConfig={setEditingConfig}
+            title="Enhanced Context Configuration"
+          />
           
           {/* System Prompt Section */}
           <div className="border border-gray-200 rounded-lg">
@@ -238,14 +423,7 @@ export const StorySequencesStation: React.FC<StorySequencesStationProps> = ({
 
             {expandedStations.has('storySequences-systemPrompt') && (
               <div className="p-6 border-t border-gray-100 space-y-6">
-                {/* System Prompt Structure Explanation */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-800 font-medium">🔧 How System Prompt is Generated</p>
-                  <p className="text-sm text-blue-700 mt-1">
-                    The final system prompt sent to Claude combines: <strong>Base System Prompt</strong> + <strong>AI Settings Context</strong> (brand guidelines, product claims, persona pillars, etc.)
-                  </p>
-                </div>
-
+         
                 {/* Base System Prompt - Editable */}
                 <ProtectedPromptEditor
                   label="Base System Prompt (Editable)"
@@ -264,6 +442,9 @@ export const StorySequencesStation: React.FC<StorySequencesStationProps> = ({
                   rows={6}
                   disabled={effectiveUser?.role !== 'admin'}
                   copyToClipboard={copyToClipboard}
+                  textareaRef={systemPromptTextareaRef}
+                  variables={getAllAvailableVariables()}
+                  contextConfiguration={editingConfig?.stationPrompts?.storySequences?.contextConfiguration as any}
                 />
 
                 {/* AI Settings Context - Read-only preview */}
@@ -308,7 +489,7 @@ Prohibited Claims (Never Use):
 - {prohibitedClaim2}
 - ...
 
-TARGET PERSONA - {CONCEPT}:
+TARGET PERSONA -
 Description: {personaDescription}
 Key Pillars:
 - {pillar1}
@@ -357,7 +538,7 @@ Prohibited Claims (Never Use):
 - {prohibitedClaim2}
 - ...
 
-TARGET PERSONA - {CONCEPT}:
+TARGET PERSONA -
 Description: {personaDescription}
 Key Pillars:
 - {pillar1}
@@ -518,7 +699,7 @@ BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`}
                       variant="outline" 
                       size="sm" 
                       onClick={() => copyToClipboard(`
-TARGET PERSONA - {CONCEPT}:
+TARGET PERSONA -
 Description: {personaDescription}
 Key Targeting Pillars:
 - {pillar1}
@@ -569,7 +750,7 @@ PRIORITY INSTRUCTION: Incorporate the specific instructions above into the story
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 max-h-80 overflow-y-auto">
                     <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
-{`TARGET PERSONA - {CONCEPT}:
+{`TARGET PERSONA -
 Description: {personaDescription}
 Key Targeting Pillars:
 - {pillar1}
@@ -619,7 +800,7 @@ PRIORITY INSTRUCTION: Incorporate the specific instructions above into the story
                     </pre>
                   </div>
                   <p className="text-xs text-gray-600 mt-2">
-                    These sections are dynamically generated based on your selections: persona concept, selected products, story structure guidelines, sequence timing, narrative techniques, and custom brief. Only sections with data will be included.
+                    These sections are dynamically generated based on your selections: persona, selected products, story structure guidelines, sequence timing, narrative techniques, and custom brief. Only sections with data will be included.
                   </p>
                 </div>
               </div>

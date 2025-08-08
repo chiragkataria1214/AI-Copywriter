@@ -6,14 +6,17 @@ import { TrainingConfig } from '@shared/training-config';
 interface ModelSettingsTabProps {
   editingConfig: TrainingConfig;
   setEditingConfig: (config: TrainingConfig) => void;
+  onSaveModelParameters?: (mp: TrainingConfig['modelParameters']) => void;
 }
 
 export const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
   editingConfig,
-  setEditingConfig
+  setEditingConfig,
+  onSaveModelParameters
 }) => {
   return (
     <div className="space-y-6">
+      {/* Save handled by sticky bar in AISettingsComponent */}
       <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
         <p className="text-sm text-purple-800 font-medium">AI Model Configuration</p>
         <p className="text-sm text-purple-700 mt-1">

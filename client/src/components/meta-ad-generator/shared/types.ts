@@ -2,8 +2,8 @@
 
 export interface BaseTabProps {
   // Common props shared across all tab components
-  concept?: string;
-  setConcept?: (value: string) => void;
+  persona?: string;
+  setPersona?: (value: string) => void;
   selectedProduct?: string;
   selectedProducts?: string[];
   setSelectedProducts?: (value: string[]) => void;
@@ -103,7 +103,7 @@ export interface GenerationMetadata {
   brandGuidelines?: string[];
   frameworks?: string[];
   personaSettings?: {
-    concept: string;
+    persona: string;
   };
   productClaims?: {
     approved: string[];

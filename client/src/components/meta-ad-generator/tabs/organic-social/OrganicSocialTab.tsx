@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Upload, Copy, Check, Target, Sparkles, Camera, FileText, AlertCircle, Settings } from 'lucide-react';
+import { Upload, Copy, Check, Target, Sparkles, Camera, FileText, AlertCircle, Settings, Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Globe, ThumbsUp, MessageSquare, Share2, Music, Volume2, Play, User as UserIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { GenerationMetadata } from '@/components/common/GenerationDetailsModal';
 import { ProductSelection } from '@/components/common/ProductSelection';
+import { TargetPersona } from '../../../common/TargetPersona';
+import { DEFAULT_SOCIAL_PLATFORM } from '@shared/constants';
 
 interface Product {
   name: string;
@@ -139,6 +141,11 @@ interface OrganicSocialTabProps {
     requestPayload: any;
     rawResponse: string;
   } | null) => void;
+  
+  // Persona props
+  personas?: Record<string, any>;
+  persona?: string;
+  setPersona?: (value: string) => void;
 }
 
 export function OrganicSocialTab({
@@ -198,7 +205,10 @@ export function OrganicSocialTab({
   socialCaptionsDebugInfo,
   storySequenceDebugInfo,
   setSocialCaptionsDebugInfo,
-  setStorySequenceDebugInfo
+  setStorySequenceDebugInfo,
+  personas,
+  persona,
+  setPersona
 }: OrganicSocialTabProps) {
   const [isGeneratingCaptions, setIsGeneratingCaptions] = useState(false);
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
@@ -212,6 +222,148 @@ export function OrganicSocialTab({
   // Defensive fallback for undefined products
   const safeProducts = products || {};
 
+  // Helper: Render a post preview styled like a specific platform
+  const renderPlatformPost = (
+    params: {
+      platform: 'instagram' | 'facebook' | 'tiktok';
+      caption: string;
+      imageSrc?: string | null;
+      captionIndex: number;
+    }
+  ) => {
+    const { platform, caption, imageSrc, captionIndex } = params;
+    const imgEl = (
+      <div className={`${platform === 'tiktok' ? 'h-[520px]' : 'h-72'} w-full bg-gray-100 rounded-md overflow-hidden relative`}> 
+        {imageSrc ? (
+          <img src={imageSrc} alt="Preview" className="w-full h-full object-cover" />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">No image uploaded</div>
+        )}
+      </div>
+    );
+
+    if (platform === 'instagram') {
+      return (
+        <div className="border border-gray-200 rounded-lg bg-white">
+          <div className="px-4 pt-3 pb-2 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 rounded-full bg-gray-300" />
+              <div className="text-sm font-semibold text-gray-900">jonesroad</div>
+            </div>
+            <MoreHorizontal size={18} className="text-gray-500" />
+          </div>
+          {imgEl}
+          <div className="px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Heart size={20} className="text-gray-800" />
+              <MessageCircle size={20} className="text-gray-800" />
+              <Send size={20} className="text-gray-800" />
+            </div>
+            <Bookmark size={20} className="text-gray-800" />
+          </div>
+          <div className="px-4 pb-1 text-sm font-semibold text-gray-900">1,234 likes</div>
+          <div className="px-4 pb-1 text-sm text-gray-900 whitespace-pre-wrap">
+            <span className="font-semibold mr-2">Jones Road</span>
+            {caption}
+          </div>
+          <div className="px-4 pb-1 text-xs text-gray-500">View all 87 comments</div>
+          <div className="px-4 pb-3 text-xs text-gray-400">2 hours ago</div>
+        </div>
+      );
+    }
+
+    if (platform === 'facebook') {
+      return (
+        <div className="border border-gray-200 rounded-lg bg-white">
+          <div className="px-4 pt-3 pb-2 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-9 h-9 rounded-full bg-gray-300" />
+              <div>
+                <div className="text-[15px] font-semibold text-gray-900">Jones Road</div>
+                <div className="text-xs text-gray-500 flex items-center space-x-1">
+                  <span>Just now</span>
+                  <span>·</span>
+                  <Globe size={12} />
+                </div>
+              </div>
+            </div>
+            <MoreHorizontal size={18} className="text-gray-500" />
+          </div>
+          <div className="px-4 pb-3 text-[15px] text-gray-900 whitespace-pre-wrap">{caption}</div>
+          {imgEl}
+          <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-600">
+            <div>1.2K</div>
+            <div className="space-x-2">
+              <span>87 comments</span>
+              <span>·</span>
+              <span>12 shares</span>
+            </div>
+          </div>
+          <div className="border-t px-2 py-1 grid grid-cols-3 text-center text-sm text-gray-700">
+            <button className="py-2 hover:bg-gray-50 rounded flex items-center justify-center space-x-2">
+              <ThumbsUp size={16} />
+              <span>Like</span>
+            </button>
+            <button className="py-2 hover:bg-gray-50 rounded flex items-center justify-center space-x-2">
+              <MessageSquare size={16} />
+              <span>Comment</span>
+            </button>
+            <button className="py-2 hover:bg-gray-50 rounded flex items-center justify-center space-x-2">
+              <Share2 size={16} />
+              <span>Share</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // tiktok
+    return (
+      <div className="border border-gray-200 rounded-lg bg-white overflow-hidden">
+        <div className="px-4 pt-3 pb-2 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 rounded-full bg-gray-300" />
+            <div className="text-sm font-semibold text-gray-900">Jones Road</div>
+          </div>
+          <MoreHorizontal size={18} className="text-gray-500" />
+        </div>
+        <div className="relative bg-black rounded-md mx-3 mb-3 overflow-hidden h-[520px]">
+          {imageSrc ? (
+            <img src={imageSrc} alt="Preview" className="w-full h-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">No image uploaded</div>
+          )}
+
+          <div className="absolute right-3 bottom-24 flex flex-col items-center space-y-4 text-white">
+            <div className="flex flex-col items-center">
+              <UserIcon size={24} />
+            </div>
+            <div className="flex flex-col items-center">
+              <Heart size={24} />
+              <span className="text-xs mt-1">1.2K</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <MessageCircle size={24} />
+              <span className="text-xs mt-1">87</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Share2 size={24} />
+              <span className="text-xs mt-1">12</span>
+            </div>
+          </div>
+
+          <div className="absolute left-3 right-16 bottom-4 text-white">
+            <div className="text-sm font-semibold">@jonesroad</div>
+            <div className="text-sm whitespace-pre-wrap">{caption}</div>
+            <div className="mt-2 flex items-center space-x-2 text-xs">
+              <Music size={14} />
+              <span>Jones Road • Original audio</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   
   return (
@@ -469,6 +621,16 @@ export function OrganicSocialTab({
                       </Select>
                     </div>
 
+                    {personas && persona && setPersona && (
+                      <TargetPersona
+                        personas={personas}
+                        persona={persona}
+                        setPersona={setPersona}
+                        showCard={false}
+                        showIcon={false}
+                      />
+                    )}
+
                     <div>
                       <Label className="text-sm font-medium text-gray-700">Number of Variations</Label>
                       <Select value={captionVariations.toString()} onValueChange={(value) => setCaptionVariations(Number(value))}>
@@ -544,7 +706,8 @@ export function OrganicSocialTab({
                         tone: organicTone,
                         variations: captionVariations,
                         selectedProducts: safeOrganicSelectedProducts.length > 0 ? safeOrganicSelectedProducts : [selectedProduct].filter(Boolean),
-                        imageData: imageData
+                        imageData: imageData,
+                        persona: persona
                       })
                     });
 
@@ -562,7 +725,7 @@ export function OrganicSocialTab({
                     // console.log('📊 Number of captions received:', data.captions?.length || 0);
                     
                     // Store debug information
-                    const requestPayload = {
+                      const requestPayload = {
                       contentType: organicContentType,
                       transcription: organicVideoTranscription,
                       platform: organicPlatform,
@@ -570,7 +733,8 @@ export function OrganicSocialTab({
                       tone: organicTone,
                       variations: captionVariations,
                       selectedProducts: safeOrganicSelectedProducts.length > 0 ? safeOrganicSelectedProducts : [selectedProduct].filter(Boolean),
-                      imageData: imageData
+                      imageData: imageData,
+                        persona: persona
                     };
                     
                     // Store debug information from backend response
@@ -682,27 +846,48 @@ export function OrganicSocialTab({
                           <span>View Details</span>
                         </Button>
                       </div>
-                      <div className="space-y-4">
-                        {generatedCaptions.map((caption, index) => (
-                          <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                            <div className="flex justify-between items-start mb-2">
-                              <span className="text-sm font-medium text-gray-600">
-                                Caption {index + 1} ({organicPlatform})
-                              </span>
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(caption);
-                                }}
-                                className="text-jones-primary hover:text-jones-secondary text-sm"
-                              >
-                                <Copy size={16} />
-                              </button>
+                      <div className="space-y-6">
+                        {generatedCaptions.map((caption, index) => {
+                          const imageSrc = organicContentType === 'image' ? organicImagePreview : '';
+                          const platforms: Array<'instagram' | 'facebook' | 'tiktok'> = ['instagram', 'facebook', 'tiktok'];
+                          const isMulti = organicPlatform === 'multi-platform';
+
+                          if (!isMulti) {
+                              const selectedPlatform = (organicPlatform as 'instagram' | 'facebook' | 'tiktok') || DEFAULT_SOCIAL_PLATFORM;
+                            return (
+                              <div key={index} className="relative">
+                                <button
+                                  onClick={() => navigator.clipboard.writeText(caption)}
+                                  className="absolute right-3 top-3 z-10 text-jones-primary hover:text-jones-secondary"
+                                  aria-label="Copy caption"
+                                >
+                                  <Copy size={16} />
+                                </button>
+                                {renderPlatformPost({ platform: selectedPlatform, caption, imageSrc, captionIndex: index })}
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div key={index} className="space-y-4">
+                              <div className="text-sm font-medium text-gray-700">Caption {index + 1} (Multi-Platform)</div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {platforms.map((p) => (
+                                  <div key={p} className="relative">
+                                    <button
+                                      onClick={() => navigator.clipboard.writeText(caption)}
+                                      className="absolute right-3 top-3 z-10 text-jones-primary hover:text-jones-secondary"
+                                      aria-label={`Copy ${p} caption`}
+                                    >
+                                      <Copy size={16} />
+                                    </button>
+                                    {renderPlatformPost({ platform: p, caption, imageSrc, captionIndex: index })}
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                            <div className="text-gray-900 whitespace-pre-wrap">
-                              {caption}
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ) : (
@@ -780,7 +965,7 @@ export function OrganicSocialTab({
                         <Textarea
                           rows={6}
                           className="w-full resize-none text-sm"
-                          placeholder="Paste your video transcription or describe the story concept here..."
+                          placeholder="Paste your video transcription or describe the story here..."
                           value={storyVideoTranscription}
                           onChange={(e) => setStoryVideoTranscription(e.target.value)}
                         />
@@ -975,6 +1160,16 @@ export function OrganicSocialTab({
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {personas && persona && setPersona && (
+                      <TargetPersona
+                        personas={personas}
+                        persona={persona}
+                        setPersona={setPersona}
+                        showCard={false}
+                        showIcon={false}
+                      />
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -1036,7 +1231,8 @@ export function OrganicSocialTab({
                         length: storyLength || 5,
                         tone: storyTone,
                         selectedProducts: safeStorySelectedProducts.length > 0 ? safeStorySelectedProducts : [selectedProduct].filter(Boolean),
-                        imageData: imageData
+                        imageData: imageData,
+                        persona: persona
                       })
                     });
 
@@ -1054,14 +1250,15 @@ export function OrganicSocialTab({
                     // console.log('📊 Number of slides received:', data.sequence?.length || 0);
                     
                     // Store debug information
-                    const requestPayload = {
+                      const requestPayload = {
                       contentType: storyContentType,
                       transcription: storyVideoTranscription,
                       sequenceType: storySequenceType,
                       length: storyLength || 5,
                       tone: storyTone,
                       selectedProducts: safeStorySelectedProducts.length > 0 ? safeStorySelectedProducts : [selectedProduct].filter(Boolean),
-                      imageData: imageData
+                      imageData: imageData,
+                        persona: persona
                     };
                     
                     // Store debug information from backend response

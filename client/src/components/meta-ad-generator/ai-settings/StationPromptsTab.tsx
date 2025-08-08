@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TrainingConfig } from '@shared/training-config';
 import { AdCopyStation } from './stations/AdCopyStation';
+import EnhancedAdCopyStation from './stations/EnhancedAdCopyStation';
 import { LandingPageStation } from './stations/LandingPageStation';
 import { StaticAdStation } from './stations/StaticAdStation';
 import { SocialCaptionsStation } from './stations/SocialCaptionsStation';
@@ -12,12 +13,14 @@ interface StationPromptsTabProps {
   editingConfig: TrainingConfig;
   setEditingConfig: (config: TrainingConfig) => void;
   effectiveUser: any;
+  onSaveStationPrompts?: (sp: TrainingConfig['stationPrompts']) => void;
 }
 
 export const StationPromptsTab: React.FC<StationPromptsTabProps> = ({
   editingConfig,
   setEditingConfig,
-  effectiveUser
+  effectiveUser,
+  onSaveStationPrompts
 }) => {
   const [expandedStations, setExpandedStations] = useState<Set<string>>(new Set());
 
@@ -33,6 +36,16 @@ export const StationPromptsTab: React.FC<StationPromptsTabProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Save handled by sticky bar in AISettingsComponent */}
+      {/* <EnhancedAdCopyStation
+        editingConfig={editingConfig}
+        setEditingConfig={setEditingConfig}
+        effectiveUser={effectiveUser}
+        expandedStations={expandedStations}
+        setExpandedStations={setExpandedStations}
+        copyToClipboard={copyToClipboard}
+      /> */}
+      
       <AdCopyStation
         editingConfig={editingConfig}
         setEditingConfig={setEditingConfig}

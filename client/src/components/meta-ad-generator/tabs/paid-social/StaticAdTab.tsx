@@ -33,11 +33,12 @@ import {
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { ProductSelection } from '@/components/common/ProductSelection';
+import { TargetPersona } from '../../../common/TargetPersona';
 
 interface StaticAdTabProps {
     personas: any;
-    concept: string;
-    setConcept: (value: string) => void;
+      persona: string;
+  setPersona: (value: string) => void;
     // Add static ad specific props
     staticAdImage?: string;
     setStaticAdImage?: (value: string) => void;
@@ -84,8 +85,8 @@ interface StaticAdTabProps {
 
 export const StaticAdTab = ({
     personas,
-    concept,
-    setConcept,
+      persona,
+  setPersona,
     staticAdImage,
     setStaticAdImage,
     staticAdImagePreview,
@@ -157,7 +158,7 @@ export const StaticAdTab = ({
             hasStaticAdImage: !!staticAdImage,
             hasMutation: !!analyzeStaticAdMutation,
             hasMutateFunction: !!analyzeStaticAdMutation?.mutate,
-            concept,
+            persona,
             analysisFocus,
             outputFormat,
             selectedProducts
@@ -165,14 +166,14 @@ export const StaticAdTab = ({
         
         if (analyzeStaticAdMutation?.mutate) {
             console.log('Calling mutation with params:', {
-                concept,
+                persona,
                 analysisFocus,
                 outputFormat,
                 selectedProducts: selectedProducts || []
             });
             
             analyzeStaticAdMutation.mutate({
-                concept,
+                persona,
                 analysisFocus,
                 outputFormat,
                 selectedProducts: selectedProducts || []
@@ -250,19 +251,14 @@ export const StaticAdTab = ({
                         </h3>
 
                         <div className="space-y-4">
-                            <div>
-                                <Label className="text-sm font-medium text-gray-700">Target Persona</Label>
-                                <Select value={concept} onValueChange={setConcept}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select persona" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {Object.entries(personas).map(([key, persona]) => (
-                                            <SelectItem key={key} value={key}>{(persona as any).label || key}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                            <TargetPersona
+                                personas={personas}
+                                                persona={persona}
+                setPersona={setPersona}
+                                showCard={false}
+                                showIcon={false}
+                                placeholder="Select persona"
+                            />
 
                             <div>
                                 <Label className="text-sm font-medium text-gray-700 mb-2">Analysis Focus</Label>
@@ -378,7 +374,7 @@ export const StaticAdTab = ({
                                                                         temperature: modelSettings?.temperature || 0.7,
                                                                         maxTokens: modelSettings?.maxTokens || 2000,
                                                                         systemPrompt: debugInfo?.systemPrompt || stationPrompts?.staticAd?.systemPrompt || 'Expert static ad analyzer for Jones Road Beauty...',
-                                                                        userPrompt: debugInfo?.userPrompt || `Analysis Focus: ${analysisFocus}\nOutput Format: ${outputFormat}\nTarget Persona: ${concept}\nSelected Products: ${selectedProducts.join(', ')}`,
+                                                                        userPrompt: debugInfo?.userPrompt || `Analysis Focus: ${analysisFocus}\nOutput Format: ${outputFormat}\nTarget Persona: ${persona}\nSelected Products: ${selectedProducts.join(', ')}`,
                                                                         requestPayload: debugInfo?.requestPayload,
                                                                         rawResponse: debugInfo?.rawResponse
                                                                     });
@@ -518,7 +514,7 @@ export const StaticAdTab = ({
                                                                 temperature: modelSettings?.temperature || 0.7,
                                                                 maxTokens: modelSettings?.maxTokens || 2000,
                                                                 systemPrompt: debugInfo?.systemPrompt || stationPrompts?.staticAd?.systemPrompt || 'Expert static ad analyzer for Jones Road Beauty...',
-                                                                userPrompt: debugInfo?.userPrompt || `Analysis Focus: ${analysisFocus}\nOutput Format: ${outputFormat}\nTarget Persona: ${concept}\nSelected Products: ${selectedProducts.join(', ')}`,
+                                                                userPrompt: debugInfo?.userPrompt || `Analysis Focus: ${analysisFocus}\nOutput Format: ${outputFormat}\nTarget Persona: ${persona}\nSelected Products: ${selectedProducts.join(', ')}`,
                                                                 requestPayload: debugInfo?.requestPayload,
                                                                 rawResponse: debugInfo?.rawResponse
                                                             });

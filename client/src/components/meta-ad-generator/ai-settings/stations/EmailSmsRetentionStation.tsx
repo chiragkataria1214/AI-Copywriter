@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
+import EnhancedContextConfigurator from '@/components/meta-ad-generator/ai-settings/EnhancedContextConfigurator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { TrainingConfig } from '@shared/training-config';
+import { TrainingConfig, VariableDefinition } from '@shared/training-config';
 import { ChevronDown, ChevronRight, Mail, Lock, Copy } from 'lucide-react';
+import ProtectedPromptEditor from '@/components/meta-ad-generator/ai-settings/common/ProtectedPromptEditor';
+import { EnhancedArrayField, EnhancedTextField } from '@/components/meta-ad-generator/ai-settings/common/EnhancedFields';
+import VariableInsertion from '@/components/meta-ad-generator/ai-settings/common/VariableInsertion';
+import { extractOutputStructure } from '@/components/meta-ad-generator/ai-settings/common/promptUtils';
 
 interface EmailSmsRetentionStationProps {
   editingConfig: TrainingConfig;
@@ -60,15 +65,7 @@ const StationToggleButton = ({
   </div>
 );
 
-const extractOutputStructure = (prompt: string) => {
-  const outputRequirementMatch = prompt.match(/(CRITICAL OUTPUT REQUIREMENT:[\s\S]*?Your response must follow this exact[^:]*structure:[^}]*})/i);
-  if (outputRequirementMatch) return outputRequirementMatch[1];
-  const arrayStructureMatch = prompt.match(/(CRITICAL OUTPUT REQUIREMENT:[\s\S]*?Your response must follow this exact[^:]*structure:[^}]*\])/i);
-  if (arrayStructureMatch) return arrayStructureMatch[1];
-  const textStructureMatch = prompt.match(/(CRITICAL OUTPUT REQUIREMENT:[\s\S]*?You MUST return your response as[^.]*\.)/i);
-  if (textStructureMatch) return textStructureMatch[1];
-  return null;
-};
+// using shared extractOutputStructure from promptUtils
 
 const getEditablePrompt = (prompt: string) => {
   const structure = extractOutputStructure(prompt);
@@ -87,87 +84,7 @@ const reconstructPrompt = (editableContent: string, originalPrompt: string) => {
   return editableContent;
 };
 
-const ProtectedPromptEditor = ({ label, value, onChange, placeholder, rows = 8, disabled = false, copyToClipboard }: any) => {
-  const outputStructure = extractOutputStructure(value);
-  const editableContent = getEditablePrompt(value);
-  const handleChange = (newEditableContent: string) => {
-    const reconstructedPrompt = reconstructPrompt(newEditableContent, value);
-    onChange(reconstructedPrompt);
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="space-y-4 bg-white border rounded-lg p-4">
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="font-medium text-gray-900">{label}</h4>
-            <Button variant="outline" size="sm" onClick={() => copyToClipboard(value, label)} disabled={!value}>
-              <Copy size={16} className="mr-1" />Copy
-            </Button>
-          </div>
-          {disabled ? (
-            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 max-h-64 overflow-y-auto">
-              <pre className="text-sm text-gray-700 whitespace-pre-wrap">{editableContent || placeholder}</pre>
-            </div>
-          ) : (
-            <Textarea value={editableContent} onChange={(e) => handleChange(e.target.value)} className="text-gray-900 resize-y border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg p-4 transition-all duration-200" rows={rows} placeholder={placeholder} disabled={disabled} />
-          )}
-        </div>
-      </div>
-      {outputStructure && (
-        <div className="border border-amber-200 bg-amber-50 rounded-lg p-4">
-          <div className="flex items-center space-x-2 mb-2">
-            <Lock className="w-4 h-4 text-amber-600" />
-            <span className="text-sm font-medium text-amber-800">Protected Output Structure</span>
-          </div>
-          <div className="bg-white border border-amber-200 rounded p-3">
-            <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">{outputStructure}</pre>
-          </div>
-          <p className="text-xs text-amber-700 mt-2">This section is protected to ensure frontend compatibility.</p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const EnhancedTextField = ({ label, value, onChange, placeholder, rows = 4, disabled = false, bgColor = "bg-blue-50", borderColor = "border-blue-200", copyToClipboard }: any) => (
-  <div className="space-y-4 bg-white border rounded-lg p-4">
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="font-medium text-gray-900">{label}</h4>
-        <Button variant="outline" size="sm" onClick={() => copyToClipboard(value, label)} disabled={!value}><Copy size={16} className="mr-1" />Copy</Button>
-      </div>
-      {disabled ? (
-        <div className={`${bgColor} rounded-lg p-4 ${borderColor} border max-h-64 overflow-y-auto`}>
-          <pre className="text-sm text-gray-700 whitespace-pre-wrap">{value || placeholder}</pre>
-        </div>
-      ) : (
-        <Textarea value={value} onChange={(e) => onChange(e.target.value)} className="text-gray-900 resize-y border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg p-4 transition-all duration-200" rows={rows} placeholder={placeholder} disabled={disabled} />
-      )}
-    </div>
-  </div>
-);
-
-const EnhancedArrayField = ({ label, value, onChange, placeholder, rows = 4, disabled = false, bgColor = "bg-green-50", borderColor = "border-green-200", copyToClipboard }: any) => {
-  const textValue = Array.isArray(value) ? value.join('\n') : '';
-  return (
-    <div className="space-y-4 bg-white border rounded-lg p-4">
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="font-medium text-gray-900">{label}</h4>
-          <Button variant="outline" size="sm" onClick={() => copyToClipboard(textValue, label)} disabled={!textValue}><Copy size={16} className="mr-1" />Copy</Button>
-        </div>
-        {disabled ? (
-          <div className={`${bgColor} rounded-lg p-4 ${borderColor} border max-h-64 overflow-y-auto`}>
-            <pre className="text-sm text-gray-700 whitespace-pre-wrap">{textValue || placeholder}</pre>
-          </div>
-        ) : (
-          <Textarea value={textValue} onChange={(e) => onChange(e.target.value.split('\n').map(item => item.trim()).filter(Boolean))} className="text-gray-900 resize-y border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg p-4 transition-all duration-200" rows={rows} placeholder={placeholder} disabled={disabled} />
-        )}
-      </div>
-    </div>
-  );
-};
+// Removed local ProtectedPromptEditor/Enhanced fields in favor of shared components
 
 export const EmailSmsRetentionStation: React.FC<EmailSmsRetentionStationProps> = ({
   editingConfig,
@@ -177,6 +94,31 @@ export const EmailSmsRetentionStation: React.FC<EmailSmsRetentionStationProps> =
   setExpandedStations,
   copyToClipboard
 }) => {
+  const systemPromptTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const stationConfig = editingConfig.stationPrompts?.emailSmsRetention;
+  const [showResolvedPreview, setShowResolvedPreview] = useState(false);
+  const contextConfig = stationConfig?.contextConfiguration as any;
+  const getAllAvailableVariables = (): VariableDefinition[] => {
+    const regular = (contextConfig?.availableVariables || []) as VariableDefinition[];
+    const sections = (contextConfig?.contextSections || [])
+      .filter((s: any) => s.enabled)
+      .map((s: any) => ({
+        key: s.id,
+        label: `Context: ${s.name}`,
+        description: `Generated content from "${s.name}" context section: ${s.description}`,
+        type: 'string' as const,
+        category: 'context_section' as const,
+        required: s.required,
+      }));
+    const brandGuidelineVariables: VariableDefinition[] = [
+      { key: 'corePositioning', label: 'Core Positioning', description: 'Brand core positioning statement from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'brandVoice', label: 'Brand Voice', description: 'Brand voice rules and guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'keyTerminology', label: 'Key Terminology', description: 'Key terms and phrases from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'approvedLanguage', label: 'Approved Language', description: 'Approved language and phrases from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'avoidedLanguage', label: 'Avoided Language', description: 'Language and phrases to avoid from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+    ];
+    return [...regular, ...sections, ...brandGuidelineVariables];
+  };
   const toggleStation = (stationId: string) => {
     const newExpanded = new Set(expandedStations);
     if (expandedStations.has(stationId)) {
@@ -200,6 +142,13 @@ export const EmailSmsRetentionStation: React.FC<EmailSmsRetentionStationProps> =
       
       {expandedStations.has('emailSmsRetention') && (
         <div className="p-6 pt-4 border-t border-gray-100 space-y-6">
+          {/* Enhanced Context Configurator (shared) */}
+          <EnhancedContextConfigurator
+            stationKey={'emailSmsRetention'}
+            editingConfig={editingConfig}
+            setEditingConfig={setEditingConfig}
+            title="Enhanced Context Configuration"
+          />
           
           {/* System Prompt Section */}
           <div className="border border-gray-200 rounded-lg">
@@ -240,16 +189,9 @@ export const EmailSmsRetentionStation: React.FC<EmailSmsRetentionStationProps> =
 
             {expandedStations.has('emailSmsRetention-systemPrompt') && (
               <div className="p-6 border-t border-gray-100 space-y-6">
-                {/* System Prompt Structure Explanation */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-800 font-medium">🔧 How System Prompt is Generated</p>
-                  <p className="text-sm text-blue-700 mt-1">
-                    The final system prompt sent to Claude combines: <strong>Base System Prompt</strong> + <strong>AI Settings Context</strong> (brand guidelines, product claims, persona pillars, etc.)
-                  </p>
-                </div>
-
+       
                 {/* Base System Prompt - Editable */}
-                <ProtectedPromptEditor
+                 <ProtectedPromptEditor
                   label="Base System Prompt (Editable)"
                   value={editingConfig?.stationPrompts?.emailSmsRetention?.systemPrompt || ''}
                   onChange={(value: string) => setEditingConfig({
@@ -266,6 +208,9 @@ export const EmailSmsRetentionStation: React.FC<EmailSmsRetentionStationProps> =
                   rows={6}
                   disabled={effectiveUser?.role !== 'admin'}
                   copyToClipboard={copyToClipboard}
+                   textareaRef={systemPromptTextareaRef}
+                   variables={getAllAvailableVariables()}
+                   contextConfiguration={editingConfig?.stationPrompts?.emailSmsRetention?.contextConfiguration as any}
                 />
 
                 {/* AI Settings Context - Read-only preview */}
@@ -310,7 +255,7 @@ Prohibited Claims (Never Use):
 - {prohibitedClaim2}
 - ...
 
-TARGET PERSONA - {CONCEPT}:
+TARGET PERSONA -
 Description: {personaDescription}
 Key Pillars:
 - {pillar1}
@@ -359,7 +304,7 @@ Prohibited Claims (Never Use):
 - {prohibitedClaim2}
 - ...
 
-TARGET PERSONA - {CONCEPT}:
+TARGET PERSONA -
 Description: {personaDescription}
 Key Pillars:
 - {pillar1}
@@ -425,7 +370,7 @@ BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`}
                 </div>
 
                 {/* Base User Prompt Template - Editable */}
-                <EnhancedTextField
+                 <EnhancedTextField
                   label="Base User Prompt Template (Editable)"
                   value={editingConfig?.stationPrompts?.emailSmsRetention?.userPromptTemplate || ''}
                   onChange={(value: string) => effectiveUser?.role === 'admin' && setEditingConfig({
@@ -441,9 +386,9 @@ BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`}
                   placeholder="Create [EMAIL/SMS] retention copy for [CAMPAIGN_TYPE] targeting [AUDIENCE_SEGMENT]..."
                   rows={4}
                   disabled={effectiveUser?.role !== 'admin'}
-                  bgColor="bg-green-50"
-                  borderColor="border-green-200"
-                  copyToClipboard={copyToClipboard}
+                   bgColor="bg-green-50"
+                   borderColor="border-green-200"
+                   copyToClipboard={copyToClipboard}
                 />
 
                 {/* Subject Line Frameworks - Special Component */}
@@ -500,7 +445,7 @@ BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`}
                 </div>
 
                 {/* Retention Best Practices - Editable */}
-                <EnhancedArrayField
+                 <EnhancedArrayField
                   label="Retention Best Practices (Editable)"
                   value={editingConfig?.stationPrompts?.emailSmsRetention?.retentionBestPractices || []}
                   onChange={(value: string[]) => effectiveUser?.role === 'admin' && setEditingConfig({
@@ -529,7 +474,7 @@ BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`}
                       variant="outline" 
                       size="sm" 
                       onClick={() => copyToClipboard(`
-TARGET PERSONA - {CONCEPT}:
+TARGET PERSONA -
 Description: {personaDescription}
 Key Targeting Pillars:
 - {pillar1}
@@ -575,7 +520,7 @@ PRIORITY INSTRUCTION: Incorporate the specific instructions above into the email
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 max-h-80 overflow-y-auto">
                     <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
-{`TARGET PERSONA - {CONCEPT}:
+{`TARGET PERSONA -
 Description: {personaDescription}
 Key Targeting Pillars:
 - {pillar1}
@@ -620,7 +565,7 @@ PRIORITY INSTRUCTION: Incorporate the specific instructions above into the email
                     </pre>
                   </div>
                   <p className="text-xs text-gray-600 mt-2">
-                    These sections are dynamically generated based on your selections: persona concept, selected products, enabled subject line frameworks, retention best practices, and custom brief. Only sections with data will be included.
+                    These sections are dynamically generated based on your selections: persona, selected products, enabled subject line frameworks, retention best practices, and custom brief. Only sections with data will be included.
                   </p>
                 </div>
               </div>

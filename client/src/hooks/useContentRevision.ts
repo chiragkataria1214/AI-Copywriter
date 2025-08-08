@@ -17,7 +17,7 @@ interface UseContentRevisionProps {
   generatedRetentionCopy: string;
   transcription: string;
   customBrief: string;
-  concept: string;
+  persona: string;
   targetAudience: string;
   brandDrBalance: number[];
   selectedProduct: string;
@@ -56,8 +56,8 @@ export const useContentRevision = (props: UseContentRevisionProps) => {
         context: {
           transcription: props.transcription,
           customBrief: props.customBrief,
-          concept: props.concept,
-          targetAudience: props.targetAudience || props.personas[props.concept]?.label || props.concept,
+          persona: props.persona,
+          targetAudience: props.targetAudience || props.personas[props.persona]?.label || props.persona,
           brandDrBalance: props.brandDrBalance && props.brandDrBalance.length > 0 ? props.brandDrBalance[0] : 50,
           selectedProduct: props.selectedProduct,
           selectedProducts: props.retentionSelectedProducts,

@@ -1,8 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { type TrainingConfig } from '@shared/training-config';
 import {
-  detectImageType,
-  resizeImageIfNeeded,
   buildTargetPersonaSection,
   buildSelectedProductsSection,
   buildAISettingsContext,
@@ -10,14 +8,14 @@ import {
   buildCopyFrameworksSection,
   buildLandingPageFrameworksSection,
   buildCustomBriefSection,
-  processImageForAnthropic,
   AIResponseParser,
   AIPromptBuilder,
   StationPromptManager,
   ContentContextBuilder
 } from './anthropic-helpers';
+import { detectImageType, resizeImageIfNeeded, processImageForAnthropic } from './image-helper';
 
-import { DEFAULT_MODEL_STR } from '@shared/constants';
+import { DEFAULT_BRAND_DR_BALANCE, DEFAULT_IMAGE_MEDIA_TYPE, DEFAULT_MODEL_STR, DEFAULT_PERSONA_KEY, DEFAULT_USE_JONES_BRAND_GUIDE } from '@shared/constants';
 
 if (!process.env.ANTHROPIC_API_KEY) {
   console.error('ANTHROPIC_API_KEY environment variable is not set');
@@ -38,7 +36,7 @@ export interface GenerationMetadata {
   brandGuidelines?: string[];
   frameworks?: string[];
   personaSettings?: {
-    concept: string;
+    persona: string;
   };
   productClaims?: {
     approved: string[];
@@ -52,7 +50,7 @@ export interface GenerationMetadata {
 export interface AdCopyRequest {
   transcription: string;
   customBrief?: string;
-  concept: string;
+  persona: string;
   targetAudience: string;
   landingPageUrl?: string;
   brandDrBalance: number;
@@ -66,7 +64,7 @@ export interface AdCopyRequest {
 export interface LandingPageRequest {
   landingPageType: string;
   productBrief: string;
-  concept: string;
+  persona: string;
   useAdsContent: boolean;
   adsContent?: string;
   brandDrBalance: number;
@@ -78,7 +76,7 @@ export interface LandingPageRequest {
 
 export interface CustomCopyRequest {
   customRequest: string;
-  concept: string;
+  persona: string;
   brandDrBalance: number;
   selectedProduct?: string;
   selectedProducts?: string[];
@@ -87,7 +85,7 @@ export interface CustomCopyRequest {
 
 export interface StaticAdAnalysisRequest {
   staticAdImage: string;
-  concept: string;
+  persona: string;
   brandDrBalance: number;
   selectedProduct?: string;
   selectedProducts?: string[];
@@ -103,7 +101,7 @@ export interface RevisionRequest {
   context?: {
     transcription?: string;
     customBrief?: string;
-    concept?: string;
+    persona?: string;
     targetAudience?: string;
     brandDrBalance?: number;
     selectedProduct?: string;
@@ -133,11 +131,11 @@ export async function reviseContent(request: RevisionRequest, trainingConfig: Tr
   
   // Build AI Settings context using the helper function
   const aiSettingsContext = buildAISettingsContext(trainingConfig, {
-    concept: context?.concept || '',
+    persona: context?.persona || '',
     selectedProduct: context?.selectedProduct,
     selectedProducts: context?.selectedProducts,
-    brandDrBalance: context?.brandDrBalance || 50,
-    useJonesBrandGuide: context?.useJonesBrandGuide !== false // Default to true
+    brandDrBalance: context?.brandDrBalance || DEFAULT_BRAND_DR_BALANCE,
+    useJonesBrandGuide: context?.useJonesBrandGuide ?? DEFAULT_USE_JONES_BRAND_GUIDE
   });
 
   // Create revision-specific system prompt
@@ -240,9 +238,9 @@ ${context?.field ? `SPECIFIC FIELD: ${context.field}` : ''}
 
 ${context ? `
 CONTEXT:
-- Target Audience: ${context.concept}${context.targetAudience ? ` (${context.targetAudience})` : ''}
+- Target Audience: ${context.persona}${context.targetAudience ? ` (${context.targetAudience})` : ''}
 - Product: ${context.selectedProduct || 'General brand content'}
-- Brand/DR Balance: ${context.brandDrBalance || 50}% brand voice
+- Brand/DR Balance: ${context.brandDrBalance || DEFAULT_BRAND_DR_BALANCE}% brand voice
 ${context.customBrief ? `- Custom Brief: ${context.customBrief}` : ''}
 ${context.customRequest && contentType === 'custom' ? `- Original Request: ${context.customRequest}` : ''}
 ` : ''}
@@ -273,26 +271,26 @@ Please revise the content applying the improvement instructions while maintainin
 }
 
 export async function generateAdCopy(request: AdCopyRequest, trainingConfig: TrainingConfig) {
-  const { transcription, customBrief, concept, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProduct, selectedProducts } = request;
+  const { transcription, customBrief, persona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProduct, selectedProducts } = request;
   
   // Validate required parameters
-  if (!concept || concept === 'none') {
-    throw new Error('Concept is required and must be provided from database persona data.');
+  if (!persona || persona === 'none') {
+    throw new Error('Persona is required and must be provided from database persona data.');
   }
   if (!targetAudience) {
     throw new Error('Target audience is required and must be provided.');
   }
   
   // Provide safe defaults for undefined values
-  const safeBrandDrBalance = brandDrBalance || 50;
+  const safeBrandDrBalance = brandDrBalance || DEFAULT_BRAND_DR_BALANCE;
   const brandPercent = safeBrandDrBalance;
   const drPercent = 100 - brandPercent;
-  const safeConcept = concept;
+  const safePersona = persona;
   const safeTargetAudience = targetAudience;
   
   // Build enhanced system prompt using StationPromptManager
   const systemPrompt = StationPromptManager.buildStationSystemPrompt('adCopy', trainingConfig, {
-    concept: safeConcept,
+    persona: safePersona,
     selectedProduct,
     selectedProducts,
     brandDrBalance: safeBrandDrBalance,
@@ -301,7 +299,7 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
 
   // Build context sections using enhanced builders
   const landingPageContext = await buildLandingPageContext(landingPageUrl);
-  const targetPersonaSection = buildTargetPersonaSection(safeConcept, trainingConfig);
+  const targetPersonaSection = buildTargetPersonaSection(safePersona, trainingConfig);
   const selectedProductsSection = buildSelectedProductsSection(selectedProduct, selectedProducts, trainingConfig);
   const copyFrameworksSection = buildCopyFrameworksSection(trainingConfig);
   const customBriefSection = buildCustomBriefSection(customBrief);
@@ -314,32 +312,99 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
   const transcriptionContext = ContentContextBuilder.buildTranscriptionContext(transcription, 'video');
 
   // Build enhanced user prompt using StationPromptManager
-  const templateVariables = {
-    transcription: transcription || '',
-    landingPageContext: landingPageContext || ''
-  };
+  let userPrompt: string;
+  let contextInfo: any = {};
 
-  const contextSections = [
-    transcriptionContext,
-    targetPersonaSection,
-    selectedProductsSection,
-    copyFrameworksSection,
-    customBriefSection,
-    imageAnalysisSection
-  ];
+  // Try to use enhanced context builder if available
+  const hasEnhancedConfig = trainingConfig?.stationPrompts?.adCopy?.contextConfiguration;
+  
+  if (hasEnhancedConfig) {
+    try {
+      const enhancedResult = await StationPromptManager.buildEnhancedStationUserPrompt(
+        'adCopy',
+        trainingConfig,
+        request,
+        {
+          transcription: transcription || '',
+          landingPageContext: landingPageContext || '',
+          persona: safePersona,
+          targetAudience: safeTargetAudience,
+          brandDrBalance: safeBrandDrBalance,
+          selectedProduct,
+          selectedProducts,
+          customBrief,
+          uploadedImage,
+          airLink
+        }
+      );
+      console.log('Enhanced result:', enhancedResult);
+      
+      userPrompt = enhancedResult.userPrompt;
+      contextInfo = enhancedResult.contextInfo;
+      
+      console.log('Enhanced context builder used:', {
+        sectionsUsed: contextInfo.sectionsUsed,
+        totalTokens: contextInfo.totalTokens
+      });
+    } catch (enhancedError) {
+      console.warn('Enhanced context builder failed, falling back to legacy:', enhancedError);
+      // Fall back to legacy method
+      const templateVariables = {
+        transcription: transcription || '',
+        landingPageContext: landingPageContext || ''
+      };
 
-  const userPrompt = StationPromptManager.buildStationUserPrompt(
-    'adCopy',
-    trainingConfig,
-    templateVariables,
-    contextSections
-  );
+      const contextSections = [
+        transcriptionContext,
+        targetPersonaSection,
+        selectedProductsSection,
+        copyFrameworksSection,
+        customBriefSection,
+        imageAnalysisSection
+      ];
+
+      userPrompt = StationPromptManager.buildStationUserPrompt(
+        'adCopy',
+        trainingConfig,
+        templateVariables,
+        contextSections
+      );
+    }
+  } else {
+    // Use legacy method
+    const templateVariables = {
+      transcription: transcription || '',
+      landingPageContext: landingPageContext || ''
+    };
+
+    const contextSections = [
+      transcriptionContext,
+      targetPersonaSection,
+      selectedProductsSection,
+      copyFrameworksSection,
+      customBriefSection,
+      imageAnalysisSection
+    ];
+
+    userPrompt = StationPromptManager.buildStationUserPrompt(
+      'adCopy',
+      trainingConfig,
+      templateVariables,
+      contextSections
+    );
+  }
 
   // Set image variables for message content
   const base64Image = hasImageContent && imageInput?.startsWith('data:') ? imageInput : '';
   const imageUrl = hasImageContent && imageInput?.startsWith('http') ? imageInput : '';
 
   try {
+    // Debug: log final rendered prompts being sent to the model
+    console.log('=== FINAL PROMPT (Ad Copy) ===');
+    console.log('[SYSTEM PROMPT]', systemPrompt.substring(0, 800) + (systemPrompt.length > 800 ? '...' : ''));
+    console.log('[USER PROMPT]', userPrompt.substring(0, 800) + (userPrompt.length > 800 ? '...' : ''));
+    console.log('=== END FINAL PROMPT (Ad Copy) ===');
+
     // Build message content with optional image
     let messageContent: any[] = [{ type: 'text', text: userPrompt }];
     
@@ -379,8 +444,9 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
         userPrompt,
         content,
         modelParams.model,
-        { transcription, concept, targetAudience, brandDrBalance, selectedProduct }
-      )
+        { transcription, persona, targetAudience, brandDrBalance, selectedProduct }
+      ),
+      contextInfo: hasEnhancedConfig ? contextInfo : undefined
     };
   } catch (error) {
     console.error('Anthropic API error:', error);
@@ -397,21 +463,21 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
 }
 
 export async function generateLandingPageCopy(request: LandingPageRequest, trainingConfig: TrainingConfig) {
-  const { landingPageType, productBrief, concept, useAdsContent, adsContent, brandDrBalance, selectedProduct, selectedProducts, mainAngle, transcription } = request;
+  const { landingPageType, productBrief, persona, useAdsContent, adsContent, brandDrBalance, selectedProduct, selectedProducts, mainAngle, transcription } = request;
   
 
   
   // Validate required parameters
-  if (!concept || concept === 'none') {
-    throw new Error('Concept is required and must be provided from database persona data.');
+  if (!persona || persona === 'none') {
+    throw new Error('Persona is required and must be provided from database persona data.');
   }
   
-  const safeBrandDrBalance = brandDrBalance || 50;
-  const safeConcept = concept;
+  const safeBrandDrBalance = brandDrBalance || DEFAULT_BRAND_DR_BALANCE;
+  const safePersona = persona;
   
   // Build comprehensive AI Settings context
   const aiSettingsContext = buildAISettingsContext(trainingConfig, {
-    concept: safeConcept,
+    persona: safePersona,
     selectedProduct,
     selectedProducts,
     brandDrBalance: safeBrandDrBalance,
@@ -419,7 +485,7 @@ export async function generateLandingPageCopy(request: LandingPageRequest, train
   });
   
   // Build comprehensive sections using helper functions
-  const targetPersonaSection = buildTargetPersonaSection(safeConcept, trainingConfig);
+  const targetPersonaSection = buildTargetPersonaSection(safePersona, trainingConfig);
   const selectedProductsSection = buildSelectedProductsSection(selectedProduct, selectedProducts, trainingConfig);
   const landingPageFrameworksSection = buildLandingPageFrameworksSection(trainingConfig);
   
@@ -530,7 +596,7 @@ ${aiSettingsContext}`;
     .replace('{landingPageType}', landingPageType)
     .replace('{productBrief}', productBrief || '')
     .replace('{mainAngle}', mainAngle || '')
-    .replace('{concept}', safeConcept)
+    .replace('{persona}', safePersona)
     .replace('{brandPercent}', safeBrandDrBalance.toString())
     .replace('{drPercent}', (100 - safeBrandDrBalance).toString())
     .replace('{adsContentSection}', useAdsContent && adsContent ? `\nADS CONTENT TO REFERENCE:\n${adsContent}\n` : '')
@@ -547,6 +613,10 @@ ${aiSettingsContext}`;
   console.log('=== FINAL USER PROMPT PREVIEW ===');
   console.log(userPrompt.substring(0, 500) + '...');
   console.log('=== END DEBUG ===');
+  console.log('=== FINAL PROMPT (Landing Page) ===');
+  console.log('[SYSTEM PROMPT]', systemPrompt.substring(0, 800) + (systemPrompt.length > 800 ? '...' : ''));
+  console.log('[USER PROMPT]', userPrompt.substring(0, 800) + (userPrompt.length > 800 ? '...' : ''));
+  console.log('=== END FINAL PROMPT (Landing Page) ===');
 
   try {
     const response = await anthropic.messages.create({
@@ -748,14 +818,14 @@ ${aiSettingsContext}`;
 }
 
 export async function analyzeStaticAd(request: StaticAdAnalysisRequest, _trainingConfig: TrainingConfig) {
-  const { staticAdImage, concept, brandDrBalance, selectedProduct, selectedProducts, useJonesBrandGuide, outputFormat, analysisFocus } = request;
+  const { staticAdImage, persona, brandDrBalance, selectedProduct, selectedProducts, useJonesBrandGuide, outputFormat, analysisFocus } = request;
   
   const brandPercent = brandDrBalance;
   const drPercent = 100 - brandPercent;
   
   // Provide safe defaults for undefined values
-  const safeConcept = concept || '';
-  const safeBrandDrBalance = brandDrBalance || 50;
+  const safePersona = persona || '';
+  const safeBrandDrBalance = brandDrBalance || DEFAULT_BRAND_DR_BALANCE;
   
   // Process static ad image
   const processedImage = await processImageForAnthropic(staticAdImage, {
@@ -774,7 +844,7 @@ export async function analyzeStaticAd(request: StaticAdAnalysisRequest, _trainin
   
   // Build comprehensive AI Settings context including product claims
   const aiSettingsContext = buildAISettingsContext(config, {
-    concept: safeConcept,
+    persona: safePersona,
     selectedProduct,
     selectedProducts,
     brandDrBalance: safeBrandDrBalance,
@@ -808,11 +878,11 @@ OUTPUT FORMAT: ${outputFormat || 'analysis-variations'}
 ANALYSIS FOCUS: ${analysisFocus || 'comprehensive'}`;
 
   // Build sections using helper functions
-  const targetPersonaSection = buildTargetPersonaSection(safeConcept, config);
+  const targetPersonaSection = buildTargetPersonaSection(safePersona, config);
   const selectedProductsSection = buildSelectedProductsSection(selectedProduct, selectedProducts, config);
 
   const getInstructions = () => {
-    const baseInstructions = `Please analyze this static ad image and create Jones Road Beauty variations targeting ${safeConcept}.`;
+    const baseInstructions = `Please analyze this static ad image and create Jones Road Beauty variations targeting ${safePersona}.`;
     
     // Customize instructions based on outputFormat
     if (outputFormat === 'analysis-only') {
@@ -848,6 +918,11 @@ INSTRUCTIONS:
     selectedProductsSection;
 
   try {
+    // Debug: log final rendered prompts being sent to the model (Static Ad)
+    console.log('=== FINAL PROMPT (Static Ad Analysis) ===');
+    console.log('[SYSTEM PROMPT]', systemPrompt.substring(0, 800) + (systemPrompt.length > 800 ? '...' : ''));
+    console.log('[USER PROMPT]', userPrompt.substring(0, 800) + (userPrompt.length > 800 ? '...' : ''));
+    console.log('=== END FINAL PROMPT (Static Ad Analysis) ===');
     const response = await anthropic.messages.create({
       model: DEFAULT_MODEL_STR,
       system: systemPrompt,
@@ -944,19 +1019,19 @@ INSTRUCTIONS:
 }
 
 export async function generateCustomCopy(request: CustomCopyRequest, trainingConfig: TrainingConfig) {
-  const { customRequest, concept, brandDrBalance, selectedProduct, selectedProducts, useJonesBrandGuide } = request;
+  const { customRequest, persona, brandDrBalance, selectedProduct, selectedProducts, useJonesBrandGuide } = request;
   
   // Validate required parameters
-  if (!concept || concept === 'none') {
-    throw new Error('Concept is required and must be provided from database persona data.');
+  if (!persona || persona === 'none') {
+    throw new Error('Persona is required and must be provided from database persona data.');
   }
   
-  const safeBrandDrBalance = brandDrBalance || 50;
-  const safeConcept = concept;
+  const safeBrandDrBalance = brandDrBalance || DEFAULT_BRAND_DR_BALANCE;
+  const safePersona = persona;
   
   // Build comprehensive AI Settings context
   const aiSettingsContext = buildAISettingsContext(trainingConfig, {
-    concept: safeConcept,
+    persona: safePersona,
     selectedProduct,
     selectedProducts,
     brandDrBalance: safeBrandDrBalance,
@@ -965,7 +1040,7 @@ export async function generateCustomCopy(request: CustomCopyRequest, trainingCon
   
   // Build enhanced system prompt using StationPromptManager
   const systemPrompt = StationPromptManager.buildStationSystemPrompt('customRequest', trainingConfig, {
-    concept: safeConcept,
+    persona: safePersona,
     selectedProduct,
     selectedProducts: request.selectedProducts,
     brandDrBalance: request.brandDrBalance,
@@ -973,7 +1048,7 @@ export async function generateCustomCopy(request: CustomCopyRequest, trainingCon
   });
 
 
-  const brandBalance = request.brandDrBalance || 50;
+  const brandBalance = request.brandDrBalance || DEFAULT_BRAND_DR_BALANCE;
   
   // Brand balance guidance should come from database copy frameworks
   let balanceGuidance = "Balance brand voice with clear benefits";
@@ -989,7 +1064,7 @@ export async function generateCustomCopy(request: CustomCopyRequest, trainingCon
   }
 
   // Build context sections for custom request
-  const targetPersonaSection = buildTargetPersonaSection(safeConcept, trainingConfig);
+  const targetPersonaSection = buildTargetPersonaSection(safePersona, trainingConfig);
   const selectedProductsSection = buildSelectedProductsSection(selectedProduct, request.selectedProducts, trainingConfig);
 
   // Build enhanced user prompt using StationPromptManager
@@ -1013,6 +1088,11 @@ export async function generateCustomCopy(request: CustomCopyRequest, trainingCon
   );
 
   try {
+    // Debug: log final rendered prompts being sent to the model (Custom Request)
+    console.log('=== FINAL PROMPT (Custom Request) ===');
+    console.log('[SYSTEM PROMPT]', systemPrompt.substring(0, 800) + (systemPrompt.length > 800 ? '...' : ''));
+    console.log('[USER PROMPT]', userPrompt.substring(0, 800) + (userPrompt.length > 800 ? '...' : ''));
+    console.log('=== END FINAL PROMPT (Custom Request) ===');
     // Get optimized model parameters for this station
     const modelParams = StationPromptManager.getStationModelParams('customRequest', trainingConfig);
     
@@ -1054,7 +1134,7 @@ export async function generateRetentionCopy(request: {
   contentLength?: string;
   keywordsToInclude?: string[];
   wordsToAvoid?: string[];
-  concept?: string;
+  persona?: string;
   brandDrBalance?: number;
   selectedProduct?: string;
   useJonesBrandGuide?: boolean;
@@ -1069,8 +1149,8 @@ export async function generateRetentionCopy(request: {
   const aiSettingsContext = buildAISettingsContext(trainingConfig, request);
   
   // Build persona and product sections
-  const safeConcept = request.concept || 'lifeJuggler';
-  const targetPersonaSection = buildTargetPersonaSection(safeConcept, trainingConfig);
+  const safePersona = request.persona || DEFAULT_PERSONA_KEY;
+  const targetPersonaSection = buildTargetPersonaSection(safePersona, trainingConfig);
   const selectedProductsSection = buildSelectedProductsSection(request.selectedProduct, request.selectedProducts, trainingConfig);
   
   // Get station-specific system prompt with AI Settings integration - database only
@@ -1360,6 +1440,11 @@ This copy will be inserted into designed email templates, NOT plain text emails.
 NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.${request.selectedFramework ? ` FRAMEWORK COMPLIANCE IS MANDATORY.` : ''}`;
 
   try {
+    // Debug: log final rendered prompts being sent to the model (Retention)
+    console.log('=== FINAL PROMPT (Email/SMS Retention) ===');
+    console.log('[SYSTEM PROMPT]', systemPrompt.substring(0, 800) + (systemPrompt.length > 800 ? '...' : ''));
+    console.log('[USER PROMPT]', userPrompt.substring(0, 800) + (userPrompt.length > 800 ? '...' : ''));
+    console.log('=== END FINAL PROMPT (Email/SMS Retention) ===');
     if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === 'dummy-key') {
       throw new Error('Anthropic API key not configured properly');
     }
@@ -1375,7 +1460,7 @@ NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.${request
       for (const [index, template] of emailTemplates.entries()) {
         try {
           // Clean the base64 string and detect format
-          let mediaType = 'image/jpeg'; // default
+          let mediaType = DEFAULT_IMAGE_MEDIA_TYPE;
           let cleanBase64 = template;
           
           // Remove data URL prefix if present
@@ -1454,7 +1539,7 @@ NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.${request
         if (image.dataUri) {
           try {
             // Extract media type and base64 data from data URI
-            let mediaType = 'image/jpeg'; // default
+             let mediaType = DEFAULT_IMAGE_MEDIA_TYPE;
             let cleanBase64 = image.dataUri;
             
             if (image.dataUri.includes(',')) {
@@ -1565,7 +1650,7 @@ export async function generateSocialCaptions(request: {
   variations: number;
   selectedProduct?: string;
   selectedProducts?: string[];
-  concept?: string;
+  persona?: string;
   imageData?: string; // Add image data parameter
 }, trainingConfig: TrainingConfig) {
   
@@ -1577,8 +1662,8 @@ export async function generateSocialCaptions(request: {
   const aiSettingsContext = buildAISettingsContext(trainingConfig, request);
   
   // Build persona and product sections
-  const safeConcept = request.concept || 'lifeJuggler';
-  const targetPersonaSection = buildTargetPersonaSection(safeConcept, trainingConfig);
+  const safePersona = request.persona || DEFAULT_PERSONA_KEY;
+  const targetPersonaSection = buildTargetPersonaSection(safePersona, trainingConfig);
   const selectedProductsSection = buildSelectedProductsSection(request.selectedProduct, request.selectedProducts, trainingConfig);
   
   const systemPrompt = `You are a social media expert specializing in creating engaging organic social content for Jones Road Beauty. Your goal is to create authentic, platform-optimized captions that drive engagement and reflect the brand's "effortless beauty" philosophy.
@@ -1655,7 +1740,7 @@ Return as a JSON array of strings:
     if (hasImageContent && request.imageData) {
       // Process image data similar to generateAdCopy function
       let processedImageData = request.imageData;
-      let mediaType = 'image/jpeg'; // default
+      let mediaType = DEFAULT_IMAGE_MEDIA_TYPE;
       
       // Handle data URI format
       if (request.imageData.startsWith('data:image/')) {
@@ -1761,7 +1846,7 @@ export async function generateStorySequence(request: {
   tone: string;
   selectedProduct?: string;
   selectedProducts?: string[];
-  concept?: string;
+  persona?: string;
   imageData?: string; // Add image data parameter
 }, trainingConfig: TrainingConfig) {
   
@@ -1773,8 +1858,8 @@ export async function generateStorySequence(request: {
   const aiSettingsContext = buildAISettingsContext(trainingConfig, request);
   
   // Build persona and product sections
-  const safeConcept = request.concept || 'lifeJuggler';
-  const targetPersonaSection = buildTargetPersonaSection(safeConcept, trainingConfig);
+  const safePersona = request.persona || DEFAULT_PERSONA_KEY;
+  const targetPersonaSection = buildTargetPersonaSection(safePersona, trainingConfig);
   const selectedProductsSection = buildSelectedProductsSection(request.selectedProduct, request.selectedProducts, trainingConfig);
   
   const systemPrompt = `You are a social media strategist specializing in Instagram Stories for Jones Road Beauty. Your goal is to create engaging story sequences that drive engagement and showcase the brand's "effortless beauty" philosophy.
@@ -1856,13 +1941,18 @@ Return as JSON array with this structure:
 ]`;
 
   try {
+    // Debug: log final rendered prompts being sent to the model (Story Sequence)
+    console.log('=== FINAL PROMPT (Story Sequence) ===');
+    console.log('[SYSTEM PROMPT]', systemPrompt.substring(0, 800) + (systemPrompt.length > 800 ? '...' : ''));
+    console.log('[USER PROMPT]', userPrompt.substring(0, 800) + (userPrompt.length > 800 ? '...' : ''));
+    console.log('=== END FINAL PROMPT (Story Sequence) ===');
     // Build message content with optional image
     let messageContent: any[] = [{ type: 'text', text: userPrompt }];
     
     if (hasImageContent && request.imageData) {
       // Process image data similar to generateAdCopy function
       let processedImageData = request.imageData;
-      let mediaType = 'image/jpeg'; // default
+      let mediaType = DEFAULT_IMAGE_MEDIA_TYPE;
       
       // Handle data URI format
       if (request.imageData.startsWith('data:image/')) {
@@ -1962,7 +2052,7 @@ interface BriefRequest {
   googleDriveLinks?: string[];
   selectedProduct?: string;
   selectedProducts?: string[];
-  concept?: string;
+  persona?: string;
   brandDrBalance?: number;
   useJonesBrandGuide?: boolean;
   metadata?: GenerationMetadata;
@@ -1976,7 +2066,7 @@ export async function generateBrief(request: BriefRequest, trainingConfig: Train
 
     // Build comprehensive AI Settings context including product claims
     const aiSettingsContext = buildAISettingsContext(trainingConfig, {
-      concept: request.concept,
+      persona: request.persona,
       selectedProduct: request.selectedProduct,
       selectedProducts: request.selectedProducts,
       brandDrBalance: request.brandDrBalance,
@@ -2230,7 +2320,7 @@ Return the complete, self-contained HTML that renders a pixel-perfect Jones Road
       for (const [index, imageObj] of request.selectedFramework.images.entries()) {
         try {
           let imageData = '';
-          let mediaType = 'image/jpeg';
+          let mediaType = DEFAULT_IMAGE_MEDIA_TYPE;
           
           // Handle different image object formats
           if (typeof imageObj === 'string') {
@@ -2246,7 +2336,7 @@ Return the complete, self-contained HTML that renders a pixel-perfect Jones Road
           } else if (imageObj.data) {
             // Object with data property
             imageData = imageObj.data;
-            mediaType = imageObj.mediaType || 'image/jpeg';
+            mediaType = imageObj.mediaType || DEFAULT_IMAGE_MEDIA_TYPE;
           }
           
           if (imageData) {

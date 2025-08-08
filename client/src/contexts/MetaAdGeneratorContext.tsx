@@ -23,7 +23,7 @@ interface MetaAdGeneratorContextType {
   getWordCount: (text: string) => number;
 }
 
-const MetaAdGeneratorContext = createContext<MetaAdGeneratorContextType | undefined>(undefined);
+export const MetaAdGeneratorContext = createContext<MetaAdGeneratorContextType | undefined>(undefined);
 
 export const useMetaAdGeneratorContext = () => {
   const context = useContext(MetaAdGeneratorContext);

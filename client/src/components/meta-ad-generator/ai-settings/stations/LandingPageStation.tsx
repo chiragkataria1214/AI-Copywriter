@@ -1,10 +1,13 @@
 import React, { useState, useRef } from 'react';
+import EnhancedContextConfigurator from '@/components/meta-ad-generator/ai-settings/EnhancedContextConfigurator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { TrainingConfig } from '@shared/training-config';
-import { ChevronDown, ChevronRight, FileText, Lock, Copy, Plus } from 'lucide-react';
+import { TrainingConfig, VariableDefinition } from '@shared/training-config';
+import { ChevronDown, ChevronRight, FileText, Lock, Copy, Plus, Eye } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import ContextInsertion from '../common/ContextInsertion';
 
 interface LandingPageStationProps {
   editingConfig: TrainingConfig;
@@ -61,70 +64,106 @@ const StationToggleButton = ({
 );
 
 // Available variables for Landing Page user prompt template replacement
-const LANDING_PAGE_USER_VARIABLES = [
+const LANDING_PAGE_USER_VARIABLES: VariableDefinition[] = [
   { 
     key: 'landingPageType', 
     label: 'Landing Page Type', 
-    description: 'Type of landing page (e.g., "singleProduct", "multiProduct", "listicle")' 
+    description: 'Type of landing page (e.g., "singleProduct", "multiProduct", "listicle")',
+    type: 'string',
+    category: 'user_input',
+    required: false,
   },
   { 
     key: 'productBrief', 
     label: 'Product Brief', 
-    description: 'Detailed product information and brief' 
+    description: 'Detailed product information and brief',
+    type: 'string',
+    category: 'user_input',
+    required: false,
   },
   { 
     key: 'mainAngle', 
     label: 'Main Angle', 
-    description: 'Primary marketing angle or positioning' 
+    description: 'Primary marketing angle or positioning',
+    type: 'string',
+    category: 'user_input',
+    required: false,
   },
   { 
-    key: 'concept', 
-    label: 'Concept/Persona', 
-    description: 'The selected persona concept (e.g., "lifeJuggler")' 
+    key: 'persona', 
+    label: 'Persona', 
+    description: 'The selected persona (e.g., "lifeJuggler")',
+    type: 'string',
+    category: 'ai_settings',
+    required: false,
   },
   { 
     key: 'brandPercent', 
     label: 'Brand Percentage', 
-    description: 'Brand voice percentage (e.g., "60")' 
+    description: 'Brand voice percentage (e.g., "60")',
+    type: 'number',
+    category: 'ai_settings',
+    required: false,
   },
   { 
     key: 'drPercent', 
     label: 'DR Percentage', 
-    description: 'Direct response percentage (e.g., "40")' 
+    description: 'Direct response percentage (e.g., "40")',
+    type: 'number',
+    category: 'ai_settings',
+    required: false,
   },
   { 
     key: 'adsContentSection', 
     label: 'Ads Content Section', 
-    description: 'Content from ads to reference for alignment' 
+    description: 'Content from ads to reference for alignment',
+    type: 'string',
+    category: 'system_generated',
+    required: false,
   },
   { 
     key: 'targetPersonaSection', 
     label: 'Target Persona Section', 
-    description: 'Auto-generated persona targeting content (can be used as variable)' 
+    description: 'Auto-generated persona targeting content (can be used as variable)',
+    type: 'string',
+    category: 'context_section',
+    required: false,
   },
   { 
     key: 'selectedProductsSection', 
     label: 'Selected Products Section', 
-    description: 'Auto-generated product-specific content (can be used as variable)' 
+    description: 'Auto-generated product-specific content (can be used as variable)',
+    type: 'string',
+    category: 'context_section',
+    required: false,
   },
 ];
 
 // Available variables for system prompt
-const LANDING_PAGE_SYSTEM_VARIABLES = [
+const LANDING_PAGE_SYSTEM_VARIABLES: VariableDefinition[] = [
   { 
-    key: 'concept', 
-    label: 'Concept/Persona', 
-    description: 'The selected persona concept (e.g., "lifeJuggler")' 
+    key: 'persona', 
+    label: 'Persona', 
+    description: 'The selected persona (e.g., "lifeJuggler")',
+    type: 'string',
+    category: 'ai_settings',
+    required: false,
   },
   { 
     key: 'brandPercent', 
     label: 'Brand Percentage', 
-    description: 'Brand voice percentage (e.g., "60")' 
+    description: 'Brand voice percentage (e.g., "60")',
+    type: 'number',
+    category: 'ai_settings',
+    required: false,
   },
   { 
     key: 'drPercent', 
     label: 'DR Percentage', 
-    description: 'Direct response percentage (e.g., "40")' 
+    description: 'Direct response percentage (e.g., "40")',
+    type: 'number',
+    category: 'ai_settings',
+    required: false,
   },
 ];
 
@@ -133,7 +172,8 @@ interface VariableInsertionProps {
   value: string;
   onChange: (value: string) => void;
   position?: 'left' | 'right';
-  variables?: typeof LANDING_PAGE_USER_VARIABLES;
+  variables?: VariableDefinition[];
+  buttonLabel?: string;
 }
 
 const VariableInsertion: React.FC<VariableInsertionProps> = ({ 
@@ -141,7 +181,8 @@ const VariableInsertion: React.FC<VariableInsertionProps> = ({
   value, 
   onChange, 
   position = 'left',
-  variables = LANDING_PAGE_USER_VARIABLES 
+  variables = LANDING_PAGE_USER_VARIABLES,
+  buttonLabel
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -151,7 +192,7 @@ const VariableInsertion: React.FC<VariableInsertionProps> = ({
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const variableString = `{${variableKey}}`;
+    const variableString = `{{${variableKey}}}`;
     
     const newValue = value.substring(0, start) + variableString + value.substring(end);
     onChange(newValue);
@@ -179,23 +220,25 @@ const VariableInsertion: React.FC<VariableInsertionProps> = ({
         className="mb-2 text-xs"
       >
         <Plus size={12} className="mr-1" />
-        Insert Variable
+        {buttonLabel || 'Insert Variable'}
       </Button>
       
       {isOpen && (
         <div className={dropdownClasses}>
           <div className="text-xs font-medium text-gray-700 mb-2 px-2">Available Variables:</div>
-          {variables.map((variable) => (
-            <button
-              key={variable.key}
-              onClick={() => insertVariable(variable.key)}
-              className="w-full text-left px-2 py-2 hover:bg-gray-50 rounded text-xs border-none bg-transparent"
-            >
-              <div className="font-mono text-blue-600">{`{${variable.key}}`}</div>
-              <div className="font-medium text-gray-900">{variable.label}</div>
-              <div className="text-gray-600 text-xs">{variable.description}</div>
-            </button>
-          ))}
+          <div className="max-h-64 overflow-y-auto pr-1">
+            {variables.map((variable) => (
+              <button
+                key={variable.key}
+                onClick={() => insertVariable(variable.key)}
+                className="w-full text-left px-2 py-2 hover:bg-gray-50 rounded text-xs border-none bg-transparent"
+              >
+                <div className="font-mono text-blue-600">{`{{${variable.key}}}`}</div>
+                <div className="font-medium text-gray-900">{variable.label}</div>
+                <div className="text-gray-600 text-xs">{variable.description}</div>
+              </button>
+            ))}
+          </div>
           <div className="border-t border-gray-100 mt-2 pt-2 px-2">
             <div className="text-xs text-gray-500">
               <strong>Note:</strong> Additional sections may be auto-appended to your template.
@@ -415,7 +458,8 @@ const ProtectedPromptEditor = ({
   disabled = false,
   copyToClipboard,
   textareaRef,
-  variables
+  variables,
+  contextConfiguration
 }: {
   label: string;
   value: string;
@@ -426,6 +470,7 @@ const ProtectedPromptEditor = ({
   copyToClipboard: (text: string, label: string) => Promise<void>;
   textareaRef?: React.RefObject<HTMLTextAreaElement>;
   variables?: typeof LANDING_PAGE_SYSTEM_VARIABLES;
+  contextConfiguration?: any;
 }) => {
   const outputStructure = extractOutputStructure(value);
   const editableContent = getEditablePrompt(value);
@@ -435,6 +480,36 @@ const ProtectedPromptEditor = ({
     onChange(reconstructedPrompt);
   };
 
+  // Build comprehensive variable list from availableVariables + enabled context sections + brand guidelines
+  const computedVariables: VariableDefinition[] = React.useMemo(() => {
+    const base: VariableDefinition[] = (variables as any) || (contextConfiguration?.availableVariables || []);
+    const result: VariableDefinition[] = [...base];
+    const addUnique = (v: VariableDefinition) => {
+      if (!result.find((x) => x.key === v.key)) result.push(v);
+    };
+    // Map enabled context sections to variables
+    (contextConfiguration?.contextSections || [])
+      .filter((s: any) => s.enabled)
+      .forEach((s: any) => addUnique({
+        key: s.id,
+        label: `Context: ${s.name}`,
+        description: `Generated content from "${s.name}" context section: ${s.description}`,
+        type: 'string' as const,
+        category: 'context_section' as const,
+        required: s.required,
+      } as any));
+    // Brand guideline atoms
+    const brandGuidelineVariables: VariableDefinition[] = [
+      { key: 'corePositioning', label: 'Core Positioning', description: 'Brand core positioning statement', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'brandVoice', label: 'Brand Voice', description: 'Brand voice rules and guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'keyTerminology', label: 'Key Terminology', description: 'Key terms and phrases from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'approvedLanguage', label: 'Approved Language', description: 'Approved language and phrases', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'avoidedLanguage', label: 'Avoided Language', description: 'Phrases to avoid', type: 'string', category: 'brand_guideline', required: false } as any,
+    ];
+    brandGuidelineVariables.forEach(addUnique);
+    return result;
+  }, [variables, contextConfiguration]);
+
   return (
     <div className="space-y-4">
       <div className="space-y-4 bg-white border rounded-lg p-4">
@@ -442,14 +517,25 @@ const ProtectedPromptEditor = ({
           <div className="flex items-center justify-between mb-2">
             <h4 className="font-medium text-gray-900">{label}</h4>
             <div className="flex items-center space-x-2">
-              {!disabled && textareaRef && variables && (
-                <VariableInsertion
-                  textareaRef={textareaRef}
-                  value={editableContent}
-                  onChange={handleChange}
-                  position="right"
-                  variables={variables}
-                />
+              {!disabled && textareaRef && computedVariables && (
+                <>
+                  <VariableInsertion
+                    textareaRef={textareaRef}
+                    value={editableContent}
+                    onChange={handleChange}
+                    position="right"
+                    variables={computedVariables.filter((v: any) => v.category !== 'context_section' && v.category !== 'brand_guideline')}
+                    buttonLabel="Insert Variable"
+                  />
+                  <ContextInsertion
+                    textareaRef={textareaRef}
+                    value={editableContent}
+                    onChange={handleChange}
+                    position="right"
+                    variables={computedVariables.filter((v: any) => v.category === 'context_section' || v.category === 'brand_guideline')}
+                    buttonLabel="Insert Context"
+                  />
+                </>
               )}
               <Button 
                 variant="outline" 
@@ -646,6 +732,30 @@ export const LandingPageStation: React.FC<LandingPageStationProps> = ({
 }) => {
   const userPromptTextareaRef = useRef<HTMLTextAreaElement>(null);
   const systemPromptTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const stationConfig = editingConfig.stationPrompts?.landingPage;
+  const contextConfig = stationConfig?.contextConfiguration as any;
+
+  const getAllAvailableVariables = (): VariableDefinition[] => {
+    const regular = (contextConfig?.availableVariables || []) as VariableDefinition[];
+    const sections = (contextConfig?.contextSections || [])
+      .filter((s: any) => s.enabled)
+      .map((s: any) => ({
+        key: s.id,
+        label: `Context: ${s.name}`,
+        description: `Generated content from "${s.name}" context section: ${s.description}`,
+        type: 'string' as const,
+        category: 'context_section' as const,
+        required: s.required,
+      }));
+    const brandGuidelineVariables: VariableDefinition[] = [
+      { key: 'corePositioning', label: 'Core Positioning', description: 'Brand core positioning statement from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'brandVoice', label: 'Brand Voice', description: 'Brand voice rules and guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'keyTerminology', label: 'Key Terminology', description: 'Key terms and phrases from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'approvedLanguage', label: 'Approved Language', description: 'Approved language and phrases from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+      { key: 'avoidedLanguage', label: 'Avoided Language', description: 'Language and phrases to avoid from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
+    ];
+    return [...regular, ...sections, ...brandGuidelineVariables];
+  };
   
   const toggleStation = (stationId: string) => {
     const newExpanded = new Set(expandedStations);
@@ -670,6 +780,13 @@ export const LandingPageStation: React.FC<LandingPageStationProps> = ({
       
       {expandedStations.has('landingPage') && (
         <div className="p-6 pt-4 border-t border-gray-100 space-y-6">
+          {/* Enhanced Context Configurator (shared) */}
+          <EnhancedContextConfigurator
+            stationKey={'landingPage'}
+            editingConfig={editingConfig}
+            setEditingConfig={setEditingConfig}
+            title="Enhanced Context Configuration"
+          />
           
           {/* System Prompt Section */}
           <div className="border border-gray-200 rounded-lg">
@@ -711,13 +828,7 @@ export const LandingPageStation: React.FC<LandingPageStationProps> = ({
             {expandedStations.has('landingPage-systemPrompt') && (
               <div className="p-6 border-t border-gray-100 space-y-6">
                 {/* System Prompt Structure Explanation */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <p className="text-sm text-green-800 font-medium">🔧 How System Prompt is Generated</p>
-                  <p className="text-sm text-green-700 mt-1">
-                    The final system prompt sent to Claude combines: <strong>Base System Prompt</strong> + <strong>AI Settings Context</strong> (brand guidelines, product claims, persona pillars, etc.)
-                  </p>
-                </div>
-
+         
                 {/* Base System Prompt - Editable */}
                 <ProtectedPromptEditor
                   label="Base System Prompt (Editable)"
@@ -737,32 +848,11 @@ export const LandingPageStation: React.FC<LandingPageStationProps> = ({
                   disabled={effectiveUser?.role !== 'admin'}
                   copyToClipboard={copyToClipboard}
                   textareaRef={systemPromptTextareaRef}
-                  variables={LANDING_PAGE_SYSTEM_VARIABLES}
+                  variables={getAllAvailableVariables()}
+                  contextConfiguration={editingConfig?.stationPrompts?.landingPage?.contextConfiguration as any}
                 />
 
-                {/* Final System Prompt Preview - Shows actual resolved prompt */}
-                <div className="space-y-4 bg-white border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-gray-900">Final System Prompt Preview (With Resolved Values)</h4>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => copyToClipboard(generateSystemPromptPreview(editingConfig), 'Final System Prompt Preview')}
-                      disabled={!editingConfig?.stationPrompts?.landingPage?.systemPrompt}
-                    >
-                      <Copy size={16} className="mr-1" />
-                      Copy Preview
-                    </Button>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 max-h-64 overflow-y-auto">
-                    <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
-                      {generateSystemPromptPreview(editingConfig)}
-                    </pre>
-                  </div>
-                  <p className="text-xs text-gray-600 mt-2">
-                    This shows how the final system prompt will look with your current Brand Guidelines, Product Claims, and Persona Pillars. The Brand/DR balance will be set dynamically at request time.
-                  </p>
-                </div>
+                {/* Final System Prompt Preview removed; use Preview button */}
               </div>
             )}
           </div>
@@ -835,7 +925,7 @@ export const LandingPageStation: React.FC<LandingPageStationProps> = ({
                   borderColor="border-blue-200"
                   copyToClipboard={copyToClipboard}
                   textareaRef={userPromptTextareaRef}
-                  variables={LANDING_PAGE_USER_VARIABLES}
+                  variables={getAllAvailableVariables()}
                 />
 
                 {/* Dynamic Sections - Read-only preview */}
@@ -846,7 +936,7 @@ export const LandingPageStation: React.FC<LandingPageStationProps> = ({
                       variant="outline" 
                       size="sm" 
                       onClick={() => copyToClipboard(`
-TARGET PERSONA - {CONCEPT}:
+TARGET PERSONA -
 Description: {personaDescription}
 Key Targeting Pillars:
 - {pillar1}
@@ -897,7 +987,7 @@ CTA GUIDELINES:
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 max-h-80 overflow-y-auto">
                     <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
-{`TARGET PERSONA - {CONCEPT}:
+{`TARGET PERSONA -
 Description: {personaDescription}
 Key Targeting Pillars:
 - {pillar1}
@@ -956,7 +1046,7 @@ CTA GUIDELINES:
                     </pre>
                   </div>
                   <p className="text-xs text-gray-600 mt-2">
-                    These sections are dynamically generated based on your selections: persona concept, selected products, product brief, main angle, ads content integration, and landing page type. Only sections with data will be included.
+                    These sections are dynamically generated based on your selections: persona, selected products, product brief, main angle, ads content integration, and landing page type. Only sections with data will be included.
                   </p>
                 </div>
               </div>

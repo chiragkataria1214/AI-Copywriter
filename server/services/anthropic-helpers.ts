@@ -1,281 +1,26 @@
 import { TrainingConfig } from '@shared/training-config';
-import sharp from 'sharp';
-// Helper functions for image processing
-export function detectImageType(base64String: string): string {
-  // If it's already a data URL, extract the type
-  if (base64String.startsWith('data:image/')) {
-    if (base64String.startsWith('data:image/png')) return 'image/png';
-    if (base64String.startsWith('data:image/jpeg') || base64String.startsWith('data:image/jpg')) return 'image/jpeg';
-    if (base64String.startsWith('data:image/gif')) return 'image/gif';
-    if (base64String.startsWith('data:image/webp')) return 'image/webp';
-  }
-  
-  // For raw base64, try to detect from magic bytes
-  const bytes = base64String.substring(0, 20);
-  
-  // PNG signature: iVBORw0KGgo
-  if (bytes.startsWith('iVBORw0KGgo')) return 'image/png';
-  
-  // JPEG signature: /9j/
-  if (bytes.startsWith('/9j/')) return 'image/jpeg';
-  
-  // GIF signature: R0lGODlh or R0lGODdh
-  if (bytes.startsWith('R0lGODlh') || bytes.startsWith('R0lGODdh')) return 'image/gif';
-  
-  // WebP signature: UklGR
-  if (bytes.startsWith('UklGR')) return 'image/webp';
-  
-  // Default to jpeg if cannot detect
-  return 'image/jpeg';
-}
-
-// Function to resize image if it exceeds Anthropic's dimension or file size limits
-export async function resizeImageIfNeeded(base64String: string, maxDimension: number = 8000, maxSizeBytes: number = 4.5 * 1024 * 1024): Promise<{ data: string; mediaType: string }> {
-  try {
-    // Extract base64 data (remove data URL prefix if present)
-    let imageData = base64String;
-    let originalMediaType = 'image/jpeg'; // default
-    
-    if (base64String.startsWith('data:image/')) {
-      const base64Match = base64String.match(/^data:image\/[^;]+;base64,(.+)$/);
-      if (base64Match) {
-        imageData = base64Match[1];
-        // Extract original media type from data URL
-        const mediaTypeMatch = base64String.match(/^data:(image\/[^;]+);/);
-        if (mediaTypeMatch) {
-          originalMediaType = mediaTypeMatch[1];
-        }
-      }
-    } else {
-      // For raw base64, detect the type
-      originalMediaType = detectImageType(base64String);
-    }
-    
-    // Convert base64 to buffer
-    const buffer = Buffer.from(imageData, 'base64');
-    
-    // Get image metadata
-    const metadata = await sharp(buffer).metadata();
-    
-    // Check current file size
-    const currentSizeBytes = buffer.length;
-    console.log(`Image size: ${currentSizeBytes} bytes (${(currentSizeBytes / 1024 / 1024).toFixed(2)}MB), limit: ${(maxSizeBytes / 1024 / 1024).toFixed(2)}MB`);
-    
-    // Check if resizing or compression is needed
-    const needsDimensionResize = metadata.width && metadata.height && 
-        (metadata.width > maxDimension || metadata.height > maxDimension);
-    const needsSizeCompression = currentSizeBytes > maxSizeBytes;
-    
-    if (needsDimensionResize || needsSizeCompression) {
-      console.log(`Processing image: dimensions=${needsDimensionResize ? 'YES' : 'NO'}, size=${needsSizeCompression ? 'YES' : 'NO'}`);
-      
-      let sharpInstance = sharp(buffer);
-      
-      // Resize if needed
-      if (needsDimensionResize) {
-        console.log(`Resizing image from ${metadata.width}x${metadata.height} to fit within ${maxDimension}px`);
-        sharpInstance = sharpInstance.resize(maxDimension, maxDimension, {
-          fit: 'inside',
-          withoutEnlargement: true
-        });
-      }
-      
-      // Start with high quality and reduce if needed
-      let quality = 85;
-      let processedBuffer: Buffer;
-      let currentDimension = maxDimension;
-      
-      // Progressive compression and resizing loop
-      do {
-        processedBuffer = await sharp(buffer)
-          .resize(currentDimension, currentDimension, {
-            fit: 'inside',
-            withoutEnlargement: true
-          })
-          .jpeg({ quality })
-          .toBuffer();
-        
-        console.log(`Compressed to ${processedBuffer.length} bytes with quality ${quality} and dimension ${currentDimension}`);
-        
-        // If still too large, try reducing quality first, then dimensions
-        if (processedBuffer.length > maxSizeBytes) {
-          if (quality > 20) {
-            quality -= 15;
-          } else if (currentDimension > 1000) {
-            // Reset quality and reduce dimensions
-            quality = 70;
-            currentDimension = Math.max(1000, Math.floor(currentDimension * 0.8));
-          } else {
-            // Final aggressive compression
-            quality = Math.max(10, quality - 10);
-          }
-        } else {
-          break;
-        }
-      } while (processedBuffer.length > maxSizeBytes && (quality > 10 || currentDimension > 500));
-      
-      // Final safety check - if still too large, apply most aggressive settings
-      if (processedBuffer.length > maxSizeBytes) {
-        console.log('Applying final aggressive compression...');
-        processedBuffer = await sharp(buffer)
-          .resize(800, 800, {
-            fit: 'inside',
-            withoutEnlargement: true
-          })
-          .jpeg({ 
-            quality: 10,
-            progressive: true,
-            optimiseScans: true,
-            trellisQuantisation: true,
-            overshootDeringing: true
-          })
-          .toBuffer();
-        
-        console.log(`Final aggressive compression: ${processedBuffer.length} bytes`);
-        
-        // Last resort - if still too large, throw an error
-        if (processedBuffer.length > maxSizeBytes) {
-          throw new Error(`Unable to compress image below ${(maxSizeBytes / 1024 / 1024).toFixed(1)}MB limit. Final size: ${(processedBuffer.length / 1024 / 1024).toFixed(2)}MB`);
-        }
-      }
-      
-      // Convert back to base64
-      return {
-        data: processedBuffer.toString('base64'),
-        mediaType: 'image/jpeg' // Always JPEG after processing
-      };
-    }
-    
-    // Return original if no processing needed
-    return {
-      data: imageData,
-      mediaType: originalMediaType
-    };
-  } catch (error) {
-    console.error('Error processing image:', error);
-    
-    // If processing fails, try a simple fallback compression
-    try {
-      console.log('Attempting fallback compression...');
-      const fallbackData = base64String.startsWith('data:image/') 
-        ? base64String.split(',')[1] 
-        : base64String;
-      
-      const buffer = Buffer.from(fallbackData, 'base64');
-      const compressedBuffer = await sharp(buffer)
-        .resize(1200, 1200, {
-          fit: 'inside',
-          withoutEnlargement: true
-        })
-        .jpeg({ quality: 50 })
-        .toBuffer();
-      
-      if (compressedBuffer.length <= maxSizeBytes) {
-        console.log(`Fallback compression successful: ${compressedBuffer.length} bytes`);
-        return {
-          data: compressedBuffer.toString('base64'),
-          mediaType: 'image/jpeg'
-        };
-      }
-    } catch (fallbackError) {
-      console.error('Fallback compression also failed:', fallbackError);
-    }
-    
-    // If all else fails, throw an error rather than returning oversized image
-    throw new Error('Unable to process image to meet size requirements');
-  }
-}
-/**
- * Processes an image for Anthropic API usage
- * Handles data URLs, raw base64, and URL fetching with consistent resizing and formatting
- */
-export async function processImageForAnthropic(
-  imageInput: string,
-  options: {
-    maxDimension?: number;
-    maxSizeBytes?: number;
-    logContext?: string;
-  } = {}
-): Promise<{
-  type: 'image';
-  source: {
-    type: 'base64';
-    media_type: "image/jpeg" | "image/png" | "image/gif" | "image/webp";
-    data: string;
-  };
-} | null> {
-  const { maxDimension = 8000, maxSizeBytes = 4.5 * 1024 * 1024, logContext = 'image' } = options;
-
-  try {
-    let base64Data: string;
-    let originalMediaType: string = 'image/jpeg';
-
-    // Handle different input formats
-    if (imageInput.startsWith('data:image/')) {
-      // Data URL format
-      const mimeMatch = imageInput.match(/^data:image\/([a-zA-Z0-9+/]+);base64,(.+)$/);
-      if (mimeMatch) {
-        originalMediaType = `image/${mimeMatch[1]}`;
-        base64Data = mimeMatch[2];
-      } else {
-        throw new Error('Invalid data URL format');
-      }
-    } else if (imageInput.startsWith('http')) {
-      // URL - fetch and convert
-      const imageResponse = await fetch(imageInput);
-      if (!imageResponse.ok) {
-        throw new Error(`Failed to fetch image: ${imageResponse.status}`);
-      }
-      const buffer = await imageResponse.arrayBuffer();
-      base64Data = Buffer.from(buffer).toString('base64');
-      originalMediaType = imageResponse.headers.get('content-type') || 'image/jpeg';
-    } else {
-      // Assume raw base64
-      base64Data = imageInput;
-      originalMediaType = detectImageType(imageInput);
-    }
-
-    // Log original image details if context provided
-    if (logContext) {
-      const originalSizeBytes = Buffer.from(base64Data, 'base64').length;
-      console.log(`${logContext} processing:`, {
-        detectedType: originalMediaType,
-        originalSizeBytes,
-        originalSizeMB: (originalSizeBytes / 1024 / 1024).toFixed(2)
-      });
-    }
-
-    // Resize and compress image
-    const { data: resizedImageData, mediaType: finalMediaType } = await resizeImageIfNeeded(
-      base64Data, 
-      maxDimension, 
-      maxSizeBytes
-    );
-
-    // Log final processed image size
-    if (logContext) {
-      const finalSizeBytes = Buffer.from(resizedImageData, 'base64').length;
-      console.log(`${logContext} processed:`, {
-        finalSizeBytes,
-        finalSizeMB: (finalSizeBytes / 1024 / 1024).toFixed(2),
-        mediaType: finalMediaType
-      });
-    }
-
-    return {
-      type: 'image',
-      source: {
-        type: 'base64',
-        media_type: finalMediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-        data: resizedImageData
-      }
-    };
-
-  } catch (error) {
-    console.error(`Failed to process ${logContext}:`, error);
-    return null;
-  }
-}
+import {
+  DEFAULT_APPEND_SECTIONS_BY_DEFAULT,
+  DEFAULT_AUTO_APPEND_OUTPUT_INSTRUCTIONS,
+  DEFAULT_BRAND_DR_BALANCE,
+  DEFAULT_MAX_TOKENS,
+  DEFAULT_TEMPERATURE,
+  FALLBACK_MODEL_STR,
+  DEFAULT_USE_JONES_BRAND_GUIDE,
+  DEFAULT_MAX_HEADLINES,
+  CHARACTERS_PER_TOKEN_ESTIMATE,
+  LANDING_PAGE_TEXT_CHAR_LIMIT,
+  DEFAULT_HEADLINE_FRAMEWORK,
+  IMAGE_ANALYSIS_INSTRUCTIONS,
+  TRANSCRIPTION_LABELS,
+  SEASONAL_THEMES,
+  TIMING_GUIDANCE,
+  STATION_CONFIGS,
+  OUTPUT_FORMAT_INSTRUCTIONS,
+  QUALITY_GUIDELINES_BASE,
+  QUALITY_GUIDELINES_BY_STATION
+} from '@shared/constants';
+import { detectImageType, resizeImageIfNeeded, processImageForAnthropic } from './image-helper';
 
 /**
  * Utility functions for parsing and validating AI responses
@@ -325,7 +70,7 @@ export class AIResponseParser {
     }
     
     // Clean and validate headlines
-    const headlines = parsedResponse.headlines.slice(0, 5).map((item: any) => ({
+    const headlines = parsedResponse.headlines.slice(0, DEFAULT_MAX_HEADLINES).map((item: any) => ({
       framework: item.framework || 'GENERAL',
       copy: this.cleanText(item.copy || '')
     })).filter((item: any) => item.copy.length > 0);
@@ -347,7 +92,7 @@ export class AIResponseParser {
     // Extract headlines from markdown
     const headlineMatches = content.match(/(?:HEADLINE|##\s*HEADLINE)[^:]*:?\s*(.+?)(?=\n|$)/gi);
     if (headlineMatches) {
-      headlineMatches.slice(0, 5).forEach((match) => {
+      headlineMatches.slice(0, DEFAULT_MAX_HEADLINES).forEach((match) => {
         const cleanMatch = match.replace(/(?:HEADLINE|##\s*HEADLINE)[^:]*:?\s*/i, '').trim();
         if (cleanMatch) {
           headlines.push({
@@ -393,64 +138,7 @@ export class AIResponseParser {
  * Enhanced Station Prompt Manager for consistent, optimized prompt building
  */
 export class StationPromptManager {
-  private static readonly STATION_CONFIGS = {
-    adCopy: {
-      name: 'Ad Copy Generation',
-      requiredSections: ['targetPersona', 'selectedProducts', 'copyFrameworks'],
-      optionalSections: ['landingPageContext', 'imageAnalysis', 'customBrief'],
-      outputFormat: 'structured_json',
-      maxTokens: 2000
-    },
-    landingPage: {
-      name: 'Landing Page Copy',
-      requiredSections: ['targetPersona', 'selectedProducts', 'landingPageFrameworks'],
-      optionalSections: ['transcription', 'mainAngle', 'productBrief'],
-      outputFormat: 'structured_sections',
-      maxTokens: 2048
-    },
-    customRequest: {
-      name: 'Custom Copy Request',
-      requiredSections: ['targetPersona', 'selectedProducts'],
-      optionalSections: ['brandBalance'],
-      outputFormat: 'flexible',
-      maxTokens: 2048
-    },
-    emailSmsRetention: {
-      name: 'Email/SMS Retention',
-      requiredSections: ['targetPersona', 'emailFrameworks'],
-      optionalSections: ['selectedProducts', 'retentionBestPractices'],
-      outputFormat: 'email_structure',
-      maxTokens: 1500
-    },
-    staticAd: {
-      name: 'Static Ad Analysis',
-      requiredSections: ['targetPersona', 'selectedProducts'],
-      optionalSections: ['analysisGuidance'],
-      outputFormat: 'analysis_json',
-      maxTokens: 2000
-    },
-    productLaunch: {
-      name: 'Product Launch Brief',
-      requiredSections: ['selectedProducts'],
-      optionalSections: ['briefStructure', 'competitiveAnalysis'],
-      outputFormat: 'strategic_brief',
-      maxTokens: 3000
-    },
-    organicSocial: {
-      name: 'Organic Social Content',
-      requiredSections: ['targetPersona', 'selectedProducts'],
-      optionalSections: ['platformGuidelines', 'toneGuidance'],
-      outputFormat: 'social_captions',
-      maxTokens: 1500
-    },
-    storySequence: {
-      name: 'Story Sequence',
-      requiredSections: ['targetPersona', 'selectedProducts'],
-      optionalSections: ['sequenceGuidance', 'visualDirection'],
-      outputFormat: 'story_json',
-      maxTokens: 2000
-    }
-  };
+  // Station configuration moved to shared constants (STATION_CONFIGS)
 
   /**
    * Build a complete system prompt for any station
@@ -459,7 +147,7 @@ export class StationPromptManager {
     stationName: string,
     trainingConfig: TrainingConfig,
     options: {
-      concept?: string;
+      persona?: string;
       selectedProduct?: string;
       selectedProducts?: string[];
       brandDrBalance?: number;
@@ -467,9 +155,9 @@ export class StationPromptManager {
     } = {}
   ): string {
     try {
-      const stationConfig = this.STATION_CONFIGS[stationName as keyof typeof this.STATION_CONFIGS];
+      const stationConfig = STATION_CONFIGS[stationName as keyof typeof STATION_CONFIGS];
       if (!stationConfig) {
-        throw new Error(`Unknown station: ${stationName}. Available stations: ${Object.keys(this.STATION_CONFIGS).join(', ')}`);
+        throw new Error(`Unknown station: ${stationName}. Available stations: ${Object.keys(STATION_CONFIGS).join(', ')}`);
       }
 
       // Get base system prompt from training config
@@ -478,26 +166,10 @@ export class StationPromptManager {
         throw new Error(`${stationConfig.name} system prompt not found in training configuration. Please ensure the database contains proper station prompt configuration for '${stationName}'.`);
       }
 
-      // Build AI Settings context
-      const aiSettingsContext = buildAISettingsContext(trainingConfig, options);
-
-      // Add station-specific enhancements (with error handling)
-      let stationEnhancements = '';
-      try {
-        stationEnhancements = this.buildStationEnhancements(stationName, trainingConfig);
-      } catch (enhancementError) {
-        console.warn(`Warning: Failed to build station enhancements for ${stationName}:`, enhancementError);
-        // Continue without enhancements rather than failing completely
-      }
-
-      // Build quality guidelines
-      const qualityGuidelines = this.buildQualityGuidelines(stationName, trainingConfig);
-
+      // Do not auto-append context/enhancements/guidelines here.
+      // These are now available as selectable context sections in stations UI.
       return [
-        baseSystemPrompt,
-        aiSettingsContext,
-        stationEnhancements,
-        qualityGuidelines
+        baseSystemPrompt
       ].filter(Boolean).join('\n\n');
     } catch (error) {
       console.error(`Error building system prompt for station '${stationName}':`, error);
@@ -515,9 +187,9 @@ export class StationPromptManager {
     contextSections: string[] = []
   ): string {
     try {
-      const stationConfig = this.STATION_CONFIGS[stationName as keyof typeof this.STATION_CONFIGS];
+      const stationConfig = STATION_CONFIGS[stationName as keyof typeof STATION_CONFIGS];
       if (!stationConfig) {
-        throw new Error(`Unknown station: ${stationName}. Available stations: ${Object.keys(this.STATION_CONFIGS).join(', ')}`);
+        throw new Error(`Unknown station: ${stationName}. Available stations: ${Object.keys(STATION_CONFIGS).join(', ')}`);
       }
 
       // Get user prompt template from training config
@@ -550,9 +222,114 @@ export class StationPromptManager {
   }
 
   /**
+   * Build enhanced user prompt with configurable context sections
+   */
+  static async buildEnhancedStationUserPrompt(
+    stationName: string,
+    trainingConfig: TrainingConfig,
+    request: any,
+    variables: Record<string, any> = {}
+  ): Promise<{
+    userPrompt: string;
+    contextInfo: {
+      sectionsUsed: string[];
+      totalTokens: number;
+      debugInfo: any;
+    };
+  }> {
+    try {
+      // Check if station has enhanced context configuration
+      const contextConfig = trainingConfig?.stationPrompts?.[stationName]?.contextConfiguration;
+      
+      if (!contextConfig) {
+        // Fallback to legacy method
+        const legacyPrompt = this.buildStationUserPrompt(stationName, trainingConfig, variables, []);
+        return {
+          userPrompt: legacyPrompt,
+          contextInfo: {
+            sectionsUsed: ['Legacy Context'],
+            totalTokens: Math.ceil(legacyPrompt.length / CHARACTERS_PER_TOKEN_ESTIMATE),
+            debugInfo: { legacy: true }
+          }
+        };
+      }
+
+      // Use enhanced context builder (we'll need to import this)
+      const { EnhancedContextBuilder } = await import('./enhanced-context-builder');
+      const contextResult = await EnhancedContextBuilder.buildStationContext(
+        stationName,
+        trainingConfig,
+        request,
+        variables
+      );
+
+      // Get user prompt template
+      const userTemplate = trainingConfig?.stationPrompts?.[stationName]?.userPromptTemplate;
+      if (!userTemplate) {
+        throw new Error(`${stationName} user prompt template not found in training configuration.`);
+      }
+
+      // Process template with enhanced template engine
+      const { AdvancedTemplateEngine } = await import('./enhanced-context-builder');
+      const templateEngine = new AdvancedTemplateEngine();
+
+      // Build a minimal context that only contains variables actually referenced by the template
+      // Include sections so template can reference them explicitly (e.g., {{sections.target_persona}})
+      const sectionsForTemplate = { sections: {} as Record<string, string>, contextSections: [] as string[] };
+      const candidateContext = { ...variables, ...request, config: trainingConfig, ...sectionsForTemplate } as Record<string, any>;
+      const usedPaths = StationPromptManager.extractTemplateVariablePaths(userTemplate);
+      const minimalContext = StationPromptManager.buildContextFromPaths(candidateContext, usedPaths);
+
+      const processedTemplate = templateEngine.render(userTemplate, minimalContext);
+
+      // Add output format instructions unless configured as a context section
+      const hasConfiguredOutputSection = Boolean(
+        contextConfig?.contextSections?.some(
+          (section) => section.id === 'output_instructions' && section.enabled
+        )
+      );
+
+      const outputInstructions = hasConfiguredOutputSection
+        ? ''
+        : this.buildOutputFormatInstructions(stationName, trainingConfig);
+
+      // Template-driven composition: only auto-append when explicitly allowed
+      const appendByDefault = contextConfig?.contextRules?.appendSectionsByDefault ?? DEFAULT_APPEND_SECTIONS_BY_DEFAULT;
+      const autoAppendOutput = contextConfig?.contextRules?.autoAppendOutputInstructions ?? DEFAULT_AUTO_APPEND_OUTPUT_INSTRUCTIONS;
+
+      // Expose sections to the template via explicit variables
+      // Re-render template if it references sections now available
+      const sectionsPlaceholder = { sections: contextResult.sectionsById, contextSections: contextResult.contextSections };
+      const enrichedContext = { ...minimalContext, ...sectionsPlaceholder };
+      const processedTemplateWithSections = templateEngine.render(userTemplate, enrichedContext);
+
+      // If append-by-default is disabled (default), do not add extra sections here
+      const combinedParts = appendByDefault
+        ? [processedTemplateWithSections, ...contextResult.contextSections.filter(Boolean), autoAppendOutput ? outputInstructions : '']
+        : [processedTemplateWithSections, ''];
+
+      const userPrompt = combinedParts
+        .filter(Boolean)
+        .join('\n\n');
+
+      return {
+        userPrompt,
+        contextInfo: {
+          sectionsUsed: contextResult.sectionsUsed,
+          totalTokens: contextResult.totalTokens + Math.ceil(processedTemplate.length / CHARACTERS_PER_TOKEN_ESTIMATE),
+          debugInfo: { ...contextResult.debugInfo, sectionsById: contextResult.sectionsById }
+        }
+      };
+    } catch (error) {
+      console.error(`Error building enhanced user prompt for station '${stationName}':`, error);
+      throw new Error(`Failed to build enhanced user prompt for ${stationName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
    * Build station-specific enhancements
    */
-  private static buildStationEnhancements(stationName: string, trainingConfig: TrainingConfig): string {
+  static buildStationEnhancements(stationName: string, trainingConfig: TrainingConfig): string {
     const stationPrompts = trainingConfig?.stationPrompts?.[stationName];
     if (!stationPrompts) return '';
 
@@ -621,7 +398,7 @@ export class StationPromptManager {
   /**
    * Build quality guidelines for consistent output
    */
-  private static buildQualityGuidelines(stationName: string, trainingConfig: TrainingConfig): string {
+  static buildQualityGuidelines(stationName: string, trainingConfig: TrainingConfig): string {
     const guidelines: string[] = [
       '# Quality Standards:',
       '- Maintain brand voice consistency throughout',
@@ -666,22 +443,26 @@ export class StationPromptManager {
    * Build output format instructions based on station type
    */
   private static buildOutputFormatInstructions(stationName: string, trainingConfig: TrainingConfig): string {
-    const stationConfig = this.STATION_CONFIGS[stationName as keyof typeof this.STATION_CONFIGS];
+    const stationConfig = STATION_CONFIGS[stationName as keyof typeof STATION_CONFIGS];
     
     const formatInstructions: Record<string, string> = {
-      structured_json: `
+      ad_copy_json: `
 # Output Format:
-Return your response as valid JSON with this structure:
+Return ONLY valid JSON with this exact structure. Do NOT include any additional text, explanations, code fences, or backticks.
 {
   "headlines": [
-    {"framework": "FRAMEWORK_NAME", "copy": "Headline text"}
+       {"framework": "BENEFIT DRIVEN", "copy": "Your headline text here”},
+   {"framework": "SOCIAL PROOF", "copy": "Your headline text here”},
+ {"framework": "OFFER DRIVEN", "copy": "Your headline text here”},
+ {"framework": "VALUE PROPS", "copy": "Your headline text here”},
+ {"framework": "PROBLEM FOCUSED", "copy": "Your headline text here”},
   ],
   "primaryText": "Primary text content"
 }`,
       
       email_structure: `
 # Output Format:
-Return your response as valid JSON with this structure:
+Return ONLY valid JSON with this exact structure. Do NOT include any additional text, explanations, code fences, or backticks.
 {
   "subjectLine": "Email subject line",
   "preheader": "Preview text",
@@ -691,7 +472,7 @@ Return your response as valid JSON with this structure:
       
       social_captions: `
 # Output Format:
-Return your response as a JSON array:
+Return ONLY valid JSON as a JSON array. Do NOT include any additional text, explanations, code fences, or backticks.
 [
   {
     "platform": "PLATFORM_NAME",
@@ -700,9 +481,9 @@ Return your response as a JSON array:
   }
 ]`,
       
-      story_json: `
+      story_sequence_json: `
 # Output Format:
-Return your response as a JSON array:
+Return ONLY valid JSON as a JSON array. Do NOT include any additional text, explanations, code fences, or backticks.
 [
   {
     "slide": 1,
@@ -731,7 +512,7 @@ Avoid markdown symbols like *, #, [], etc.`
     missingElements: string[];
     warnings: string[];
   } {
-    const stationConfig = this.STATION_CONFIGS[stationName as keyof typeof this.STATION_CONFIGS];
+    const stationConfig = STATION_CONFIGS[stationName as keyof typeof STATION_CONFIGS];
     if (!stationConfig) {
       return { isValid: false, missingElements: ['Unknown station'], warnings: [] };
     }
@@ -750,7 +531,7 @@ Avoid markdown symbols like *, #, [], etc.`
     }
 
     // Check required configuration elements
-    if (stationConfig.requiredSections.includes('targetPersona') && !trainingConfig?.personaPillars) {
+    if ((stationConfig.requiredSections as readonly string[] | undefined)?.includes('targetPersona') && !trainingConfig?.personaPillars) {
       warnings.push('No persona pillars configured');
     }
 
@@ -765,16 +546,118 @@ Avoid markdown symbols like *, #, [], etc.`
   }
 
   /**
+   * Extracts all variable paths referenced in a template, including within conditionals, loops, and helper calls.
+   */
+  static extractTemplateVariablePaths(template: string): string[] {
+    const paths = new Set<string>();
+
+    // {{variable}} and {{obj.prop}}
+    const varRegex = /\{\{([^#\/][^}]+)\}\}/g;
+    let match: RegExpExecArray | null;
+    while ((match = varRegex.exec(template)) !== null) {
+      const raw = match[1].trim();
+      // Skip helpers (they contain spaces before closing braces)
+      if (raw.includes(' ')) continue;
+      paths.add(raw);
+    }
+
+    // {{#if condition}} ... {{/if}}
+    const ifRegex = /\{\{#if\s+([^}]+)\}\}/g;
+    while ((match = ifRegex.exec(template)) !== null) {
+      const expr = match[1].trim();
+      StationPromptManager.extractPathsFromExpression(expr).forEach(p => paths.add(p));
+    }
+
+    // {{#each arrayPath}} ... {{/each}}
+    const eachRegex = /\{\{#each\s+([^}]+)\}\}/g;
+    while ((match = eachRegex.exec(template)) !== null) {
+      const arrayPath = match[1].trim();
+      paths.add(arrayPath);
+    }
+
+    // {{helper arg1 arg2}}
+    const helperRegex = /\{\{(\w+)\s+([^}]+)\}\}/g;
+    while ((match = helperRegex.exec(template)) !== null) {
+      const args = match[2];
+      StationPromptManager.extractPathsFromHelperArgs(args).forEach(p => paths.add(p));
+    }
+
+    return Array.from(paths);
+  }
+
+  private static extractPathsFromExpression(expression: string): string[] {
+    const collected: string[] = [];
+    // Split by logical operators to capture operands
+    const parts = expression.split(/\|\||&&/).map(s => s.trim());
+    for (const part of parts) {
+      const comp = part.match(/^(.*?)\s*(===|!==|==|!=|>|>=|<|<=)\s*(.*)$/);
+      if (comp) {
+        const left = comp[1].trim();
+        const right = comp[3].trim();
+        if (left) collected.push(left);
+        // Right side may be literal or path; add if not quoted and not numeric
+        if (!/^['"][\s\S]*['"]$/.test(right) && isNaN(Number(right))) {
+          collected.push(right);
+        }
+      } else if (part) {
+        collected.push(part);
+      }
+    }
+    return collected;
+  }
+
+  private static extractPathsFromHelperArgs(argsString: string): string[] {
+    const collected: string[] = [];
+    const tokens = argsString.trim().split(/\s+/);
+    for (const tok of tokens) {
+      if (tok.startsWith('"') && tok.endsWith('"')) continue;
+      if (tok.startsWith("'") && tok.endsWith("'")) continue;
+      if (!isNaN(Number(tok))) continue;
+      if (tok) collected.push(tok);
+    }
+    return collected;
+  }
+
+  /**
+   * Builds a minimal context object containing only the referenced paths.
+   */
+  static buildContextFromPaths(fullContext: Record<string, any>, paths: string[]): Record<string, any> {
+    const minimal: Record<string, any> = {};
+
+    const assignPath = (target: Record<string, any>, path: string, value: any) => {
+      const segments = path.split('.');
+      let current: any = target;
+      for (let i = 0; i < segments.length - 1; i++) {
+        const seg = segments[i];
+        if (!(seg in current)) current[seg] = {};
+        current = current[seg];
+      }
+      current[segments[segments.length - 1]] = value;
+    };
+
+    const getNested = (obj: any, path: string) => path.split('.').reduce((o, k) => o?.[k], obj);
+
+    paths.forEach((p) => {
+      const value = getNested(fullContext, p);
+      if (value !== undefined) {
+        assignPath(minimal, p, value);
+      }
+    });
+
+    return minimal;
+  }
+
+  /**
    * Get optimal model parameters for a station
    */
   static getStationModelParams(stationName: string, trainingConfig: TrainingConfig) {
-    const stationConfig = this.STATION_CONFIGS[stationName as keyof typeof this.STATION_CONFIGS];
+    const stationConfig = STATION_CONFIGS[stationName as keyof typeof STATION_CONFIGS];
     const defaultParams = trainingConfig?.modelParameters || {};
     
     return {
-      model: defaultParams.model || 'claude-3-sonnet-20240229',
-      max_tokens: stationConfig?.maxTokens || 2000,
-      temperature: defaultParams.temperature || 0.7
+      model: defaultParams.model || FALLBACK_MODEL_STR,
+      max_tokens: stationConfig?.maxTokens ?? DEFAULT_MAX_TOKENS,
+      temperature: defaultParams.temperature ?? DEFAULT_TEMPERATURE,
     };
   }
 
@@ -788,7 +671,7 @@ Avoid markdown symbols like *, #, [], etc.`
     availableEnhancements: string[];
     configStructure: any;
   } {
-    const stationConfig = this.STATION_CONFIGS[stationName as keyof typeof this.STATION_CONFIGS];
+    const stationConfig = STATION_CONFIGS[stationName as keyof typeof STATION_CONFIGS];
     const stationPrompts = trainingConfig?.stationPrompts?.[stationName];
     
     const availableEnhancements: string[] = [];
@@ -819,6 +702,41 @@ Avoid markdown symbols like *, #, [], etc.`
       configStructure: stationPrompts ? Object.keys(stationPrompts) : []
     };
   }
+}
+
+/**
+ * Single-call prompt composer for any station
+ */
+export async function composeStationPrompts(
+  stationName: string,
+  trainingConfig: TrainingConfig,
+  request: any,
+  variables: Record<string, any> = {}
+): Promise<{
+  systemPrompt: string;
+  userPrompt: string;
+  contextInfo: {
+    sectionsUsed: string[];
+    totalTokens: number;
+    debugInfo: any;
+  };
+}> {
+  const systemPrompt = StationPromptManager.buildStationSystemPrompt(stationName, trainingConfig, {
+    persona: request.persona,
+    selectedProduct: request.selectedProduct,
+    selectedProducts: request.selectedProducts,
+    brandDrBalance: request.brandDrBalance,
+    useJonesBrandGuide: request.useJonesBrandGuide,
+  });
+
+  const { userPrompt, contextInfo } = await StationPromptManager.buildEnhancedStationUserPrompt(
+    stationName,
+    trainingConfig,
+    request,
+    variables
+  );
+
+  return { systemPrompt, userPrompt, contextInfo };
 }
 
 /**
@@ -1040,10 +958,7 @@ Use this competitive intelligence to differentiate your messaging and highlight 
   }
 }
 
-/**
- * Legacy AIPromptBuilder - maintained for backward compatibility
- * @deprecated Use StationPromptManager instead
- */
+
 export class AIPromptBuilder {
   /**
    * Build a system prompt with consistent structure
@@ -1111,33 +1026,75 @@ export class AIPromptBuilder {
 }
 
 // Helper function to build target persona section
-export function buildTargetPersonaSection(concept: string, trainingConfig: TrainingConfig): string {
-  if (!concept || concept === 'none' || !trainingConfig.personaPillars?.[concept]) {
+export function buildTargetPersonaSection(personaInput: string, trainingConfig: TrainingConfig): string {
+  if (!personaInput || personaInput === 'none') {
     return '';
   }
 
-  const persona = trainingConfig.personaPillars[concept];
+  // Parse persona to handle subpersona format: "persona:subpersonaId"
+  const parts = personaInput.split(':');
+  const personaKey = parts[0];
+  const subpersonaId = parts[1];
+
+  const persona = trainingConfig.personaPillars?.[personaKey];
+  if (!persona) {
+    return '';
+  }
+
   let section = `
 
-TARGET PERSONA - ${concept.toUpperCase()}:
+TARGET PERSONA - ${personaKey.toUpperCase()}:
 ${persona.description ? `Description: ${persona.description}` : ''}`;
 
-  if (persona.pillars && persona.pillars.length > 0) {
-    const enabledPillars = persona.pillars.filter((_, index) => 
-      persona.enabledPillars?.[index] !== false
+  // Handle subpersona if specified
+  if (subpersonaId && persona.subpersonas) {
+    // Find subpersona by ID
+    const subpersonaName = Object.keys(persona.subpersonas).find(name => 
+      persona.subpersonas![name].id === subpersonaId
     );
     
-    if (enabledPillars.length > 0) {
+    if (subpersonaName && persona.subpersonas[subpersonaName]) {
+      const subpersona = persona.subpersonas[subpersonaName];
       section += `
+
+SUBPERSONA - ${subpersonaName.toUpperCase()}:
+${subpersona.description ? `Description: ${subpersona.description}` : ''}`;
+
+      // Use subpersona pillars if available, otherwise fall back to main persona pillars
+      const pillarsToUse = subpersona.pillars || persona.pillars;
+      const enabledPillarsToUse = subpersona.enabledPillars || persona.enabledPillars;
+
+      if (pillarsToUse && pillarsToUse.length > 0) {
+        const enabledPillars = pillarsToUse.filter((_, index) => 
+          enabledPillarsToUse?.[index] !== false
+        );
+        
+        if (enabledPillars.length > 0) {
+          section += `
 Key Targeting Pillars:
 ${enabledPillars.map(pillar => `- ${pillar}`).join('\n')}`;
+        }
+      }
+    }
+  } else {
+    // Standard persona without subpersona
+    if (persona.pillars && persona.pillars.length > 0) {
+      const enabledPillars = persona.pillars.filter((_, index) => 
+        persona.enabledPillars?.[index] !== false
+      );
+      
+      if (enabledPillars.length > 0) {
+        section += `
+Key Targeting Pillars:
+${enabledPillars.map(pillar => `- ${pillar}`).join('\n')}`;
+      }
     }
   }
 
   section += `
 
 PERSONA-SPECIFIC TARGETING REQUIREMENTS:
-- Tailor ALL headlines and primary text to speak directly to this persona
+- Tailor ALL headlines and primary text to speak directly to this persona${subpersonaId ? ' and subpersona' : ''}
 - Use language patterns and scenarios this audience relates to
 - Address their specific pain points and motivations
 - Reference their lifestyle and daily challenges`;
@@ -1256,15 +1213,15 @@ PRODUCT-SPECIFIC REQUIREMENTS:
 
 // Helper function to build comprehensive AI Settings context
 export function buildAISettingsContext(trainingConfig: TrainingConfig, request: {
-  concept?: string;
+  persona?: string;
   selectedProduct?: string;
   selectedProducts?: string[];
   brandDrBalance?: number;
   useJonesBrandGuide?: boolean;
 }) {
-  const { concept = '', selectedProduct = '', selectedProducts = [], brandDrBalance = 50, useJonesBrandGuide = true } = request;
+  const { persona: personaInput = '', selectedProduct = '', selectedProducts = [], brandDrBalance = DEFAULT_BRAND_DR_BALANCE, useJonesBrandGuide = DEFAULT_USE_JONES_BRAND_GUIDE } = request;
   
-  // Handle optional personas - if concept is 'none' or empty, skip persona targeting
+  // Handle optional personas - if persona is 'none' or empty, skip persona targeting
   
   let context = '';
   
@@ -1363,10 +1320,10 @@ export function buildAISettingsContext(trainingConfig: TrainingConfig, request: 
       context += '\n';
     }
     
-    // Persona Pillars - skip if concept is 'none' or empty
-    if (concept && concept !== 'none' && trainingConfig.personaPillars && trainingConfig.personaPillars[concept]) {
-      const persona = trainingConfig.personaPillars[concept];
-      context += `TARGET PERSONA - ${concept.toUpperCase()}:\n`;
+    // Persona Pillars - skip if persona is 'none' or empty
+    if (personaInput && personaInput !== 'none' && trainingConfig.personaPillars && trainingConfig.personaPillars[personaInput]) {
+      const persona = trainingConfig.personaPillars[personaInput];
+      context += `TARGET PERSONA - ${personaInput.toUpperCase()}:\n`;
       if (persona.description) {
         context += `Description: ${persona.description}\n`;
       }
@@ -1432,7 +1389,7 @@ export async function buildLandingPageContext(landingPageUrl?: string): Promise<
         .replace(/<[^>]*>/g, ' ')
         .replace(/\s+/g, ' ')
         .trim()
-        .substring(0, 2000); // Limit to first 2000 characters
+        .substring(0, LANDING_PAGE_TEXT_CHAR_LIMIT); // Limit to configured number of characters
     }
   } catch (error) {
     console.error('Failed to fetch landing page:', error);

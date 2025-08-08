@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ProductSelection } from '@/components/common/ProductSelection';
 import { Product } from '@shared/schema';
 import { UseMutationResult } from '@tanstack/react-query';
+import { TargetPersona } from '@/components/common/TargetPersona';
 
 interface Persona {
   label: string;
@@ -26,8 +27,8 @@ interface CustomCopyTabProps {
     response: string;
     timestamp: Date;
   }>;
-  concept: string;
-  setConcept: (value: string) => void;
+  persona: string;
+  setPersona: (value: string) => void;
   selectedProduct: string;
   setSelectedProduct: (value: string) => void;
   selectedProducts: string[];
@@ -86,8 +87,8 @@ export function CustomCopyTab({
   setCustomRequest,
   generatedCustomResponse,
   customRequestHistory,
-  concept,
-  setConcept,
+  persona,
+  setPersona,
   selectedProduct,
   setSelectedProduct,
   selectedProducts,
@@ -140,31 +141,20 @@ export function CustomCopyTab({
 
               {/* Basic Settings */}
               <div className="space-y-3">
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">Audience</Label>
-                  <Select value={concept} onValueChange={setConcept}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(personas).length > 0 ? (
-                        Object.entries(personas).map(([key, persona]: [string, any]) => (
-                          <SelectItem key={key} value={key}>
-                            {persona.label || key}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        // Fallback to hardcoded options if personas haven't loaded yet
-                        <>
-                          <SelectItem value="lifeJuggler">Life Juggler</SelectItem>
-                          <SelectItem value="cleanBeautyEnthusiast">Clean Beauty Enthusiast</SelectItem>
-                          <SelectItem value="timeConstrainedProfessional">Time-Constrained Professional</SelectItem>
-                          <SelectItem value="naturalBeautySeeker">Natural Beauty Seeker</SelectItem>
-                        </>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <TargetPersona
+                  personas={personas}
+                  persona={persona}
+                  setPersona={setPersona}
+                  title="Target Persona"
+                  showCard={false}
+                  showIcon={false}
+                  // fallbackOptions={[
+                  //   { key: "lifeJuggler", label: "Life Juggler" },
+                  //   { key: "cleanBeautyEnthusiast", label: "Clean Beauty Enthusiast" },
+                  //   { key: "timeConstrainedProfessional", label: "Time-Constrained Professional" },
+                  //   { key: "naturalBeautySeeker", label: "Natural Beauty Seeker" }
+                  // ]}
+                />
 
                 <ProductSelection
                   selectedProducts={selectedProducts}
@@ -299,7 +289,7 @@ export function CustomCopyTab({
                         temperature: modelSettings?.temperature || 0.7,
                         maxTokens: modelSettings?.maxTokens || 2000,
                         systemPrompt: customRequestDebugInfo?.systemPrompt || stationPrompts?.customRequest?.systemPrompt || 'Expert marketing copywriter for Jones Road Beauty...',
-                        userPrompt: customRequestDebugInfo?.userPrompt || `Request: ${customRequest}\nAudience: ${concept}`,
+                        userPrompt: customRequestDebugInfo?.userPrompt || `Request: ${customRequest}\nAudience: ${persona}`,
                         requestPayload: customRequestDebugInfo?.requestPayload,
                         rawResponse: customRequestDebugInfo?.rawResponse
                       });

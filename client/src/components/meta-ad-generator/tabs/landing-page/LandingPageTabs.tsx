@@ -9,10 +9,10 @@ export const LandingPageTabs = (props: any) => {
     const landingPageTabProps = createTabProps(formState, handleInputChange, {
         ...restProps,
         
-        // Generated content setters (would be populated by separate hook)
-        setGeneratedLandingCopy: () => {},
-        landingPageAnalysis: null,
-        copiedLandingCopy: false,
+        // Generated content setters
+        setGeneratedLandingCopy: props.setGeneratedLandingCopy || (() => {}),
+        landingPageAnalysis: props.landingPageAnalysis || null,
+        copiedLandingCopy: props.uiState?.copiedStates?.landingCopy || false,
         getBrandDrLabel: restProps.getBrandDrLabel || (() => '50% Brand / 50% DR'),
         
         // Generated Ad States from adCopyGeneration hook
@@ -24,7 +24,18 @@ export const LandingPageTabs = (props: any) => {
         // Functions from hooks
         generateAdCopy: () => adCopyGeneration?.generateAdCopyMutation?.mutate(),
         generateLandingCopyMutation: props.generationMutations?.generateLandingCopyMutation || createDefaultMutation(),
-        copyToClipboard: adCopyGeneration?.copyToClipboard || (() => Promise.resolve()),
+        copyToClipboard: async (text: string, type: string) => {
+            try {
+                await navigator.clipboard.writeText(text);
+                if (type === 'landing' && props.setCopiedWithTimeout) {
+                    props.setCopiedWithTimeout('landingCopy');
+                } else if (adCopyGeneration?.copyToClipboard) {
+                    return adCopyGeneration.copyToClipboard(text, type);
+                }
+            } catch (error) {
+                console.error('Failed to copy to clipboard:', error);
+            }
+        },
         
         // Revision states from contentRevision hook
         setSelectedItemForRevision: contentRevision?.setSelectedItemForRevision || (() => {}),

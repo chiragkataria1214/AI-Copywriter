@@ -19,7 +19,7 @@ export interface GenerationMetadata {
   brandGuidelines?: string[];
   frameworks?: string[];
   personaSettings?: {
-    concept: string;
+    persona: string;
   };
   productClaims?: {
     approved: string[];

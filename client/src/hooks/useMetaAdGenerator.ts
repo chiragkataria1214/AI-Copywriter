@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { toast } from '@/hooks/useToast';
 import { TrainingConfig } from '@shared/training-config';
+import { DEFAULT_BRAND_DR_BALANCE, DEFAULT_PERSONA_KEY, DEFAULT_USE_JONES_BRAND_GUIDE } from '@shared/constants';
 
 interface Persona {
   label: string;
@@ -19,7 +20,7 @@ export interface GenerationMetadata {
   brandGuidelines: string[];
   frameworks: string[];
   personaSettings: {
-    concept: string;
+    persona: string;
   };
   brandDrBalance: number;
   selectedProduct: string;
@@ -49,21 +50,21 @@ export const useMetaAdGenerator = () => {
   const [customBrief, setCustomBrief] = useState('');
   
   // Persona and targeting states
-  const [concept, setConcept] = useState('lifeJuggler');
+  const [persona, setPersona] = useState(DEFAULT_PERSONA_KEY);
   const [targetAudience, setTargetAudience] = useState('');
   const [landingPageUrl, setLandingPageUrl] = useState('');
   const [selectedProduct, setSelectedProduct] = useState('');
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   
   // Brand settings
-  const [useJonesBrandGuide, setUseJonesBrandGuide] = useState(true);
-  const [brandDrBalance, setBrandDrBalance] = useState([50]);
+  const [useJonesBrandGuide, setUseJonesBrandGuide] = useState(DEFAULT_USE_JONES_BRAND_GUIDE);
+  const [brandDrBalance, setBrandDrBalance] = useState([DEFAULT_BRAND_DR_BALANCE]);
   
   // Influencer mode states
   const [enableInfluencerMode, setEnableInfluencerMode] = useState(false);
   const [influencerHandle, setInfluencerHandle] = useState('');
   const [voiceAnalysisMethod, setVoiceAnalysisMethod] = useState('combined');
-  const [influencerBrandBalance, setInfluencerBrandBalance] = useState([50]);
+  const [influencerBrandBalance, setInfluencerBrandBalance] = useState([DEFAULT_BRAND_DR_BALANCE]);
   
   // Content type states
   const [contentType, setContentType] = useState('video');
@@ -129,12 +130,12 @@ export const useMetaAdGenerator = () => {
   useEffect(() => {
     if (personasData) {
       setPersonas(personasData);
-      if (!concept && Object.keys(personasData).length > 0) {
+      if (!persona && Object.keys(personasData).length > 0) {
         const firstPersona = Object.keys(personasData)[0];
-        setConcept(firstPersona);
+        setPersona(firstPersona);
       }
     }
-  }, [personasData, concept]);
+  }, [personasData, persona]);
 
   useEffect(() => {
     if (brandGuidelinesData) setBrandGuidelines(brandGuidelinesData);
@@ -323,8 +324,8 @@ export const useMetaAdGenerator = () => {
     setUploadedImage,
     customBrief,
     setCustomBrief,
-    concept,
-    setConcept,
+    persona,
+    setPersona,
     targetAudience,
     setTargetAudience,
     landingPageUrl,

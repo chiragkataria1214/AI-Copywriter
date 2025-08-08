@@ -32,15 +32,24 @@ export const RetentionTabs = (props: any) => {
     const retentionTabProps = createTabProps(formState, handleInputChange, {
         ...restProps,
         
-        // Generated content (not in form state, would need separate hook)
-        generatedRetentionCopy: '', // Would need retention generation hook
+        // Generated content
+        generatedRetentionCopy: props.generatedRetentionCopy || '',
         retentionCopyHistory: [], // Would need separate state management
         
         // Functions
         addRetentionKeyword,
         removeRetentionKeyword,
         getBrandDrLabel: restProps.getBrandDrLabel || (() => '50% Brand / 50% DR'),
-        copyToClipboard: () => Promise.resolve(),
+        copyToClipboard: async (text: string, type: string) => {
+            try {
+                await navigator.clipboard.writeText(text);
+                if (type === 'retention' && props.setCopiedWithTimeout) {
+                    props.setCopiedWithTimeout('retention');
+                }
+            } catch (error) {
+                console.error('Failed to copy to clipboard:', error);
+            }
+        },
         
         // Mutations from generationMutations hook
         generateRetentionCopyMutation: props.generationMutations?.generateRetentionCopyMutation || createDefaultMutation(),

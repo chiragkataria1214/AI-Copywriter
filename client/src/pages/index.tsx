@@ -3,6 +3,7 @@ import { toast } from '@/hooks/useToast';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs } from '@/components/ui/tabs';
 import { GenerationDetailsModal, GenerationMetadata } from '@/components/common';
+import { DEFAULT_BRAND_DR_BALANCE, DEFAULT_PERSONA_KEY, DEFAULT_USE_JONES_BRAND_GUIDE, DEFAULT_CONTENT_TYPE, DEFAULT_SOCIAL_PLATFORM, DEFAULT_SOCIAL_GOAL, DEFAULT_TONE, DEFAULT_VARIATIONS, DEFAULT_SEQUENCE_TYPE, DEFAULT_STORY_LENGTH, DEFAULT_RETENTION_PLATFORM, DEFAULT_RETENTION_EMAIL_TYPE } from '@shared/constants';
 import { Header, MainTabs } from '@/components/meta-ad-generator';
 
 // Import optimized components and hooks
@@ -139,41 +140,63 @@ const MetaAdGeneratorContent: React.FC = () => {
     setCopiedWithTimeout
   } = useUIState();
 
+  // File upload states (can't be in form state as File objects aren't serializable)
+  const [organicVideoFile, setOrganicVideoFile] = React.useState<File | null>(null);
+  const [organicImageFile, setOrganicImageFile] = React.useState<File | null>(null);
+  const [storyVideoFile, setStoryVideoFile] = React.useState<File | null>(null);
+  const [storyImageFile, setStoryImageFile] = React.useState<File | null>(null);
+
   // Use optimized form state management
   const initialFormState = {
     transcription: '',
     airLink: '',
     uploadedImage: '',
     customBrief: '',
-    concept: 'lifeJuggler',
+    persona: DEFAULT_PERSONA_KEY, 
     targetAudience: '',
     landingPageUrl: '',
     selectedProduct: '',
     selectedProducts: [] as string[],
-    useJonesBrandGuide: true,
-    brandDrBalance: [50],
+    useJonesBrandGuide: DEFAULT_USE_JONES_BRAND_GUIDE,
+    brandDrBalance: [DEFAULT_BRAND_DR_BALANCE],
     enableInfluencerMode: false,
     influencerHandle: '',
     voiceAnalysisMethod: 'combined',
-    influencerBrandBalance: [50],
+    influencerBrandBalance: [DEFAULT_BRAND_DR_BALANCE],
     contentType: 'video',
-    organicContentType: 'video',
-    organicPlatform: 'instagram',
-    organicGoal: 'product-education',
-    organicTone: 'authentic-personal',
-    captionVariations: 3,
-    storyContentType: 'video',
-    storySequenceType: 'product-showcase',
-    storyLength: 5,
-    storyTone: 'authentic-personal',
+    organicContentType: DEFAULT_CONTENT_TYPE,
+    organicPlatform: DEFAULT_SOCIAL_PLATFORM,
+    organicGoal: DEFAULT_SOCIAL_GOAL,
+    organicTone: DEFAULT_TONE,
+    captionVariations: DEFAULT_VARIATIONS,
+    // Add missing organic social fields
+    organicVideoTranscription: '',
+    organicImagePreview: '',
+    organicSelectedProducts: [] as string[],
+    generatedCaptions: [] as string[],
+    storyContentType: DEFAULT_CONTENT_TYPE,
+    storySequenceType: DEFAULT_SEQUENCE_TYPE,
+    storyLength: DEFAULT_STORY_LENGTH,
+    storyTone: DEFAULT_TONE,
+    // Add missing story fields
+    storyVideoTranscription: '',
+    storyImagePreview: '',
+    storySelectedProducts: [] as string[],
+    generatedStorySequence: [] as Array<{
+      slide: number;
+      type: string;
+      title: string;
+      content: string;
+      visualDirection: string;
+    }>,
     landingPageType: 'listicle',
     useAdsForLanding: false,
     productBrief: '',
     mainAngle: '',
     customRequest: '',
     retentionKeyMessage: '',
-    retentionPlatform: 'Email',
-    retentionEmailType: 'Product Spotlight / Hero Product',
+    retentionPlatform: DEFAULT_RETENTION_PLATFORM,
+    retentionEmailType: DEFAULT_RETENTION_EMAIL_TYPE,
     retentionSelectedProducts: [] as string[],
     retentionAudience: 'General audience',
     retentionGoal: 'Drive Sales',
@@ -194,7 +217,8 @@ const MetaAdGeneratorContent: React.FC = () => {
   // Generated content states
   const [generatedCustomResponse, setGeneratedCustomResponse] = React.useState('');
   const [generatedLandingCopy, setGeneratedLandingCopy] = React.useState<any>({});
-  const [generatedRetentionCopy, setGeneratedRetentionCopy] = React.useState<any>({});
+  const [landingPageAnalysis, setLandingPageAnalysis] = React.useState<any>(null);
+  const [generatedRetentionCopy, setGeneratedRetentionCopy] = React.useState<any>('');
   
   // Debug info states
   const [staticAdDebugInfo, setStaticAdDebugInfo] = React.useState<any>(null);
@@ -206,7 +230,7 @@ const MetaAdGeneratorContent: React.FC = () => {
   const adCopyProps = useMemo(() => ({
     transcription: formState.transcription,
     customBrief: formState.customBrief,
-    concept: formState.concept,
+    persona: formState.persona,
     targetAudience: formState.targetAudience,
     landingPageUrl: formState.landingPageUrl,
     brandDrBalance: formState.brandDrBalance,
@@ -229,7 +253,7 @@ const MetaAdGeneratorContent: React.FC = () => {
     generatedRetentionCopy: '',
     transcription: formState.transcription,
     customBrief: formState.customBrief,
-    concept: formState.concept,
+    persona: formState.persona,
     targetAudience: formState.targetAudience,
     brandDrBalance: formState.brandDrBalance,
     selectedProduct: formState.selectedProduct,
@@ -247,7 +271,7 @@ const MetaAdGeneratorContent: React.FC = () => {
   // Generation mutations hook
   const generationMutations = useGenerationMutations({
     staticAdImage: formState.staticAdImage,
-    concept: formState.concept,
+    persona: formState.persona,
     brandDrBalance: formState.brandDrBalance,
     selectedProduct: formState.selectedProduct,
     selectedProducts: formState.selectedProducts,
@@ -273,6 +297,7 @@ const MetaAdGeneratorContent: React.FC = () => {
     setStaticAdAnalysis: (analysis: string) => handleInputChange('staticAdAnalysis')(analysis),
     setGeneratedCustomResponse: setGeneratedCustomResponse,
     setGeneratedLandingCopy: setGeneratedLandingCopy,
+    setLandingPageAnalysis: setLandingPageAnalysis,
     setGeneratedRetentionCopy: setGeneratedRetentionCopy,
     setStaticAdDebugInfo: setStaticAdDebugInfo,
     setCustomRequestDebugInfo: setCustomRequestDebugInfo,
@@ -291,11 +316,11 @@ const MetaAdGeneratorContent: React.FC = () => {
 
   // Set default persona when personas load
   useEffect(() => {
-    if (!formState.concept && Object.keys(configData.personas).length > 0) {
+    if (!formState.persona && Object.keys(configData.personas).length > 0) {
       const firstPersona = Object.keys(configData.personas)[0];
-      handleInputChange('concept')(firstPersona);
+      handleInputChange('persona')(firstPersona);
     }
-  }, [configData.personas, formState.concept, handleInputChange]);
+  }, [configData.personas, formState.persona, handleInputChange]);
 
   // Handle AI Settings tab click with admin access
   const handleAISettingsClick = React.useCallback(() => {
@@ -366,47 +391,49 @@ const MetaAdGeneratorContent: React.FC = () => {
               setOrganicSocialType={setOrganicSocialType}
               organicContentType={formState.organicContentType}
               setOrganicContentType={handleInputChange('organicContentType')}
-              organicVideoFile={null} // Not in form state, needs to be managed separately
-              setOrganicVideoFile={() => {}} // Placeholder
-              organicVideoTranscription={''}
-              setOrganicVideoTranscription={() => {}}
-              organicImageFile={null}
-              setOrganicImageFile={() => {}}
-              organicImagePreview={''}
-              setOrganicImagePreview={() => {}}
+              organicVideoFile={organicVideoFile}
+              setOrganicVideoFile={setOrganicVideoFile}
+              organicVideoTranscription={formState.organicVideoTranscription}
+              setOrganicVideoTranscription={handleInputChange('organicVideoTranscription')}
+              organicImageFile={organicImageFile}
+              setOrganicImageFile={setOrganicImageFile}
+              organicImagePreview={formState.organicImagePreview}
+              setOrganicImagePreview={handleInputChange('organicImagePreview')}
               organicPlatform={formState.organicPlatform}
               setOrganicPlatform={handleInputChange('organicPlatform')}
               organicGoal={formState.organicGoal}
               setOrganicGoal={handleInputChange('organicGoal')}
               organicTone={formState.organicTone}
               setOrganicTone={handleInputChange('organicTone')}
-              generatedCaptions={[]} // Not in form state, needs generation hook
-              setGeneratedCaptions={() => {}}
+              generatedCaptions={formState.generatedCaptions}
+              setGeneratedCaptions={handleInputChange('generatedCaptions')}
               captionVariations={formState.captionVariations}
               setCaptionVariations={handleInputChange('captionVariations')}
               storyContentType={formState.storyContentType}
               setStoryContentType={handleInputChange('storyContentType')}
-              storyVideoTranscription={''}
-              setStoryVideoTranscription={() => {}}
-              storyVideoFile={null}
-              setStoryVideoFile={() => {}}
-              storyImageFile={null}
-              setStoryImageFile={() => {}}
-              storyImagePreview={''}
-              setStoryImagePreview={() => {}}
+              storyVideoTranscription={formState.storyVideoTranscription}
+              setStoryVideoTranscription={handleInputChange('storyVideoTranscription')}
+              storyVideoFile={storyVideoFile}
+              setStoryVideoFile={setStoryVideoFile}
+              storyImageFile={storyImageFile}
+              setStoryImageFile={setStoryImageFile}
+              storyImagePreview={formState.storyImagePreview}
+              setStoryImagePreview={handleInputChange('storyImagePreview')}
               storySequenceType={formState.storySequenceType}
               setStorySequenceType={handleInputChange('storySequenceType')}
               storyLength={formState.storyLength}
               setStoryLength={handleInputChange('storyLength')}
               storyTone={formState.storyTone}
               setStoryTone={handleInputChange('storyTone')}
-              generatedStorySequence={[]}
-              setGeneratedStorySequence={() => {}}
+              generatedStorySequence={formState.generatedStorySequence}
+              setGeneratedStorySequence={handleInputChange('generatedStorySequence')}
               selectedProduct={formState.selectedProduct}
-              organicSelectedProducts={formState.selectedProducts}
-              setOrganicSelectedProducts={handleInputChange('selectedProducts')}
-              storySelectedProducts={[]}
-              setStorySelectedProducts={() => {}}
+              organicSelectedProducts={formState.organicSelectedProducts}
+              setOrganicSelectedProducts={handleInputChange('organicSelectedProducts')}
+              storySelectedProducts={formState.storySelectedProducts}
+              setStorySelectedProducts={handleInputChange('storySelectedProducts')}
+              persona={formState.persona}
+              setPersona={handleInputChange('persona')}
               debugInfo={null}
               socialCaptionsDebugInfo={null}
               storySequenceDebugInfo={null}
@@ -423,7 +450,11 @@ const MetaAdGeneratorContent: React.FC = () => {
               contentRevision={contentRevision}
               generationMutations={generationMutations}
               generatedLandingCopy={generatedLandingCopy}
+              landingPageAnalysis={landingPageAnalysis}
+              setGeneratedLandingCopy={setGeneratedLandingCopy}
               landingPageDebugInfo={landingPageDebugInfo}
+              uiState={uiState}
+              setCopiedWithTimeout={setCopiedWithTimeout}
               {...commonTabProps}
             />
 
@@ -446,6 +477,8 @@ const MetaAdGeneratorContent: React.FC = () => {
               generationMutations={generationMutations}
               generatedRetentionCopy={generatedRetentionCopy}
               retentionDebugInfo={retentionDebugInfo}
+              uiState={uiState}
+              setCopiedWithTimeout={setCopiedWithTimeout}
               {...commonTabProps}
             />
 

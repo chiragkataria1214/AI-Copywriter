@@ -2,12 +2,14 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import express, { type Request, Response, NextFunction } from "express";
+import { DEFAULT_BODY_SIZE_LIMIT } from "@shared/constants";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { DEFAULT_SERVER_PORT } from "@shared/constants";
 
 const app = express();
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+app.use(express.json({ limit: DEFAULT_BODY_SIZE_LIMIT }));
+app.use(express.urlencoded({ extended: false, limit: DEFAULT_BODY_SIZE_LIMIT }));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -63,7 +65,7 @@ app.use((req, res, next) => {
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
+  const port = parseInt(process.env.PORT || String(DEFAULT_SERVER_PORT), 10);
   server.listen({
     port,
     host: "0.0.0.0",

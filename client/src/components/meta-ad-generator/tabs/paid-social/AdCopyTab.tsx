@@ -36,6 +36,7 @@ import {
 import {
     Label
 } from '@/components/ui/label';
+import { TargetPersona } from '../../../common/TargetPersona';
 import {
     Video,
     FileText,
@@ -69,8 +70,8 @@ interface AdCopyTabProps {
     setUploadedImage: (value: string) => void;
     customBrief: string;
     setCustomBrief: (value: string) => void;
-    concept: string;
-    setConcept: (value: string) => void;
+      persona: string;
+  setPersona: (value: string) => void;
     personas: any;
     landingPageUrl: string;
     setLandingPageUrl: (value: string) => void;
@@ -137,8 +138,8 @@ export const AdCopyTab = ({
     setUploadedImage,
     customBrief,
     setCustomBrief,
-    concept,
-    setConcept,
+    persona,
+    setPersona,
     personas,
     landingPageUrl,
     setLandingPageUrl,
@@ -229,7 +230,7 @@ export const AdCopyTab = ({
                                     <Textarea
                                         rows={6}
                                         className="w-full resize-none text-sm"
-                                        placeholder="Paste your video transcription or ad concept here..."
+                                        placeholder="Paste your video transcription here..."
                                         value={transcription}
                                         onChange={(e) => setTranscription(e.target.value)}
                                     />
@@ -365,30 +366,16 @@ export const AdCopyTab = ({
                 </Card>
 
                 {/* Persona Selection */}
+                <TargetPersona
+                    personas={personas}
+                                    persona={persona}
+                setPersona={setPersona}
+                    title="Primary Persona"
+                />
+
                 <Card>
                     <CardContent className="p-4 sm:p-6">
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                            <Users className="text-jones-primary mr-2 sm:mr-3" size={18} />
-                            Target Persona
-                        </h3>
-
                         <div className="space-y-4">
-                            <div>
-                                <Label htmlFor="concept" className="block text-sm font-medium text-gray-700 mb-2">Primary Persona</Label>
-                                <Select value={concept} onValueChange={setConcept}>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {Object.entries(personas).map(([key, persona]) => (
-                                            <SelectItem key={key} value={key}>{(persona as any).label || key}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-
-
                             <div>
                                 <Label htmlFor="landingPageUrl" className="block text-sm font-medium text-gray-700 mb-2">
                                     Landing Page URL <span className="text-xs text-gray-500">(Optional)</span>
@@ -729,7 +716,7 @@ export const AdCopyTab = ({
                                             temperature: modelSettings?.temperature || 0.7,
                                             maxTokens: modelSettings?.maxTokens || 2000,
                                             systemPrompt: debugInfo?.systemPrompt || stationPrompts?.adCopy?.systemPrompt || 'Expert Meta ad copywriter specializing in Jones Road Beauty brand voice...',
-                                            userPrompt: debugInfo?.userPrompt || `Target: ${concept}\nBrief: ${customBrief}\nTranscription: ${transcription}`,
+                                            userPrompt: debugInfo?.userPrompt || `Target: ${persona}\nBrief: ${customBrief}\nTranscription: ${transcription}`,
                                             requestPayload: debugInfo?.requestPayload,
                                             rawResponse: debugInfo?.rawResponse
                                         });

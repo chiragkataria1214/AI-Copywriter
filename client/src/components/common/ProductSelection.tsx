@@ -2,15 +2,9 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { TOP_PRODUCTS } from '@shared/constants';
 
-// Top 5 popular products - centralized constant
-export const TOP_PRODUCTS = [
-  'miracle-balm',
-  'what-the-foundation', 
-  'the-mascara',
-  'just-enough-tinted-moisturizer',
-  'everyday-sunscreen-broad-spectrum-spf-30'
-];
+// Popular products list is now centralized in `@shared/constants`
 
 interface Product {
   name: string;
@@ -125,7 +119,7 @@ export const ProductSelection: React.FC<ProductSelectionProps> = ({
                 className="text-xs text-blue-600 hover:text-blue-800 h-auto p-1"
                 onClick={toggleTopProducts}
               >
-                {allTopSelected ? 'Deselect Top 5' : 'Select Top 5'}
+                {allTopSelected ? `Deselect Top ${topProductsInCatalog.length}` : `Select Top ${topProductsInCatalog.length}`}
               </Button>
             </div>
             

@@ -21,6 +21,7 @@ import {
 import { analyzeInfluencerVoice, generateInfluencerStyleCopy, fetchInstagramContent } from "./services";
 import { getTrainingConfig } from "./routes/training";
 import { z } from "zod";
+import { DEFAULT_BRAND_DR_BALANCE, DEFAULT_PERSONA_KEY, DEFAULT_CONTENT_TYPE, DEFAULT_SOCIAL_PLATFORM, DEFAULT_SOCIAL_GOAL, DEFAULT_TONE, DEFAULT_VARIATIONS, DEFAULT_SEQUENCE_TYPE, DEFAULT_STORY_LENGTH } from "@shared/constants";
 import bcrypt from "bcrypt";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -90,6 +91,9 @@ function registerConfigRoutes(app: Express) {
   // Training configuration endpoint - replaces hardcoded config
   app.get("/api/training-config", async (req, res) => {
     try {
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
       const config = await storage.getTrainingConfiguration();
       res.json(config);
     } catch (error) {
@@ -443,6 +447,164 @@ function registerConfigRoutes(app: Express) {
     } catch (error) {
       console.error("Error fetching email frameworks:", error);
       res.status(500).json({ error: "Failed to fetch email frameworks" });
+    }
+  });
+
+  // SMS frameworks endpoints - Full CRUD operations
+  // GET all SMS frameworks
+  app.get("/api/sms-frameworks", async (req, res) => {
+    try {
+      const frameworks = await storage.getAllSmsFrameworks();
+      res.json(frameworks);
+    } catch (error) {
+      console.error("Error fetching SMS frameworks:", error);
+      res.status(500).json({ error: "Failed to fetch SMS frameworks" });
+    }
+  });
+
+  // GET active SMS frameworks only
+  app.get("/api/sms-frameworks/active", async (req, res) => {
+    try {
+      const frameworks = await storage.getActiveSmsFrameworks();
+      res.json(frameworks);
+    } catch (error) {
+      console.error("Error fetching active SMS frameworks:", error);
+      res.status(500).json({ error: "Failed to fetch active SMS frameworks" });
+    }
+  });
+
+  // GET single SMS framework by name
+  app.get("/api/sms-frameworks/:name", async (req, res) => {
+    try {
+      const { name } = req.params;
+      const framework = await storage.getSmsFramework(name);
+      if (!framework) {
+        return res.status(404).json({ error: "SMS framework not found" });
+      }
+      res.json(framework);
+    } catch (error) {
+      console.error("Error fetching SMS framework:", error);
+      res.status(500).json({ error: "Failed to fetch SMS framework" });
+    }
+  });
+
+  // POST create new SMS framework
+  app.post("/api/sms-frameworks", requireAdmin, async (req, res) => {
+    try {
+      const { 
+        name, 
+        displayName, 
+        description, 
+        structure, 
+        keyElements, 
+        frameworkContent, 
+        systemPrompt,
+        outputRequirements,
+        expectedLength,
+        isActive,
+        sortOrder 
+      } = req.body;
+
+      if (!name || !displayName || !description || !structure || !systemPrompt) {
+        return res.status(400).json({ 
+          error: "Missing required fields: name, displayName, description, structure, systemPrompt" 
+        });
+      }
+
+      const existingFramework = await storage.getSmsFramework(name);
+      if (existingFramework) {
+        return res.status(409).json({ error: "Framework with this name already exists" });
+      }
+
+      const newFramework = await storage.createSmsFramework({
+        name,
+        displayName,
+        description,
+        structure,
+        keyElements,
+        frameworkContent,
+        systemPrompt,
+        outputRequirements,
+        expectedLength,
+        isActive: isActive || 'true',
+        sortOrder: sortOrder || 0,
+      });
+
+      res.status(201).json({ success: true, framework: newFramework });
+    } catch (error) {
+      console.error("Error creating SMS framework:", error);
+      res.status(500).json({ error: "Failed to create SMS framework" });
+    }
+  });
+
+  // PUT update SMS framework by ID
+  app.put("/api/sms-frameworks/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { 
+        name,
+        displayName,
+        description,
+        structure, 
+        keyElements, 
+        frameworkContent, 
+        systemPrompt,
+        outputRequirements,
+        expectedLength,
+        isActive,
+        sortOrder 
+      } = req.body;
+
+      if (!id) {
+        return res.status(400).json({ error: "Framework ID is required" });
+      }
+
+      const updatedFramework = await storage.updateSmsFramework(id, {
+        name,
+        displayName,
+        description,
+        structure,
+        keyElements,
+        frameworkContent,
+        systemPrompt,
+        outputRequirements,
+        expectedLength,
+        isActive,
+        sortOrder,
+      });
+
+      if (!updatedFramework) {
+        return res.status(404).json({ error: "Framework not found" });
+      }
+
+      res.json({ success: true, framework: updatedFramework });
+    } catch (error) {
+      console.error("Error updating SMS framework:", error);
+      res.status(500).json({ error: "Failed to update SMS framework" });
+    }
+  });
+
+  // DELETE SMS framework by ID
+  app.delete("/api/sms-frameworks/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteSmsFrameworkById(id);
+      res.json({ success: true, message: "Framework deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting SMS framework:", error);
+      res.status(500).json({ error: "Failed to delete SMS framework" });
+    }
+  });
+
+  // POST seed SMS frameworks from template
+  app.post("/api/sms-frameworks/seed", requireAdmin, async (req, res) => {
+    try {
+      const { seedSmsFrameworks } = await import('./seeds/sms-frameworks-seed.js');
+      await seedSmsFrameworks();
+      res.json({ success: true, message: "SMS frameworks seeded successfully" });
+    } catch (error) {
+      console.error("Error seeding SMS frameworks:", error);
+      res.status(500).json({ error: "Failed to seed SMS frameworks" });
     }
   });
 
@@ -1047,6 +1209,9 @@ function registerConfigRoutes(app: Express) {
   // Station Prompts configuration endpoint
   app.get("/api/config/station-prompts", async (req, res) => {
     try {
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
       const config = await storage.getTrainingConfiguration();
       res.json(config.stationPrompts || {});
     } catch (error) {
@@ -1582,7 +1747,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/generate-ad-copy', requireAuth, async (req, res) => {
     try {
       const startTime = Date.now();
-      const { transcription, customBrief, concept, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProduct, selectedProducts } = req.body;
+      const { transcription, customBrief, persona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProduct, selectedProducts } = req.body;
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -1594,7 +1759,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await generateAdCopy({
         transcription,
         customBrief,
-        concept,
+        persona,
         targetAudience,
         landingPageUrl,
         brandDrBalance,
@@ -1612,10 +1777,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req.session as any).userId;
       const savedCopy = await storage.saveGeneratedCopy({
         userId: userId,
-        inputText: transcription || concept || '',
+        inputText: transcription || persona || '',
         landingPageUrl: landingPageUrl || null,
         targetPersona: targetAudience || '',
-        brandDrBalance: brandDrBalance || 50,
+        brandDrBalance: brandDrBalance || DEFAULT_BRAND_DR_BALANCE,
         headlines: result.headlines,
         primaryText: result.primaryText,
         configSnapshot: trainingConfig,
@@ -1673,7 +1838,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate custom copy endpoint (protected)
   app.post('/api/generate-custom-copy', requireAuth, async (req, res) => {
     try {
-      const { customRequest, concept, brandDrBalance, selectedProduct, selectedProducts, useJonesBrandGuide } = req.body;
+      const { customRequest, persona, brandDrBalance, selectedProduct, selectedProducts, useJonesBrandGuide } = req.body;
       
   
       
@@ -1690,7 +1855,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const result = await generateCustomCopy({
         customRequest: customRequest.trim(),
-        concept,
+        persona,
         brandDrBalance,
         selectedProduct,
         selectedProducts,
@@ -1715,7 +1880,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         googleDriveLinks, 
         selectedProduct, 
         selectedProducts, 
-        concept, 
+        persona, 
         brandDrBalance, 
         useJonesBrandGuide 
       } = req.body;
@@ -1725,7 +1890,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         googleDriveLinks, 
         selectedProduct, 
         selectedProducts, 
-        concept, 
+        persona, 
         brandDrBalance 
       });
       
@@ -1748,7 +1913,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         googleDriveLinks: googleDriveLinks || [],
         selectedProduct,
         selectedProducts,
-        concept,
+        persona,
         brandDrBalance,
         useJonesBrandGuide
       }, trainingConfig);
@@ -1831,7 +1996,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contentLength, 
         keywordsToInclude, 
         wordsToAvoid,
-        concept,
+        persona,
         brandDrBalance,
         selectedProduct,
         useJonesBrandGuide
@@ -1852,17 +2017,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get current training config
       const trainingConfig = await getTrainingConfig();
       
-      // Fetch email framework details if emailType is provided
-      let selectedFramework = null;
-      if (platform === 'Email' && emailType) {
-        try {
+      // Fetch framework details based on platform
+      let selectedFramework = null as any;
+      try {
+        if (platform === 'Email') {
           const frameworks = await storage.getAllEmailFrameworks();
-          selectedFramework = frameworks.find(f => f.displayName === emailType);
-          console.log('Selected email framework:', selectedFramework?.displayName);
-        } catch (error) {
-          console.error('Failed to fetch email frameworks:', error);
-          // Continue without framework details - generation will still work
+          if (emailType) {
+            selectedFramework = frameworks.find(f => f.displayName === emailType) || null;
+          }
+        } else if (platform === 'SMS') {
+          const frameworks = await storage.getActiveSmsFrameworks();
+          // Reuse emailType as the label if provided; else default to first active
+          if (emailType) {
+            selectedFramework = frameworks.find((f: any) => f.displayName === emailType) || null;
+          }
+          if (!selectedFramework && frameworks && frameworks.length > 0) {
+            selectedFramework = frameworks[0];
+          }
+          if (selectedFramework) {
+            console.log('Selected SMS framework:', selectedFramework.displayName);
+          }
         }
+      } catch (error) {
+        console.error('Failed to fetch frameworks:', error);
+        // Continue without framework details - generation will still work
       }
       
       const result = await generateRetentionCopy({
@@ -1878,7 +2056,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contentLength,
         keywordsToInclude,
         wordsToAvoid,
-        concept,
+        persona,
         brandDrBalance,
         selectedProduct,
         useJonesBrandGuide
@@ -1958,10 +2136,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         variations, 
         selectedProduct,
         selectedProducts,
-        imageData // Add image data parameter
+        imageData, // Add image data parameter
+        persona // Add persona parameter
       } = req.body;
       
-      console.log('Social captions request:', { contentType, platform, goal, tone, variations, selectedProduct, transcriptionLength: transcription?.length, hasImageData: !!imageData });
+      console.log('Social captions request:', { contentType, platform, goal, tone, variations, selectedProduct, persona, transcriptionLength: transcription?.length, hasImageData: !!imageData });
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -1976,15 +2155,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const trainingConfig = await getTrainingConfig();
       
       const result = await generateSocialCaptions({
-        contentType: contentType || 'video',
+        contentType: contentType || DEFAULT_CONTENT_TYPE,
         transcription: transcription?.trim() || '',
-        platform: platform || 'instagram',
-        goal: goal || 'product-education',
-        tone: tone || 'authentic-personal',
-        variations: variations || 3,
+        platform: platform || DEFAULT_SOCIAL_PLATFORM,
+        goal: goal || DEFAULT_SOCIAL_GOAL,
+        tone: tone || DEFAULT_TONE,
+        variations: variations || DEFAULT_VARIATIONS,
         selectedProduct: selectedProduct,
         selectedProducts: selectedProducts,
-        concept: 'lifeJuggler', // Default concept for social captions
+    persona: persona || DEFAULT_PERSONA_KEY, // Use persona from request, fallback to default
         imageData: imageData // Pass image data to the function
       }, trainingConfig);
       
@@ -2012,7 +2191,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tone, 
         selectedProduct,
         selectedProducts,
-        imageData // Add image data parameter
+        imageData, // Add image data parameter
+        persona // Add persona parameter
       } = req.body;
       
   
@@ -2030,14 +2210,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const trainingConfig = await getTrainingConfig();
       
       const result = await generateStorySequence({
-        contentType: contentType || 'video',
+        contentType: contentType || DEFAULT_CONTENT_TYPE,
         transcription: transcription?.trim() || '',
-        sequenceType: sequenceType || 'product-showcase',
-        length: length || 5,
-        tone: tone || 'authentic-personal',
+        sequenceType: sequenceType || DEFAULT_SEQUENCE_TYPE,
+        length: length || DEFAULT_STORY_LENGTH,
+        tone: tone || DEFAULT_TONE,
         selectedProduct: selectedProduct,
         selectedProducts: selectedProducts,
-        concept: 'lifeJuggler', // Default concept for story sequences
+    persona: persona || DEFAULT_PERSONA_KEY, // Use persona from request, fallback to default
         imageData: imageData // Pass image data to the function
       }, trainingConfig);
       
@@ -2057,9 +2237,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Static ad analysis endpoint (protected)
   app.post('/api/analyze-static-ad', requireAuth, async (req, res) => {
     try {
-      const { staticAdImage, concept, brandDrBalance, selectedProduct, selectedProducts, useJonesBrandGuide, outputFormat, analysisFocus } = req.body;
+      const { staticAdImage, persona, brandDrBalance, selectedProduct, selectedProducts, useJonesBrandGuide, outputFormat, analysisFocus } = req.body;
       
-      console.log('Static ad analysis request:', { concept, brandDrBalance, selectedProduct, useJonesBrandGuide, outputFormat, analysisFocus, imageLength: staticAdImage?.length });
+      console.log('Static ad analysis request:', { persona, brandDrBalance, selectedProduct, useJonesBrandGuide, outputFormat, analysisFocus, imageLength: staticAdImage?.length });
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -2074,8 +2254,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const result = await analyzeStaticAd({
         staticAdImage,
-        concept: concept || 'lifeJuggler',
-        brandDrBalance: brandDrBalance || 50,
+        persona: persona || DEFAULT_PERSONA_KEY,
+        brandDrBalance: brandDrBalance || DEFAULT_BRAND_DR_BALANCE,
         selectedProduct: selectedProduct || undefined,
         selectedProducts: selectedProducts || [],
         useJonesBrandGuide,
@@ -2115,9 +2295,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate landing page copy endpoint (protected)
   app.post('/api/generate-landing-copy', requireAuth, async (req, res) => {
     try {
-      const { landingPageType, productBrief, concept, useAdsContent, adsContent, brandDrBalance, selectedProduct, selectedProducts, mainAngle, transcription } = req.body;
+      const { landingPageType, productBrief, persona, useAdsContent, adsContent, brandDrBalance, selectedProduct, selectedProducts, mainAngle, transcription } = req.body;
       
-      console.log('Landing copy request body:', { landingPageType, productBrief, concept, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle, transcription: transcription ? 'included' : 'none' });
+      console.log('Landing copy request body:', { landingPageType, productBrief, persona, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle, transcription: transcription ? 'included' : 'none' });
       
       if (!process.env.ANTHROPIC_API_KEY) {
         return res.status(400).json({ message: 'Anthropic API key not configured' });
@@ -2129,7 +2309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await generateLandingPageCopy({
         landingPageType,
         productBrief,
-        concept,
+        persona,
         useAdsContent,
         adsContent,
         brandDrBalance,
@@ -2201,7 +2381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         context: z.object({
           transcription: z.string().optional(),
           customBrief: z.string().optional(),
-          concept: z.string().optional(),
+          persona: z.string().optional(),
           targetAudience: z.string().optional(),
           brandDrBalance: z.number().optional(),
           selectedProduct: z.string().optional(),
@@ -2389,7 +2569,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const generationSchema = z.object({
         transcription: z.string().optional(),
         customBrief: z.string().optional(),
-        concept: z.string().optional(),
+        persona: z.string().optional(),
         targetAudience: z.string().optional(),
         landingPageUrl: z.string().optional(),
         brandDrBalance: z.array(z.number()).optional(),
@@ -2423,7 +2603,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 Product: ${data.selectedProduct || 'Jones Road Beauty products'}
 Transcription: ${data.transcription || ''}
 Custom Brief: ${data.customBrief || ''}
-Target Persona: ${data.concept}
+Target Persona: ${data.persona}
 Landing Page: ${data.landingPageUrl || 'None provided'}
 `;
 
@@ -2431,16 +2611,16 @@ Landing Page: ${data.landingPageUrl || 'None provided'}
         prompt,
         data.voiceProfile,
         trainingConfig?.brandGuidelines,
-        data.influencerBrandBalance[0] || 50
+        data.influencerBrandBalance[0] || DEFAULT_BRAND_DR_BALANCE
       );
 
       const userId = (req.session as any).userId;
       const savedCopy = await storage.saveGeneratedCopy({
         userId: userId,
-        inputText: data.transcription || data.concept || '',
+        inputText: data.transcription || data.persona || '',
         landingPageUrl: data.landingPageUrl || null,
         targetPersona: data.targetAudience || '',
-        brandDrBalance: data.brandDrBalance?.[0] || 50,
+        brandDrBalance: data.brandDrBalance?.[0] || DEFAULT_BRAND_DR_BALANCE,
         headlines: result.headlines,
         primaryText: result.primaryText,
         configSnapshot: trainingConfig,
@@ -2455,7 +2635,7 @@ Landing Page: ${data.landingPageUrl || 'None provided'}
         headlines: result.headlines,
         primaryText: result.primaryText,
         voiceAnalysis: {
-          balanceUsed: data.influencerBrandBalance[0] || 50,
+          balanceUsed: data.influencerBrandBalance[0] || DEFAULT_BRAND_DR_BALANCE,
           voiceElements: data.voiceProfile.toneDescriptors.slice(0, 3)
         }
       });

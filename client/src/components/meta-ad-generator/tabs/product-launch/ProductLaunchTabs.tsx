@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/hooks/useToast';
 import { apiRequest } from '@/lib/queryClient';
 import { ProductSelection } from '@/components/common/ProductSelection';
+import { DEFAULT_PERSONA_KEY } from '@shared/constants';
 
 export const ProductLaunchTabs = (props: any) => {
     // Extract form state and handlers
@@ -20,7 +21,7 @@ export const ProductLaunchTabs = (props: any) => {
     const briefCreationTabProps = {
         ...restProps,
         // Form state props needed by BriefCreationTab
-        concept: formState?.concept || 'lifeJuggler',
+  persona: formState?.persona || DEFAULT_PERSONA_KEY,
         brandDrBalance: formState?.brandDrBalance || [50],
         useJonesBrandGuide: formState?.useJonesBrandGuide || true,
     };
@@ -114,7 +115,7 @@ const BriefCreationTab = (props: any) => {
                     notes,
                     googleDriveLinks,
                     selectedProducts: selectedProducts, // Changed from selectedProduct to selectedProducts
-                    concept: props.concept,
+                    persona: props.persona,
                     brandDrBalance: props.brandDrBalance,
                     useJonesBrandGuide: props.useJonesBrandGuide
                 }

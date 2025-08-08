@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Eye, EyeOff } from 'lucide-react';
 import { generateProductSlug, slugToDisplayName } from '@shared/utils';
 
 interface ProductClaimsProps {
@@ -38,7 +38,7 @@ export const ProductClaims: React.FC<ProductClaimsProps> = ({
   const isAdmin = effectiveUser?.role === 'admin';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
         <p className="text-sm text-green-800 font-medium">Product Claims Management</p>
         <p className="text-sm text-green-700 mt-1">
@@ -47,9 +47,9 @@ export const ProductClaims: React.FC<ProductClaimsProps> = ({
       </div>
 
       {isAdmin && (
-        <div className="border border-dashed border-blue-300 rounded-lg p-4 bg-blue-50">
-          <h4 className="text-sm font-medium text-blue-800 mb-3">Add New Product</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="border border-dashed border-blue-300 rounded-lg p-3 bg-blue-50">
+          <h4 className="text-xs font-medium text-blue-800 mb-2">Add New Product</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <Input
               placeholder="Product name (e.g., 'lip-gloss')"
               value={newProductName}
@@ -87,9 +87,9 @@ export const ProductClaims: React.FC<ProductClaimsProps> = ({
 
       <div className="space-y-6">
         {Object.keys(productClaims).map((productKey) => (
-          <div key={productKey} className="border rounded-lg p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h4 className="text-md font-semibold text-gray-800 capitalize">{productKey.replace(/-/g, ' ')}</h4>
+          <div key={productKey} className="border rounded-md p-2">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="text-sm font-semibold text-gray-800 capitalize">{productKey.replace(/-/g, ' ')}</h4>
               {isAdmin && (
                 <Button
                   variant="ghost"
@@ -102,21 +102,29 @@ export const ProductClaims: React.FC<ProductClaimsProps> = ({
                 </Button>
               )}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <Label className="text-sm font-medium text-green-700 mb-2 block">Approved Claims</Label>
-                <div className="space-y-2">
+                <Label className="text-xs font-medium text-green-700 mb-2 block">Approved Claims</Label>
+                <div className="rounded-md border border-gray-100 bg-white divide-y divide-gray-100">
                   {(productClaims[productKey].approvedClaims || []).map((claim: string, index: number) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <Switch
-                        checked={productClaims[productKey].enabledApproved[index]}
-                        onCheckedChange={(checked) => handleClaimSwitch(productKey, index, 'approved', checked)}
-                        disabled={!isAdmin}
-                      />
+                    <div key={index} className="group flex items-center gap-1.5 px-1.5 py-1 hover:bg-gray-50">
+                      <div className="flex items-center gap-1">
+                        <Switch
+                          checked={productClaims[productKey].enabledApproved[index]}
+                          onCheckedChange={(checked) => handleClaimSwitch(productKey, index, 'approved', checked)}
+                          disabled={!isAdmin}
+                          className="scale-90"
+                        />
+                        {productClaims[productKey].enabledApproved[index] ? (
+                          <Eye className="w-3 h-3 text-green-500" />
+                        ) : (
+                          <EyeOff className="w-3 h-3 text-gray-400" />
+                        )}
+                      </div>
                       <Input
                         value={claim}
                         onChange={(e) => handleClaimChange(productKey, index, 'approved', e.target.value)}
-                        className="text-sm"
+                        className="text-xs h-7 py-0 flex-1"
                         disabled={!isAdmin}
                       />
                       <Button
@@ -124,37 +132,47 @@ export const ProductClaims: React.FC<ProductClaimsProps> = ({
                         size="icon"
                         onClick={() => removeClaim(productKey, index, 'approved')}
                         disabled={!isAdmin}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-red-500 hover:text-red-700 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={12} />
                       </Button>
                     </div>
                   ))}
+                </div>
+                <div className="mt-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => addClaim(productKey, 'approved')}
                     disabled={!isAdmin}
-                    className="w-full border-dashed"
+                    className="w-full border-dashed py-1.5 text-xs"
                   >
                     + Add Approved Claim
                   </Button>
                 </div>
               </div>
               <div>
-                <Label className="text-sm font-medium text-red-700 mb-2 block">Prohibited Claims</Label>
-                <div className="space-y-2">
+                <Label className="text-xs font-medium text-red-700 mb-2 block">Prohibited Claims</Label>
+                <div className="rounded-md border border-gray-100 bg-white divide-y divide-gray-100">
                   {(productClaims[productKey].prohibitedClaims || []).map((claim: string, index: number) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <Switch
-                        checked={productClaims[productKey].enabledProhibited[index]}
-                        onCheckedChange={(checked) => handleClaimSwitch(productKey, index, 'prohibited', checked)}
-                        disabled={!isAdmin}
-                      />
+                    <div key={index} className="group flex items-center gap-1.5 px-1.5 py-1 hover:bg-gray-50">
+                      <div className="flex items-center gap-1">
+                        <Switch
+                          checked={productClaims[productKey].enabledProhibited[index]}
+                          onCheckedChange={(checked) => handleClaimSwitch(productKey, index, 'prohibited', checked)}
+                          disabled={!isAdmin}
+                          className="scale-90"
+                        />
+                        {productClaims[productKey].enabledProhibited[index] ? (
+                          <Eye className="w-3 h-3 text-green-500" />
+                        ) : (
+                          <EyeOff className="w-3 h-3 text-gray-400" />
+                        )}
+                      </div>
                       <Input
                         value={claim}
                         onChange={(e) => handleClaimChange(productKey, index, 'prohibited', e.target.value)}
-                        className="text-sm"
+                        className="text-xs h-7 py-0 flex-1"
                         disabled={!isAdmin}
                       />
                       <Button
@@ -162,18 +180,20 @@ export const ProductClaims: React.FC<ProductClaimsProps> = ({
                         size="icon"
                         onClick={() => removeClaim(productKey, index, 'prohibited')}
                         disabled={!isAdmin}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-red-500 hover:text-red-700 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={12} />
                       </Button>
                     </div>
                   ))}
+                </div>
+                <div className="mt-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => addClaim(productKey, 'prohibited')}
                     disabled={!isAdmin}
-                    className="w-full border-dashed"
+                    className="w-full border-dashed py-1.5 text-xs"
                   >
                     + Add Prohibited Claim
                   </Button>

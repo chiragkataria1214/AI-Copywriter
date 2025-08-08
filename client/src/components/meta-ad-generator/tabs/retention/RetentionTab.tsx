@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ProductSelection } from '@/components/common/ProductSelection';
 import { GenerationMetadata } from '@/components/common/GenerationDetailsModal';
 import { apiRequest } from '@/lib/queryClient';
+import { TargetPersona } from '../../../common/TargetPersona';
 
 interface Persona {
   label: string;
@@ -30,6 +31,22 @@ interface RetentionCopyHistoryItem {
 }
 
 interface EmailFramework {
+  id: string;
+  name: string;
+  displayName: string;
+  description: string;
+  structure: string;
+  keyElements: string;
+  frameworkContent: string;
+  systemPrompt: string;
+  outputRequirements: string;
+  expectedLength: string;
+  images?: any[];
+  isActive: string;
+  sortOrder: number;
+}
+
+interface SmsFramework {
   id: string;
   name: string;
   displayName: string;
@@ -65,8 +82,8 @@ interface RetentionTabProps {
   retentionCopyHistory: RetentionCopyHistoryItem[];
   
   // Shared state
-  concept: string;
-  setConcept: (value: string) => void;
+  persona: string;
+  setPersona: (value: string) => void;
   brandDrBalance: number[];
   setBrandDrBalance: (value: number[]) => void;
   selectedProduct: string;
@@ -145,8 +162,8 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
   retentionWordsToAvoid,
   generatedRetentionCopy,
   retentionCopyHistory,
-  concept,
-  setConcept,
+  persona,
+  setPersona,
   brandDrBalance,
   setBrandDrBalance,
   selectedProduct,
@@ -171,34 +188,37 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
   retentionDebugInfo,
 }) => {
   const [emailFrameworks, setEmailFrameworks] = useState<EmailFramework[]>([]);
+  const [smsFrameworks, setSmsFrameworks] = useState<SmsFramework[]>([]);
   const [loadingFrameworks, setLoadingFrameworks] = useState(false);
   const [visualPreviewHtml, setVisualPreviewHtml] = useState<string>('');
   const [showVisualPreview, setShowVisualPreview] = useState(false);
   const [generatingPreview, setGeneratingPreview] = useState(false);
 
-  // Load email frameworks on component mount
+  // Load email/SMS frameworks on component mount
   useEffect(() => {
-    const loadEmailFrameworks = async () => {
-      if (emailFrameworks.length > 0) return; // Don't load if already loaded
-      
+    const loadFrameworks = async () => {
+      if (emailFrameworks.length > 0 && smsFrameworks.length > 0) return;
       setLoadingFrameworks(true);
       try {
-        const response = await apiRequest('/api/email-frameworks');
-        const frameworks = (response || []).filter((framework: EmailFramework) => 
-          framework.isActive === 'true'
-        );
-        setEmailFrameworks(frameworks);
+        const [emailResp, smsResp] = await Promise.all([
+          apiRequest('/api/email-frameworks'),
+          apiRequest('/api/sms-frameworks')
+        ]);
+        const emailActive = (emailResp || []).filter((fw: EmailFramework) => fw.isActive === 'true');
+        const smsActive = (smsResp || []).filter((fw: SmsFramework) => fw.isActive === 'true');
+        setEmailFrameworks(emailActive);
+        setSmsFrameworks(smsActive);
       } catch (error) {
-        console.error('Failed to load email frameworks:', error);
-        // Fallback to hardcoded frameworks if API fails
+        console.error('Failed to load frameworks:', error);
         setEmailFrameworks([]);
+        setSmsFrameworks([]);
       } finally {
         setLoadingFrameworks(false);
       }
     };
 
-    loadEmailFrameworks();
-  }, [emailFrameworks.length]);
+    loadFrameworks();
+  }, [emailFrameworks.length, smsFrameworks.length]);
 
   // Generate visual preview function
   const generateVisualPreview = async () => {
@@ -250,6 +270,11 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
 
   // Helper function to get selected framework details
   const getSelectedFramework = (): EmailFramework | null => {
+    if (retentionPlatform === 'SMS') {
+      if (!retentionEmailType || smsFrameworks.length === 0) return null;
+      const found = smsFrameworks.find(framework => framework.displayName === retentionEmailType);
+      return (found as unknown as EmailFramework) || null;
+    }
     if (!retentionEmailType || emailFrameworks.length === 0) return null;
     return emailFrameworks.find(framework => framework.displayName === retentionEmailType) || null;
   };
@@ -401,30 +426,96 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                 </div>
               )}
 
+              {retentionPlatform === 'SMS' && (
+                <div>
+                  <Label className="block text-sm font-medium text-gray-700 mb-2">
+                    SMS Type *
+                  </Label>
+                  <p className="text-xs text-gray-500 mb-3">
+                    Choose the specific SMS framework that best fits your campaign goals
+                  </p>
+                  <Select value={retentionEmailType} onValueChange={setRetentionEmailType} disabled={loadingFrameworks}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={loadingFrameworks ? "Loading frameworks..." : "Select SMS type"} />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 overflow-y-auto">
+                      {smsFrameworks.length > 0 ? (
+                        smsFrameworks
+                          .sort((a, b) => a.sortOrder - b.sortOrder)
+                          .map((framework) => (
+                            <SelectItem key={framework.id} value={framework.displayName}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{framework.displayName}</span>
+                                <span className="text-xs text-gray-500 truncate max-w-xs">
+                                  {framework.description}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))
+                      ) : (
+                        <>
+                          <SelectItem value="Product Launch">Product Launch</SelectItem>
+                          <SelectItem value="Product Spotlight">Product Spotlight</SelectItem>
+                          <SelectItem value="Product Roundup / Series">Product Roundup / Series</SelectItem>
+                          <SelectItem value="Category Push">Category Push</SelectItem>
+                          <SelectItem value="Social Proof / Reviews">Social Proof / Reviews</SelectItem>
+                          <SelectItem value="Sale or Promotion Alert">Sale or Promotion Alert</SelectItem>
+                          <SelectItem value="Reminder / Last Chance">Reminder / Last Chance</SelectItem>
+                          <SelectItem value="Educational">Educational</SelectItem>
+                          <SelectItem value="Cross-Sell / Upsell">Cross-Sell / Upsell</SelectItem>
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {loadingFrameworks && (
+                    <p className="text-xs text-blue-600 mt-1 flex items-center">
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-2"></div>
+                      Loading SMS frameworks from database...
+                    </p>
+                  )}
+
+                  {/* Show selected SMS framework details */}
+                  {retentionEmailType && getSelectedFramework() && (
+                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <div className="flex items-start space-x-2">
+                        <MessageSquare className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium text-amber-900 mb-1">
+                            {getSelectedFramework()?.displayName}
+                          </h4>
+                          <p className="text-xs text-amber-700 mb-2">
+                            {getSelectedFramework()?.description}
+                          </p>
+                          <div className="text-xs text-amber-700">
+                            <span className="font-medium">Structure:</span> {getSelectedFramework()?.structure}
+                          </div>
+                          {getSelectedFramework()?.keyElements && (
+                            <div className="text-xs text-amber-700 mt-1">
+                              <span className="font-medium">Key Elements:</span> {getSelectedFramework()?.keyElements}
+                            </div>
+                          )}
+                          {getSelectedFramework()?.expectedLength && (
+                            <div className="text-xs text-amber-700 mt-1">
+                              <span className="font-medium">Expected Length:</span> {getSelectedFramework()?.expectedLength}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Target Persona Section */}
-              <div>
-                <Label className="block text-sm font-medium text-gray-700 mb-2">
-                  Target Persona (Optional)
-                </Label>
-                <p className="text-xs text-gray-500 mb-3">
-                  Choose the primary audience for this retention campaign, or leave blank for general audience
-                </p>
-                <Select value={concept} onValueChange={setConcept}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select target persona (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None (General Audience)</SelectItem>
-                    {Object.entries(personas).map(([key, persona]) => (
-                      <SelectItem key={key} value={key}>
-                        {(persona as any).label || key.replace(/([A-Z])/g, ' $1').trim()}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-
-              </div>
+                              <TargetPersona
+                  personas={personas}
+                  persona={persona}
+                  setPersona={setPersona}
+                  optional={true}
+                  description="Choose the primary audience for this retention campaign, or leave blank for general audience"
+                  showCard={false}
+                  showIcon={false}
+                />
 
               {/* Product Selection for Retention */}
               <ProductSelection

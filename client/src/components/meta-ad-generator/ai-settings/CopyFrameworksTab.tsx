@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Trash2, ChevronDown, ChevronRight, Plus, Mail, Upload, Check, X, List } from 'lucide-react';
+import { Sparkles, Trash2, ChevronDown, ChevronRight, Plus, Mail, Upload, Check, X, List, MessageSquare } from 'lucide-react';
 import { TrainingConfig } from '@shared/training-config';
 import { useToast } from '@/hooks/useToast';
 import { apiRequest } from '@/lib/queryClient';
@@ -14,18 +14,24 @@ interface CopyFrameworksTabProps {
   editingConfig: TrainingConfig;
   setEditingConfig: (config: TrainingConfig) => void;
   effectiveUser: any;
+  onSaveCopyFrameworks?: (cf: TrainingConfig['copyFrameworks']) => void;
 }
 
 export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
   editingConfig,
   setEditingConfig,
-  effectiveUser
+  effectiveUser,
+  onSaveCopyFrameworks
 }) => {
   const [showHeadlineFrameworks, setShowHeadlineFrameworks] = useState(false);
   const [expandedFrameworks, setExpandedFrameworks] = useState<Set<number>>(new Set());
   const [showEmailFrameworks, setShowEmailFrameworks] = useState(false);
   const [expandedEmailFrameworks, setExpandedEmailFrameworks] = useState<Set<number>>(new Set());
   const [loadingEmailFrameworks, setLoadingEmailFrameworks] = useState(false);
+  // SMS Frameworks state
+  const [showSmsFrameworks, setShowSmsFrameworks] = useState(false);
+  const [expandedSmsFrameworks, setExpandedSmsFrameworks] = useState<Set<number>>(new Set());
+  const [loadingSmsFrameworks, setLoadingSmsFrameworks] = useState(false);
   const { toast } = useToast();
   const frameworksLoadedRef = useRef(false);
 
@@ -34,7 +40,7 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
   const [expandedLandingPageFrameworks, setExpandedLandingPageFrameworks] = useState<Set<number>>(new Set());
   const [loadingLandingPageFrameworks, setLoadingLandingPageFrameworks] = useState(false);
 
-  // Load email frameworks from database on component mount
+  // Save handled by sticky bar in AISettingsComponent
   useEffect(() => {
     const loadEmailFrameworks = async () => {
       // Always load from API to ensure we have the latest data including images
@@ -145,6 +151,35 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
     loadLandingPageFrameworks();
   }, []); // Only run once on mount
 
+  // Load SMS frameworks from database on component mount
+  useEffect(() => {
+    const loadSms = async () => {
+      console.log('DEBUG: Loading SMS frameworks from API...');
+      setLoadingSmsFrameworks(true);
+      try {
+        const response = await apiRequest('/api/sms-frameworks');
+        const smsFrameworks = (response || []).map((framework: any) => ({
+          ...framework,
+          isEnabled: framework.isActive === 'true' || framework.isActive === true
+        }));
+        const updatedConfig = {
+          ...editingConfig,
+          copyFrameworks: {
+            ...editingConfig?.copyFrameworks,
+            smsFrameworks
+          }
+        };
+        setEditingConfig(updatedConfig);
+      } catch (error) {
+        console.error('Failed to load SMS frameworks:', error);
+        toast({ title: 'Error', description: 'Failed to load SMS frameworks from database', variant: 'destructive' });
+      } finally {
+        setLoadingSmsFrameworks(false);
+      }
+    };
+    loadSms();
+  }, []);
+
   const toggleFramework = (index: number) => {
     const newExpanded = new Set(expandedFrameworks);
     if (expandedFrameworks.has(index)) {
@@ -175,6 +210,17 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
       newExpanded.add(index);
     }
     setExpandedLandingPageFrameworks(newExpanded);
+  };
+
+  // Add SMS framework toggle function
+  const toggleSmsFramework = (index: number) => {
+    const newExpanded = new Set(expandedSmsFrameworks);
+    if (expandedSmsFrameworks.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedSmsFrameworks(newExpanded);
   };
 
   const ToggleButton = ({ 
@@ -264,6 +310,44 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
                 copyFrameworks: {
                   ...editingConfig?.copyFrameworks,
                   emailFrameworks: updated
+                }
+              });
+            }}
+            size="sm"
+            variant="outline"
+            className="text-xs bg-white hover:bg-gray-50"
+          >
+            <Plus className="w-3 h-3 mr-1" />
+            Add Framework
+          </Button>
+        )}
+        {effectiveUser?.role === 'admin' && title === 'SMS Frameworks' && (
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              const existingCount = ((editingConfig?.copyFrameworks as any)?.smsFrameworks || []).length;
+              const newFramework = {
+                name: `sms_framework_${Date.now()}`,
+                displayName: `SMS Framework ${existingCount + 1}`,
+                description: '',
+                structure: '',
+                keyElements: '',
+                frameworkContent: '',
+                systemPrompt: '',
+                outputRequirements: '',
+                expectedLength: 'short',
+                isEnabled: true,
+                sortOrder: existingCount || 0
+              };
+              const updated = [
+                ...(((editingConfig?.copyFrameworks as any)?.smsFrameworks) || []),
+                newFramework
+              ];
+              setEditingConfig({
+                ...editingConfig,
+                copyFrameworks: {
+                  ...editingConfig?.copyFrameworks,
+                  smsFrameworks: updated as any
                 }
               });
             }}
@@ -453,6 +537,73 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
         <span className="text-xs text-gray-500 font-medium">
           {isOpen ? 'Collapse' : 'Expand'}
         </span>
+      </div>
+    </button>
+  );
+
+  // SMS Framework Toggle Button
+  const SmsFrameworkToggleButton = ({
+    isOpen,
+    onClick,
+    framework,
+    index
+  }: {
+    isOpen: boolean;
+    onClick: () => void;
+    framework: any;
+    index: number;
+  }) => (
+    <button
+      onClick={onClick}
+      className="flex items-center justify-between w-full p-3 bg-white hover:bg-gray-50 rounded-lg transition-colors duration-200 border border-gray-200"
+    >
+      <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
+          {isOpen ? (
+            <ChevronDown className="w-4 h-4 text-gray-500" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-gray-500" />
+          )}
+          <MessageSquare className="w-4 h-4 text-amber-500" />
+        </div>
+        <div className="text-left">
+          <span className="text-sm font-medium text-gray-900">
+            {framework.displayName || framework.name || `SMS Framework ${index + 1}`}
+          </span>
+          {framework.description && !isOpen && (
+            <p className="text-xs text-gray-500 mt-1 line-clamp-1">{framework.description}</p>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center space-x-3">
+        <span
+          className={`text-xs px-2 py-1 rounded-full ${
+            framework.isEnabled !== false ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+          }`}
+        >
+          {framework.isEnabled !== false ? 'Enabled' : 'Disabled'}
+        </span>
+        {effectiveUser?.role === 'admin' && (
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              const updated = ((editingConfig.copyFrameworks as any).smsFrameworks || []).filter((_: any, i: number) => i !== index);
+              setEditingConfig({
+                ...editingConfig,
+                copyFrameworks: {
+                  ...editingConfig.copyFrameworks,
+                  smsFrameworks: updated as any
+                }
+              });
+            }}
+            size="sm"
+            variant="ghost"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        )}
+        <span className="text-xs text-gray-500 font-medium">{isOpen ? 'Collapse' : 'Expand'}</span>
       </div>
     </button>
   );
@@ -1162,6 +1313,266 @@ Your Skin But Better"
         )}
       </div>
       
+      {/* SMS Frameworks Section */}
+      <div>
+        <ToggleButton
+          isOpen={showSmsFrameworks}
+          onClick={() => setShowSmsFrameworks(!showSmsFrameworks)}
+          title="SMS Frameworks"
+          icon={<MessageSquare className="w-5 h-5" />}
+          iconColor="text-amber-500"
+          count={((editingConfig?.copyFrameworks as any)?.smsFrameworks?.length) || 0}
+        />
+
+        {showSmsFrameworks && (
+          <div className="mt-4 space-y-4 pl-4 border-l-2 border-amber-100">
+            {loadingSmsFrameworks && (
+              <div className="text-center py-8 text-gray-500">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500 mx-auto mb-4"></div>
+                <p>Loading SMS frameworks...</p>
+              </div>
+            )}
+
+            {(!((editingConfig?.copyFrameworks as any)?.smsFrameworks) || (editingConfig as any).copyFrameworks.smsFrameworks.length === 0) && !loadingSmsFrameworks ? (
+              <div className="text-center py-8 text-gray-500">
+                <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>No SMS frameworks found.</p>
+                {effectiveUser?.role === 'admin' && (
+                  <p className="text-xs mt-2">Click "Add Framework" to create your first SMS framework.</p>
+                )}
+              </div>
+            ) : !loadingSmsFrameworks ? (
+              <div className="space-y-4">
+                {(((editingConfig.copyFrameworks as any).smsFrameworks) || []).map((framework: any, index: number) => {
+                  const isExpanded = expandedSmsFrameworks.has(index);
+                  return (
+                    <div key={index} className="space-y-2">
+                      <SmsFrameworkToggleButton
+                        isOpen={isExpanded}
+                        onClick={() => toggleSmsFramework(index)}
+                        framework={framework}
+                        index={index}
+                      />
+
+                      {isExpanded && (
+                        <div className="ml-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                checked={framework.isEnabled !== false}
+                                onCheckedChange={(checked) => {
+                                  if (effectiveUser?.role !== 'admin') return;
+                                  const updated = [ ...(((editingConfig.copyFrameworks as any).smsFrameworks) || []) ];
+                                  updated[index] = { ...updated[index], isEnabled: checked };
+                                  setEditingConfig({
+                                    ...editingConfig,
+                                    copyFrameworks: {
+                                      ...editingConfig.copyFrameworks,
+                                      smsFrameworks: updated as any
+                                    }
+                                  });
+                                }}
+                                disabled={effectiveUser?.role !== 'admin'}
+                              />
+                              <Label className="text-xs text-gray-600">{framework.isEnabled !== false ? 'Enabled' : 'Disabled'}</Label>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div>
+                              <Label className="text-xs text-gray-600">Framework Name</Label>
+                              <Input
+                                value={framework.displayName || ''}
+                                onChange={(e) => {
+                                  if (effectiveUser?.role !== 'admin') return;
+                                  const updated = [ ...(((editingConfig.copyFrameworks as any).smsFrameworks) || []) ];
+                                  updated[index] = { ...updated[index], displayName: e.target.value };
+                                  setEditingConfig({
+                                    ...editingConfig,
+                                    copyFrameworks: {
+                                      ...editingConfig.copyFrameworks,
+                                      smsFrameworks: updated as any
+                                    }
+                                  });
+                                }}
+                                className="mt-1"
+                                placeholder="e.g., Product Launch"
+                                disabled={effectiveUser?.role !== 'admin'}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">Description</Label>
+                            <Textarea
+                              value={framework.description || ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [ ...(((editingConfig.copyFrameworks as any).smsFrameworks) || []) ];
+                                updated[index] = { ...updated[index], description: e.target.value };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    smsFrameworks: updated as any
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              rows={2}
+                              placeholder="Brief description of this SMS framework..."
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">Structure Template</Label>
+                            <Textarea
+                              value={framework.structure || ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [ ...(((editingConfig.copyFrameworks as any).smsFrameworks) || []) ];
+                                updated[index] = { ...updated[index], structure: e.target.value };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    smsFrameworks: updated as any
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              rows={2}
+                              placeholder="Hook → Key benefit → CTA + short link"
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">Key Elements</Label>
+                            <Textarea
+                              value={framework.keyElements || ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [ ...(((editingConfig.copyFrameworks as any).smsFrameworks) || []) ];
+                                updated[index] = { ...updated[index], keyElements: e.target.value };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    smsFrameworks: updated as any
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              rows={2}
+                              placeholder="e.g., Hook, benefit, urgency, single CTA"
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">Framework Content & Examples</Label>
+                            <Textarea
+                              value={framework.frameworkContent || ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [ ...(((editingConfig.copyFrameworks as any).smsFrameworks) || []) ];
+                                updated[index] = { ...updated[index], frameworkContent: e.target.value };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    smsFrameworks: updated as any
+                                  }
+                                });
+                              }}
+                              className="mt-1 font-mono"
+                              rows={4}
+                              placeholder="Detailed framework guidance and sample SMS variations..."
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">AI System Prompt</Label>
+                            <Textarea
+                              value={framework.systemPrompt || ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [ ...(((editingConfig.copyFrameworks as any).smsFrameworks) || []) ];
+                                updated[index] = { ...updated[index], systemPrompt: e.target.value };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    smsFrameworks: updated as any
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              rows={3}
+                              placeholder="Instructions for AI to generate this SMS type..."
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">Output Requirements</Label>
+                            <Textarea
+                              value={framework.outputRequirements || ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [ ...(((editingConfig.copyFrameworks as any).smsFrameworks) || []) ];
+                                updated[index] = { ...updated[index], outputRequirements: e.target.value };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    smsFrameworks: updated as any
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              rows={2}
+                              placeholder="Under 250 chars, single CTA + link, no emojis, minimal punctuation"
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                          </div>
+
+                          <div className="mt-2">
+                            <Label className="text-xs text-gray-600">Expected Length</Label>
+                            <Input
+                              value={framework.expectedLength || ''}
+                              onChange={(e) => {
+                                if (effectiveUser?.role !== 'admin') return;
+                                const updated = [ ...(((editingConfig.copyFrameworks as any).smsFrameworks) || []) ];
+                                updated[index] = { ...updated[index], expectedLength: e.target.value };
+                                setEditingConfig({
+                                  ...editingConfig,
+                                  copyFrameworks: {
+                                    ...editingConfig.copyFrameworks,
+                                    smsFrameworks: updated as any
+                                  }
+                                });
+                              }}
+                              className="mt-1"
+                              placeholder="short"
+                              disabled={effectiveUser?.role !== 'admin'}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Keep under 250 characters including spaces and line breaks.</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+
       {/* Landing Page Frameworks Section */}
       <div>
         <ToggleButton

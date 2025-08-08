@@ -11,12 +11,14 @@ interface BrandGuidelinesTabProps {
   editingConfig: TrainingConfig;
   setEditingConfig: (config: TrainingConfig) => void;
   effectiveUser: any;
+  onSaveBrandGuidelines?: (bg: TrainingConfig['brandGuidelines']) => void;
 }
 
 export const BrandGuidelinesTab: React.FC<BrandGuidelinesTabProps> = ({
   editingConfig,
   setEditingConfig,
-  effectiveUser
+  effectiveUser,
+  onSaveBrandGuidelines
 }) => {
   const [showBrandVoice, setShowBrandVoice] = useState(false);
   const [showKeyTerms, setShowKeyTerms] = useState(false);
@@ -66,17 +68,59 @@ export const BrandGuidelinesTab: React.FC<BrandGuidelinesTabProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Save handled by sticky bar in AISettingsComponent */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Label className="text-sm font-medium text-gray-900 mb-1 block">Brand Name</Label>
+          <Input
+            value={editingConfig?.brandGuidelines?.brandName || ''}
+            onChange={(e) => {
+              if (effectiveUser?.role !== 'admin') return;
+              setEditingConfig({
+                ...editingConfig,
+                brandGuidelines: {
+                  ...editingConfig?.brandGuidelines,
+                  brandName: e.target.value
+                }
+              });
+            }}
+            placeholder="e.g., Jones Road Beauty"
+            disabled={effectiveUser?.role !== 'admin'}
+          />
+        </div>
+        <div>
+          <Label className="text-sm font-medium text-gray-900 mb-1 block">Website</Label>
+          <Input
+            value={editingConfig?.brandGuidelines?.website || ''}
+            onChange={(e) => {
+              if (effectiveUser?.role !== 'admin') return;
+              setEditingConfig({
+                ...editingConfig,
+                brandGuidelines: {
+                  ...editingConfig?.brandGuidelines,
+                  website: e.target.value
+                }
+              });
+            }}
+            placeholder="https://yourbrand.com"
+            disabled={effectiveUser?.role !== 'admin'}
+          />
+        </div>
+      </div>
       <div>
         <Label className="text-sm font-medium text-gray-900 mb-3 block">Core Positioning</Label>
         <Textarea
           value={editingConfig?.brandGuidelines?.corePositioning || ''}
-          onChange={(e) => effectiveUser?.role !== 'admin' && setEditingConfig({
-            ...editingConfig,
-            brandGuidelines: {
-              ...editingConfig?.brandGuidelines,
-              corePositioning: e.target.value
-            }
-          })}
+          onChange={(e) => {
+            if (effectiveUser?.role !== 'admin') return;
+            setEditingConfig({
+              ...editingConfig,
+              brandGuidelines: {
+                ...editingConfig?.brandGuidelines,
+                corePositioning: e.target.value
+              }
+            });
+          }}
           className="mt-1 text-gray-900 font-medium"
           rows={3}
           placeholder="Your Skin But Better - natural, effortless enhancement..."
@@ -101,6 +145,7 @@ export const BrandGuidelinesTab: React.FC<BrandGuidelinesTabProps> = ({
                   <Switch
                     checked={editingConfig?.brandGuidelines?.enabledBrandVoice?.[index] !== false}
                     onCheckedChange={(checked) => {
+                      if (effectiveUser?.role !== 'admin') return;
                       const enabled = [...(editingConfig?.brandGuidelines?.enabledBrandVoice || [])];
                       enabled[index] = checked;
                       setEditingConfig({
@@ -110,13 +155,17 @@ export const BrandGuidelinesTab: React.FC<BrandGuidelinesTabProps> = ({
                           enabledBrandVoice: enabled
                         }
                       });
+                      onSaveBrandGuidelines?.({
+                        ...editingConfig.brandGuidelines,
+                        enabledBrandVoice: enabled,
+                      });
                     }}
-                    disabled={false}
+                    disabled={effectiveUser?.role !== 'admin'}
                     className="flex-shrink-0"
                   />
                   <span className="text-blue-500 text-sm font-bold flex-shrink-0">•</span>
                   <span className="text-xs text-gray-600 flex-shrink-0">Rule {index + 1}</span>
-                  {effectiveUser?.role !== 'admin' && (editingConfig?.brandGuidelines?.brandVoice?.length > 3) && (
+                  {effectiveUser?.role === 'admin' && (editingConfig?.brandGuidelines?.brandVoice?.length > 3) && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -143,7 +192,7 @@ export const BrandGuidelinesTab: React.FC<BrandGuidelinesTabProps> = ({
                 <Input
                   value={rule}
                   onChange={(e) => {
-                    if (effectiveUser?.role === 'admin') return;
+                    if (effectiveUser?.role !== 'admin') return;
                     const rules = [...(editingConfig?.brandGuidelines?.brandVoice || [])];
                     rules[index] = e.target.value;
                     setEditingConfig({
@@ -160,7 +209,7 @@ export const BrandGuidelinesTab: React.FC<BrandGuidelinesTabProps> = ({
                 />
               </div>
             ))}
-            {effectiveUser?.role !== 'admin' && (
+            {effectiveUser?.role === 'admin' && (
               <Button
                 variant="outline"
                 size="sm"
@@ -204,6 +253,7 @@ export const BrandGuidelinesTab: React.FC<BrandGuidelinesTabProps> = ({
                   <Switch
                     checked={editingConfig?.brandGuidelines?.enabledKeyTerminology?.[index] !== false}
                     onCheckedChange={(checked) => {
+                      if (effectiveUser?.role !== 'admin') return;
                       const enabled = [...(editingConfig?.brandGuidelines?.enabledKeyTerminology || [])];
                       enabled[index] = checked;
                       setEditingConfig({
@@ -214,12 +264,12 @@ export const BrandGuidelinesTab: React.FC<BrandGuidelinesTabProps> = ({
                         }
                       });
                     }}
-                    disabled={false}
+                    disabled={effectiveUser?.role !== 'admin'}
                     className="flex-shrink-0"
                   />
                   <span className="text-gray-400 text-sm font-bold flex-shrink-0">•</span>
                   <span className="text-xs text-gray-600 flex-shrink-0">Term {index + 1}</span>
-                  {effectiveUser?.role !== 'admin' && (editingConfig?.brandGuidelines?.keyTerminology?.length > 3) && (
+                  {effectiveUser?.role === 'admin' && (editingConfig?.brandGuidelines?.keyTerminology?.length > 3) && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -246,7 +296,7 @@ export const BrandGuidelinesTab: React.FC<BrandGuidelinesTabProps> = ({
                 <Input
                   value={term}
                   onChange={(e) => {
-                    if (effectiveUser?.role === 'admin') return;
+                    if (effectiveUser?.role !== 'admin') return;
                     const terms = [...(editingConfig?.brandGuidelines?.keyTerminology || [])];
                     terms[index] = e.target.value;
                     setEditingConfig({
@@ -263,7 +313,7 @@ export const BrandGuidelinesTab: React.FC<BrandGuidelinesTabProps> = ({
                 />
               </div>
             ))}
-            {effectiveUser?.role !== 'admin' && (
+            {effectiveUser?.role === 'admin' && (
               <Button
                 variant="outline"
                 size="sm"
@@ -307,6 +357,7 @@ export const BrandGuidelinesTab: React.FC<BrandGuidelinesTabProps> = ({
                   <Switch
                     checked={editingConfig?.brandGuidelines?.enabledApprovedLanguage?.[index] !== false}
                     onCheckedChange={(checked) => {
+                      if (effectiveUser?.role !== 'admin') return;
                       const enabled = [...(editingConfig?.brandGuidelines?.enabledApprovedLanguage || [])];
                       enabled[index] = checked;
                       setEditingConfig({
@@ -317,12 +368,12 @@ export const BrandGuidelinesTab: React.FC<BrandGuidelinesTabProps> = ({
                         }
                       });
                     }}
-                    disabled={false}
+                    disabled={effectiveUser?.role !== 'admin'}
                     className="flex-shrink-0"
                   />
                   <span className="text-green-500 text-sm font-bold flex-shrink-0">✓</span>
                   <span className="text-xs text-gray-600 flex-shrink-0">Approved {index + 1}</span>
-                  {effectiveUser?.role !== 'admin' && (editingConfig?.brandGuidelines?.approvedLanguage?.length > 3) && (
+                  {effectiveUser?.role === 'admin' && (editingConfig?.brandGuidelines?.approvedLanguage?.length > 3) && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -349,7 +400,7 @@ export const BrandGuidelinesTab: React.FC<BrandGuidelinesTabProps> = ({
                 <Input
                   value={phrase}
                   onChange={(e) => {
-                    if (effectiveUser?.role === 'admin') return;
+                    if (effectiveUser?.role !== 'admin') return;
                     const phrases = [...(editingConfig?.brandGuidelines?.approvedLanguage || [])];
                     phrases[index] = e.target.value;
                     setEditingConfig({
@@ -366,7 +417,7 @@ export const BrandGuidelinesTab: React.FC<BrandGuidelinesTabProps> = ({
                 />
               </div>
             ))}
-            {effectiveUser?.role !== 'admin' && (
+            {effectiveUser?.role === 'admin' && (
               <Button
                 variant="outline"
                 size="sm"
@@ -410,6 +461,7 @@ export const BrandGuidelinesTab: React.FC<BrandGuidelinesTabProps> = ({
                   <Switch
                     checked={editingConfig?.brandGuidelines?.enabledAvoidedLanguage?.[index] !== false}
                     onCheckedChange={(checked) => {
+                      if (effectiveUser?.role !== 'admin') return;
                       const enabled = [...(editingConfig?.brandGuidelines?.enabledAvoidedLanguage || [])];
                       enabled[index] = checked;
                       setEditingConfig({
@@ -420,12 +472,12 @@ export const BrandGuidelinesTab: React.FC<BrandGuidelinesTabProps> = ({
                         }
                       });
                     }}
-                    disabled={false}
+                    disabled={effectiveUser?.role !== 'admin'}
                     className="flex-shrink-0"
                   />
                   <span className="text-red-500 text-sm font-bold flex-shrink-0">✗</span>
                   <span className="text-xs text-gray-600 flex-shrink-0">Avoid {index + 1}</span>
-                  {effectiveUser?.role !== 'admin' && (editingConfig?.brandGuidelines?.avoidedLanguage?.length > 3) && (
+                  {effectiveUser?.role === 'admin' && (editingConfig?.brandGuidelines?.avoidedLanguage?.length > 3) && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -452,7 +504,7 @@ export const BrandGuidelinesTab: React.FC<BrandGuidelinesTabProps> = ({
                 <Input
                   value={phrase}
                   onChange={(e) => {
-                    if (effectiveUser?.role === 'admin') return;
+                    if (effectiveUser?.role !== 'admin') return;
                     const phrases = [...(editingConfig?.brandGuidelines?.avoidedLanguage || [])];
                     phrases[index] = e.target.value;
                     setEditingConfig({
@@ -469,7 +521,7 @@ export const BrandGuidelinesTab: React.FC<BrandGuidelinesTabProps> = ({
                 />
               </div>
             ))}
-            {effectiveUser?.role !== 'admin' && (
+            {effectiveUser?.role === 'admin' && (
               <Button
                 variant="outline"
                 size="sm"
