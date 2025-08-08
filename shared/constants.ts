@@ -1,5 +1,3 @@
-// Shared constants across the application
-
 // Model defaults
 export const DEFAULT_MODEL_STR = "claude-sonnet-4-20250514";
 export const FALLBACK_MODEL_STR = "claude-3-sonnet-20240229";
@@ -8,6 +6,11 @@ export const DEFAULT_TEMPERATURE = 0.7;
 
 // Server defaults
 export const DEFAULT_SERVER_PORT = 5000;
+export const DEFAULT_IMAGE_ANALYSIS_TYPE = 'ad_creative';
+
+// Server limits
+export const DEFAULT_BODY_SIZE_LIMIT = '50mb';
+
 
 // Media defaults
 export const DEFAULT_IMAGE_MEDIA_TYPE = "image/jpeg";
@@ -19,17 +22,36 @@ export const DEFAULT_BRAND_DR_BALANCE = 50;
 export const DEFAULT_USE_JONES_BRAND_GUIDE = true;
 export const DEFAULT_PERSONA_KEY = 'lifeJuggler';
 
-// Context composition defaults
-export const DEFAULT_APPEND_SECTIONS_BY_DEFAULT = false;
-export const DEFAULT_AUTO_APPEND_OUTPUT_INSTRUCTIONS = true;
-
-// Parsing and prompt-size estimates
-export const DEFAULT_MAX_HEADLINES = 5;
-export const LANDING_PAGE_TEXT_CHAR_LIMIT = 2000;
-export const CHARACTERS_PER_TOKEN_ESTIMATE = 4; // Rough heuristic used when estimating tokens from string length
-
 // Copy/Parsing defaults
 export const DEFAULT_HEADLINE_FRAMEWORK = 'GENERAL';
+
+// Product defaults
+export const TOP_PRODUCTS = [
+  'miracle-balm',
+  'what-the-foundation',
+  'the-mascara',
+  'just-enough-tinted-moisturizer',
+  'everyday-sunscreen-broad-spectrum-spf-30',
+];
+
+// Social/Story defaults
+export const DEFAULT_CONTENT_TYPE = 'video';
+export const DEFAULT_SOCIAL_PLATFORM = 'instagram';
+export const DEFAULT_SOCIAL_GOAL = 'product-education';
+export const DEFAULT_TONE = 'authentic-personal';
+export const DEFAULT_VARIATIONS = 3;
+export const DEFAULT_SEQUENCE_TYPE = 'product-showcase';
+export const DEFAULT_STORY_LENGTH = 5;
+
+// Retention defaults
+export const DEFAULT_RETENTION_PLATFORM = 'Email';
+export const DEFAULT_RETENTION_EMAIL_TYPE = 'Product Spotlight / Hero Product';
+export const DEFAULT_RETENTION_AUDIENCE = 'General audience';
+export const DEFAULT_RETENTION_GOAL = 'Drive Sales';
+
+// UI/feature defaults
+export const DEFAULT_LANDING_PAGE_TYPE = 'listicle';
+export const DEFAULT_VOICE_ANALYSIS_METHOD = 'combined';
 
 // Static labels and maps used in content/context builders
 export const IMAGE_ANALYSIS_INSTRUCTIONS: Record<'ad_creative' | 'product_photo' | 'social_content', string> = {
@@ -58,12 +80,24 @@ export const TIMING_GUIDANCE: Record<'urgent' | 'planned' | 'evergreen', string>
   evergreen: 'Focus on timeless benefits and long-term value propositions'
 };
 
+
+
+
+// Context composition defaults
+export const DEFAULT_APPEND_SECTIONS_BY_DEFAULT = false;
+export const DEFAULT_AUTO_APPEND_OUTPUT_INSTRUCTIONS = true;
+
+// Parsing and prompt-size estimates
+export const DEFAULT_MAX_HEADLINES = 5;
+export const LANDING_PAGE_TEXT_CHAR_LIMIT = 2000;
+export const CHARACTERS_PER_TOKEN_ESTIMATE = 4; // Rough heuristic used when estimating tokens from string length
+
 // Station configuration and output formatting
 export const STATION_CONFIGS = {
   adCopy: {
     name: 'Ad Copy Generation',
     requiredSections: ['targetPersona', 'selectedProducts', 'copyFrameworks'],
-    optionalSections: ['landingPageContext', 'imageAnalysis', 'customBrief'],
+    optionalSections: ['imageAnalysis', 'customBrief'],
     outputFormat: 'ad_copy_json',
     maxTokens: 2000
   },
@@ -200,28 +234,3 @@ export const QUALITY_GUIDELINES_BY_STATION: Record<string, string[]> = {
     '- Optimize for conversion and user experience'
   ]
 };
-
-// Product defaults
-export const TOP_PRODUCTS = [
-  'miracle-balm',
-  'what-the-foundation',
-  'the-mascara',
-  'just-enough-tinted-moisturizer',
-  'everyday-sunscreen-broad-spectrum-spf-30',
-];
-
-// Social/Story defaults
-export const DEFAULT_CONTENT_TYPE = 'video';
-export const DEFAULT_SOCIAL_PLATFORM = 'instagram';
-export const DEFAULT_SOCIAL_GOAL = 'product-education';
-export const DEFAULT_TONE = 'authentic-personal';
-export const DEFAULT_VARIATIONS = 3;
-export const DEFAULT_SEQUENCE_TYPE = 'product-showcase';
-export const DEFAULT_STORY_LENGTH = 5;
-
-// Retention defaults
-export const DEFAULT_RETENTION_PLATFORM = 'Email';
-export const DEFAULT_RETENTION_EMAIL_TYPE = 'Product Spotlight / Hero Product';
-
-// Server limits
-export const DEFAULT_BODY_SIZE_LIMIT = '50mb';

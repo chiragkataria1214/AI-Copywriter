@@ -1,11 +1,8 @@
 import React from 'react';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Copy, Lock } from 'lucide-react';
+import { Copy } from 'lucide-react';
 import { VariableDefinition, ContextSectionConfig, BrandGuidelinesConfig } from '@shared/training-config';
-import VariableInsertion from './VariableInsertion';
-import ContextInsertion from './ContextInsertion';
-import { extractOutputStructure, getEditablePrompt, reconstructPrompt } from './promptUtils';
+import { VariableInsertion } from '../editors/VariableEditor';
 
 export interface ProtectedPromptEditorProps {
   label: string;
@@ -38,58 +35,59 @@ const ProtectedPromptEditor: React.FC<ProtectedPromptEditorProps> = ({
   variables,
   contextConfiguration,
 }) => {
-  const outputStructure = extractOutputStructure(value || '');
-  const editableContent = getEditablePrompt(value || '');
+  // Maintain local editable content to avoid caret jumping to end on each parent update
+  const [editableContent, setEditableContent] = React.useState<string>(value || '');
+  const lastExternalValueRef = React.useRef<string>(value || '');
+
+  // Sync local editable content when external value changes meaningfully
+  React.useEffect(() => {
+    const prev = lastExternalValueRef.current;
+    if (prev !== (value || '')) {
+      lastExternalValueRef.current = value || '';
+      setEditableContent(value || '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
 
   const handleChange = (newEditableContent: string) => {
-    const reconstructedPrompt = reconstructPrompt(newEditableContent, value || '');
-    onChange(reconstructedPrompt);
+    setEditableContent(newEditableContent);
+    onChange(newEditableContent);
   };
 
-  // Build comprehensive variable list from availableVariables + enabled context sections + brand guidelines
-  const computedVariables: VariableDefinition[] = React.useMemo(() => {
-    const base: VariableDefinition[] = variables || contextConfiguration?.availableVariables || [];
-    const result: VariableDefinition[] = [...base];
+  // Build lists strictly from station's configuration, augmenting context dropdown with enabled context sections
+  const baseVariables: VariableDefinition[] = React.useMemo(() => {
+    return (variables || contextConfiguration?.availableVariables || []) as VariableDefinition[];
+  }, [variables, contextConfiguration?.availableVariables]);
 
-    const addUnique = (v: VariableDefinition) => {
-      if (!result.find((x) => x.key === v.key)) result.push(v);
-    };
-
-    // Context sections as variables
-    (contextConfiguration?.contextSections || [])
-      .filter((s) => s.enabled)
-      .forEach((s) => addUnique({
+  const derivedContextSectionVariables: VariableDefinition[] = React.useMemo(() => {
+    const sections = contextConfiguration?.contextSections || [];
+    return sections
+      .filter((s: any) => s && (s.enabled ?? true))
+      .map((s: any) => ({
         key: s.id,
         label: `Context: ${s.name}`,
-        description: `Generated content from "${s.name}" context section: ${s.description}`,
+        description: `Generated content from "${s.name}" context section: ${s.description || ''}`,
         type: 'string',
         category: 'context_section',
-        required: s.required,
+        required: !!s.required,
       } as VariableDefinition));
+  }, [contextConfiguration?.contextSections]);
 
-    // Brand guideline variables
-    const brandVars: VariableDefinition[] = [
-      { key: 'corePositioning', label: 'Core Positioning', description: 'Brand core positioning statement', type: 'string', category: 'brand_guideline', required: false } as any,
-      { key: 'brandVoice', label: 'Brand Voice', description: 'Brand voice rules and guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
-      { key: 'keyTerminology', label: 'Key Terminology', description: 'Key terms and phrases from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
-      { key: 'approvedLanguage', label: 'Approved Language', description: 'Approved language and phrases', type: 'string', category: 'brand_guideline', required: false } as any,
-      { key: 'avoidedLanguage', label: 'Avoided Language', description: 'Phrases to avoid', type: 'string', category: 'brand_guideline', required: false } as any,
-    ];
-    brandVars.forEach(addUnique);
+  // Split into variable vs context options
+  const variableOptions = React.useMemo(() => {
+    const contextCategories = new Set(['context_section', 'brand_guideline']);
+    return baseVariables.filter((v: any) => !contextCategories.has((v as any)?.category));
+  }, [baseVariables]);
 
-    return result;
-  }, [variables, contextConfiguration]);
-
-  // Split into plain variables vs context-only options for clarity
-  const contextCategories = new Set(['context_section', 'brand_guideline']);
-  const variableOptions = React.useMemo(
-    () => computedVariables.filter((v: any) => !contextCategories.has((v as any)?.category)),
-    [computedVariables]
-  );
-  const contextOptions = React.useMemo(
-    () => computedVariables.filter((v: any) => contextCategories.has((v as any)?.category)),
-    [computedVariables]
-  );
+  const contextOptions = React.useMemo(() => {
+    const contextCategories = new Set(['context_section', 'brand_guideline']);
+    const fromAvailable = baseVariables.filter((v: any) => contextCategories.has((v as any)?.category));
+    const mapByKey = new Map<string, VariableDefinition>();
+    [...fromAvailable, ...derivedContextSectionVariables].forEach((v) => {
+      if (v?.key) mapByKey.set(v.key, v);
+    });
+    return Array.from(mapByKey.values());
+  }, [baseVariables, derivedContextSectionVariables]);
 
   return (
     <div className="space-y-4">
@@ -98,22 +96,22 @@ const ProtectedPromptEditor: React.FC<ProtectedPromptEditorProps> = ({
           <div className="flex items-center justify-between mb-2">
             <h4 className="font-medium text-gray-900">{label}</h4>
             <div className="flex items-center space-x-2">
-              {!disabled && textareaRef && (computedVariables.length > 0) && (
+              {!disabled && textareaRef && ((variableOptions.length + contextOptions.length) > 0) && (
                 <>
                   <VariableInsertion
                     textareaRef={textareaRef}
                     value={editableContent}
                     onChange={handleChange}
                     position="right"
-                    variables={variableOptions}
+                    availableVariables={variableOptions}
                     buttonLabel="Insert Variable"
                   />
-                  <ContextInsertion
+                  <VariableInsertion
                     textareaRef={textareaRef}
                     value={editableContent}
                     onChange={handleChange}
                     position="right"
-                    variables={contextOptions}
+                    availableVariables={contextOptions}
                     buttonLabel="Insert Context"
                   />
                 </>
@@ -134,11 +132,11 @@ const ProtectedPromptEditor: React.FC<ProtectedPromptEditorProps> = ({
               <pre className="text-sm text-gray-700 whitespace-pre-wrap">{editableContent || placeholder}</pre>
             </div>
           ) : (
-            <Textarea
+            <textarea
               ref={textareaRef}
               value={editableContent}
               onChange={(e) => handleChange(e.target.value)}
-              className="text-gray-900 resize-y border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg p-4 transition-all duration-200"
+              className="w-full text-gray-900 resize-y border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg p-4 transition-all duration-200"
               rows={rows}
               placeholder={placeholder}
               disabled={disabled}
@@ -147,18 +145,7 @@ const ProtectedPromptEditor: React.FC<ProtectedPromptEditorProps> = ({
         </div>
       </div>
 
-      {outputStructure && (
-        <div className="border border-amber-200 bg-amber-50 rounded-lg p-4">
-          <div className="flex items-center space-x-2 mb-2">
-            <Lock className="w-4 h-4 text-amber-600" />
-            <span className="text-sm font-medium text-amber-800">Protected Output Structure</span>
-          </div>
-          <div className="bg-white border border-amber-200 rounded p-3">
-            <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">{outputStructure}</pre>
-          </div>
-          <p className="text-xs text-amber-700 mt-2">This section is protected to ensure frontend compatibility.</p>
-        </div>
-      )}
+
     </div>
   );
 };

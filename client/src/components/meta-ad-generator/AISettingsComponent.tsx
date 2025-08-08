@@ -70,7 +70,8 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
   copyToClipboard,
   personas
 }) => {
-  const [activeTab, setActiveTab] = React.useState<string>('brand-guidelines');
+    const [activeTab, setActiveTab] = React.useState<string>('brand-guidelines');
+  const [isDirty, setIsDirty] = React.useState<boolean>(false);
 
   // Track last-saved snapshot to detect unsaved changes by section
   const lastSavedRef = React.useRef<TrainingConfig | null>(null);
@@ -156,7 +157,8 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
     };
   }, [editingConfig, baselineVersion]);
 
-  const isActiveTabDirty = React.useMemo(() => {
+    const isActiveTabDirty = React.useMemo(() => {
+    if (isDirty) return true;
     switch (activeTab) {
       case 'brand-guidelines':
         return sectionDirty.brand;
@@ -173,7 +175,7 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
       default:
         return false;
     }
-  }, [activeTab, sectionDirty]);
+  }, [activeTab, sectionDirty, isDirty]);
 
   const getIsSaving = () => {
     switch (activeTab) {
@@ -256,6 +258,7 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
       default:
         break;
     }
+    setIsDirty(false);
   };
 
   const handleDiscardActiveTab = () => {
@@ -308,6 +311,7 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
       default:
         break;
     }
+    setIsDirty(false);
   };
 
   // When any section save mutation succeeds (from any source), refresh the baseline for that section
@@ -494,6 +498,7 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
                             setEditingConfig={setEditingConfig}
                             effectiveUser={effectiveUser}
                             onSaveStationPrompts={(sp) => saveStationPromptsMutation?.mutate(sp)}
+setIsDirty={setIsDirty}
                           />
                         </TabsContent>
 

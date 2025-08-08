@@ -17,10 +17,7 @@ import {
   TIMING_GUIDANCE,
   STATION_CONFIGS,
   OUTPUT_FORMAT_INSTRUCTIONS,
-  QUALITY_GUIDELINES_BASE,
-  QUALITY_GUIDELINES_BY_STATION
 } from '@shared/constants';
-import { detectImageType, resizeImageIfNeeded, processImageForAnthropic } from './image-helper';
 
 /**
  * Utility functions for parsing and validating AI responses
@@ -143,17 +140,12 @@ export class StationPromptManager {
   /**
    * Build a complete system prompt for any station
    */
-  static buildStationSystemPrompt(
+  static async buildStationSystemPrompt(
     stationName: string,
     trainingConfig: TrainingConfig,
-    options: {
-      persona?: string;
-      selectedProduct?: string;
-      selectedProducts?: string[];
-      brandDrBalance?: number;
-      useJonesBrandGuide?: boolean;
-    } = {}
-  ): string {
+    request: any,
+    variables: Record<string, any> = {}
+  ): Promise<string> {
     try {
       const stationConfig = STATION_CONFIGS[stationName as keyof typeof STATION_CONFIGS];
       if (!stationConfig) {
@@ -161,16 +153,43 @@ export class StationPromptManager {
       }
 
       // Get base system prompt from training config
-      const baseSystemPrompt = trainingConfig?.stationPrompts?.[stationName]?.systemPrompt;
-      if (!baseSystemPrompt) {
+      const systemPromptTemplate = trainingConfig?.stationPrompts?.[stationName]?.systemPrompt;
+      if (!systemPromptTemplate) {
         throw new Error(`${stationConfig.name} system prompt not found in training configuration. Please ensure the database contains proper station prompt configuration for '${stationName}'.`);
       }
 
-      // Do not auto-append context/enhancements/guidelines here.
-      // These are now available as selectable context sections in stations UI.
-      return [
-        baseSystemPrompt
-      ].filter(Boolean).join('\n\n');
+      // System prompt is now a template, so we need to build context and render it.
+      const { EnhancedContextBuilder } = await import('./enhanced-context-builder');
+      const contextResult = await EnhancedContextBuilder.buildStationContext(
+        stationName,
+        trainingConfig,
+        request,
+        variables
+      );
+
+      const { AdvancedTemplateEngine } = await import('./enhanced-context-builder');
+      const templateEngine = new AdvancedTemplateEngine();
+      const sectionsForTemplate = { sections: contextResult.sectionsById, contextSections: contextResult.contextSections };
+      // Build simplified context strings accessible via {{context.*}}
+      const simpleContext = StationPromptManager.buildSimpleContext(trainingConfig, request, variables);
+      const candidateContext = { 
+        ...variables, 
+        ...request, 
+        config: trainingConfig, 
+        ...sectionsForTemplate,
+        context: simpleContext,
+        productClaims: StationPromptManager.getStructuredProductClaims(
+          trainingConfig,
+          (request as any)?.selectedProduct,
+          (request as any)?.selectedProducts
+        ),
+        personaData: StationPromptManager.getStructuredPersona(trainingConfig, (request as any)?.persona),
+        frameworks: StationPromptManager.getStructuredFrameworks(trainingConfig),
+      };
+      
+      const processedSystemPrompt = templateEngine.render(systemPromptTemplate, candidateContext);
+
+      return processedSystemPrompt;
     } catch (error) {
       console.error(`Error building system prompt for station '${stationName}':`, error);
       throw new Error(`Failed to build system prompt for ${stationName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -178,49 +197,148 @@ export class StationPromptManager {
   }
 
   /**
-   * Build a complete user prompt for any station
+   * Build a structured subset of product claims for templates to access directly via {{productClaims}}
    */
-  static buildStationUserPrompt(
-    stationName: string,
+  static getStructuredProductClaims(
     trainingConfig: TrainingConfig,
-    templateVariables: Record<string, string>,
-    contextSections: string[] = []
-  ): string {
-    try {
-      const stationConfig = STATION_CONFIGS[stationName as keyof typeof STATION_CONFIGS];
-      if (!stationConfig) {
-        throw new Error(`Unknown station: ${stationName}. Available stations: ${Object.keys(STATION_CONFIGS).join(', ')}`);
-      }
-
-      // Get user prompt template from training config
-      const userTemplate = trainingConfig?.stationPrompts?.[stationName]?.userPromptTemplate;
-      if (!userTemplate) {
-        throw new Error(`${stationConfig.name} user prompt template not found in training configuration. Please ensure the database contains proper station prompt configuration for '${stationName}'.`);
-      }
-
-      // Process template variables safely
-      let processedTemplate = '';
-      try {
-        processedTemplate = AIPromptBuilder.replaceTemplateVariables(userTemplate, templateVariables);
-      } catch (templateError) {
-        console.warn(`Warning: Failed to process template variables for ${stationName}:`, templateError);
-        processedTemplate = userTemplate; // Use template as-is if variable replacement fails
-      }
-
-      // Add output format instructions
-      const outputInstructions = this.buildOutputFormatInstructions(stationName, trainingConfig);
-
-      return [
-        processedTemplate,
-        ...contextSections.filter(Boolean),
-        outputInstructions
-      ].filter(Boolean).join('\n\n');
-    } catch (error) {
-      console.error(`Error building user prompt for station '${stationName}':`, error);
-      throw new Error(`Failed to build user prompt for ${stationName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    selectedProduct?: string,
+    selectedProducts?: string[]
+  ): {
+    selected?: string;
+    list?: string[];
+    byProduct: Record<string, {
+      displayName?: string;
+      approved?: string[];
+      prohibited?: string[];
+    }>;
+  } {
+    const byProduct: Record<string, { displayName?: string; approved?: string[]; prohibited?: string[] }> = {};
+    const add = (key: string) => {
+      const cfg = (trainingConfig.productClaims || ({} as any))[key];
+      if (!cfg) return;
+      byProduct[key] = {
+        displayName: cfg.displayName,
+        approved: (cfg.approvedClaims || []).filter((_, i) => cfg.enabledApproved?.[i] !== false),
+        prohibited: (cfg.prohibitedClaims || []).filter((_, i) => cfg.enabledProhibited?.[i] !== false),
+      };
+    };
+    if (selectedProduct) add(selectedProduct);
+    (selectedProducts || []).forEach(add);
+    return {
+      selected: selectedProduct,
+      list: selectedProducts || [],
+      byProduct,
+    };
   }
 
+  /**
+   * Build a structured persona object (with optional subpersona) for templates via {{personaData}}
+   */
+  static getStructuredPersona(
+    trainingConfig: TrainingConfig,
+    personaInput?: string
+  ): {
+    key?: string;
+    displayName?: string;
+    description?: string;
+    pillars?: string[];
+    subpersona?: { id?: string; name?: string; description?: string; pillars?: string[] };
+  } {
+    if (!personaInput) return {};
+    const parts = personaInput.split(':');
+    const personaKey = parts[0];
+    const subpersonaId = parts[1];
+    const personaCfg = (trainingConfig.personaPillars || ({} as any))[personaKey];
+    if (!personaCfg) return { key: personaKey };
+    const result: any = {
+      key: personaKey,
+      description: personaCfg.description,
+      pillars: (personaCfg.pillars || []).filter((_: any, i: number) => personaCfg.enabledPillars?.[i] !== false),
+    };
+    if (subpersonaId && personaCfg.subpersonas) {
+      const subName = Object.keys(personaCfg.subpersonas).find(name => personaCfg.subpersonas![name].id === subpersonaId);
+      if (subName) {
+        const sub = personaCfg.subpersonas[subName];
+        result.subpersona = {
+          id: subpersonaId,
+          name: subName,
+          description: sub.description,
+          pillars: (sub.pillars || personaCfg.pillars || []).filter((_: any, i: number) => (sub.enabledPillars || personaCfg.enabledPillars)?.[i] !== false),
+        };
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Build structured copy frameworks for templates via {{frameworks}}
+   */
+  static getStructuredFrameworks(trainingConfig: TrainingConfig): {
+    headline?: { name: string; description: string; template: string; examples?: string[] }[];
+    landingPage?: { name: string; description: string; contentSequence?: string[]; reasonStructure?: string[]; optimizationRules?: string[]; realExamples?: string[] }[];
+    email?: { name: string; description: string; keyElements?: string }[];
+  } {
+    const cf = trainingConfig.copyFrameworks || ({} as any);
+    return {
+      headline: (cf.headlineFrameworks || []).filter((f: any) => f?.isEnabled !== false).map((f: any) => ({
+        name: f.name,
+        description: f.description,
+        template: f.template,
+        examples: f.examples,
+      })),
+      landingPage: (cf.landingPageFrameworks || []).filter((f: any) => f?.isEnabled !== false).map((f: any) => ({
+        name: f.name,
+        description: f.description,
+        contentSequence: f.contentSequence,
+        reasonStructure: f.reasonStructure,
+        optimizationRules: f.optimizationRules,
+        realExamples: f.realExamples,
+      })),
+      email: (cf.emailFrameworks || []).filter((f: any) => f?.isEnabled !== false).map((f: any) => ({
+        name: f.name,
+        description: f.description,
+        keyElements: f.keyElements,
+      })),
+    };
+  }
+
+  /**
+   * Build simple pre-rendered context strings to drop into templates via {{context.*}}
+   */
+  static buildSimpleContext(
+    trainingConfig: TrainingConfig,
+    request: { selectedProduct?: string; selectedProducts?: string[]; persona?: string; landingPageType?: string },
+    variables: Record<string, any>
+  ): { 
+    products?: string; 
+    persona?: string; 
+    headline_frameworks?: string; 
+    landing_frameworks?: string; 
+    email_frameworks?: string; 
+  } {
+    // Products with claims (reuse existing builder)
+    const products = buildSelectedProductsSection(request.selectedProduct, request.selectedProducts, trainingConfig);
+
+    // Persona/subpersona (reuse existing builder)
+    const personaSection = buildTargetPersonaSection(request.persona || variables.persona || '', trainingConfig);
+
+    // Headline frameworks (reuse existing builder)
+    const headlineFrameworks = buildCopyFrameworksSection(trainingConfig);
+
+    // Landing page frameworks
+    const landingFrameworks = buildLandingPageFrameworksSection(trainingConfig, request.landingPageType);
+
+    // Email frameworks
+    const emailFrameworks = buildEmailFrameworksSection(trainingConfig);
+
+    return {
+      products,
+      persona: personaSection,
+      headline_frameworks: headlineFrameworks,
+      landing_frameworks: landingFrameworks,
+      email_frameworks: emailFrameworks,
+    };
+  }
   /**
    * Build enhanced user prompt with configurable context sections
    */
@@ -238,20 +356,10 @@ export class StationPromptManager {
     };
   }> {
     try {
-      // Check if station has enhanced context configuration
+      // Prefer enhanced context configuration when available; otherwise, allow fallback to legacy context
       const contextConfig = trainingConfig?.stationPrompts?.[stationName]?.contextConfiguration;
-      
       if (!contextConfig) {
-        // Fallback to legacy method
-        const legacyPrompt = this.buildStationUserPrompt(stationName, trainingConfig, variables, []);
-        return {
-          userPrompt: legacyPrompt,
-          contextInfo: {
-            sectionsUsed: ['Legacy Context'],
-            totalTokens: Math.ceil(legacyPrompt.length / CHARACTERS_PER_TOKEN_ESTIMATE),
-            debugInfo: { legacy: true }
-          }
-        };
+        console.warn(`No contextConfiguration for station '${stationName}'. Falling back to legacy context.`);
       }
 
       // Use enhanced context builder (we'll need to import this)
@@ -276,7 +384,22 @@ export class StationPromptManager {
       // Build a minimal context that only contains variables actually referenced by the template
       // Include sections so template can reference them explicitly (e.g., {{sections.target_persona}})
       const sectionsForTemplate = { sections: {} as Record<string, string>, contextSections: [] as string[] };
-      const candidateContext = { ...variables, ...request, config: trainingConfig, ...sectionsForTemplate } as Record<string, any>;
+      // Build simplified context strings accessible via {{context.*}}
+      const simpleContext = StationPromptManager.buildSimpleContext(trainingConfig, request, variables);
+      const candidateContext = { 
+        ...variables, 
+        ...request, 
+        config: trainingConfig, 
+        ...sectionsForTemplate,
+        context: simpleContext,
+        productClaims: StationPromptManager.getStructuredProductClaims(
+          trainingConfig,
+          (request as any)?.selectedProduct,
+          (request as any)?.selectedProducts
+        ),
+        personaData: StationPromptManager.getStructuredPersona(trainingConfig, (request as any)?.persona),
+        frameworks: StationPromptManager.getStructuredFrameworks(trainingConfig),
+      } as Record<string, any>;
       const usedPaths = StationPromptManager.extractTemplateVariablePaths(userTemplate);
       const minimalContext = StationPromptManager.buildContextFromPaths(candidateContext, usedPaths);
 
@@ -293,9 +416,9 @@ export class StationPromptManager {
         ? ''
         : this.buildOutputFormatInstructions(stationName, trainingConfig);
 
-      // Template-driven composition: only auto-append when explicitly allowed
-      const appendByDefault = contextConfig?.contextRules?.appendSectionsByDefault ?? DEFAULT_APPEND_SECTIONS_BY_DEFAULT;
-      const autoAppendOutput = contextConfig?.contextRules?.autoAppendOutputInstructions ?? DEFAULT_AUTO_APPEND_OUTPUT_INSTRUCTIONS;
+      // Do NOT auto-append any section context. Sections are included ONLY when referenced via {{sections.*}} in templates
+      const appendByDefault = false;
+      const autoAppendOutput = false;
 
       // Expose sections to the template via explicit variables
       // Re-render template if it references sections now available
@@ -304,9 +427,7 @@ export class StationPromptManager {
       const processedTemplateWithSections = templateEngine.render(userTemplate, enrichedContext);
 
       // If append-by-default is disabled (default), do not add extra sections here
-      const combinedParts = appendByDefault
-        ? [processedTemplateWithSections, ...contextResult.contextSections.filter(Boolean), autoAppendOutput ? outputInstructions : '']
-        : [processedTemplateWithSections, ''];
+      const combinedParts = [processedTemplateWithSections];
 
       const userPrompt = combinedParts
         .filter(Boolean)
@@ -317,7 +438,21 @@ export class StationPromptManager {
         contextInfo: {
           sectionsUsed: contextResult.sectionsUsed,
           totalTokens: contextResult.totalTokens + Math.ceil(processedTemplate.length / CHARACTERS_PER_TOKEN_ESTIMATE),
-          debugInfo: { ...contextResult.debugInfo, sectionsById: contextResult.sectionsById }
+          debugInfo: {
+            ...contextResult.debugInfo,
+            sectionsById: contextResult.sectionsById,
+            templateDebug: {
+              userTemplate,
+              minimalContext,
+              processedTemplate,
+              enrichedContextKeys: Object.keys(enrichedContext || {}),
+              processedTemplateWithSections,
+              appendByDefault,
+              autoAppendOutput,
+              outputInstructionsIncluded: Boolean(!hasConfiguredOutputSection),
+              combinedPartsCount: combinedParts.length,
+            }
+          }
         }
       };
     } catch (error) {
@@ -444,64 +579,8 @@ export class StationPromptManager {
    */
   private static buildOutputFormatInstructions(stationName: string, trainingConfig: TrainingConfig): string {
     const stationConfig = STATION_CONFIGS[stationName as keyof typeof STATION_CONFIGS];
-    
-    const formatInstructions: Record<string, string> = {
-      ad_copy_json: `
-# Output Format:
-Return ONLY valid JSON with this exact structure. Do NOT include any additional text, explanations, code fences, or backticks.
-{
-  "headlines": [
-       {"framework": "BENEFIT DRIVEN", "copy": "Your headline text here”},
-   {"framework": "SOCIAL PROOF", "copy": "Your headline text here”},
- {"framework": "OFFER DRIVEN", "copy": "Your headline text here”},
- {"framework": "VALUE PROPS", "copy": "Your headline text here”},
- {"framework": "PROBLEM FOCUSED", "copy": "Your headline text here”},
-  ],
-  "primaryText": "Primary text content"
-}`,
-      
-      email_structure: `
-# Output Format:
-Return ONLY valid JSON with this exact structure. Do NOT include any additional text, explanations, code fences, or backticks.
-{
-  "subjectLine": "Email subject line",
-  "preheader": "Preview text",
-  "content": "Email body content",
-  "cta": "Call to action text"
-}`,
-      
-      social_captions: `
-# Output Format:
-Return ONLY valid JSON as a JSON array. Do NOT include any additional text, explanations, code fences, or backticks.
-[
-  {
-    "platform": "PLATFORM_NAME",
-    "caption": "Caption text",
-    "hashtags": ["#hashtag1", "#hashtag2"]
-  }
-]`,
-      
-      story_sequence_json: `
-# Output Format:
-Return ONLY valid JSON as a JSON array. Do NOT include any additional text, explanations, code fences, or backticks.
-[
-  {
-    "slide": 1,
-    "type": "hook/tutorial/etc",
-    "title": "Slide title",
-    "content": "Main content",
-    "visualDirection": "Visual instructions"
-  }
-]`,
-      
-      flexible: `
-# Output Format:
-Provide clean, well-structured text that matches the user's request format.
-Use simple formatting: numbered lists (1. 2. 3.) and bullet points (-) only.
-Avoid markdown symbols like *, #, [], etc.`
-    };
 
-    return formatInstructions[stationConfig.outputFormat] || formatInstructions.flexible;
+    return OUTPUT_FORMAT_INSTRUCTIONS[stationConfig.outputFormat] || OUTPUT_FORMAT_INSTRUCTIONS.flexible;
   }
 
   /**
@@ -721,20 +800,28 @@ export async function composeStationPrompts(
     debugInfo: any;
   };
 }> {
-  const systemPrompt = StationPromptManager.buildStationSystemPrompt(stationName, trainingConfig, {
-    persona: request.persona,
-    selectedProduct: request.selectedProduct,
-    selectedProducts: request.selectedProducts,
-    brandDrBalance: request.brandDrBalance,
-    useJonesBrandGuide: request.useJonesBrandGuide,
-  });
+  const [systemPrompt, { userPrompt, contextInfo }] = await Promise.all([
+    StationPromptManager.buildStationSystemPrompt(stationName, trainingConfig, {
+      persona: request.persona,
+      selectedProduct: request.selectedProduct,
+      selectedProducts: request.selectedProducts,
+      brandDrBalance: request.brandDrBalance,
+      useJonesBrandGuide: request.useJonesBrandGuide,
+    }),
+    StationPromptManager.buildEnhancedStationUserPrompt(
+      stationName,
+      trainingConfig,
+      request,
+      variables
+    ),
+  ]);
 
-  const { userPrompt, contextInfo } = await StationPromptManager.buildEnhancedStationUserPrompt(
-    stationName,
-    trainingConfig,
-    request,
-    variables
-  );
+  // Optional: log a compact preview for adCopy debugging
+  if (stationName === 'adCopy') {
+    try {
+      AILogger.logFinalPrompts('adCopy', systemPrompt, userPrompt, 800);
+    } catch {/* noop */}
+  }
 
   return { systemPrompt, userPrompt, contextInfo };
 }
@@ -964,8 +1051,9 @@ export class AIPromptBuilder {
   ): string {
     let result = template;
     for (const [key, value] of Object.entries(variables)) {
-      const placeholder = `{${key}}`;
-      result = result.replace(new RegExp(placeholder, 'g'), value || '');
+      // Use a regex that matches {{variable_name}}
+      const placeholder = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+      result = result.replace(placeholder, value || '');
     }
     return result;
   }
@@ -1002,6 +1090,85 @@ export class AIPromptBuilder {
       modelUsed,
       ...(requestPayload && { requestPayload })
     };
+  }
+}
+
+/**
+ * Lightweight text and JSON utilities to standardize model I/O handling
+ */
+export class TextUtils {
+  /** Remove surrounding markdown fences (``` or ```lang) while keeping inner content */
+  static stripCodeFences(text: string): string {
+    if (!text) return '';
+    let result = text.trim();
+    // Remove opening fences like ``` or ```json
+    result = result.replace(/^```[a-zA-Z]*\s*/gi, '').trim();
+    // Remove closing fences
+    result = result.replace(/```\s*$/gi, '').trim();
+    // Remove any stray lone fences that may remain
+    result = result.replace(/^```/g, '').replace(/```$/g, '').trim();
+    return result;
+  }
+
+  /** Clean plain text by removing bold, quotes, markdown headers, code backticks */
+  static cleanPlainText(text: string): string {
+    if (!text) return '';
+    return text
+      .replace(/^\*\*(.+)\*\*$/s, '$1')
+      .replace(/^['"]([\s\S]+)['"]$/s, '$1')
+      .replace(/^#{1,6}\s?/gm, '')
+      .replace(/`([^`]+)`/g, '$1')
+      .trim();
+  }
+
+  /** Try to parse JSON object/array from loose model output (handles code blocks and wrapping) */
+  static tryParseJson(content: string): any | null {
+    if (!content) return null;
+    const candidates: string[] = [];
+    // Raw content first
+    candidates.push(content);
+    // Code block content
+    const codeBlock = content.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (codeBlock && codeBlock[1]) candidates.push(codeBlock[1]);
+    // First object or array looking region
+    const objMatch = content.match(/\{[\s\S]*\}/);
+    if (objMatch) candidates.push(objMatch[0]);
+    const arrMatch = content.match(/\[[\s\S]*\]/);
+    if (arrMatch) candidates.push(arrMatch[0]);
+
+    for (const c of candidates) {
+      try {
+        const cleaned = TextUtils.stripCodeFences(c);
+        return JSON.parse(cleaned);
+      } catch {/* try next */}
+    }
+    return null;
+  }
+
+  /** Try to parse a JSON array specifically; returns null if not found */
+  static tryParseJsonArray(content: string): any[] | null {
+    const parsed = TextUtils.tryParseJson(content);
+    if (Array.isArray(parsed)) return parsed;
+    return null;
+  }
+}
+
+/**
+ * Consistent, compact logging for prompts
+ */
+export class AILogger {
+  static logFinalPrompts(tag: string, systemPrompt: string, userPrompt: string, preview: number = 800) {
+    try {
+      // Guard against huge logs while preserving signal
+      // const sysPreview = (systemPrompt || '').substring(0, preview) + ((systemPrompt || '').length > preview ? '...' : '');
+      // const userPreview = (userPrompt || '').substring(0, preview) + ((userPrompt || '').length > preview ? '...' : '');
+      console.log(`=== FINAL PROMPT (${tag}) ===`);
+      console.log('[SYSTEM PROMPT]', systemPrompt);
+      console.log('[USER PROMPT]', userPrompt);
+      console.log(`=== END FINAL PROMPT (${tag}) ===`);
+    } catch (err) {
+      console.warn('Prompt logging failed:', err);
+    }
   }
 }
 
@@ -1405,27 +1572,54 @@ FRAMEWORK APPLICATION:
 - Ensure each headline serves a distinct strategic purpose`;
 }
 
-export function buildLandingPageFrameworksSection(trainingConfig: TrainingConfig): string {
-  if (!trainingConfig.copyFrameworks?.landingPageFrameworks) {
+export function buildLandingPageFrameworksSection(trainingConfig: TrainingConfig, landingPageType?: string): string {
+  if (!trainingConfig.copyFrameworks?.landingPageFrameworks || !landingPageType) {
+    return '';
+  }
+  console.log('landingPageType', landingPageType);
+
+  const selectedFramework = trainingConfig.copyFrameworks.landingPageFrameworks.find(
+    framework => framework.name === landingPageType
+  );
+
+  if (!selectedFramework) {
     return '';
   }
 
   return `
 
 LANDING PAGE FRAMEWORK GUIDANCE:
-Use these proven frameworks to structure compelling landing page copy:
-${trainingConfig.copyFrameworks.landingPageFrameworks.map(framework => `
-• ${framework.name}: ${framework.description}
-  Content Sequence: ${framework.contentSequence.join(' → ')}
-  Reason Structure: ${framework.reasonStructure.join(', ')}
-  Optimization Rules: ${framework.optimizationRules.join('; ')}
-  ${framework.realExamples && framework.realExamples.length > 0 ? `Examples: ${framework.realExamples.slice(0, 2).join(', ')}` : ''}`).join('')}
+Use this proven framework to structure compelling landing page copy:
+
+• ${selectedFramework.name}: ${selectedFramework.description}
+  Content Sequence: ${selectedFramework.contentSequence.join(' → ')}
+  Reason Structure: ${selectedFramework.reasonStructure.join(', ')}
+  Optimization Rules: ${selectedFramework.optimizationRules.join('; ')}
+  ${selectedFramework.realExamples && selectedFramework.realExamples.length > 0 ? `Examples: ${selectedFramework.realExamples.slice(0, 2).join(', ')}` : ''}
 
 FRAMEWORK APPLICATION:
-- Choose the framework that best matches your landing page type and audience
 - Follow the content sequence to ensure logical flow and persuasion
-- Apply optimization rules to maximize conversion potential
+- Apply optimization rules to maximize conversion potential 
 - Use reason structures to build compelling arguments for your offer`;
+}
+
+export function buildEmailFrameworksSection(trainingConfig: TrainingConfig): string {
+  if (!trainingConfig.copyFrameworks?.emailFrameworks) {
+    return '';
+  }
+
+  return `
+
+EMAIL FRAMEWORK GUIDANCE:
+Use these proven frameworks to craft effective email campaigns:
+${trainingConfig.copyFrameworks.emailFrameworks.map(framework => `
+• ${framework.name}: ${framework.description}
+  Key Elements: ${framework.keyElements}`).join('')}
+
+FRAMEWORK APPLICATION:
+- Select the framework that aligns with your campaign goal
+- Incorporate all key elements for maximum impact
+- Adapt the framework to your specific audience and offer`;
 }
 
 // Helper function to build custom brief section

@@ -15,13 +15,19 @@ export const getEditablePrompt = (prompt: string) => {
 
 export const reconstructPrompt = (editableContent: string, originalPrompt: string) => {
   const structure = extractOutputStructure(originalPrompt);
-  if (structure) {
-    const lines = editableContent.split('\n');
-    const insertIndex = lines.findIndex(line => line.trim() === '') || 1;
-    const beforeStructure = lines.slice(0, insertIndex).join('\n');
-    const afterStructure = lines.slice(insertIndex).join('\n');
-    return `${beforeStructure}\n\n${structure}\n\n${afterStructure}`.trim();
+  if (!structure) return editableContent;
+
+  const lines = (editableContent || '').split('\n');
+  const firstBlankIdx = lines.findIndex((line) => line.trim() === '');
+
+  // If no blank line exists, append the structure at the end to avoid shuffling content
+  if (firstBlankIdx === -1) {
+    return `${editableContent.trim()}\n\n${structure}`.trim();
   }
-  return editableContent;
+
+  const beforeStructure = lines.slice(0, firstBlankIdx).join('\n');
+  const afterStructure = lines.slice(firstBlankIdx).join('\n');
+
+  return `${beforeStructure.trim()}\n\n${structure}\n\n${afterStructure.trim()}`.trim();
 };
 

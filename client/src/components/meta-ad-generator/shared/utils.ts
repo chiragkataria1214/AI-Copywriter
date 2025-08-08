@@ -1,5 +1,5 @@
 // Shared utilities for meta-ad-generator components
-import { DEFAULT_BRAND_DR_BALANCE, DEFAULT_PERSONA_KEY, DEFAULT_USE_JONES_BRAND_GUIDE, DEFAULT_CONTENT_TYPE, DEFAULT_SOCIAL_PLATFORM, DEFAULT_SOCIAL_GOAL, DEFAULT_TONE, DEFAULT_VARIATIONS, DEFAULT_SEQUENCE_TYPE, DEFAULT_STORY_LENGTH, DEFAULT_RETENTION_PLATFORM, DEFAULT_RETENTION_EMAIL_TYPE } from '@shared/constants';
+import { DEFAULT_BRAND_DR_BALANCE, DEFAULT_PERSONA_KEY, DEFAULT_USE_JONES_BRAND_GUIDE, DEFAULT_CONTENT_TYPE, DEFAULT_SOCIAL_PLATFORM, DEFAULT_SOCIAL_GOAL, DEFAULT_TONE, DEFAULT_VARIATIONS, DEFAULT_SEQUENCE_TYPE, DEFAULT_STORY_LENGTH, DEFAULT_RETENTION_PLATFORM, DEFAULT_RETENTION_EMAIL_TYPE, DEFAULT_LANDING_PAGE_TYPE, DEFAULT_VOICE_ANALYSIS_METHOD, DEFAULT_RETENTION_AUDIENCE, DEFAULT_RETENTION_GOAL } from '@shared/constants';
 
 /**
  * Creates prop setters from handleInputChange function
@@ -90,11 +90,11 @@ export function extractFormState(formState: any) {
     // Influencer mode values
     enableInfluencerMode: formState?.enableInfluencerMode || false,
     influencerHandle: formState?.influencerHandle || '',
-    voiceAnalysisMethod: formState?.voiceAnalysisMethod || 'combined',
+    voiceAnalysisMethod: formState?.voiceAnalysisMethod || DEFAULT_VOICE_ANALYSIS_METHOD,
     influencerBrandBalance: formState?.influencerBrandBalance || [DEFAULT_BRAND_DR_BALANCE],
     
     // Landing page specific values
-    landingPageType: formState?.landingPageType || 'listicle',
+    landingPageType: formState?.landingPageType || DEFAULT_LANDING_PAGE_TYPE,
     useAdsForLanding: formState?.useAdsForLanding || false,
     productBrief: formState?.productBrief || '',
     mainAngle: formState?.mainAngle || '',
@@ -107,8 +107,8 @@ export function extractFormState(formState: any) {
     retentionPlatform: formState?.retentionPlatform || DEFAULT_RETENTION_PLATFORM,
     retentionEmailType: formState?.retentionEmailType || DEFAULT_RETENTION_EMAIL_TYPE,
     retentionSelectedProducts: formState?.retentionSelectedProducts || [],
-    retentionAudience: formState?.retentionAudience || 'General audience',
-    retentionGoal: formState?.retentionGoal || 'Drive Sales',
+    retentionAudience: formState?.retentionAudience || DEFAULT_RETENTION_AUDIENCE,
+    retentionGoal: formState?.retentionGoal || DEFAULT_RETENTION_GOAL,
     retentionKeywordsToInclude: formState?.retentionKeywordsToInclude || [],
     retentionWordsToAvoid: formState?.retentionWordsToAvoid || [],
     

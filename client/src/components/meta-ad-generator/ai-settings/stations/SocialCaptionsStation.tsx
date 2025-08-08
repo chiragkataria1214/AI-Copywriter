@@ -1,11 +1,13 @@
-import React, { useRef, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import EnhancedContextConfigurator from '@/components/meta-ad-generator/ai-settings/EnhancedContextConfigurator';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { TrainingConfig, VariableDefinition } from '@shared/training-config';
 import { ChevronDown, ChevronRight, Target, Lock, Copy, Eye, Plus } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import ContextInsertion from '@/components/meta-ad-generator/ai-settings/common/ContextInsertion';
+ 
+import ProtectedPromptEditor from '@/components/meta-ad-generator/ai-settings/common/ProtectedPromptEditor';
+import { EnhancedTextField, EnhancedArrayField } from '@/components/meta-ad-generator/ai-settings/common/EnhancedFields';
+
+import { StationToggleButton } from '@/components/meta-ad-generator/ai-settings/common/StationToggleButton';
+import { TrainingConfig } from '@shared/training-config';
 
 interface SocialCaptionsStationProps {
   editingConfig: TrainingConfig;
@@ -14,340 +16,8 @@ interface SocialCaptionsStationProps {
   expandedStations: Set<string>;
   setExpandedStations: (stations: Set<string>) => void;
   copyToClipboard: (text: string, label: string) => Promise<void>;
+  setIsDirty: (isDirty: boolean) => void;
 }
-
-const StationToggleButton = ({ 
-  isOpen, 
-  onClick, 
-  title, 
-  icon, 
-  iconColor,
-  description
-}: { 
-  isOpen: boolean; 
-  onClick: () => void; 
-  title: string; 
-  icon: React.ReactNode; 
-  iconColor: string;
-  description: string;
-}) => (
-  <div className="bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200 border border-gray-200">
-    <button
-      onClick={onClick}
-      className="flex items-center justify-between w-full p-4"
-    >
-      <div className="flex items-center space-x-3">
-        <div className="flex items-center space-x-2">
-          {isOpen ? (
-            <ChevronDown className="w-4 h-4 text-gray-500" />
-          ) : (
-            <ChevronRight className="w-4 h-4 text-gray-500" />
-          )}
-          <span className={iconColor}>{icon}</span>
-        </div>
-        <div className="text-left">
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          {!isOpen && (
-            <p className="text-sm text-gray-600 mt-1">{description}</p>
-          )}
-        </div>
-      </div>
-      <div className="flex items-center space-x-2">
-        <span className="text-xs text-gray-500 font-medium">
-          {isOpen ? 'Collapse' : 'Expand'}
-        </span>
-      </div>
-    </button>
-  </div>
-);
-
-interface VariableInsertionProps {
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
-  value: string;
-  onChange: (value: string) => void;
-  position?: 'left' | 'right';
-  variables?: VariableDefinition[];
-  buttonLabel?: string;
-}
-
-const VariableInsertion: React.FC<VariableInsertionProps> = ({
-  textareaRef,
-  value,
-  onChange,
-  position = 'left',
-  variables = [],
-  buttonLabel,
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
-
-  React.useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (!dropdownRef.current) return;
-      if (!dropdownRef.current.contains(e.target as Node)) setIsOpen(false);
-    };
-    if (isOpen) document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [isOpen]);
-
-  const insertVariable = (variableKey: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const variableString = `{{${variableKey}}}`;
-    const newValue = value.substring(0, start) + variableString + value.substring(end);
-    onChange(newValue);
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + variableString.length, start + variableString.length);
-    }, 0);
-    setIsOpen(false);
-  };
-
-  const dropdownClasses = position === 'right'
-    ? 'absolute top-8 right-0 z-10 bg-white border border-gray-200 rounded-lg shadow-lg p-2 min-w-64'
-    : 'absolute top-8 left-0 z-10 bg-white border border-gray-200 rounded-lg shadow-lg p-2 min-w-64';
-
-  return (
-    <div className="relative" ref={dropdownRef}>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => setIsOpen(!isOpen)}
-        className="mb-2 text-xs"
-      >
-        <Plus size={12} className="mr-1" />
-        {buttonLabel || 'Insert Variable'}
-      </Button>
-
-      {isOpen && (
-        <div className={dropdownClasses}>
-          <div className="text-xs font-medium text-gray-700 mb-1 px-2">Available Variables</div>
-          <div className="px-2 pb-2">
-            <input
-              className="w-full text-xs border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-200"
-              placeholder="Search..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </div>
-          <div className="max-h-64 overflow-y-auto pr-1 space-y-1">
-            {(variables || [])
-              .filter(v => !query || v.key.toLowerCase().includes(query.toLowerCase()) || (v.label || '').toLowerCase().includes(query.toLowerCase()))
-              .map((variable) => (
-              <button
-                key={variable.key}
-                onClick={() => insertVariable(variable.key)}
-                className="w-full text-left px-2 py-2 hover:bg-gray-50 rounded text-xs border border-transparent hover:border-gray-200 bg-white"
-              >
-                <div className="font-mono text-blue-600">{`{{${variable.key}}}`}</div>
-                <div className="font-medium text-gray-900">{variable.label}</div>
-                <div className="text-gray-600 text-[11px]">{variable.description}</div>
-                {variable.category && (
-                  <span className={`mt-1 inline-block text-[10px] px-1.5 py-0.5 rounded-full ${
-                    variable.category === 'context_section' ? 'bg-purple-100 text-purple-700' :
-                    variable.category === 'brand_guideline' ? 'bg-orange-100 text-orange-700' :
-                    variable.category === 'system_generated' ? 'bg-green-100 text-green-700' :
-                    'bg-blue-100 text-blue-700'
-                  }`}>{variable.category}</span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {isOpen && <div className="fixed inset-0 z-0" />}
-    </div>
-  );
-};
-
-// Helper components (shared logic)
-const extractOutputStructure = (prompt: string) => {
-  const outputRequirementMatch = prompt.match(/(CRITICAL OUTPUT REQUIREMENT:[\s\S]*?Your response must follow this exact[^:]*structure:[^}]*})/i);
-  if (outputRequirementMatch) return outputRequirementMatch[1];
-  const arrayStructureMatch = prompt.match(/(CRITICAL OUTPUT REQUIREMENT:[\s\S]*?Your response must follow this exact[^:]*structure:[^}]*\])/i);
-  if (arrayStructureMatch) return arrayStructureMatch[1];
-  const textStructureMatch = prompt.match(/(CRITICAL OUTPUT REQUIREMENT:[\s\S]*?You MUST return your response as[^.]*\.)/i);
-  if (textStructureMatch) return textStructureMatch[1];
-  return null;
-};
-
-const getEditablePrompt = (prompt: string) => {
-  const structure = extractOutputStructure(prompt);
-  return structure ? prompt.replace(structure, '').trim() : prompt;
-};
-
-const reconstructPrompt = (editableContent: string, originalPrompt: string) => {
-  const structure = extractOutputStructure(originalPrompt);
-  if (structure) {
-    const lines = editableContent.split('\n');
-    const insertIndex = lines.findIndex(line => line.trim() === '') || 1;
-    const beforeStructure = lines.slice(0, insertIndex).join('\n');
-    const afterStructure = lines.slice(insertIndex).join('\n');
-    return `${beforeStructure}\n\n${structure}\n\n${afterStructure}`.trim();
-  }
-  return editableContent;
-};
-
-const ProtectedPromptEditor = ({ label, value, onChange, placeholder, rows = 8, disabled = false, copyToClipboard, textareaRef, variables, contextConfiguration }: any) => {
-  const outputStructure = extractOutputStructure(value);
-  const editableContent = getEditablePrompt(value);
-  const handleChange = (newEditableContent: string) => {
-    const reconstructedPrompt = reconstructPrompt(newEditableContent, value);
-    onChange(reconstructedPrompt);
-  };
-
-  // Build dynamic variables list and split into variable/context options
-  const computedVariables = React.useMemo(() => {
-    const base = variables || contextConfiguration?.availableVariables || [];
-    const result = [...base];
-    const addUnique = (v: any) => { if (!result.find((x: any) => x.key === v.key)) result.push(v); };
-    (contextConfiguration?.contextSections || [])
-      .filter((s: any) => s.enabled)
-      .forEach((s: any) => addUnique({ key: s.id, label: `Context: ${s.name}`, description: `Generated content from "${s.name}" context section: ${s.description}`, type: 'string', category: 'context_section', required: s.required }));
-    [
-      { key: 'corePositioning', label: 'Core Positioning', description: 'Brand core positioning statement', type: 'string', category: 'brand_guideline', required: false },
-      { key: 'brandVoice', label: 'Brand Voice', description: 'Brand voice rules and guidelines', type: 'string', category: 'brand_guideline', required: false },
-      { key: 'keyTerminology', label: 'Key Terminology', description: 'Key terms and phrases from brand guidelines', type: 'string', category: 'brand_guideline', required: false },
-      { key: 'approvedLanguage', label: 'Approved Language', description: 'Approved language and phrases', type: 'string', category: 'brand_guideline', required: false },
-      { key: 'avoidedLanguage', label: 'Avoided Language', description: 'Phrases to avoid', type: 'string', category: 'brand_guideline', required: false },
-    ].forEach(addUnique);
-    return result;
-  }, [variables, contextConfiguration]);
-
-  const contextCategories = new Set(['context_section', 'brand_guideline']);
-  const variableOptions = React.useMemo(() => computedVariables.filter((v: any) => !contextCategories.has(v?.category)), [computedVariables]);
-  const contextOptions = React.useMemo(() => computedVariables.filter((v: any) => contextCategories.has(v?.category)), [computedVariables]);
-
-  return (
-    <div className="space-y-4">
-      <div className="space-y-4 bg-white border rounded-lg p-4">
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="font-medium text-gray-900">{label}</h4>
-            <div className="flex items-center space-x-2">
-              {!disabled && (variables || contextConfiguration) && (
-                <>
-                  <VariableInsertion
-                    textareaRef={textareaRef}
-                    value={editableContent}
-                    onChange={handleChange}
-                    position="right"
-                    variables={variableOptions}
-                    buttonLabel="Insert Variable"
-                  />
-                  <ContextInsertion
-                    textareaRef={textareaRef}
-                    value={editableContent}
-                    onChange={handleChange}
-                    position="right"
-                    variables={contextOptions}
-                    buttonLabel="Insert Context"
-                  />
-                </>
-              )}
-              <Button variant="outline" size="sm" onClick={() => copyToClipboard(value, label)} disabled={!value}>
-                <Copy size={16} className="mr-1" />
-                Copy
-              </Button>
-            </div>
-          </div>
-          {disabled ? (
-            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 max-h-64 overflow-y-auto">
-              <pre className="text-sm text-gray-700 whitespace-pre-wrap">{editableContent || placeholder}</pre>
-            </div>
-          ) : (
-            <Textarea
-              ref={textareaRef}
-              value={editableContent}
-              onChange={(e) => handleChange(e.target.value)}
-              className="text-gray-900 resize-y border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg p-4 transition-all duration-200"
-              rows={rows}
-              placeholder={placeholder}
-              disabled={disabled}
-            />
-          )}
-        </div>
-      </div>
-      {outputStructure && (
-        <div className="border border-amber-200 bg-amber-50 rounded-lg p-4">
-          <div className="flex items-center space-x-2 mb-2">
-            <Lock className="w-4 h-4 text-amber-600" />
-            <span className="text-sm font-medium text-amber-800">Protected Output Structure</span>
-          </div>
-          <div className="bg-white border border-amber-200 rounded p-3">
-            <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">{outputStructure}</pre>
-          </div>
-          <p className="text-xs text-amber-700 mt-2">This section is protected to ensure frontend compatibility.</p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const EnhancedTextField = ({ label, value, onChange, placeholder, rows = 4, disabled = false, bgColor = "bg-blue-50", borderColor = "border-blue-200", copyToClipboard }: any) => (
-  <div className="space-y-4 bg-white border rounded-lg p-4">
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="font-medium text-gray-900">{label}</h4>
-        <Button variant="outline" size="sm" onClick={() => copyToClipboard(value, label)} disabled={!value}>
-          <Copy size={16} className="mr-1" />
-          Copy
-        </Button>
-      </div>
-      {disabled ? (
-        <div className={`${bgColor} rounded-lg p-4 ${borderColor} border max-h-64 overflow-y-auto`}>
-          <pre className="text-sm text-gray-700 whitespace-pre-wrap">{value || placeholder}</pre>
-        </div>
-      ) : (
-        <Textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="text-gray-900 resize-y border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg p-4 transition-all duration-200"
-          rows={rows}
-          placeholder={placeholder}
-          disabled={disabled}
-        />
-      )}
-    </div>
-  </div>
-);
-
-const EnhancedArrayField = ({ label, value, onChange, placeholder, rows = 4, disabled = false, bgColor = "bg-green-50", borderColor = "border-green-200", copyToClipboard }: any) => {
-  const textValue = Array.isArray(value) ? value.join('\n') : '';
-  
-  return (
-    <div className="space-y-4 bg-white border rounded-lg p-4">
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="font-medium text-gray-900">{label}</h4>
-          <Button variant="outline" size="sm" onClick={() => copyToClipboard(textValue, label)} disabled={!textValue}>
-            <Copy size={16} className="mr-1" />
-            Copy
-          </Button>
-        </div>
-        {disabled ? (
-          <div className={`${bgColor} rounded-lg p-4 ${borderColor} border max-h-64 overflow-y-auto`}>
-            <pre className="text-sm text-gray-700 whitespace-pre-wrap">{textValue || placeholder}</pre>
-          </div>
-        ) : (
-          <Textarea
-            value={textValue}
-            onChange={(e) => onChange(e.target.value.split('\n').map(item => item.trim()).filter(Boolean))}
-            className="text-gray-900 resize-y border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg p-4 transition-all duration-200"
-            rows={rows}
-            placeholder={placeholder}
-            disabled={disabled}
-          />
-        )}
-      </div>
-    </div>
-  );
-};
 
 export const SocialCaptionsStation: React.FC<SocialCaptionsStationProps> = ({
   editingConfig,
@@ -355,32 +25,35 @@ export const SocialCaptionsStation: React.FC<SocialCaptionsStationProps> = ({
   effectiveUser,
   expandedStations,
   setExpandedStations,
-  copyToClipboard
+  copyToClipboard,
+  setIsDirty
 }) => {
-  const systemPromptTextareaRef = useRef<HTMLTextAreaElement>(null);
   const stationConfig = editingConfig.stationPrompts?.socialCaptions;
   const contextConfig = stationConfig?.contextConfiguration as any;
-  const getAllAvailableVariables = (): VariableDefinition[] => {
-    const regular = (contextConfig?.availableVariables || []) as VariableDefinition[];
-    const sections = (contextConfig?.contextSections || [])
-      .filter((s: any) => s.enabled)
-      .map((s: any) => ({
-        key: s.id,
-        label: `Context: ${s.name}`,
-        description: `Generated content from "${s.name}" context section: ${s.description}`,
-        type: 'string' as const,
-        category: 'context_section' as const,
-        required: s.required,
-      }));
-    const brandGuidelineVariables: VariableDefinition[] = [
-      { key: 'corePositioning', label: 'Core Positioning', description: 'Brand core positioning statement from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
-      { key: 'brandVoice', label: 'Brand Voice', description: 'Brand voice rules and guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
-      { key: 'keyTerminology', label: 'Key Terminology', description: 'Key terms and phrases from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
-      { key: 'approvedLanguage', label: 'Approved Language', description: 'Approved language and phrases from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
-      { key: 'avoidedLanguage', label: 'Avoided Language', description: 'Language and phrases to avoid from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
-    ];
-    return [...regular, ...sections, ...brandGuidelineVariables];
-  };
+
+  useEffect(() => {
+    if (!editingConfig.stationPrompts.socialCaptions) {
+      const socialCaptionsDefaults = {
+        userPromptTemplate: "Default user prompt for social captions...",
+        systemPrompt: "Default system prompt for social captions...",
+        contextConfiguration: {
+          contextSections: [],
+          availableVariables: [],
+        },
+        platformGuidelines: [],
+        hashtagStrategy: [],
+        engagementTactics: [],
+      };
+      setEditingConfig({
+        ...editingConfig,
+        stationPrompts: {
+          ...editingConfig.stationPrompts,
+          socialCaptions: socialCaptionsDefaults,
+        },
+      });
+    }
+  }, [editingConfig, setEditingConfig]);
+
   const toggleStation = (stationId: string) => {
     const newExpanded = new Set(expandedStations);
     if (expandedStations.has(stationId)) {
@@ -456,22 +129,24 @@ export const SocialCaptionsStation: React.FC<SocialCaptionsStationProps> = ({
                 <ProtectedPromptEditor
                   label="Base System Prompt (Editable)"
                   value={editingConfig?.stationPrompts?.socialCaptions?.systemPrompt || ''}
-                  onChange={(value: string) => setEditingConfig({
-                    ...editingConfig,
-                    stationPrompts: {
-                      ...editingConfig?.stationPrompts,
-                      socialCaptions: {
-                        ...editingConfig?.stationPrompts?.socialCaptions,
-                        systemPrompt: value
-                      }
-                    }
-                  })}
+                  onChange={(newValue: string) => {
+                    if (effectiveUser?.role !== 'admin') return;
+                    setIsDirty(true);
+                    setEditingConfig({
+                      ...editingConfig,
+                      stationPrompts: {
+                        ...editingConfig.stationPrompts,
+                        socialCaptions: {
+                          ...stationConfig,
+                          systemPrompt: newValue,
+                        },
+                      },
+                    });
+                  }}
                   placeholder="You are a social media copywriter specializing in platform-optimized captions and engagement..."
                   rows={6}
                   disabled={effectiveUser?.role !== 'admin'}
                   copyToClipboard={copyToClipboard}
-                  textareaRef={systemPromptTextareaRef}
-                  variables={getAllAvailableVariables()}
                   contextConfiguration={editingConfig?.stationPrompts?.socialCaptions?.contextConfiguration as any}
                 />
 
@@ -623,19 +298,16 @@ BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`}
 
             {expandedStations.has('socialCaptions-userPrompt') && (
               <div className="p-6 border-t border-gray-100 space-y-6">
-                {/* User Prompt Structure Explanation */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <p className="text-sm text-green-800 font-medium">📝 How User Prompt is Generated</p>
-                  <p className="text-sm text-green-700 mt-1">
-                    The final user prompt combines: <strong>Base User Template</strong> + <strong>Dynamic Sections</strong> (platform guidelines, hashtag strategy, engagement tactics, persona targeting, product focus, custom brief)
-                  </p>
-                </div>
+            
 
                 {/* Base User Prompt Template - Editable */}
                 <EnhancedTextField
                   label="Base User Prompt Template (Editable)"
                   value={editingConfig?.stationPrompts?.socialCaptions?.userPromptTemplate || ''}
-                  onChange={(value: string) => effectiveUser?.role === 'admin' && setEditingConfig({
+                  onChange={(value: string) => {
+if(effectiveUser?.role === 'admin') {
+setIsDirty(true);
+setEditingConfig({
                     ...editingConfig,
                     stationPrompts: {
                       ...editingConfig?.stationPrompts,
@@ -644,7 +316,9 @@ BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`}
                         userPromptTemplate: value
                       }
                     }
-                  })}
+                  })
+}
+}}
                   placeholder="Create [PLATFORM] caption for [CONTENT_TYPE] about [TOPIC] targeting [AUDIENCE]..."
                   rows={4}
                   disabled={effectiveUser?.role !== 'admin'}
@@ -657,7 +331,10 @@ BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`}
                 <EnhancedArrayField
                   label="Platform Guidelines (Editable)"
                   value={editingConfig?.stationPrompts?.socialCaptions?.platformGuidelines || []}
-                  onChange={(value: string[]) => effectiveUser?.role === 'admin' && setEditingConfig({
+                  onChange={(value: string[]) => {
+if(effectiveUser?.role === 'admin') {
+setIsDirty(true);
+setEditingConfig({
                     ...editingConfig,
                     stationPrompts: {
                       ...editingConfig?.stationPrompts,
@@ -666,7 +343,9 @@ BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`}
                         platformGuidelines: value
                       }
                     }
-                  })}
+                  })
+}
+}}
                   placeholder="Instagram: 125 characters optimal, use emojis, include CTA&#10;Facebook: Longer form OK, ask questions for engagement&#10;Twitter: 280 characters max, use trending hashtags"
                   rows={5}
                   disabled={effectiveUser?.role !== 'admin'}
@@ -679,7 +358,10 @@ BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`}
                 <EnhancedArrayField
                   label="Hashtag Strategy (Editable)"
                   value={editingConfig?.stationPrompts?.socialCaptions?.hashtagStrategy || []}
-                  onChange={(value: string[]) => effectiveUser?.role === 'admin' && setEditingConfig({
+                  onChange={(value: string[]) => {
+if(effectiveUser?.role === 'admin') {
+setIsDirty(true);
+setEditingConfig({
                     ...editingConfig,
                     stationPrompts: {
                       ...editingConfig?.stationPrompts,
@@ -688,7 +370,9 @@ BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`}
                         hashtagStrategy: value
                       }
                     }
-                  })}
+                  })
+}
+}}
                   placeholder="Mix of branded, niche, and trending hashtags&#10;Instagram: 5-10 hashtags optimal&#10;LinkedIn: 3-5 hashtags maximum"
                   rows={5}
                   disabled={effectiveUser?.role !== 'admin'}
@@ -701,7 +385,10 @@ BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`}
                 <EnhancedArrayField
                   label="Engagement Tactics (Editable)"
                   value={editingConfig?.stationPrompts?.socialCaptions?.engagementTactics || []}
-                  onChange={(value: string[]) => effectiveUser?.role === 'admin' && setEditingConfig({
+                  onChange={(value: string[]) => {
+if(effectiveUser?.role === 'admin') {
+setIsDirty(true);
+setEditingConfig({
                     ...editingConfig,
                     stationPrompts: {
                       ...editingConfig?.stationPrompts,
@@ -710,7 +397,9 @@ BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`}
                         engagementTactics: value
                       }
                     }
-                  })}
+                  })
+}
+}}
                   placeholder="Ask questions to encourage comments&#10;Use polls and interactive features&#10;Include clear call-to-action"
                   rows={4}
                   disabled={effectiveUser?.role !== 'admin'}

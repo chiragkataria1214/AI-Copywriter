@@ -527,7 +527,7 @@ export const AdCopyTab = ({
                             <div>
                                 <div className="flex items-center justify-between mb-2">
                                     <Label className="text-sm font-medium text-gray-700">Brand/DR Balance</Label>
-                                    <span className="text-sm text-gray-500">{getBrandDrLabel()}</span>
+                                    <span className="text-sm text-gray-500">{`${(brandDrBalance?.[0] ?? 0)}% BR / ${Math.max(0, 100 - (brandDrBalance?.[0] ?? 0))}% DR`}</span>
                                 </div>
                                 <Slider
                                     value={brandDrBalance}
@@ -943,16 +943,7 @@ export const AdCopyTab = ({
 
                                 {/* Mobile Headline and Primary Text */}
                                 <div className="px-4 pb-3">
-                                    {(generatedHeadlines || []).length > 0 && (generatedHeadlines || [])[selectedHeadlineIndex] && (
-                                        <div className="mb-3">
-                                            <p className="text-[16px] font-semibold text-gray-900 leading-[1.3] mb-2">
-                                                {(generatedHeadlines || [])[selectedHeadlineIndex]?.copy}
-                                            </p>
-                                            <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-300 text-xs font-medium px-2 py-1">
-                                                {(generatedHeadlines || [])[selectedHeadlineIndex]?.framework}
-                                            </Badge>
-                                        </div>
-                                    )}
+                                   
                                     {generatedPrimaryText && (
                                         <p className="text-[15px] text-gray-900 leading-[1.4]">
                                             {generatedPrimaryText}
@@ -992,12 +983,23 @@ export const AdCopyTab = ({
                                     )}
                                 </div>
 
+                               
                                 {/* Mobile Link Preview Section */}
                                 {((generatedHeadlines || []).length > 0 || generatedPrimaryText) && (
                                     <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
                                         <div className="text-[13px] text-gray-500 mb-1 uppercase tracking-wide font-medium">
                                             JONESROADBEAUTY.COM
                                         </div>
+                                        {(generatedHeadlines || []).length > 0 && (generatedHeadlines || [])[selectedHeadlineIndex] && (
+                                        <div className="mb-3">
+                                            <p className="text-[16px] font-semibold text-gray-900 leading-[1.3] mb-2">
+                                                {(generatedHeadlines || [])[selectedHeadlineIndex]?.copy}
+                                            </p>
+                                            {/* <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-300 text-xs font-medium px-2 py-1">
+                                                {(generatedHeadlines || [])[selectedHeadlineIndex]?.framework}
+                                            </Badge> */}
+                                        </div>
+                                    )}
                                         <div className="font-medium text-[15px] text-gray-900 mb-3 leading-tight">
                                             {products[selectedProducts[0]]?.displayName || 'Discover Your Perfect Beauty Match'}
                                         </div>

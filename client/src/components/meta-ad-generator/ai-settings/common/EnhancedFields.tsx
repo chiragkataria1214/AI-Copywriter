@@ -2,7 +2,7 @@ import React from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Copy } from 'lucide-react';
-import VariableInsertion, { VariableInsertionProps } from './VariableInsertion';
+import { VariableInsertion } from '../editors/VariableEditor';
 
 export interface EnhancedTextFieldProps {
   label: string;
@@ -15,7 +15,7 @@ export interface EnhancedTextFieldProps {
   borderColor?: string;
   copyToClipboard: (text: string, label: string) => Promise<void>;
   textareaRef?: React.RefObject<HTMLTextAreaElement>;
-  variableInsertionProps?: Omit<VariableInsertionProps, 'value' | 'onChange' | 'textareaRef'> & { enabled?: boolean };
+  variableInsertionProps?: Omit<React.ComponentProps<typeof VariableInsertion>, 'value' | 'onChange' | 'textareaRef'> & { enabled?: boolean };
 }
 
 export const EnhancedTextField: React.FC<EnhancedTextFieldProps> = ({
@@ -42,7 +42,7 @@ export const EnhancedTextField: React.FC<EnhancedTextFieldProps> = ({
               value={value}
               onChange={onChange}
               position={variableInsertionProps.position}
-              variables={variableInsertionProps.variables}
+              availableVariables={variableInsertionProps.availableVariables}
               buttonLabel={variableInsertionProps.buttonLabel}
             />
           )}

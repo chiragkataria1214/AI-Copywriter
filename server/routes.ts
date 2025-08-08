@@ -1760,7 +1760,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transcription,
         customBrief,
         persona,
-        targetAudience,
         landingPageUrl,
         brandDrBalance,
         useJonesBrandGuide,

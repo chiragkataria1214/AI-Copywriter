@@ -7,7 +7,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { GenerationMetadata } from '@/components/common/GenerationDetailsModal';
 import { ProductSelection } from '@/components/common/ProductSelection';
 import { TargetPersona } from '../../../common/TargetPersona';

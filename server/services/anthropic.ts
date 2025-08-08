@@ -7,11 +7,14 @@ import {
   buildLandingPageContext,
   buildCopyFrameworksSection,
   buildLandingPageFrameworksSection,
+  buildEmailFrameworksSection,
   buildCustomBriefSection,
   AIResponseParser,
   AIPromptBuilder,
   StationPromptManager,
-  ContentContextBuilder
+  ContentContextBuilder,
+  AILogger,
+  TextUtils
 } from './anthropic-helpers';
 import { detectImageType, resizeImageIfNeeded, processImageForAnthropic } from './image-helper';
 
@@ -51,7 +54,6 @@ export interface AdCopyRequest {
   transcription: string;
   customBrief?: string;
   persona: string;
-  targetAudience: string;
   landingPageUrl?: string;
   brandDrBalance: number;
   useJonesBrandGuide: boolean;
@@ -271,25 +273,21 @@ Please revise the content applying the improvement instructions while maintainin
 }
 
 export async function generateAdCopy(request: AdCopyRequest, trainingConfig: TrainingConfig) {
-  const { transcription, customBrief, persona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProduct, selectedProducts } = request;
+  const { transcription, customBrief, persona, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProduct, selectedProducts } = request;
   
   // Validate required parameters
   if (!persona || persona === 'none') {
     throw new Error('Persona is required and must be provided from database persona data.');
   }
-  if (!targetAudience) {
-    throw new Error('Target audience is required and must be provided.');
-  }
-  
+
   // Provide safe defaults for undefined values
   const safeBrandDrBalance = brandDrBalance || DEFAULT_BRAND_DR_BALANCE;
   const brandPercent = safeBrandDrBalance;
   const drPercent = 100 - brandPercent;
   const safePersona = persona;
-  const safeTargetAudience = targetAudience;
   
   // Build enhanced system prompt using StationPromptManager
-  const systemPrompt = StationPromptManager.buildStationSystemPrompt('adCopy', trainingConfig, {
+  const systemPrompt = await StationPromptManager.buildStationSystemPrompt('adCopy', trainingConfig, request, {
     persona: safePersona,
     selectedProduct,
     selectedProducts,
@@ -298,11 +296,11 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
   });
 
   // Build context sections using enhanced builders
-  const landingPageContext = await buildLandingPageContext(landingPageUrl);
-  const targetPersonaSection = buildTargetPersonaSection(safePersona, trainingConfig);
-  const selectedProductsSection = buildSelectedProductsSection(selectedProduct, selectedProducts, trainingConfig);
-  const copyFrameworksSection = buildCopyFrameworksSection(trainingConfig);
-  const customBriefSection = buildCustomBriefSection(customBrief);
+  // const landingPageContext = await buildLandingPageContext(landingPageUrl);
+  // const targetPersonaSection = buildTargetPersonaSection(safePersona, trainingConfig);
+  // const selectedProductsSection = buildSelectedProductsSection(selectedProduct, selectedProducts, trainingConfig);
+  // const copyFrameworksSection = buildCopyFrameworksSection(trainingConfig);
+  // const customBriefSection = buildCustomBriefSection(customBrief);
 
   // Enhanced image analysis using ContentContextBuilder
   const { contextSection: imageAnalysisSection, hasImageContent, imageInput } = 
@@ -318,80 +316,30 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
   // Try to use enhanced context builder if available
   const hasEnhancedConfig = trainingConfig?.stationPrompts?.adCopy?.contextConfiguration;
   
-  if (hasEnhancedConfig) {
-    try {
-      const enhancedResult = await StationPromptManager.buildEnhancedStationUserPrompt(
-        'adCopy',
-        trainingConfig,
-        request,
-        {
-          transcription: transcription || '',
-          landingPageContext: landingPageContext || '',
-          persona: safePersona,
-          targetAudience: safeTargetAudience,
-          brandDrBalance: safeBrandDrBalance,
-          selectedProduct,
-          selectedProducts,
-          customBrief,
-          uploadedImage,
-          airLink
-        }
-      );
-      console.log('Enhanced result:', enhancedResult);
-      
-      userPrompt = enhancedResult.userPrompt;
-      contextInfo = enhancedResult.contextInfo;
-      
-      console.log('Enhanced context builder used:', {
-        sectionsUsed: contextInfo.sectionsUsed,
-        totalTokens: contextInfo.totalTokens
-      });
-    } catch (enhancedError) {
-      console.warn('Enhanced context builder failed, falling back to legacy:', enhancedError);
-      // Fall back to legacy method
-      const templateVariables = {
-        transcription: transcription || '',
-        landingPageContext: landingPageContext || ''
-      };
-
-      const contextSections = [
-        transcriptionContext,
-        targetPersonaSection,
-        selectedProductsSection,
-        copyFrameworksSection,
-        customBriefSection,
-        imageAnalysisSection
-      ];
-
-      userPrompt = StationPromptManager.buildStationUserPrompt(
-        'adCopy',
-        trainingConfig,
-        templateVariables,
-        contextSections
-      );
-    }
-  } else {
-    // Use legacy method
-    const templateVariables = {
-      transcription: transcription || '',
-      landingPageContext: landingPageContext || ''
-    };
-
-    const contextSections = [
-      transcriptionContext,
-      targetPersonaSection,
-      selectedProductsSection,
-      copyFrameworksSection,
-      customBriefSection,
-      imageAnalysisSection
-    ];
-
-    userPrompt = StationPromptManager.buildStationUserPrompt(
+  {
+    // Always use enhanced context; require configuration to be present
+    const enhancedResult = await StationPromptManager.buildEnhancedStationUserPrompt(
       'adCopy',
       trainingConfig,
-      templateVariables,
-      contextSections
+      request,
+      {
+        transcription: transcription || '',
+        persona: safePersona,
+        brandDrBalance: safeBrandDrBalance,
+        selectedProduct,
+        selectedProducts,
+        customBrief,
+        uploadedImage,
+        airLink
+      }
     );
+    console.log('Enhanced result:', enhancedResult);
+    userPrompt = enhancedResult.userPrompt;
+    contextInfo = enhancedResult.contextInfo;
+    console.log('Enhanced context builder used:', {
+      sectionsUsed: contextInfo.sectionsUsed,
+      totalTokens: contextInfo.totalTokens
+    });
   }
 
   // Set image variables for message content
@@ -400,10 +348,7 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
 
   try {
     // Debug: log final rendered prompts being sent to the model
-    console.log('=== FINAL PROMPT (Ad Copy) ===');
-    console.log('[SYSTEM PROMPT]', systemPrompt.substring(0, 800) + (systemPrompt.length > 800 ? '...' : ''));
-    console.log('[USER PROMPT]', userPrompt.substring(0, 800) + (userPrompt.length > 800 ? '...' : ''));
-    console.log('=== END FINAL PROMPT (Ad Copy) ===');
+    AILogger.logFinalPrompts('Ad Copy', systemPrompt, userPrompt);
 
     // Build message content with optional image
     let messageContent: any[] = [{ type: 'text', text: userPrompt }];
@@ -444,7 +389,7 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
         userPrompt,
         content,
         modelParams.model,
-        { transcription, persona, targetAudience, brandDrBalance, selectedProduct }
+        { transcription, persona, brandDrBalance, selectedProduct }
       ),
       contextInfo: hasEnhancedConfig ? contextInfo : undefined
     };
@@ -487,8 +432,9 @@ export async function generateLandingPageCopy(request: LandingPageRequest, train
   // Build comprehensive sections using helper functions
   const targetPersonaSection = buildTargetPersonaSection(safePersona, trainingConfig);
   const selectedProductsSection = buildSelectedProductsSection(selectedProduct, selectedProducts, trainingConfig);
-  const landingPageFrameworksSection = buildLandingPageFrameworksSection(trainingConfig);
+  const landingPageFrameworksSection = buildLandingPageFrameworksSection(trainingConfig, landingPageType);
   
+  // console.log('!!!!!!!!!!!!!!!!!!!!!!!!!landingPageFrameworksSection', landingPageFrameworksSection);
 
   
   // Build additional contextual sections
@@ -610,13 +556,7 @@ ${aiSettingsContext}`;
     selectedProductsSection + 
     brandBalanceSection;
 
-  console.log('=== FINAL USER PROMPT PREVIEW ===');
-  console.log(userPrompt.substring(0, 500) + '...');
-  console.log('=== END DEBUG ===');
-  console.log('=== FINAL PROMPT (Landing Page) ===');
-  console.log('[SYSTEM PROMPT]', systemPrompt.substring(0, 800) + (systemPrompt.length > 800 ? '...' : ''));
-  console.log('[USER PROMPT]', userPrompt.substring(0, 800) + (userPrompt.length > 800 ? '...' : ''));
-  console.log('=== END FINAL PROMPT (Landing Page) ===');
+  AILogger.logFinalPrompts('Landing Page', systemPrompt, userPrompt);
 
   try {
     const response = await anthropic.messages.create({
@@ -631,27 +571,46 @@ ${aiSettingsContext}`;
     // Debug logging to see what we received
     // console.log('AI Response for landing page:', content.substring(0, 500) + '...');
     
-    // Try to parse as JSON first, then fall back to text parsing
-    let parsedJson = null;
-    try {
-      // Extract JSON from response - handle potential markdown wrapping
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      const jsonString = jsonMatch ? jsonMatch[0] : content;
-      parsedJson = JSON.parse(jsonString);
+    // Try to parse as JSON first, then fall back to text parsing (with fenced/embedded JSON support)
+    let parsedJson = TextUtils.tryParseJson(content);
+    if (!parsedJson) {
+      const fencedMatch = content.match(/```json[\s\S]*?```/i) || content.match(/```[\s\S]*?```/);
+      if (fencedMatch) {
+        const fenced = TextUtils.stripCodeFences(fencedMatch[0]);
+        parsedJson = TextUtils.tryParseJson(fenced);
+      }
+    }
+    if (!parsedJson) {
+      const firstBrace = content.indexOf('{');
+      const lastBrace = content.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        const maybeJson = content.substring(firstBrace, lastBrace + 1);
+        parsedJson = TextUtils.tryParseJson(maybeJson);
+      }
+    }
+    if (parsedJson) {
       console.log('Successfully parsed JSON response:', parsedJson);
-    } catch (error) {
+    } else {
       console.log('Not a JSON response, using text parsing...');
     }
     
     let headlineMatch, subheadlineMatch, introMatch, ctaMatch, riskReversalMatch;
     
          if (parsedJson) {
-       // Use JSON parsing
-       headlineMatch = parsedJson.headline ? [null, parsedJson.headline] : null;
-       subheadlineMatch = parsedJson.subheadline ? [null, parsedJson.subheadline] : null;
-       introMatch = parsedJson.introduction ? [null, parsedJson.introduction] : null;
-       ctaMatch = parsedJson.cta ? [null, parsedJson.cta] : null;
-       riskReversalMatch = parsedJson.riskReversal || parsedJson.risk_reversal ? [null, parsedJson.riskReversal || parsedJson.risk_reversal] : null;
+       // Use JSON parsing with support for nested landing page schemas
+       const hero = parsedJson.hero_section || {};
+       const productShowcase = parsedJson.product_showcase || {};
+       const finalCta = parsedJson.final_cta || {};
+       const extractedHeadline = parsedJson.headline || hero.headline || '';
+       const extractedSubheadline = parsedJson.subheadline || hero.sub_headline || hero.subheadline || '';
+       const extractedIntro = parsedJson.introduction || productShowcase.body_copy || '';
+       const extractedCta = parsedJson.cta || finalCta.cta_button || hero.cta_button || '';
+       const extractedRisk = parsedJson.riskReversal || parsedJson.risk_reversal || '';
+       headlineMatch = extractedHeadline ? [null, extractedHeadline] : null;
+       subheadlineMatch = extractedSubheadline ? [null, extractedSubheadline] : null;
+       introMatch = extractedIntro ? [null, extractedIntro] : null;
+       ctaMatch = extractedCta ? [null, extractedCta] : null;
+       riskReversalMatch = extractedRisk ? [null, extractedRisk] : null;
     } else {
       // Use text parsing as fallback
       headlineMatch = content.match(/HEADLINE:?\s*(.+?)(?=\n|SUBHEADLINE|INTRODUCTION|$)/is);
@@ -694,6 +653,101 @@ ${aiSettingsContext}`;
           content,
           hook: hook.length < 200 ? hook : '',
           wordCount: content.split(/\s+/).length
+        });
+      }
+    } else if (parsedJson) {
+      // Build sections from known nested landing page structures
+      const productShowcase = parsedJson.product_showcase || {};
+      const comparisonGrid = parsedJson.comparison_grid || {};
+      const universalBenefits = parsedJson.universal_benefits || {};
+      const socialProof = parsedJson.social_proof || {};
+      const finalCta = parsedJson.final_cta || {};
+
+      // Product Showcase section
+      if (productShowcase.section_title || productShowcase.body_copy) {
+        const lines: string[] = [];
+        if (productShowcase.body_copy) lines.push(productShowcase.body_copy);
+        if (Array.isArray(productShowcase.product_lines)) {
+          for (const line of productShowcase.product_lines) {
+            if (line?.headline) lines.push(`Headline: ${line.headline}`);
+            if (Array.isArray(line?.bullet_points)) {
+              lines.push(...line.bullet_points.map((bp: string) => `- ${bp}`));
+            }
+          }
+        }
+        const contentStr = lines.join('\n');
+        const hookMatch = contentStr.match(/^([^.!?]*[.!?])/);
+        sections.push({
+          title: productShowcase.section_title || 'Product Showcase',
+          content: contentStr,
+          hook: hookMatch ? hookMatch[1].trim() : '',
+          wordCount: contentStr.split(/\s+/).length
+        });
+      }
+
+      // Comparison Grid section
+      if (comparisonGrid.section_title || comparisonGrid.table) {
+        const table = comparisonGrid.table || {};
+        const rows: string[] = [];
+        if (Array.isArray(table.rows)) {
+          for (const row of table.rows) {
+            if (row?.feature && Array.isArray(row.values)) {
+              rows.push(`${row.feature}: ${row.values.join(' vs ')}`);
+            }
+          }
+        }
+        const contentStr = rows.join('\n');
+        sections.push({
+          title: comparisonGrid.section_title || 'Comparison',
+          content: contentStr,
+          hook: '',
+          wordCount: contentStr.split(/\s+/).length
+        });
+      }
+
+      // Universal Benefits section
+      if (universalBenefits.section_title || Array.isArray(universalBenefits.features)) {
+        const features: string[] = [];
+        if (Array.isArray(universalBenefits.features)) {
+          for (const feat of universalBenefits.features) {
+            if (feat?.headline) features.push(`${feat.headline}: ${feat.description || ''}`.trim());
+          }
+        }
+        const contentStr = features.join('\n');
+        sections.push({
+          title: universalBenefits.section_title || 'Benefits',
+          content: contentStr,
+          hook: '',
+          wordCount: contentStr.split(/\s+/).length
+        });
+      }
+
+      // Social Proof section
+      if (socialProof.section_title || Array.isArray(socialProof.testimonials)) {
+        const testimonials: string[] = [];
+        if (Array.isArray(socialProof.testimonials)) {
+          for (const t of socialProof.testimonials) {
+            const who = t?.reviewer_name || t?.reviewer_title_or_handle || t?.photo_url || '';
+            if (t?.quote) testimonials.push(`"${t.quote}" — ${who}`.trim());
+          }
+        }
+        const contentStr = testimonials.join('\n');
+        sections.push({
+          title: socialProof.section_title || 'Social Proof',
+          content: contentStr,
+          hook: '',
+          wordCount: contentStr.split(/\s+/).length
+        });
+      }
+
+      // Final CTA section (optional)
+      if (finalCta.section_title || finalCta.key_message || finalCta.cta_button) {
+        const contentStr = [finalCta.key_message, finalCta.cta_button].filter(Boolean).join('\n');
+        sections.push({
+          title: finalCta.section_title || 'Call To Action',
+          content: contentStr,
+          hook: '',
+          wordCount: contentStr.split(/\s+/).length
         });
       }
     } else if (landingPageType === 'multiProduct') {
@@ -919,10 +973,7 @@ INSTRUCTIONS:
 
   try {
     // Debug: log final rendered prompts being sent to the model (Static Ad)
-    console.log('=== FINAL PROMPT (Static Ad Analysis) ===');
-    console.log('[SYSTEM PROMPT]', systemPrompt.substring(0, 800) + (systemPrompt.length > 800 ? '...' : ''));
-    console.log('[USER PROMPT]', userPrompt.substring(0, 800) + (userPrompt.length > 800 ? '...' : ''));
-    console.log('=== END FINAL PROMPT (Static Ad Analysis) ===');
+    AILogger.logFinalPrompts('Static Ad Analysis', systemPrompt, userPrompt);
     const response = await anthropic.messages.create({
       model: DEFAULT_MODEL_STR,
       system: systemPrompt,
@@ -942,76 +993,39 @@ INSTRUCTIONS:
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
     
     // Try to parse JSON response first
-    let parsedResponse;
-    try {
-      // Extract JSON from response - handle potential markdown wrapping
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      const jsonString = jsonMatch ? jsonMatch[0] : content;
-      parsedResponse = JSON.parse(jsonString);
-      
-      // Handle different output formats
+    const parsedResponse = TextUtils.tryParseJson(content);
+    if (parsedResponse) {
       if (outputFormat === 'analysis-only') {
         return {
           analysis: parsedResponse.analysis || 'Analysis not available',
           variations: [],
           rawResponse: content,
-          debugInfo: {
-            systemPrompt,
-            userPrompt,
-            rawResponse: content,
-            modelUsed: DEFAULT_MODEL_STR
-          }
-        };
-      } else if (outputFormat === 'variations-only') {
-        return {
-          analysis: '', // No analysis for variations-only
-          variations: parsedResponse.variations || [],
-          rawResponse: content,
-          debugInfo: {
-            systemPrompt,
-            userPrompt,
-            rawResponse: content,
-            modelUsed: DEFAULT_MODEL_STR
-          }
-        };
-      } else {
-        // Default: analysis-variations
-        return {
-          analysis: parsedResponse.analysis || 'Analysis not available',
-          variations: parsedResponse.variations || [],
-          rawResponse: content,
-          debugInfo: {
-            systemPrompt,
-            userPrompt,
-            rawResponse: content,
-            modelUsed: DEFAULT_MODEL_STR
-          }
+          debugInfo: { systemPrompt, userPrompt, rawResponse: content, modelUsed: DEFAULT_MODEL_STR }
         };
       }
-    } catch (parseError) {
-      console.log('Failed to parse JSON, falling back to text formatting');
-      
-      // Fallback: Clean up formatting and return as text
-      const cleanedContent = content
-        .replace(/\*\*/g, '') // Remove bold formatting
-        .replace(/#{1,6}\s?/g, '') // Remove markdown headers
-        .replace(/\[([^\]]+)\]/g, '$1') // Remove square brackets
-        .replace(/`([^`]+)`/g, '$1') // Remove code formatting
-        .trim();
-      
-      // For fallback, always return analysis with no variations
-      return {
-        analysis: cleanedContent,
-        variations: [],
-        rawResponse: content,
-        debugInfo: {
-          systemPrompt,
-          userPrompt,
+      if (outputFormat === 'variations-only') {
+        return {
+          analysis: '',
+          variations: parsedResponse.variations || [],
           rawResponse: content,
-          modelUsed: DEFAULT_MODEL_STR
-        }
+          debugInfo: { systemPrompt, userPrompt, rawResponse: content, modelUsed: DEFAULT_MODEL_STR }
+        };
+      }
+      return {
+        analysis: parsedResponse.analysis || 'Analysis not available',
+        variations: parsedResponse.variations || [],
+        rawResponse: content,
+        debugInfo: { systemPrompt, userPrompt, rawResponse: content, modelUsed: DEFAULT_MODEL_STR }
       };
     }
+    console.log('Failed to parse JSON, falling back to text formatting');
+    const cleanedContent = TextUtils.cleanPlainText(content);
+    return {
+      analysis: cleanedContent,
+      variations: [],
+      rawResponse: content,
+      debugInfo: { systemPrompt, userPrompt, rawResponse: content, modelUsed: DEFAULT_MODEL_STR }
+    };
   } catch (error) {
     console.error('Static ad analysis error:', error);
     throw new Error('Failed to analyze static ad');
@@ -1039,7 +1053,7 @@ export async function generateCustomCopy(request: CustomCopyRequest, trainingCon
   });
   
   // Build enhanced system prompt using StationPromptManager
-  const systemPrompt = StationPromptManager.buildStationSystemPrompt('customRequest', trainingConfig, {
+  const systemPrompt = await StationPromptManager.buildStationSystemPrompt('customRequest', trainingConfig, request, {
     persona: safePersona,
     selectedProduct,
     selectedProducts: request.selectedProducts,
@@ -1080,19 +1094,16 @@ export async function generateCustomCopy(request: CustomCopyRequest, trainingCon
     `BRAND/DR BALANCE: ${brandBalance}% brand voice - ${balanceGuidance}`
   ];
 
-  const userPrompt = StationPromptManager.buildStationUserPrompt(
+  const { userPrompt, contextInfo } = await StationPromptManager.buildEnhancedStationUserPrompt(
     'customRequest',
     trainingConfig,
-    templateVariables,
-    contextSections
+    request,
+    templateVariables
   );
 
   try {
     // Debug: log final rendered prompts being sent to the model (Custom Request)
-    console.log('=== FINAL PROMPT (Custom Request) ===');
-    console.log('[SYSTEM PROMPT]', systemPrompt.substring(0, 800) + (systemPrompt.length > 800 ? '...' : ''));
-    console.log('[USER PROMPT]', userPrompt.substring(0, 800) + (userPrompt.length > 800 ? '...' : ''));
-    console.log('=== END FINAL PROMPT (Custom Request) ===');
+    AILogger.logFinalPrompts('Custom Request', systemPrompt, userPrompt);
     // Get optimized model parameters for this station
     const modelParams = StationPromptManager.getStationModelParams('customRequest', trainingConfig);
     
@@ -1108,13 +1119,16 @@ export async function generateCustomCopy(request: CustomCopyRequest, trainingCon
     
     return {
       response: content.trim(),
-      debugInfo: AIPromptBuilder.createDebugInfo(
-        systemPrompt,
-        userPrompt,
-        content,
-        modelParams.model,
-        request
-      )
+      debugInfo: {
+        ...AIPromptBuilder.createDebugInfo(
+          systemPrompt,
+          userPrompt,
+          content,
+          modelParams.model,
+          request
+        ),
+        contextInfo
+      }
     };
   } catch (error) {
     console.error('Custom copy generation error:', error);
@@ -1441,10 +1455,7 @@ NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.${request
 
   try {
     // Debug: log final rendered prompts being sent to the model (Retention)
-    console.log('=== FINAL PROMPT (Email/SMS Retention) ===');
-    console.log('[SYSTEM PROMPT]', systemPrompt.substring(0, 800) + (systemPrompt.length > 800 ? '...' : ''));
-    console.log('[USER PROMPT]', userPrompt.substring(0, 800) + (userPrompt.length > 800 ? '...' : ''));
-    console.log('=== END FINAL PROMPT (Email/SMS Retention) ===');
+    AILogger.logFinalPrompts('Email/SMS Retention', systemPrompt, userPrompt);
     if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === 'dummy-key') {
       throw new Error('Anthropic API key not configured properly');
     }
@@ -1774,53 +1785,25 @@ Return as a JSON array of strings:
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
     
     // Parse JSON response
-    let captions;
-    try {
-      // First try direct parsing
-      captions = JSON.parse(content);
-      if (!Array.isArray(captions)) {
-        throw new Error('Not an array');
-      }
-    } catch (parseError) {
-      // Try to extract JSON from markdown code blocks
-      const jsonMatch = content.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
-      if (jsonMatch) {
+    let captions = TextUtils.tryParseJsonArray(content);
+    if (!captions) {
+      // Try to find a JSON array pattern
+      const arrayMatch = content.match(/\[[\s\S]*?\]/);
+      if (arrayMatch) {
         try {
-          captions = JSON.parse(jsonMatch[1]);
-          if (!Array.isArray(captions)) {
-            throw new Error('Not an array');
-          }
-        } catch (innerParseError) {
-          console.log('Failed to parse extracted JSON:', innerParseError);
-          captions = null;
-        }
+          const maybe = JSON.parse(TextUtils.stripCodeFences(arrayMatch[0]));
+          if (Array.isArray(maybe)) captions = maybe;
+        } catch {/* ignore */}
       }
-      
-      if (!captions) {
-        // Try to find a JSON array pattern in the content
-        const arrayMatch = content.match(/\[[\s\S]*?\]/);
-        if (arrayMatch) {
-          try {
-            captions = JSON.parse(arrayMatch[0]);
-            if (!Array.isArray(captions)) {
-              throw new Error('Not an array');
-            }
-          } catch (arrayParseError) {
-            console.log('Failed to parse array match:', arrayParseError);
-            captions = null;
-          }
-        }
-      }
-      
-      if (!captions) {
-        // Fallback: split by double newlines and clean up
-        console.log('Using fallback parsing method for content:', content.substring(0, 200) + '...');
-        captions = content
-          .split('\n\n')
-          .filter(caption => caption.trim().length > 0)
-          .map(caption => caption.trim().replace(/^["']|["']$/g, '')) // Remove surrounding quotes
-          .slice(0, request.variations);
-      }
+    }
+    if (!captions) {
+      // Fallback: split by double newlines and clean up
+      console.log('Using fallback parsing method for content:', content.substring(0, 200) + '...');
+      captions = content
+        .split('\n\n')
+        .filter(caption => caption.trim().length > 0)
+        .map(caption => caption.trim().replace(/^["']|["']$/g, ''))
+        .slice(0, request.variations);
     }
     
     return { 
@@ -1942,10 +1925,7 @@ Return as JSON array with this structure:
 
   try {
     // Debug: log final rendered prompts being sent to the model (Story Sequence)
-    console.log('=== FINAL PROMPT (Story Sequence) ===');
-    console.log('[SYSTEM PROMPT]', systemPrompt.substring(0, 800) + (systemPrompt.length > 800 ? '...' : ''));
-    console.log('[USER PROMPT]', userPrompt.substring(0, 800) + (userPrompt.length > 800 ? '...' : ''));
-    console.log('=== END FINAL PROMPT (Story Sequence) ===');
+    AILogger.logFinalPrompts('Story Sequence', systemPrompt, userPrompt);
     // Build message content with optional image
     let messageContent: any[] = [{ type: 'text', text: userPrompt }];
     
@@ -1986,49 +1966,31 @@ Return as JSON array with this structure:
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
     
     // Parse JSON response
-    let slides;
-    try {
-      // Extract JSON from response - handle potential markdown wrapping
-      const jsonMatch = content.match(/\[[\s\S]*?\]/);
-      const jsonString = jsonMatch ? jsonMatch[0] : content;
-      slides = JSON.parse(jsonString);
-      
-      if (!Array.isArray(slides)) {
-        throw new Error('Not an array');
-      }
-    } catch (parseError) {
-      // Try to extract from markdown code blocks
-      const codeBlockMatch = content.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
-      if (codeBlockMatch) {
+    let slides = TextUtils.tryParseJsonArray(content);
+    if (!slides) {
+      const arrayMatch = content.match(/\[[\s\S]*?\]/);
+      if (arrayMatch) {
         try {
-          slides = JSON.parse(codeBlockMatch[1]);
-          if (!Array.isArray(slides)) {
-            throw new Error('Not an array');
-          }
-        } catch (innerParseError) {
-          console.log('Failed to parse code block JSON:', innerParseError);
-          slides = null;
-        }
+          const maybe = JSON.parse(TextUtils.stripCodeFences(arrayMatch[0]));
+          if (Array.isArray(maybe)) slides = maybe;
+        } catch {/* ignore */}
       }
-      
-      if (!slides) {
-        // Fallback: create simple slides from content
-        console.log('Using fallback parsing for story sequence');
-        const fallbackSlides = [];
-        const lines = content.split('\n').filter(line => line.trim());
-        
-        for (let i = 0; i < Math.min(request.length, lines.length); i++) {
-          fallbackSlides.push({
-            slide: i + 1,
-            type: i === 0 ? 'hook' : i === request.length - 1 ? 'cta' : 'content',
-            title: `Slide ${i + 1}`,
-            content: lines[i].trim(),
-            visualDirection: hasImageContent ? 'Use the uploaded image as reference' : 'Show relevant visual content'
-          });
-        }
-        
-        slides = fallbackSlides;
+    }
+    if (!slides) {
+      // Fallback: create simple slides from content
+      console.log('Using fallback parsing for story sequence');
+      const fallbackSlides: any[] = [];
+      const lines = content.split('\n').filter(line => line.trim());
+      for (let i = 0; i < Math.min(request.length, lines.length); i++) {
+        fallbackSlides.push({
+          slide: i + 1,
+          type: i === 0 ? 'hook' : i === request.length - 1 ? 'cta' : 'content',
+          title: `Slide ${i + 1}`,
+          content: lines[i].trim(),
+          visualDirection: hasImageContent ? 'Use the uploaded image as reference' : 'Show relevant visual content'
+        });
       }
+      slides = fallbackSlides;
     }
     
     return { 
@@ -2368,19 +2330,7 @@ Return the complete, self-contained HTML that renders a pixel-perfect Jones Road
     });
 
     let htmlContent = response.content[0].type === 'text' ? response.content[0].text : '';
-    
-    // Clean the HTML content by removing markdown code blocks more thoroughly
-    // Remove opening code blocks (```html, ```HTML, ```, etc.)
-    htmlContent = htmlContent.replace(/^```[a-zA-Z]*\s*/gi, '').trim();
-    
-    // Remove closing code blocks (```)
-    htmlContent = htmlContent.replace(/```\s*$/gi, '').trim();
-    
-    // Remove any remaining ``` that might be in the middle or at edges
-    htmlContent = htmlContent.replace(/^```/g, '').replace(/```$/g, '').trim();
-    
-    // Additional cleanup for any stray markdown
-    htmlContent = htmlContent.replace(/^\s*```html\s*/gi, '').replace(/^\s*```\s*/gi, '').trim();
+    htmlContent = TextUtils.stripCodeFences(htmlContent);
     
     return {
       htmlContent,

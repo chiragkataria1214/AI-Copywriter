@@ -52,15 +52,22 @@ export class EnhancedContextBuilder {
     };
 
     // Merge request data into variables
-    const allVariables = { ...variables, ...request, config: trainingConfig };
+    const allVariables = { ...variables, ...request, transcription: request.transcription, customBrief: request.customBrief, persona: request.persona, landingPageUrl: request.landingPageUrl, brandDrBalance: request.brandDrBalance, config: trainingConfig };
+    
+    // Determine which sections are actually referenced in templates (system/user)
+    const systemTemplate = trainingConfig.stationPrompts?.[stationName]?.systemPrompt || '';
+    const userTemplate = trainingConfig.stationPrompts?.[stationName]?.userPromptTemplate || '';
+    const candidateSectionIds = (contextConfig.contextSections || []).map(s => s.id);
+    const brandCandidateIds = ((contextConfig.brandGuidelinesConfig || []).map(g => `brand_${g.id}`));
+    const referencedSectionIds = EnhancedContextBuilder.extractReferencedSectionIds(systemTemplate, userTemplate, [...candidateSectionIds, ...brandCandidateIds]);
 
-    // Get enabled sections sorted by order
-    const enabledSections = contextConfig.contextSections
-      .filter(section => section.enabled)
+    // Build only the sections that are referenced; ignore enabled/disabled flags
+    const referencedSections = (contextConfig.contextSections || [])
+      .filter(section => referencedSectionIds.has(section.id))
       .sort((a, b) => a.order - b.order);
 
-    // Evaluate conditions and build sections
-    for (const sectionConfig of enabledSections) {
+    // Evaluate conditions and build only referenced sections
+    for (const sectionConfig of referencedSections) {
       try {
         const conditionResult = this.evaluateConditions(sectionConfig.conditions, allVariables, request);
         debugInfo.evaluatedConditions[sectionConfig.id] = conditionResult;
@@ -123,14 +130,17 @@ export class EnhancedContextBuilder {
       }
     }
 
-    // Process brand guidelines configurations
+    // Process brand guidelines configurations only if referenced via {{sections.brand_<id>}}
     const brandGuidelinesConfig = contextConfig.brandGuidelinesConfig;
     if (brandGuidelinesConfig) {
-      const enabledBrandGuidelines = brandGuidelinesConfig
-        .filter(guideline => guideline.enabled)
+      const referencedBrandIds = Array.from(referencedSectionIds)
+        .filter(id => id.startsWith('brand_'))
+        .map(id => id.slice(6));
+      const brandConfigsToBuild = brandGuidelinesConfig
+        .filter(guideline => referencedBrandIds.includes(guideline.id))
         .sort((a, b) => a.order - b.order);
 
-      for (const guidelineConfig of enabledBrandGuidelines) {
+      for (const guidelineConfig of brandConfigsToBuild) {
         try {
           const conditionResult = this.evaluateConditions(guidelineConfig.conditions, allVariables, request);
           debugInfo.evaluatedConditions[`brand_${guidelineConfig.id}`] = conditionResult;
@@ -144,7 +154,7 @@ export class EnhancedContextBuilder {
             continue;
           }
 
-          const brandContent = (EnhancedContextBuilder as any).buildBrandGuidelines(guidelineConfig, trainingConfig, allVariables);
+          const brandContent = AdvancedTemplateEngine.buildBrandGuidelines(guidelineConfig, trainingConfig, allVariables);
           
           if (brandContent.trim()) {
             const brandTokens = this.estimateTokens(brandContent);
@@ -195,6 +205,30 @@ export class EnhancedContextBuilder {
     }
 
     return { contextSections: sections, totalTokens, sectionsUsed, sectionsById, debugInfo };
+  }
+
+  /** Extract section ids referenced as {{sections.<id>}} in either template */
+  private static extractReferencedSectionIds(systemTemplate: string, userTemplate: string, knownIds: string[]): Set<string> {
+    const ids = new Set<string>();
+    const grab = (t: string) => {
+      const re = /\{\{\s*sections\.([a-zA-Z0-9_\-]+)\s*\}\}/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(t)) !== null) {
+        ids.add(m[1]);
+      }
+
+      // Also allow bare references like {{selected_products}} mapping directly to a section id
+      const bareVarRe = /\{\{\s*([^#\/{][^}\s]+)\s*\}\}/g;
+      while ((m = bareVarRe.exec(t)) !== null) {
+        const varName = m[1];
+        if (knownIds.includes(varName)) {
+          ids.add(varName);
+        }
+      }
+    };
+    grab(systemTemplate || '');
+    grab(userTemplate || '');
+    return ids;
   }
 
   /**

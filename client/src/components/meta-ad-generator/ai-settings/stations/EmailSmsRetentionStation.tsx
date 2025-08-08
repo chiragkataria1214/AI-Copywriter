@@ -1,15 +1,13 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import EnhancedContextConfigurator from '@/components/meta-ad-generator/ai-settings/EnhancedContextConfigurator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { TrainingConfig, VariableDefinition } from '@shared/training-config';
 import { ChevronDown, ChevronRight, Mail, Lock, Copy } from 'lucide-react';
 import ProtectedPromptEditor from '@/components/meta-ad-generator/ai-settings/common/ProtectedPromptEditor';
 import { EnhancedArrayField, EnhancedTextField } from '@/components/meta-ad-generator/ai-settings/common/EnhancedFields';
-import VariableInsertion from '@/components/meta-ad-generator/ai-settings/common/VariableInsertion';
-import { extractOutputStructure } from '@/components/meta-ad-generator/ai-settings/common/promptUtils';
+ 
 
 interface EmailSmsRetentionStationProps {
   editingConfig: TrainingConfig;
@@ -18,71 +16,12 @@ interface EmailSmsRetentionStationProps {
   expandedStations: Set<string>;
   setExpandedStations: (stations: Set<string>) => void;
   copyToClipboard: (text: string, label: string) => Promise<void>;
+  setIsDirty: (isDirty: boolean) => void;
 }
 
-const StationToggleButton = ({ 
-  isOpen, 
-  onClick, 
-  title, 
-  icon, 
-  iconColor,
-  description
-}: { 
-  isOpen: boolean; 
-  onClick: () => void; 
-  title: string; 
-  icon: React.ReactNode; 
-  iconColor: string;
-  description: string;
-}) => (
-  <div className="bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200 border border-gray-200">
-    <button
-      onClick={onClick}
-      className="flex items-center justify-between w-full p-4"
-    >
-      <div className="flex items-center space-x-3">
-        <div className="flex items-center space-x-2">
-          {isOpen ? (
-            <ChevronDown className="w-4 h-4 text-gray-500" />
-          ) : (
-            <ChevronRight className="w-4 h-4 text-gray-500" />
-          )}
-          <span className={iconColor}>{icon}</span>
-        </div>
-        <div className="text-left">
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          {!isOpen && (
-            <p className="text-sm text-gray-600 mt-1">{description}</p>
-          )}
-        </div>
-      </div>
-      <div className="flex items-center space-x-2">
-        <span className="text-xs text-gray-500 font-medium">
-          {isOpen ? 'Collapse' : 'Expand'}
-        </span>
-      </div>
-    </button>
-  </div>
-);
+import { StationToggleButton } from '@/components/meta-ad-generator/ai-settings/common/StationToggleButton';
 
 // using shared extractOutputStructure from promptUtils
-
-const getEditablePrompt = (prompt: string) => {
-  const structure = extractOutputStructure(prompt);
-  return structure ? prompt.replace(structure, '').trim() : prompt;
-};
-
-const reconstructPrompt = (editableContent: string, originalPrompt: string) => {
-  const structure = extractOutputStructure(originalPrompt);
-  if (structure) {
-    const lines = editableContent.split('\n');
-    const insertIndex = lines.findIndex(line => line.trim() === '') || 1;
-    const beforeStructure = lines.slice(0, insertIndex).join('\n');
-    const afterStructure = lines.slice(insertIndex).join('\n');
-    return `${beforeStructure}\n\n${structure}\n\n${afterStructure}`.trim();
-  }
-  return editableContent;
-};
 
 // Removed local ProtectedPromptEditor/Enhanced fields in favor of shared components
 
@@ -92,33 +31,37 @@ export const EmailSmsRetentionStation: React.FC<EmailSmsRetentionStationProps> =
   effectiveUser,
   expandedStations,
   setExpandedStations,
-  copyToClipboard
+  copyToClipboard,
+  setIsDirty
 }) => {
   const systemPromptTextareaRef = useRef<HTMLTextAreaElement>(null);
   const stationConfig = editingConfig.stationPrompts?.emailSmsRetention;
   const [showResolvedPreview, setShowResolvedPreview] = useState(false);
   const contextConfig = stationConfig?.contextConfiguration as any;
-  const getAllAvailableVariables = (): VariableDefinition[] => {
-    const regular = (contextConfig?.availableVariables || []) as VariableDefinition[];
-    const sections = (contextConfig?.contextSections || [])
-      .filter((s: any) => s.enabled)
-      .map((s: any) => ({
-        key: s.id,
-        label: `Context: ${s.name}`,
-        description: `Generated content from "${s.name}" context section: ${s.description}`,
-        type: 'string' as const,
-        category: 'context_section' as const,
-        required: s.required,
-      }));
-    const brandGuidelineVariables: VariableDefinition[] = [
-      { key: 'corePositioning', label: 'Core Positioning', description: 'Brand core positioning statement from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
-      { key: 'brandVoice', label: 'Brand Voice', description: 'Brand voice rules and guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
-      { key: 'keyTerminology', label: 'Key Terminology', description: 'Key terms and phrases from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
-      { key: 'approvedLanguage', label: 'Approved Language', description: 'Approved language and phrases from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
-      { key: 'avoidedLanguage', label: 'Avoided Language', description: 'Language and phrases to avoid from brand guidelines', type: 'string', category: 'brand_guideline', required: false } as any,
-    ];
-    return [...regular, ...sections, ...brandGuidelineVariables];
-  };
+
+  useEffect(() => {
+    if (!editingConfig.stationPrompts.emailSmsRetention) {
+      const emailSmsRetentionDefaults = {
+        userPromptTemplate: "Default user prompt for email/sms...",
+        systemPrompt: "Default system prompt for email/sms...",
+        contextConfiguration: {
+          contextSections: [],
+          availableVariables: [],
+        },
+        subjectLineFrameworks: [],
+        enabledSubjectLineFrameworks: [],
+        retentionBestPractices: [],
+      };
+      setEditingConfig({
+        ...editingConfig,
+        stationPrompts: {
+          ...editingConfig.stationPrompts,
+          emailSmsRetention: emailSmsRetentionDefaults,
+        },
+      });
+    }
+  }, [editingConfig, setEditingConfig]);
+
   const toggleStation = (stationId: string) => {
     const newExpanded = new Set(expandedStations);
     if (expandedStations.has(stationId)) {
@@ -194,22 +137,25 @@ export const EmailSmsRetentionStation: React.FC<EmailSmsRetentionStationProps> =
                  <ProtectedPromptEditor
                   label="Base System Prompt (Editable)"
                   value={editingConfig?.stationPrompts?.emailSmsRetention?.systemPrompt || ''}
-                  onChange={(value: string) => setEditingConfig({
-                    ...editingConfig,
-                    stationPrompts: {
-                      ...editingConfig?.stationPrompts,
-                      emailSmsRetention: {
-                        ...editingConfig?.stationPrompts?.emailSmsRetention,
-                        systemPrompt: value
-                      }
-                    }
-                  })}
+                   onChange={(value: string) => {
+                     if (effectiveUser?.role !== 'admin') return;
+                     setIsDirty(true);
+                     setEditingConfig({
+                       ...editingConfig,
+                       stationPrompts: {
+                         ...editingConfig?.stationPrompts,
+                         emailSmsRetention: {
+                           ...editingConfig?.stationPrompts?.emailSmsRetention,
+                           systemPrompt: value
+                         }
+                       }
+                     });
+                   }}
                   placeholder="You are an email and SMS marketing specialist focused on customer retention and engagement..."
                   rows={6}
                   disabled={effectiveUser?.role !== 'admin'}
                   copyToClipboard={copyToClipboard}
                    textareaRef={systemPromptTextareaRef}
-                   variables={getAllAvailableVariables()}
                    contextConfiguration={editingConfig?.stationPrompts?.emailSmsRetention?.contextConfiguration as any}
                 />
 
@@ -361,28 +307,25 @@ BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`}
 
             {expandedStations.has('emailSmsRetention-userPrompt') && (
               <div className="p-6 border-t border-gray-100 space-y-6">
-                {/* User Prompt Structure Explanation */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <p className="text-sm text-green-800 font-medium">📝 How User Prompt is Generated</p>
-                  <p className="text-sm text-green-700 mt-1">
-                    The final user prompt combines: <strong>Base User Template</strong> + <strong>Dynamic Sections</strong> (subject line frameworks, retention best practices, persona targeting, product focus, custom brief)
-                  </p>
-                </div>
-
+            
                 {/* Base User Prompt Template - Editable */}
                  <EnhancedTextField
                   label="Base User Prompt Template (Editable)"
                   value={editingConfig?.stationPrompts?.emailSmsRetention?.userPromptTemplate || ''}
-                  onChange={(value: string) => effectiveUser?.role === 'admin' && setEditingConfig({
-                    ...editingConfig,
-                    stationPrompts: {
-                      ...editingConfig?.stationPrompts,
-                      emailSmsRetention: {
-                        ...editingConfig?.stationPrompts?.emailSmsRetention,
-                        userPromptTemplate: value
+                   onChange={(value: string) => {
+                     if (effectiveUser?.role !== 'admin') return;
+                     setIsDirty(true);
+                     setEditingConfig({
+                      ...editingConfig,
+                      stationPrompts: {
+                        ...editingConfig?.stationPrompts,
+                        emailSmsRetention: {
+                          ...editingConfig?.stationPrompts?.emailSmsRetention,
+                          userPromptTemplate: value
+                        }
                       }
-                    }
-                  })}
+                    });
+                   }}
                   placeholder="Create [EMAIL/SMS] retention copy for [CAMPAIGN_TYPE] targeting [AUDIENCE_SEGMENT]..."
                   rows={4}
                   disabled={effectiveUser?.role !== 'admin'}
@@ -403,6 +346,7 @@ BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`}
                           checked={editingConfig?.stationPrompts?.emailSmsRetention?.enabledSubjectLineFrameworks?.[index] !== false}
                           onCheckedChange={(checked) => {
                             if (effectiveUser?.role !== 'admin') return;
+                             setIsDirty(true);
                             const enabled = [...(editingConfig?.stationPrompts?.emailSmsRetention?.enabledSubjectLineFrameworks || [])];
                             enabled[index] = checked;
                             setEditingConfig({
@@ -422,6 +366,7 @@ BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`}
                           value={framework}
                           onChange={(e) => {
                             if (effectiveUser?.role !== 'admin') return;
+                            setIsDirty(true);
                             const updated = [...(editingConfig?.stationPrompts?.emailSmsRetention?.subjectLineFrameworks || [])];
                             updated[index] = e.target.value;
                             setEditingConfig({
@@ -448,16 +393,20 @@ BRAND/DR BALANCE: {brandPercent}% Brand Voice, {drPercent}% Direct Response`}
                  <EnhancedArrayField
                   label="Retention Best Practices (Editable)"
                   value={editingConfig?.stationPrompts?.emailSmsRetention?.retentionBestPractices || []}
-                  onChange={(value: string[]) => effectiveUser?.role === 'admin' && setEditingConfig({
-                    ...editingConfig,
-                    stationPrompts: {
-                      ...editingConfig?.stationPrompts,
-                      emailSmsRetention: {
-                        ...editingConfig?.stationPrompts?.emailSmsRetention,
-                        retentionBestPractices: value
+                   onChange={(value: string[]) => {
+                     if (effectiveUser?.role !== 'admin') return;
+                     setIsDirty(true);
+                     setEditingConfig({
+                      ...editingConfig,
+                      stationPrompts: {
+                        ...editingConfig?.stationPrompts,
+                        emailSmsRetention: {
+                          ...editingConfig?.stationPrompts?.emailSmsRetention,
+                          retentionBestPractices: value
+                        }
                       }
-                    }
-                  })}
+                    });
+                   }}
                   placeholder="Send times: Email 10-11am EST, SMS 2-4pm EST&#10;Frequency: Email 2-3x/week max, SMS 1-2x/week max&#10;Personalization: Use first name and purchase history"
                   rows={5}
                   disabled={effectiveUser?.role !== 'admin'}
