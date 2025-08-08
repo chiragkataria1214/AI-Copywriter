@@ -71,7 +71,7 @@ export class AIResponseParser {
     
     // Clean and validate headlines
     const headlines = parsedResponse.headlines.slice(0, DEFAULT_MAX_HEADLINES).map((item: any) => ({
-      framework: item.framework || 'GENERAL',
+      framework: item.framework || DEFAULT_HEADLINE_FRAMEWORK,
       copy: this.cleanText(item.copy || '')
     })).filter((item: any) => item.copy.length > 0);
     
@@ -96,7 +96,7 @@ export class AIResponseParser {
         const cleanMatch = match.replace(/(?:HEADLINE|##\s*HEADLINE)[^:]*:?\s*/i, '').trim();
         if (cleanMatch) {
           headlines.push({
-            framework: 'GENERAL',
+            framework: DEFAULT_HEADLINE_FRAMEWORK,
             copy: this.cleanText(cleanMatch)
           });
         }
@@ -759,11 +759,7 @@ export class ContentContextBuilder {
     let hasImageContent = false;
     let imageInput: string | undefined;
 
-    const analysisInstructions = {
-      ad_creative: 'Analyze the ad creative to extract key visual elements, text overlay, color scheme, brand elements, and overall messaging strategy.',
-      product_photo: 'Analyze the product image to identify key features, benefits, and visual selling points.',
-      social_content: 'Analyze the social media content to understand the style, tone, and engagement elements.'
-    };
+    const analysisInstructions = IMAGE_ANALYSIS_INSTRUCTIONS;
 
     if (imageUrl && imageUrl.trim()) {
       imageInput = imageUrl;
@@ -793,12 +789,7 @@ ${analysisInstructions[analysisType]} Use insights from this visual content to i
   ): string {
     if (!transcription || !transcription.trim()) return '';
 
-    const contextLabels = {
-      video: 'VIDEO TRANSCRIPTION',
-      audio: 'AUDIO TRANSCRIPTION', 
-      ugc: 'USER-GENERATED CONTENT',
-      testimonial: 'CUSTOMER TESTIMONIAL'
-    };
+    const contextLabels = TRANSCRIPTION_LABELS;
 
     return `
 # ${contextLabels[contentType]}:
@@ -852,13 +843,7 @@ Use this competitive intelligence to differentiate your messaging and highlight 
     const sections: string[] = ['# TIMING & SEASONAL CONTEXT:'];
 
     if (season) {
-      const seasonalThemes = {
-        spring: 'renewal, fresh starts, lighter products, outdoor activities',
-        summer: 'vacation, sun protection, bold colors, outdoor events',
-        fall: 'back-to-school, cozy themes, rich colors, preparation',
-        winter: 'holidays, gifts, comfort, indoor activities'
-      };
-      sections.push(`Season: ${season.charAt(0).toUpperCase() + season.slice(1)} - Focus on themes: ${seasonalThemes[season]}`);
+      sections.push(`Season: ${season.charAt(0).toUpperCase() + season.slice(1)} - Focus on themes: ${SEASONAL_THEMES[season]}`);
     }
 
     if (holidays?.length) {
@@ -866,12 +851,7 @@ Use this competitive intelligence to differentiate your messaging and highlight 
     }
 
     if (timeframe) {
-      const timingGuidance = {
-        urgent: 'Create urgency with limited-time offers and immediate action',
-        planned: 'Build anticipation and provide detailed information for consideration',
-        evergreen: 'Focus on timeless benefits and long-term value propositions'
-      };
-      sections.push(`Timeframe: ${timeframe} - ${timingGuidance[timeframe]}`);
+      sections.push(`Timeframe: ${timeframe} - ${TIMING_GUIDANCE[timeframe]}`);
     }
 
     return sections.join('\n') + '\n';
