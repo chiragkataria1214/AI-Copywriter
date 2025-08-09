@@ -96,11 +96,15 @@ interface RetentionTabProps {
   addRetentionKeyword: (keyword: string, isAvoid?: boolean) => void;
   removeRetentionKeyword: (keyword: string, isAvoid?: boolean) => void;
   getBrandDrLabel: () => string;
-  getGenerationDisabledState: (stationType: 'emailSmsRetention') => { disabled: boolean; reason: string };
+  getGenerationDisabledState: (stationType: 'email' | 'sms') => { disabled: boolean; reason: string };
   copyToClipboard: (text: string, type: string) => Promise<void>;
   
   // Mutations and settings
-  generateRetentionCopyMutation: {
+  generateRetentionEmailMutation: {
+    mutate: () => void;
+    isPending: boolean;
+  };
+  generateRetentionSmsMutation: {
     mutate: () => void;
     isPending: boolean;
   };
@@ -108,7 +112,7 @@ interface RetentionTabProps {
   // Modal functions
   setCurrentGenerationMetadata: (metadata: GenerationMetadata) => void;
   setShowGenerationDetails: (show: boolean) => void;
-  setSelectedItemForRevision: (item: { type: 'headline' | 'primaryText' | 'landingCopy' | 'custom' | 'retention'; index?: number; field?: string } | null) => void;
+  setSelectedItemForRevision: (item: { type: 'headline' | 'primaryText' | 'landingCopy' | 'custom' | 'email' | 'sms'; index?: number; field?: string } | null) => void;
   setRevisionInstructions: (instructions: string) => void;
   setShowRevisionPanel: (show: boolean) => void;
   
@@ -174,7 +178,8 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
   getBrandDrLabel,
   getGenerationDisabledState,
   copyToClipboard,
-  generateRetentionCopyMutation,
+  generateRetentionEmailMutation,
+  generateRetentionSmsMutation,
   setCurrentGenerationMetadata,
   setShowGenerationDetails,
   setSelectedItemForRevision,
@@ -193,6 +198,15 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
   const [visualPreviewHtml, setVisualPreviewHtml] = useState<string>('');
   const [showVisualPreview, setShowVisualPreview] = useState(false);
   const [generatingPreview, setGeneratingPreview] = useState(false);
+
+  const handleGenerate = () => {
+    setShowVisualPreview(false);
+    if (retentionPlatform === 'Email') {
+      generateRetentionEmailMutation.mutate();
+    } else {
+      generateRetentionSmsMutation.mutate();
+    }
+  };
 
   // Load email/SMS frameworks on component mount
   useEffect(() => {
@@ -660,14 +674,11 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                   <TooltipTrigger asChild>
                     <div className="w-full">
                       <Button
-                        onClick={() => {
-                          setShowVisualPreview(false); // Hide preview when generating new copy
-                          generateRetentionCopyMutation.mutate();
-                        }}
-                        disabled={!retentionKeyMessage.trim() || generateRetentionCopyMutation.isPending || getGenerationDisabledState('emailSmsRetention').disabled}
+                        onClick={handleGenerate}
+                        disabled={!retentionKeyMessage.trim() || generateRetentionEmailMutation.isPending || generateRetentionSmsMutation.isPending || getGenerationDisabledState(retentionPlatform === 'Email' ? 'email' : 'sms').disabled}
                         className="w-full flex items-center justify-center space-x-2"
                       >
-                        {generateRetentionCopyMutation.isPending ? (
+                        {generateRetentionEmailMutation.isPending || generateRetentionSmsMutation.isPending ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                             <span>Generating...</span>
@@ -681,12 +692,12 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                       </Button>
                     </div>
                   </TooltipTrigger>
-                  {(getGenerationDisabledState('emailSmsRetention').disabled || !retentionKeyMessage.trim()) && (
+                  {(getGenerationDisabledState(retentionPlatform === 'Email' ? 'email' : 'sms').disabled || !retentionKeyMessage.trim()) && (
                     <TooltipContent>
                       <p>
                         {!retentionKeyMessage.trim()
                           ? 'Please enter a key message'
-                          : getGenerationDisabledState('emailSmsRetention').reason
+                          : getGenerationDisabledState(retentionPlatform === 'Email' ? 'email' : 'sms').reason
                         }
                       </p>
                     </TooltipContent>
@@ -701,7 +712,7 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
       {/* Output Section */}
       <div className="space-y-4 sm:space-y-6">
         {/* Generated Copy */}
-        {generateRetentionCopyMutation.isPending ? (
+        {generateRetentionEmailMutation.isPending || generateRetentionSmsMutation.isPending ? (
           <Card>
             <CardContent className="p-4 sm:p-6">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -798,7 +809,7 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                     variant="outline"
                     onClick={() => {
                       setSelectedItemForRevision({
-                        type: 'retention',
+                        type: retentionPlatform === 'Email' ? 'email' : 'sms',
                         field: 'retention'
                       });
                       setRevisionInstructions('');

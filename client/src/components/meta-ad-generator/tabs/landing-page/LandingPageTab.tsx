@@ -91,7 +91,7 @@ interface LandingPageTabProps {
   // Functions
   generateAdCopy: () => void;
   generateLandingCopyMutation: any;
-  getGenerationDisabledState: (stationType: 'adCopy' | 'landingPage' | 'customRequest' | 'emailSmsRetention' | 'staticAd') => { disabled: boolean; reason: string };
+  getGenerationDisabledState: (stationType: 'adCopy' | 'landingPage' | 'customRequest' | 'email' | 'sms' | 'staticAd') => { disabled: boolean; reason: string };
   copyToClipboard: (text: string, type: string) => Promise<void>;
 
   // Revision States
@@ -670,6 +670,21 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                     {productFramework?.hero_section?.sub_headline && (
                       <p className="mt-1 text-sm text-gray-700">{productFramework.hero_section.sub_headline}</p>
                     )}
+                    {productFramework?.hero_section?.key_message && (
+                      <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{productFramework.hero_section.key_message}</p>
+                    )}
+                    {productFramework?.hero_section?.tone && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <Badge variant="outline" className="text-xs">Tone: {productFramework.hero_section.tone}</Badge>
+                      </div>
+                    )}
+                    {Array.isArray(productFramework?.hero_section?.call_to_action_guidance) && productFramework.hero_section.call_to_action_guidance.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {productFramework.hero_section.call_to_action_guidance.map((g: string, gi: number) => (
+                          <Badge key={gi} variant="secondary" className="text-xs">{g}</Badge>
+                        ))}
+                      </div>
+                    )}
                     {(productFramework?.hero_section?.cta_button || productFramework?.final_cta?.cta_button) && (
                       <div className="mt-2">
                         <Badge variant="outline" className="text-xs">
@@ -687,6 +702,9 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                     {productFramework.product_showcase.body_copy && (
                       <p className="text-sm text-gray-700 whitespace-pre-line">{productFramework.product_showcase.body_copy}</p>
                     )}
+                    {productFramework.product_showcase.key_message && (
+                      <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{productFramework.product_showcase.key_message}</p>
+                    )}
                     {Array.isArray(productFramework.product_showcase.product_lines) && productFramework.product_showcase.product_lines.length > 0 && (
                       <div className="mt-3 space-y-3">
                         {productFramework.product_showcase.product_lines.map((pl: any, idx: number) => (
@@ -703,6 +721,13 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                         ))}
                       </div>
                     )}
+                    {Array.isArray(productFramework?.product_showcase?.call_to_action_guidance) && productFramework.product_showcase.call_to_action_guidance.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {productFramework.product_showcase.call_to_action_guidance.map((g: string, gi: number) => (
+                          <Badge key={gi} variant="secondary" className="text-xs">{g}</Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -710,6 +735,9 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                 {productFramework?.comparison_grid?.table && Array.isArray(productFramework.comparison_grid.table.columns) && Array.isArray(productFramework.comparison_grid.table.rows) && (
                   <div className="border-l-4 border-purple-500 pl-3 sm:pl-4">
                     <h4 className="font-semibold text-gray-900 mb-2">{productFramework.comparison_grid.section_title || 'Comparison'}</h4>
+                    {productFramework.comparison_grid.key_message && (
+                      <p className="mb-2 text-sm text-gray-700 whitespace-pre-line">{productFramework.comparison_grid.key_message}</p>
+                    )}
                     <div className="overflow-x-auto">
                       <table className="min-w-full border rounded-lg overflow-hidden bg-white">
                         <thead className="bg-gray-50">
@@ -732,6 +760,13 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                         </tbody>
                       </table>
                     </div>
+                    {Array.isArray(productFramework.comparison_grid.call_to_action_guidance) && productFramework.comparison_grid.call_to_action_guidance.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {productFramework.comparison_grid.call_to_action_guidance.map((g: string, gi: number) => (
+                          <Badge key={gi} variant="secondary" className="text-xs">{g}</Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -739,6 +774,9 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                 {productFramework?.universal_benefits && Array.isArray(productFramework.universal_benefits.features) && productFramework.universal_benefits.features.length > 0 && (
                   <div className="border-l-4 border-green-500 pl-3 sm:pl-4">
                     <h4 className="font-semibold text-gray-900 mb-2">{productFramework.universal_benefits.section_title || 'Universal Benefits'}</h4>
+                    {productFramework.universal_benefits.key_message && (
+                      <p className="mb-2 text-sm text-gray-700 whitespace-pre-line">{productFramework.universal_benefits.key_message}</p>
+                    )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {productFramework.universal_benefits.features.slice(0, 6).map((f: any, fi: number) => (
                         <div key={fi} className="border rounded p-3 bg-white">
@@ -754,6 +792,9 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                 {productFramework?.social_proof && Array.isArray(productFramework.social_proof.testimonials) && productFramework.social_proof.testimonials.length > 0 && (
                   <div className="border-l-4 border-yellow-500 pl-3 sm:pl-4">
                     <h4 className="font-semibold text-gray-900 mb-2">{productFramework.social_proof.section_title || 'Social Proof'}</h4>
+                    {productFramework.social_proof.key_message && (
+                      <p className="mb-2 text-sm text-gray-700 whitespace-pre-line">{productFramework.social_proof.key_message}</p>
+                    )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {productFramework.social_proof.testimonials.slice(0, 3).map((t: any, ti: number) => (
                         <div key={ti} className="border rounded p-3 bg-white">
@@ -770,6 +811,9 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                 {productFramework?.final_cta?.cta_button && (
                   <div className="border-l-4 border-emerald-600 pl-3 sm:pl-4">
                     <h4 className="font-semibold text-gray-900 mb-2">{productFramework.final_cta.section_title || 'Call to Action'}</h4>
+                    {productFramework.final_cta.key_message && (
+                      <p className="mb-2 text-sm text-gray-700 whitespace-pre-line">{productFramework.final_cta.key_message}</p>
+                    )}
                     <p className="text-sm font-medium text-emerald-700">{productFramework.final_cta.cta_button}</p>
                   </div>
                 )}

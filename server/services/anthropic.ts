@@ -1,24 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { type TrainingConfig } from '@shared/training-config';
-import {
-  buildTargetPersonaSection,
-  buildSelectedProductsSection,
-  buildAISettingsContext,
-  buildLandingPageContext,
-  buildCopyFrameworksSection,
-  buildLandingPageFrameworksSection,
-  buildEmailFrameworksSection,
-  buildCustomBriefSection,
-  AIResponseParser,
-  AIPromptBuilder,
-  StationPromptManager,
-  ContentContextBuilder,
-  AILogger,
-  TextUtils
-} from './anthropic-helpers';
-import { detectImageType, resizeImageIfNeeded, processImageForAnthropic } from './image-helper';
-
-import { DEFAULT_BRAND_DR_BALANCE, DEFAULT_IMAGE_MEDIA_TYPE, DEFAULT_MODEL_STR, DEFAULT_PERSONA_KEY, DEFAULT_USE_JONES_BRAND_GUIDE } from '@shared/constants';
+import { AIResponseParser, AIPromptBuilder, AILogger, TextUtils } from './anthropic-helpers';
+import { resizeImageIfNeeded, processImageForAnthropic } from './image-helper';
+import { buildAllBrandSettingsContext, buildSelectedProductsSection, buildSelectedTargetPersonaSection } from './components';
+import { DEFAULT_BRAND_DR_BALANCE, DEFAULT_IMAGE_MEDIA_TYPE, DEFAULT_MODEL_STR, DEFAULT_PERSONA_KEY } from '@shared/constants';
+import { RevisionRequest, AdCopyRequest, LandingPageRequest, CustomCopyRequest, StaticAdAnalysisRequest, BriefRequest } from './anthropic-interface';
 
 if (!process.env.ANTHROPIC_API_KEY) {
   console.error('ANTHROPIC_API_KEY environment variable is not set');
@@ -27,122 +13,38 @@ if (!process.env.ANTHROPIC_API_KEY) {
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || 'dummy-key',
 });
-// Generation metadata interface for debugging/transparency
-export interface GenerationMetadata {
-  stationName: string;
-  timestamp: string;
-  modelUsed: string;
-  temperature?: number;
-  maxTokens?: number;
-  systemPrompt: string;
-  userPrompt: string;
-  brandGuidelines?: string[];
-  frameworks?: string[];
-  personaSettings?: {
-    persona: string;
-  };
-  productClaims?: {
-    approved: string[];
-    prohibited: string[];
-  };
-  brandDrBalance?: number;
-  selectedProduct?: string;
-  settingsVersion?: string;
-}
 
-export interface AdCopyRequest {
-  transcription: string;
-  customBrief?: string;
-  persona: string;
-  landingPageUrl?: string;
-  brandDrBalance: number;
-  useJonesBrandGuide: boolean;
-  airLink?: string;
-  uploadedImage?: string;
-  selectedProduct?: string;
-  selectedProducts?: string[];
-}
-
-export interface LandingPageRequest {
-  landingPageType: string;
-  productBrief: string;
-  persona: string;
-  useAdsContent: boolean;
-  adsContent?: string;
-  brandDrBalance: number;
-  selectedProduct?: string;
-  selectedProducts?: string[];
-  mainAngle?: string;
-  transcription?: string;
-}
-
-export interface CustomCopyRequest {
-  customRequest: string;
-  persona: string;
-  brandDrBalance: number;
-  selectedProduct?: string;
-  selectedProducts?: string[];
-  useJonesBrandGuide: boolean;
-}
-
-export interface StaticAdAnalysisRequest {
-  staticAdImage: string;
-  persona: string;
-  brandDrBalance: number;
-  selectedProduct?: string;
-  selectedProducts?: string[];
-  useJonesBrandGuide?: boolean;
-  outputFormat?: string;
-  analysisFocus?: string;
-}
-
-export interface RevisionRequest {
-  originalContent: string;
-  revisionInstructions: string;
-  contentType: 'headline' | 'primaryText' | 'landingCopy' | 'custom' | 'retention';
-  context?: {
-    transcription?: string;
-    customBrief?: string;
-    persona?: string;
-    targetAudience?: string;
-    brandDrBalance?: number;
-    selectedProduct?: string;
-    selectedProducts?: string[];
-    field?: string;
-    customRequest?: string;
-    useJonesBrandGuide?: boolean;
-  };
-}
 
 export async function reviseContent(request: RevisionRequest, trainingConfig: TrainingConfig): Promise<string> {
   const { originalContent, revisionInstructions, contentType, context } = request;
-  
+
   // Map content types to station names for getting the appropriate system prompt
   const contentTypeToStation: Record<string, string> = {
     'headline': 'adCopy',
-    'primaryText': 'adCopy', 
+    'primaryText': 'adCopy',
     'landingCopy': 'landingPage',
     'custom': 'customRequest',
-    'retention': 'emailSmsRetention'
+    'email': 'email',
+    'sms': 'sms'
   };
-  
+
   const stationName = contentTypeToStation[contentType] || 'customRequest';
-  
+
   // Get station-specific system prompt from training config
-  const baseSystemPrompt = trainingConfig?.stationPrompts?.[stationName]?.systemPrompt;
-  
+  const baseSystemPrompt = (trainingConfig?.stationPrompts as any)?.[stationName]?.systemPrompt;
+
   // Build AI Settings context using the helper function
-  const aiSettingsContext = buildAISettingsContext(trainingConfig, {
+  const aiSettingsContext = buildAllBrandSettingsContext(trainingConfig, {
     persona: context?.persona || '',
     selectedProduct: context?.selectedProduct,
     selectedProducts: context?.selectedProducts,
     brandDrBalance: context?.brandDrBalance || DEFAULT_BRAND_DR_BALANCE,
-    useJonesBrandGuide: context?.useJonesBrandGuide ?? DEFAULT_USE_JONES_BRAND_GUIDE
+    useJonesBrandGuide: context?.useJonesBrandGuide ?? true
   });
 
   // Create revision-specific system prompt
   let systemPrompt = '';
-  
+
   if (baseSystemPrompt) {
     // Use station-specific prompt as base and add revision context
     systemPrompt = `You are an expert copywriter specializing in improving content. You will be revising ${contentType} copy based on specific improvement instructions.
@@ -164,7 +66,7 @@ SPECIAL NOTES FOR CUSTOM COPY REVISION:
 - Output should be clean and readable without formatting symbols
 ` : ''}
 
-${contentType === 'retention' ? `
+${contentType === 'sms' || contentType === 'email' ? `
 SPECIAL NOTES FOR RETENTION COPY REVISION:
 - This is ${context?.field === 'retention' ? 'email/SMS retention copy' : 'retention marketing content'}
 - Maintain platform-appropriate length and formatting (Email vs SMS)
@@ -205,21 +107,6 @@ SPECIAL NOTES FOR CUSTOM COPY REVISION:
 - Output should be clean and readable without formatting symbols
 ` : ''}
 
-${contentType === 'retention' ? `
-SPECIAL NOTES FOR RETENTION COPY REVISION:
-- This is ${context?.field === 'retention' ? 'email/SMS retention copy' : 'retention marketing content'}
-- Maintain platform-appropriate length and formatting (Email vs SMS)
-- Focus on customer retention and engagement principles
-- Use personalized, relationship-building language appropriate for existing customers
-- Balance promotional content with value-driven messaging
-- Include relevant product mentions if specific products were selected
-- Ensure mobile-friendly formatting for both email and SMS
-- Use clean, plain text formatting without markdown or special characters
-${context?.selectedProducts && context.selectedProducts.length > 0 ? `
-- Feature these selected products appropriately: ${context.selectedProducts.join(', ')}
-` : ''}
-` : ''}
-
 REVISION PRINCIPLES:
 - Keep the core message and structure intact (unless explicitly asked to change)
 - Apply the requested improvements precisely
@@ -258,13 +145,13 @@ Please revise the content applying the improvement instructions while maintainin
     });
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
-    
+
     // Clean up the response - remove quotes and extra formatting
     const revisedContent = content
       .replace(/^["'](.+)["']$/s, '$1') // Remove surrounding quotes
       .replace(/^\*\*(.+)\*\*$/s, '$1') // Remove bold formatting
       .trim();
-    
+
     return revisedContent;
   } catch (error) {
     console.error('Content revision error:', error);
@@ -274,7 +161,6 @@ Please revise the content applying the improvement instructions while maintainin
 
 export async function generateAdCopy(request: AdCopyRequest, trainingConfig: TrainingConfig) {
   const { transcription, customBrief, persona, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProduct, selectedProducts } = request;
-  
   // Validate required parameters
   if (!persona || persona === 'none') {
     throw new Error('Persona is required and must be provided from database persona data.');
@@ -282,12 +168,10 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
 
   // Provide safe defaults for undefined values
   const safeBrandDrBalance = brandDrBalance || DEFAULT_BRAND_DR_BALANCE;
-  const brandPercent = safeBrandDrBalance;
-  const drPercent = 100 - brandPercent;
-  const safePersona = persona;
-  
+  const safePersona = persona || DEFAULT_PERSONA_KEY;
+
   // Build enhanced system prompt using StationPromptManager
-  const systemPrompt = await StationPromptManager.buildStationSystemPrompt('adCopy', trainingConfig, request, {
+  const systemPrompt = await AIPromptBuilder.buildStationSystemPrompt('adCopy', trainingConfig, request, {
     persona: safePersona,
     selectedProduct,
     selectedProducts,
@@ -295,52 +179,24 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
     useJonesBrandGuide
   });
 
-  // Build context sections using enhanced builders
-  // const landingPageContext = await buildLandingPageContext(landingPageUrl);
-  // const targetPersonaSection = buildTargetPersonaSection(safePersona, trainingConfig);
-  // const selectedProductsSection = buildSelectedProductsSection(selectedProduct, selectedProducts, trainingConfig);
-  // const copyFrameworksSection = buildCopyFrameworksSection(trainingConfig);
-  // const customBriefSection = buildCustomBriefSection(customBrief);
+  // Build user prompt using the same structure as system prompt (no enhancements)
+  const userPrompt = await AIPromptBuilder.buildStationUserPrompt(
+    'adCopy',
+    trainingConfig,
+    request,
+    {
+      persona: safePersona,
+      selectedProduct,
+      selectedProducts,
+      brandDrBalance: safeBrandDrBalance,
+      useJonesBrandGuide
+    }
+  );
 
-  // Enhanced image analysis using ContentContextBuilder
-  const { contextSection: imageAnalysisSection, hasImageContent, imageInput } = 
-    ContentContextBuilder.buildImageAnalysisContext(uploadedImage, airLink, 'ad_creative');
 
-  // Enhanced transcription context
-  const transcriptionContext = ContentContextBuilder.buildTranscriptionContext(transcription, 'video');
+  const { contextSection: imageAnalysisSection, hasImageContent, imageInput } =
+    AIPromptBuilder.buildImageAnalysisContext(uploadedImage, airLink, 'ad_creative');
 
-  // Build enhanced user prompt using StationPromptManager
-  let userPrompt: string;
-  let contextInfo: any = {};
-
-  // Try to use enhanced context builder if available
-  const hasEnhancedConfig = trainingConfig?.stationPrompts?.adCopy?.contextConfiguration;
-  
-  {
-    // Always use enhanced context; require configuration to be present
-    const enhancedResult = await StationPromptManager.buildEnhancedStationUserPrompt(
-      'adCopy',
-      trainingConfig,
-      request,
-      {
-        transcription: transcription || '',
-        persona: safePersona,
-        brandDrBalance: safeBrandDrBalance,
-        selectedProduct,
-        selectedProducts,
-        customBrief,
-        uploadedImage,
-        airLink
-      }
-    );
-    console.log('Enhanced result:', enhancedResult);
-    userPrompt = enhancedResult.userPrompt;
-    contextInfo = enhancedResult.contextInfo;
-    console.log('Enhanced context builder used:', {
-      sectionsUsed: contextInfo.sectionsUsed,
-      totalTokens: contextInfo.totalTokens
-    });
-  }
 
   // Set image variables for message content
   const base64Image = hasImageContent && imageInput?.startsWith('data:') ? imageInput : '';
@@ -352,7 +208,7 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
 
     // Build message content with optional image
     let messageContent: any[] = [{ type: 'text', text: userPrompt }];
-    
+
     if (hasImageContent) {
       const imageInput = base64Image || imageUrl;
       if (imageInput) {
@@ -366,8 +222,8 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
     }
 
     // Get optimized model parameters for this station
-    const modelParams = StationPromptManager.getStationModelParams('adCopy', trainingConfig);
-    
+    const modelParams = AIPromptBuilder.getStationModelParams('adCopy', trainingConfig);
+
     const response = await anthropic.messages.create({
       model: modelParams.model,
       system: systemPrompt,
@@ -377,10 +233,10 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
     });
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
-    
+
     // Parse AI response using centralized parser
     const { headlines, primaryText } = AIResponseParser.parseWithFallback(content);
-    
+
     return {
       headlines,
       primaryText,
@@ -390,8 +246,7 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
         content,
         modelParams.model,
         { transcription, persona, brandDrBalance, selectedProduct }
-      ),
-      contextInfo: hasEnhancedConfig ? contextInfo : undefined
+      )
     };
   } catch (error) {
     console.error('Anthropic API error:', error);
@@ -409,225 +264,160 @@ export async function generateAdCopy(request: AdCopyRequest, trainingConfig: Tra
 
 export async function generateLandingPageCopy(request: LandingPageRequest, trainingConfig: TrainingConfig) {
   const { landingPageType, productBrief, persona, useAdsContent, adsContent, brandDrBalance, selectedProduct, selectedProducts, mainAngle, transcription } = request;
-  
 
-  
   // Validate required parameters
   if (!persona || persona === 'none') {
     throw new Error('Persona is required and must be provided from database persona data.');
   }
-  
+
   const safeBrandDrBalance = brandDrBalance || DEFAULT_BRAND_DR_BALANCE;
-  const safePersona = persona;
-  
-  // Build comprehensive AI Settings context
-  const aiSettingsContext = buildAISettingsContext(trainingConfig, {
-    persona: safePersona,
-    selectedProduct,
-    selectedProducts,
-    brandDrBalance: safeBrandDrBalance,
-    useJonesBrandGuide: true
-  });
-  
-  // Build comprehensive sections using helper functions
-  const targetPersonaSection = buildTargetPersonaSection(safePersona, trainingConfig);
-  const selectedProductsSection = buildSelectedProductsSection(selectedProduct, selectedProducts, trainingConfig);
-  const landingPageFrameworksSection = buildLandingPageFrameworksSection(trainingConfig, landingPageType);
-  
-  // console.log('!!!!!!!!!!!!!!!!!!!!!!!!!landingPageFrameworksSection', landingPageFrameworksSection);
+  const safePersona = persona || DEFAULT_PERSONA_KEY;
 
-  
-  // Build additional contextual sections
-  const transcriptionSection = transcription ? `
-TRANSCRIPTION CONTEXT:
-${transcription}
-
-TRANSCRIPTION INTEGRATION REQUIREMENT:
-- Use key insights, quotes, and messaging angles from the transcription
-- Maintain the authentic voice and tone established in the original content
-- Extract compelling hooks and benefit statements for landing page copy
-- Ensure messaging consistency between the source material and landing page
-` : '';
-
-  const adsContentSection = useAdsContent && adsContent ? `
-ADS CONTENT TO REFERENCE:
-${adsContent}
-
-AD-TO-LANDING PAGE ALIGNMENT:
-- Create seamless messaging flow from ad to landing page
-- Maintain consistent value propositions and benefit language
-- Ensure headline and angle alignment for reduced bounce rate
-- Use similar emotional hooks and persuasion elements
-` : '';
-
-  const mainAngleSection = mainAngle ? `
-
-MAIN ANGLE FOCUS:
-${mainAngle}
-
-ANGLE AMPLIFICATION REQUIREMENTS:
-- Make this angle the central theme throughout all landing page sections
-- Use this angle to inform headline strategy and messaging hierarchy
-- Ensure all benefit statements support and reinforce this main angle
-- Create compelling proof points that validate this specific angle
-` : '';
-
-  const productBriefSection = productBrief ? `
-PRODUCT BRIEF DETAILS:
-${productBrief}
-
-BRIEF INTEGRATION REQUIREMENTS:
-- Incorporate specific product details and unique selling points
-- Use brief information to create targeted benefit statements
-- Ensure technical accuracy while maintaining compelling copy
-- Highlight differentiators and competitive advantages mentioned in brief
-` : '';
-
-  const brandBalanceSection = `
-BRAND/DR BALANCE GUIDANCE:
-Brand Voice: ${safeBrandDrBalance}% | Direct Response: ${100 - safeBrandDrBalance}%
-
-${safeBrandDrBalance > 60 ? `
-BRAND-FIRST APPROACH (High Brand %):
-- Lead with brand storytelling and emotional connection
-- Use authentic, conversational tone throughout
-- Focus on brand values and lifestyle integration
-- Create aspirational messaging that builds brand affinity
-- Incorporate brand personality and voice characteristics
-` : safeBrandDrBalance < 40 ? `
-DIRECT RESPONSE APPROACH (High DR %):
-- Lead with clear, immediate benefits and results
-- Use urgency and scarcity elements where appropriate
-- Focus on problem/solution messaging
-- Create action-oriented copy with strong CTAs
-- Emphasize tangible outcomes and proof points
-` : `
-BALANCED APPROACH (Equal Brand/DR):
-- Blend brand storytelling with clear benefit communication
-- Use authentic voice while maintaining conversion focus
-- Balance emotional connection with logical persuasion
-- Create compelling narrative that drives action
-- Maintain brand integrity while optimizing for results
-`}`;
-
-  // Use database system prompt instead of hardcoded
-  const baseSystemPrompt = trainingConfig?.stationPrompts?.landingPage?.systemPrompt;
-  
-  if (!baseSystemPrompt) {
-    throw new Error('Landing page system prompt not found in training configuration. Please ensure database contains proper station prompt configuration.');
-  }
-  
-  const systemPrompt = `${baseSystemPrompt}
-
- ${landingPageFrameworksSection}
-
-${aiSettingsContext}`;
-
-  // Use database user prompt template instead of hardcoded
-  const baseUserPrompt = trainingConfig?.stationPrompts?.landingPage?.userPromptTemplate;
-  
-  if (!baseUserPrompt) {
-    throw new Error('Landing page user prompt template not found in training configuration. Please ensure database contains proper station prompt configuration.');
-  }
-
-  // Debug logging for selected products
-  console.log('=== LANDING PAGE SELECTED PRODUCTS DEBUG ===');
-  console.log('selectedProduct:', selectedProduct);
-  console.log('selectedProducts:', selectedProducts);
-  console.log('selectedProductsSection length:', selectedProductsSection.length);
-  console.log('selectedProductsSection preview:', selectedProductsSection.substring(0, 200) + '...');
-  
-  // Build comprehensive user prompt with template replacements and additional sections
-  const userPrompt = baseUserPrompt
-    .replace('{landingPageType}', landingPageType)
-    .replace('{productBrief}', productBrief || '')
-    .replace('{mainAngle}', mainAngle || '')
-    .replace('{persona}', safePersona)
-    .replace('{brandPercent}', safeBrandDrBalance.toString())
-    .replace('{drPercent}', (100 - safeBrandDrBalance).toString())
-    .replace('{adsContentSection}', useAdsContent && adsContent ? `\nADS CONTENT TO REFERENCE:\n${adsContent}\n` : '')
-    .replace('{targetPersonaSection}', targetPersonaSection)
-    .replace('{selectedProductsSection}', selectedProductsSection) + 
-    transcriptionSection + 
-    adsContentSection + 
-    mainAngleSection + 
-    productBriefSection + 
-    targetPersonaSection +
-    selectedProductsSection + 
-    brandBalanceSection;
+  // Build system prompt using the same builder approach as ad copy
+  const systemPrompt = await AIPromptBuilder.buildStationSystemPrompt(
+    'landingPage',
+    trainingConfig,
+    request,
+    {
+      persona: safePersona,
+      selectedProduct,
+      selectedProducts,
+      brandDrBalance: safeBrandDrBalance,
+      useJonesBrandGuide: true
+    }
+  );
+  // Build user prompt using the same structure as system prompt (no enhancements)
+  const userPrompt = await AIPromptBuilder.buildStationUserPrompt(
+    'landingPage',
+    trainingConfig,
+    request,
+    {
+      persona: safePersona,
+      selectedProduct,
+      selectedProducts,
+      brandDrBalance: safeBrandDrBalance,
+      useJonesBrandGuide: true
+    }
+  );
 
   AILogger.logFinalPrompts('Landing Page', systemPrompt, userPrompt);
 
   try {
+    // Use station-specific model parameters for Landing Page
+    const modelParams = AIPromptBuilder.getStationModelParams('landingPage', trainingConfig);
+
     const response = await anthropic.messages.create({
-      model: DEFAULT_MODEL_STR,
+      model: modelParams.model,
       system: systemPrompt,
-      max_tokens: 2048,
+      max_tokens: modelParams.max_tokens,
+      temperature: modelParams.temperature,
       messages: [{ role: 'user', content: userPrompt }],
     });
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
-    
-    // Debug logging to see what we received
-    // console.log('AI Response for landing page:', content.substring(0, 500) + '...');
-    
+
     // Try to parse as JSON first, then fall back to text parsing (with fenced/embedded JSON support)
-    let parsedJson = TextUtils.tryParseJson(content);
-    if (!parsedJson) {
-      const fencedMatch = content.match(/```json[\s\S]*?```/i) || content.match(/```[\s\S]*?```/);
-      if (fencedMatch) {
-        const fenced = TextUtils.stripCodeFences(fencedMatch[0]);
-        parsedJson = TextUtils.tryParseJson(fenced);
+    const extractJson = (raw: string) => {
+      const tryParse = (s: string) => TextUtils.tryParseJson(TextUtils.stripCodeFences(s));
+      const direct = tryParse(raw);
+      if (direct) return direct;
+      const fenced = raw.match(/```json[\s\S]*?```/i)?.[0] || raw.match(/```[\s\S]*?```/)?.[0];
+      if (fenced) {
+        const parsed = tryParse(fenced);
+        if (parsed) return parsed;
       }
-    }
-    if (!parsedJson) {
-      const firstBrace = content.indexOf('{');
-      const lastBrace = content.lastIndexOf('}');
-      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-        const maybeJson = content.substring(firstBrace, lastBrace + 1);
-        parsedJson = TextUtils.tryParseJson(maybeJson);
+      const first = raw.indexOf('{');
+      const last = raw.lastIndexOf('}');
+      if (first !== -1 && last !== -1 && last > first) {
+        const parsed = TextUtils.tryParseJson(raw.slice(first, last + 1));
+        if (parsed) return parsed;
       }
-    }
+      return null;
+    };
+
+    let parsedJson = extractJson(content);
     if (parsedJson) {
       console.log('Successfully parsed JSON response:', parsedJson);
     } else {
       console.log('Not a JSON response, using text parsing...');
     }
-    
+
     let headlineMatch, subheadlineMatch, introMatch, ctaMatch, riskReversalMatch;
-    
-         if (parsedJson) {
-       // Use JSON parsing with support for nested landing page schemas
-       const hero = parsedJson.hero_section || {};
-       const productShowcase = parsedJson.product_showcase || {};
-       const finalCta = parsedJson.final_cta || {};
-       const extractedHeadline = parsedJson.headline || hero.headline || '';
-       const extractedSubheadline = parsedJson.subheadline || hero.sub_headline || hero.subheadline || '';
-       const extractedIntro = parsedJson.introduction || productShowcase.body_copy || '';
-       const extractedCta = parsedJson.cta || finalCta.cta_button || hero.cta_button || '';
-       const extractedRisk = parsedJson.riskReversal || parsedJson.risk_reversal || '';
-       headlineMatch = extractedHeadline ? [null, extractedHeadline] : null;
-       subheadlineMatch = extractedSubheadline ? [null, extractedSubheadline] : null;
-       introMatch = extractedIntro ? [null, extractedIntro] : null;
-       ctaMatch = extractedCta ? [null, extractedCta] : null;
-       riskReversalMatch = extractedRisk ? [null, extractedRisk] : null;
+
+    if (parsedJson) {
+      // Normalize wrapper shape if present
+      const page: any = (parsedJson as any).landing_page || parsedJson;
+      // Schema-aware extraction by framework
+      const framework = landingPageType;
+      const hero = page.hero_section || {};
+      const productShowcase = page.product_showcase || {};
+      const finalCta = page.final_cta || {};
+
+      if (framework === 'product_framework') {
+        const extractedHeadline = hero.headline || page.headline || page.hook || '';
+        const extractedSubheadline = hero.sub_headline || hero.subheadline || page.subheader || page.subheadline || '';
+
+        let extractedIntro = '';
+        if (productShowcase.body_copy) {
+          extractedIntro = productShowcase.body_copy;
+        } else if (Array.isArray(hero.hero_benefits) && hero.hero_benefits.length > 0) {
+          extractedIntro = hero.hero_benefits.join('\n');
+        }
+
+        const extractedCta = (
+          finalCta.cta_button ||
+          hero.cta_button ||
+          page.cta ||
+          (Array.isArray(page.cta_sections) && (page.cta_sections[0]?.cta || page.cta_sections[0]?.button || page.cta_sections[0]?.button_text)) ||
+          (page.final_message && (page.final_message.final_cta || page.final_message.cta)) ||
+          ''
+        );
+        const extractedRisk = page.riskReversal || page.risk_reversal || '';
+
+        headlineMatch = extractedHeadline ? [null, extractedHeadline] : null;
+        subheadlineMatch = extractedSubheadline ? [null, extractedSubheadline] : null;
+        introMatch = extractedIntro ? [null, extractedIntro] : null;
+        ctaMatch = extractedCta ? [null, extractedCta] : null;
+        riskReversalMatch = extractedRisk ? [null, extractedRisk] : null;
+      } else if (framework === 'listicle') {
+        const extractedHeadline = page.headline || hero.headline || '';
+        const extractedSubheadline = page.subheadline || hero.sub_headline || hero.subheadline || '';
+        headlineMatch = extractedHeadline ? [null, extractedHeadline] : null;
+        subheadlineMatch = extractedSubheadline ? [null, extractedSubheadline] : null;
+        introMatch = null; // listicle has no introduction
+        const extractedCta = page.cta || finalCta.cta_button || hero.cta_button || '';
+        ctaMatch = extractedCta ? [null, extractedCta] : null;
+        const risk = page.riskReversal || page.risk_reversal;
+        riskReversalMatch = risk ? [null, risk] : null;
+      } else {
+        const extractedHeadline = page.headline || hero.headline || '';
+        const extractedSubheadline = page.subheadline || hero.sub_headline || hero.subheadline || '';
+        const extractedIntro = page.introduction || productShowcase.body_copy || '';
+        const extractedCta = page.cta || finalCta.cta_button || hero.cta_button || '';
+        const extractedRisk = page.riskReversal || page.risk_reversal || '';
+        headlineMatch = extractedHeadline ? [null, extractedHeadline] : null;
+        subheadlineMatch = extractedSubheadline ? [null, extractedSubheadline] : null;
+        introMatch = extractedIntro ? [null, extractedIntro] : null;
+        ctaMatch = extractedCta ? [null, extractedCta] : null;
+        riskReversalMatch = extractedRisk ? [null, extractedRisk] : null;
+      }
     } else {
       // Use text parsing as fallback
       headlineMatch = content.match(/HEADLINE:?\s*(.+?)(?=\n|SUBHEADLINE|INTRODUCTION|$)/is);
       // If no HEADLINE prefix found, use the first line as headline
       const fallbackHeadline = !headlineMatch ? content.match(/^(.+?)(?=\n)/) : null;
       if (!headlineMatch && fallbackHeadline) headlineMatch = fallbackHeadline;
-      
+
       subheadlineMatch = content.match(/SUBHEADLINE:?\s*(.+?)(?=\n|INTRODUCTION|REASON|HERO PRODUCT|PRODUCT|$)/is);
-      introMatch = landingPageType === 'multiProduct' 
+      introMatch = landingPageType === 'multiProduct'
         ? content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=HERO PRODUCT|PRODUCT #?1|$)/i)
-        : landingPageType === 'listicle' 
+        : landingPageType === 'listicle'
           ? null // No introduction for listicles
           : content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=REASON #?1|$)/i);
       ctaMatch = content.match(/CTA:?\s*([\s\S]*?)(?=RISK REVERSAL|$)/i);
       riskReversalMatch = content.match(/RISK REVERSAL:?\s*([\s\S]*?)$/i);
     }
-    
+
     console.log('Parsing results:', {
       headline: headlineMatch ? headlineMatch[1] : 'NOT FOUND',
       hasReasons: content.includes('REASON'),
@@ -637,17 +427,31 @@ ${aiSettingsContext}`;
       contentStart: content.substring(0, 200),
       isJsonResponse: !!parsedJson
     });
-    
+
     // Extract sections with improved parsing (works for REASON, PRODUCT, and HERO PRODUCT sections)
     const sections = [];
-    
-    if (parsedJson && parsedJson.sections) {
+
+    if (parsedJson && Array.isArray((parsedJson as any))) {
+      // Listicle or generic array: map array items to sections
+      for (const item of (parsedJson as any)) {
+        const sTitle = item.title || item.name || item.reason || '';
+        const sContent = item.content || item.description || item.support || '';
+        const hookMatch = sContent.match?.(/^([^.!?]*[.!?])/);
+        const hook = hookMatch ? hookMatch[1].trim() : '';
+        sections.push({
+          title: sTitle,
+          content: sContent,
+          hook: hook.length < 200 ? hook : '',
+          wordCount: (sContent || '').split(/\s+/).length
+        });
+      }
+    } else if (parsedJson && (parsedJson as any).sections) {
       // Handle JSON sections
-      for (const section of parsedJson.sections) {
+      for (const section of (parsedJson as any).sections) {
         const content = section.content || section.description || '';
         const hookMatch = content.match(/^([^.!?]*[.!?])/);
         const hook = hookMatch ? hookMatch[1].trim() : '';
-        
+
         sections.push({
           title: section.title || section.name || '',
           content,
@@ -656,12 +460,15 @@ ${aiSettingsContext}`;
         });
       }
     } else if (parsedJson) {
-      // Build sections from known nested landing page structures
-      const productShowcase = parsedJson.product_showcase || {};
-      const comparisonGrid = parsedJson.comparison_grid || {};
-      const universalBenefits = parsedJson.universal_benefits || {};
-      const socialProof = parsedJson.social_proof || {};
-      const finalCta = parsedJson.final_cta || {};
+      // Build sections from known nested landing page structures (normalize wrapper)
+      const page: any = (parsedJson as any).landing_page || parsedJson;
+      const productShowcase = page.product_showcase || {};
+      const comparisonGrid = page.comparison_grid || {};
+      const universalBenefits = page.universal_benefits || {};
+      const socialProof = page.social_proof || {};
+      const finalCta = page.final_cta || {};
+      const products = Array.isArray(page.products) ? page.products : [];
+      const problemSolution = page.problem_solution || {};
 
       // Product Showcase section
       if (productShowcase.section_title || productShowcase.body_copy) {
@@ -681,6 +488,59 @@ ${aiSettingsContext}`;
           title: productShowcase.section_title || 'Product Showcase',
           content: contentStr,
           hook: hookMatch ? hookMatch[1].trim() : '',
+          wordCount: contentStr.split(/\s+/).length
+        });
+      }
+
+      // Product sections array
+      if (products.length > 0) {
+        for (const p of products) {
+          const title = p?.title || p?.name || p?.headline || 'Product';
+          const lines: string[] = [];
+          if (p?.description) lines.push(p.description);
+          if (Array.isArray(p?.bullet_points)) {
+            lines.push(...p.bullet_points.map((bp: string) => `- ${bp}`));
+          }
+          if (Array.isArray(p?.features)) {
+            lines.push(
+              ...p.features.map((f: any) =>
+                typeof f === 'string'
+                  ? `- ${f}`
+                  : `- ${[f?.title || f?.name || '', f?.description || ''].filter(Boolean).join(': ')}`
+              )
+            );
+          }
+          const contentStr = lines.join('\n');
+          const hookMatch = contentStr.match(/^([^.!?]*[.!?])/);
+          sections.push({
+            title,
+            content: contentStr,
+            hook: hookMatch ? hookMatch[1].trim() : '',
+            wordCount: contentStr.split(/\s+/).length
+          });
+        }
+      }
+
+      // Problem/Solution blocks
+      if (Array.isArray(problemSolution?.problems) && problemSolution.problems.length > 0) {
+        const contentStr = problemSolution.problems
+          .map((pr: any) => `- ${typeof pr === 'string' ? pr : (pr?.text || pr?.title || '')}`.trim())
+          .join('\n');
+        sections.push({
+          title: problemSolution.problem_headline || 'Problems',
+          content: contentStr,
+          hook: '',
+          wordCount: contentStr.split(/\s+/).length
+        });
+      }
+      if (Array.isArray(problemSolution?.solutions) && problemSolution.solutions.length > 0) {
+        const contentStr = problemSolution.solutions
+          .map((sl: any) => `- ${typeof sl === 'string' ? sl : (sl?.text || sl?.title || '')}`.trim())
+          .join('\n');
+        sections.push({
+          title: problemSolution.solution_headline || 'Solutions',
+          content: contentStr,
+          hook: '',
           wordCount: contentStr.split(/\s+/).length
         });
       }
@@ -758,7 +618,7 @@ ${aiSettingsContext}`;
         const content = heroMatch[2].trim().replace(/\*\*/g, '');
         const hookMatch = content.match(/^([^.!?]*[.!?])/);
         const hook = hookMatch ? hookMatch[1].trim() : '';
-        
+
         sections.push({
           title: `Hero: ${title}`,
           content,
@@ -766,7 +626,7 @@ ${aiSettingsContext}`;
           wordCount: content.split(/\s+/).length
         });
       }
-      
+
       // Handle numbered PRODUCT sections
       const productPattern = /PRODUCT #(\d+):?\s*(.+?)(?=\n)([\s\S]*?)(?=PRODUCT #\d+|COLLECTION BENEFITS:|SOCIAL PROOF:|CTA:|RISK REVERSAL:|$)/gi;
       const productMatches = content.match(productPattern);
@@ -779,7 +639,7 @@ ${aiSettingsContext}`;
             const content = contentMatch[1].trim().replace(/\*\*/g, '');
             const hookMatch = content.match(/^([^.!?]*[.!?])/);
             const hook = hookMatch ? hookMatch[1].trim() : '';
-            
+
             sections.push({
               title,
               content,
@@ -802,7 +662,7 @@ ${aiSettingsContext}`;
             const content = contentMatch[1].trim().replace(/\*\*/g, '');
             const hookMatch = content.match(/^([^.!?]*[.!?])/);
             const hook = hookMatch ? hookMatch[1].trim() : '';
-            
+
             sections.push({
               title,
               content,
@@ -813,7 +673,7 @@ ${aiSettingsContext}`;
         }
       }
     }
-    
+
     // For multi-product pages, also extract collection benefits and social proof sections
     if (landingPageType === 'multiProduct') {
       // Extract Collection Benefits section
@@ -827,7 +687,7 @@ ${aiSettingsContext}`;
           wordCount: collectionContent.split(/\s+/).length
         });
       }
-      
+
       // Extract Social Proof section
       const socialProofMatch = content.match(/SOCIAL PROOF:?\s*([\s\S]*?)(?=CTA:|RISK REVERSAL:|$)/i);
       if (socialProofMatch) {
@@ -840,9 +700,9 @@ ${aiSettingsContext}`;
         });
       }
     }
-    
+
     const finalHeadline = headlineMatch ? headlineMatch[1] : '';
-    
+
     return {
       headline: finalHeadline.trim().replace(/\*\*/g, ''),
       subheadline: subheadlineMatch ? subheadlineMatch[1].trim().replace(/\*\*/g, '') : '',
@@ -862,7 +722,9 @@ ${aiSettingsContext}`;
         systemPrompt,
         userPrompt,
         requestPayload: request,
-        rawResponse: content
+        rawResponse: content,
+        modelUsed: modelParams.model,
+        landingPageType
       }
     };
   } catch (error) {
@@ -871,51 +733,31 @@ ${aiSettingsContext}`;
   }
 }
 
-export async function analyzeStaticAd(request: StaticAdAnalysisRequest, _trainingConfig: TrainingConfig) {
+export async function analyzeStaticAd(request: StaticAdAnalysisRequest, trainingConfig: TrainingConfig) {
   const { staticAdImage, persona, brandDrBalance, selectedProduct, selectedProducts, useJonesBrandGuide, outputFormat, analysisFocus } = request;
-  
-  const brandPercent = brandDrBalance;
-  const drPercent = 100 - brandPercent;
-  
+
   // Provide safe defaults for undefined values
-  const safePersona = persona || '';
   const safeBrandDrBalance = brandDrBalance || DEFAULT_BRAND_DR_BALANCE;
-  
+  const safePersona = persona || DEFAULT_PERSONA_KEY;
+
   // Process static ad image
   const processedImage = await processImageForAnthropic(staticAdImage, {
     logContext: 'Static ad analysis'
   });
-  
+
   if (!processedImage) {
     throw new Error('Failed to process static ad image');
   }
-  
-  // After processing, the image is converted to JPEG format for optimal compression
-  // const finalMediaType = "image/jpeg"; // resizeImageIfNeeded always converts to JPEG when processing
-  
-  // Get training configuration
-  const config = await import('../routes/training').then(m => m.getTrainingConfig());
-  
-  // Build comprehensive AI Settings context including product claims
-  const aiSettingsContext = buildAISettingsContext(config, {
+
+  // Build system prompt using station prompt builder (align with ad copy)
+  const baseSystemPrompt = await AIPromptBuilder.buildStationSystemPrompt('staticAd', trainingConfig, request, {
     persona: safePersona,
     selectedProduct,
     selectedProducts,
     brandDrBalance: safeBrandDrBalance,
     useJonesBrandGuide
   });
-  
-  // Use database system prompt instead of hardcoded fallback
-  const baseSystemPrompt = config?.stationPrompts?.staticAd?.systemPrompt;
-  
-  if (!baseSystemPrompt) {
-    throw new Error('Static ad analysis system prompt not found in training configuration. Please ensure database contains proper station prompt configuration.');
-  }
-  
   const systemPrompt = `${baseSystemPrompt}
-
-${aiSettingsContext}
-
 IMPORTANT: Return your response in structured JSON format with the following structure:
 {
   "analysis": "Your comprehensive analysis of what makes this ad effective",
@@ -929,25 +771,22 @@ IMPORTANT: Return your response in structured JSON format with the following str
 }
 
 OUTPUT FORMAT: ${outputFormat || 'analysis-variations'}
-ANALYSIS FOCUS: ${analysisFocus || 'comprehensive'}`;
+`;
 
-  // Build sections using helper functions
-  const targetPersonaSection = buildTargetPersonaSection(safePersona, config);
-  const selectedProductsSection = buildSelectedProductsSection(selectedProduct, selectedProducts, config);
 
-  const getInstructions = () => {
-    const baseInstructions = `Please analyze this static ad image and create Jones Road Beauty variations targeting ${safePersona}.`;
-    
+  const getOutputInstructions = () => {
+    const outputInstructions = ``;
+
     // Customize instructions based on outputFormat
     if (outputFormat === 'analysis-only') {
-      return `${baseInstructions}
+      return `${outputInstructions}
 
 INSTRUCTIONS:
 - Provide comprehensive analysis of what makes this ad effective
 - Focus on visual elements, copy effectiveness, and conversion optimization
 - DO NOT create variations - analysis only`;
     } else if (outputFormat === 'variations-only') {
-      return `${baseInstructions}
+      return `${outputInstructions}
 
 INSTRUCTIONS:
 - Create 3 compelling Jones Road variations that adapt the successful elements
@@ -956,7 +795,7 @@ INSTRUCTIONS:
 - Maintain Jones Road's "effortless beauty" positioning throughout
 - DO NOT provide detailed analysis - variations only`;
     } else {
-      return `${baseInstructions}
+      return `${outputInstructions}
 
 INSTRUCTIONS:
 - Provide comprehensive analysis of what makes this ad effective
@@ -967,17 +806,27 @@ INSTRUCTIONS:
     }
   };
 
-  const userPrompt = getInstructions() + 
-    targetPersonaSection + 
-    selectedProductsSection;
-
+  // Build user prompt via station prompt builder and append output instructions at the end
+  const baseUserPrompt = await AIPromptBuilder.buildStationUserPrompt('staticAd', trainingConfig, request, {
+    persona: safePersona,
+    selectedProduct,
+    selectedProducts,
+    brandDrBalance: safeBrandDrBalance,
+    useJonesBrandGuide,
+    analysisFocus,
+    outputFormat
+  });
+  const userPrompt = `${baseUserPrompt}\n\n${getOutputInstructions()}`;
   try {
     // Debug: log final rendered prompts being sent to the model (Static Ad)
     AILogger.logFinalPrompts('Static Ad Analysis', systemPrompt, userPrompt);
+    // Use station-specific model parameters for Static Ad
+    const modelParams = AIPromptBuilder.getStationModelParams('staticAd', trainingConfig);
     const response = await anthropic.messages.create({
-      model: DEFAULT_MODEL_STR,
+      model: modelParams.model,
       system: systemPrompt,
-      max_tokens: 2000,
+      max_tokens: modelParams.max_tokens,
+      temperature: modelParams.temperature,
       messages: [{
         role: "user",
         content: [
@@ -991,7 +840,7 @@ INSTRUCTIONS:
     });
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
-    
+
     // Try to parse JSON response first
     const parsedResponse = TextUtils.tryParseJson(content);
     if (parsedResponse) {
@@ -1000,7 +849,7 @@ INSTRUCTIONS:
           analysis: parsedResponse.analysis || 'Analysis not available',
           variations: [],
           rawResponse: content,
-          debugInfo: { systemPrompt, userPrompt, rawResponse: content, modelUsed: DEFAULT_MODEL_STR }
+          debugInfo: { systemPrompt, userPrompt, rawResponse: content, modelUsed: modelParams.model }
         };
       }
       if (outputFormat === 'variations-only') {
@@ -1008,14 +857,14 @@ INSTRUCTIONS:
           analysis: '',
           variations: parsedResponse.variations || [],
           rawResponse: content,
-          debugInfo: { systemPrompt, userPrompt, rawResponse: content, modelUsed: DEFAULT_MODEL_STR }
+          debugInfo: { systemPrompt, userPrompt, rawResponse: content, modelUsed: modelParams.model }
         };
       }
       return {
         analysis: parsedResponse.analysis || 'Analysis not available',
         variations: parsedResponse.variations || [],
         rawResponse: content,
-        debugInfo: { systemPrompt, userPrompt, rawResponse: content, modelUsed: DEFAULT_MODEL_STR }
+        debugInfo: { systemPrompt, userPrompt, rawResponse: content, modelUsed: modelParams.model }
       };
     }
     console.log('Failed to parse JSON, falling back to text formatting');
@@ -1024,7 +873,7 @@ INSTRUCTIONS:
       analysis: cleanedContent,
       variations: [],
       rawResponse: content,
-      debugInfo: { systemPrompt, userPrompt, rawResponse: content, modelUsed: DEFAULT_MODEL_STR }
+      debugInfo: { systemPrompt, userPrompt, rawResponse: content, modelUsed: modelParams.model }
     };
   } catch (error) {
     console.error('Static ad analysis error:', error);
@@ -1034,79 +883,37 @@ INSTRUCTIONS:
 
 export async function generateCustomCopy(request: CustomCopyRequest, trainingConfig: TrainingConfig) {
   const { customRequest, persona, brandDrBalance, selectedProduct, selectedProducts, useJonesBrandGuide } = request;
-  
+
   // Validate required parameters
   if (!persona || persona === 'none') {
     throw new Error('Persona is required and must be provided from database persona data.');
   }
-  
-  const safeBrandDrBalance = brandDrBalance || DEFAULT_BRAND_DR_BALANCE;
-  const safePersona = persona;
-  
-  // Build comprehensive AI Settings context
-  const aiSettingsContext = buildAISettingsContext(trainingConfig, {
-    persona: safePersona,
+
+  // Build system prompt using station builders (align with ad/landing pattern)
+  const systemPrompt = await AIPromptBuilder.buildStationSystemPrompt('customRequest', trainingConfig, request, {
+    persona: persona || DEFAULT_PERSONA_KEY,
     selectedProduct,
     selectedProducts,
-    brandDrBalance: safeBrandDrBalance,
-    useJonesBrandGuide
-  });
-  
-  // Build enhanced system prompt using StationPromptManager
-  const systemPrompt = await StationPromptManager.buildStationSystemPrompt('customRequest', trainingConfig, request, {
-    persona: safePersona,
-    selectedProduct,
-    selectedProducts: request.selectedProducts,
-    brandDrBalance: request.brandDrBalance,
+    brandDrBalance: brandDrBalance || DEFAULT_BRAND_DR_BALANCE,
     useJonesBrandGuide: true
   });
 
-
-  const brandBalance = request.brandDrBalance || DEFAULT_BRAND_DR_BALANCE;
-  
-  // Brand balance guidance should come from database copy frameworks
-  let balanceGuidance = "Balance brand voice with clear benefits";
-  if (trainingConfig.copyFrameworks) {
-    // Use copy framework rules to determine guidance
-    if (trainingConfig.copyFrameworks.brandDrBalance) {
-      if (brandBalance > 60 && trainingConfig.copyFrameworks.brandDrBalance.brandFirst) {
-        balanceGuidance = "Lean more toward brand storytelling and emotional connection";
-      } else if (brandBalance < 40 && trainingConfig.copyFrameworks.brandDrBalance.directResponse) {
-        balanceGuidance = "Focus more on direct benefits and actionable results";
-      }
-    }
-  }
-
-  // Build context sections for custom request
-  const targetPersonaSection = buildTargetPersonaSection(safePersona, trainingConfig);
-  const selectedProductsSection = buildSelectedProductsSection(selectedProduct, request.selectedProducts, trainingConfig);
-
-  // Build enhanced user prompt using StationPromptManager
-  const templateVariables = {
-    customRequest: request.customRequest,
-    brandBalance: brandBalance.toString(),
-    balanceGuidance: balanceGuidance
-  };
-
-  const contextSections = [
-    targetPersonaSection,
-    selectedProductsSection,
-    `BRAND/DR BALANCE: ${brandBalance}% brand voice - ${balanceGuidance}`
-  ];
-
-  const { userPrompt, contextInfo } = await StationPromptManager.buildEnhancedStationUserPrompt(
-    'customRequest',
-    trainingConfig,
-    request,
-    templateVariables
-  );
+  // Build user prompt via station builder
+  const userPrompt = await AIPromptBuilder.buildStationUserPrompt('customRequest', trainingConfig, request, {
+    persona: persona || DEFAULT_PERSONA_KEY,
+    selectedProduct,
+    selectedProducts,
+    brandDrBalance: brandDrBalance || DEFAULT_BRAND_DR_BALANCE,
+    useJonesBrandGuide: true,
+    customRequest
+  });
 
   try {
     // Debug: log final rendered prompts being sent to the model (Custom Request)
     AILogger.logFinalPrompts('Custom Request', systemPrompt, userPrompt);
     // Get optimized model parameters for this station
-    const modelParams = StationPromptManager.getStationModelParams('customRequest', trainingConfig);
-    
+    const modelParams = AIPromptBuilder.getStationModelParams('customRequest', trainingConfig);
+
     const response = await anthropic.messages.create({
       model: modelParams.model,
       system: systemPrompt,
@@ -1116,7 +923,7 @@ export async function generateCustomCopy(request: CustomCopyRequest, trainingCon
     });
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
-    
+
     return {
       response: content.trim(),
       debugInfo: {
@@ -1126,8 +933,7 @@ export async function generateCustomCopy(request: CustomCopyRequest, trainingCon
           content,
           modelParams.model,
           request
-        ),
-        contextInfo
+        )
       }
     };
   } catch (error) {
@@ -1135,7 +941,7 @@ export async function generateCustomCopy(request: CustomCopyRequest, trainingCon
     throw new Error('Failed to generate custom copy');
   }
 }
-
+// Back-compat wrapper keeping existing API stable
 export async function generateRetentionCopy(request: {
   keyMessage: string;
   platform: string;
@@ -1153,85 +959,53 @@ export async function generateRetentionCopy(request: {
   selectedProduct?: string;
   useJonesBrandGuide?: boolean;
 }, trainingConfig: TrainingConfig) {
-  console.log('generateRetentionCopy called with selectedProducts:', request.selectedProducts);
-  
-  const anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY!,
-  });
+  if ((request.platform || 'Email') === 'SMS') {
+    return await generateRetentionSms(request, trainingConfig);
+  }
+  return await generateRetentionEmail(request, trainingConfig);
+}
 
-  // Build comprehensive AI Settings context
-  const aiSettingsContext = buildAISettingsContext(trainingConfig, request);
-  
+export async function generateRetentionSms(request: {
+  keyMessage: string;
+  selectedFramework?: any;
+  selectedProducts?: string[];
+  audience?: string;
+  goal?: string;
+  campaignType?: string;
+  contentLength?: string;
+  keywordsToInclude?: string[];
+  wordsToAvoid?: string[];
+  persona?: string;
+  brandDrBalance?: number;
+  selectedProduct?: string;
+  useJonesBrandGuide?: boolean;
+}, trainingConfig: TrainingConfig) {
+  const platform = 'SMS';
+
   // Build persona and product sections
   const safePersona = request.persona || DEFAULT_PERSONA_KEY;
-  const targetPersonaSection = buildTargetPersonaSection(safePersona, trainingConfig);
+  const targetPersonaSection = buildSelectedTargetPersonaSection(safePersona, trainingConfig);
   const selectedProductsSection = buildSelectedProductsSection(request.selectedProduct, request.selectedProducts, trainingConfig);
-  
-  // Get station-specific system prompt with AI Settings integration - database only
-  const baseSystemPrompt = trainingConfig?.stationPrompts?.emailSmsRetention?.systemPrompt;
-  
+
+  const baseSystemPrompt = trainingConfig?.stationPrompts?.sms?.systemPrompt;
   if (!baseSystemPrompt) {
-    throw new Error('Email/SMS retention system prompt not found in training configuration. Please ensure database contains proper station prompt configuration.');
+    throw new Error('SMS retention system prompt not found in training configuration.');
   }
-  
+
   const systemPrompt = `${baseSystemPrompt}
 
-${aiSettingsContext}
-
-${request.selectedFramework ? `
-🎯 FRAMEWORK-DRIVEN COPY GENERATION 🎯
-You are operating in FRAMEWORK COMPLIANCE MODE. This means:
-- The selected framework "${request.selectedFramework.displayName}" takes ABSOLUTE PRIORITY
-- All copy must conform to the framework's structure, requirements, and specifications
-- Visual layout compliance is MANDATORY when framework images are provided
-- Framework-specific content requirements override general guidelines
-- Expected length and output format must match framework specifications exactly
-
-FRAMEWORK INTEGRATION PRIORITY:
-1. Framework structure and requirements (HIGHEST PRIORITY)
-2. Visual layout compatibility (when images provided)
-3. Brand voice and messaging guidelines
-4. Platform specifications and general requirements
-` : ''}
-
-${request.platform === 'SMS' ? 'SMS' : 'Email'} Copy Specifications:
-- Platform: ${request.platform || 'Email'}
-${request.platform === 'Email' && request.emailType ? `- Email Type: ${request.emailType}` : ''}
+SMS Copy Specifications:
+- Platform: SMS
 ${request.selectedFramework ? `- Selected Framework: ${request.selectedFramework.displayName} (MUST FOLLOW EXACTLY)` : ''}
 - Target Audience: ${request.audience || 'General audience'}
 - Goal: ${request.goal || 'Drive Sales'}
 - Campaign Type: ${request.campaignType || 'Product Spotlight / Hero Product'}
 - Content Length: ${request.contentLength || 'Short'}
 
-${request.keywordsToInclude && request.keywordsToInclude.length > 0 ? `
-Keywords to Include: ${request.keywordsToInclude.join(', ')}
-` : ''}
+${request.keywordsToInclude && request.keywordsToInclude.length > 0 ? `Keywords to Include: ${request.keywordsToInclude.join(', ')}` : ''}
+${request.wordsToAvoid && request.wordsToAvoid.length > 0 ? `\nWords to Avoid: ${request.wordsToAvoid.join(', ')}` : ''}
+${request.selectedProducts && request.selectedProducts.length > 0 ? `\nProducts to Feature: ${request.selectedProducts.join(', ')}` : ''}
 
-${request.wordsToAvoid && request.wordsToAvoid.length > 0 ? `
-Words to Avoid: ${request.wordsToAvoid.join(', ')}
-` : ''}
-
-${request.selectedProducts && request.selectedProducts.length > 0 ? `
-Products to Feature: ${request.selectedProducts.join(', ')}
-- Include these products naturally in the copy where relevant
-- Highlight benefits and unique selling points of selected products
-- Create product-specific calls to action when appropriate
-` : ''}
-
-${request.selectedFramework && request.selectedFramework.images && Array.isArray(request.selectedFramework.images) && request.selectedFramework.images.length > 0 ? `
-🖼️ VISUAL ANALYSIS INTEGRATION 🖼️
-Framework images are provided that show the EXACT layout structure you must follow. Your copy generation must:
-- Analyze visual elements to understand content placement requirements
-- Match copy sections to corresponding visual areas in the layout
-- Ensure content hierarchy aligns with visual emphasis
-- Include appropriate image placeholders where visuals are indicated
-- Consider responsive design implications if evident in the layout
-- Maintain consistency between copy structure and visual framework
-
-CRITICAL: The framework images serve as your structural blueprint - every piece of copy must correspond to and fit within the visual layout shown.
-` : ''}
-
-${request.platform === 'SMS' ? `
 SMS-Specific Guidelines:
 - Keep total message under 160 characters when possible for single SMS
 - Use clear, direct language with immediate impact
@@ -1239,41 +1013,15 @@ SMS-Specific Guidelines:
 - Create urgency without being pushy
 - Use emojis sparingly and only if they add value
 - Personalize when possible
-` : `
-Email-Specific Guidelines:
-- Create compelling subject lines that drive opens
-- Structure: Subject Line + Preview Text + Body Copy + Clear CTA
-- Maintain Jones Road's authentic voice throughout
-- Use social proof and customer testimonials when relevant
-- Balance promotional content with value-driven messaging
-- Ensure mobile-friendly formatting
-`}
 
 Content Length Specifications:
-- Short: ${request.platform === 'SMS' ? '50-100 words' : '75-150 words'}
-- Medium: ${request.platform === 'SMS' ? '100-160 characters total' : '150-300 words'}
-- Long: ${request.platform === 'SMS' ? 'Multiple messages (2-3 parts)' : '300-500 words'}
+- Short: 50-100 words
+- Medium: 100-160 characters total
+- Long: Multiple messages (2-3 parts)
 
-🚨 LENGTH COMPLIANCE IS MANDATORY 🚨
-When a specific word count or length is provided (e.g., "20 words"), you MUST strictly adhere to that constraint. This overrides all other formatting requirements. Count every word carefully and do not exceed the specified limit under any circumstances.
+🚨 LENGTH COMPLIANCE IS MANDATORY 🚨`;
 
-Tone Guidelines:
-- Friendly: Warm, conversational, approachable
-- Bold: Confident, direct, statement-making
-- Urgent: Time-sensitive, compelling, action-driving
-- Playful: Fun, lighthearted, engaging
-- Professional: Polished, authoritative, trustworthy
-
-Campaign Type Focus:
-- Welcome: Introduce brand values and first-purchase incentives
-- Promo: Feature specific offers, discounts, or limited-time deals
-- Product Drop: Announce new products with excitement and exclusivity
-- Cart Recovery: Gentle reminders with added incentives
-- Winback: Re-engage lapsed customers with special offers
-
-Create ${request.platform?.toLowerCase() || 'email'} copy that authentically represents Jones Road Beauty while achieving the specified campaign goals.`;
-
-  const userPrompt = `Create ${request.platform?.toLowerCase() || 'email'} retention copy based on this key message:
+  const userPrompt = `Create sms retention copy based on this key message:
 
 ${targetPersonaSection}
 
@@ -1281,199 +1029,93 @@ ${selectedProductsSection}
 
 "${request.keyMessage}"
 
-${request.platform === 'Email' && request.selectedFramework ? `
-🎯 EMAIL FRAMEWORK COMPLIANCE REQUIREMENT 🎯
-You MUST follow the "${request.selectedFramework.displayName}" email framework structure EXACTLY. This is MANDATORY and takes priority over general guidelines.
-
-FRAMEWORK DETAILS:
-═══════════════════════════════════════════════════════════════════════════════════════════════════════
-
-FRAMEWORK NAME: ${request.selectedFramework.displayName}
-DESCRIPTION: ${request.selectedFramework.description}
-
-REQUIRED STRUCTURE:
-${request.selectedFramework.structure}
-
-MANDATORY KEY ELEMENTS:
-${request.selectedFramework.keyElements}
-
-FRAMEWORK-SPECIFIC CONTENT REQUIREMENTS:
-${request.selectedFramework.frameworkContent}
-
-FRAMEWORK SYSTEM PROMPT INTEGRATION:
-${request.selectedFramework.systemPrompt}
-
-OUTPUT REQUIREMENTS (MUST FOLLOW):
-${request.selectedFramework.outputRequirements}
-
-EXPECTED LENGTH (STRICT COMPLIANCE):
-${request.selectedFramework.expectedLength}
-
-${request.selectedFramework.images && Array.isArray(request.selectedFramework.images) && request.selectedFramework.images.length > 0 ? `
-📐 VISUAL LAYOUT ANALYSIS & COMPLIANCE 📐
-The framework includes ${request.selectedFramework.images.length} visual reference image(s) that show the EXACT email layout and design structure you MUST follow.
-
-CRITICAL VISUAL ANALYSIS REQUIREMENTS:
-1. ANALYZE the provided framework image(s) to identify:
-   - Header/hero section layout and text placement
-   - Content block organization and hierarchy
-   - Section divisions and spacing requirements
-   - CTA button placement and sizing constraints
-   - Footer layout and required elements
-   - Image placement areas and dimensions
-   - Typography hierarchy and text flow
-
-2. MATCH YOUR COPY to the visual structure by:
-   - Creating headlines that fit the header/hero areas shown
-   - Writing body content that aligns with content block layouts
-   - Sizing copy sections to match the visual proportions
-   - Placing CTAs exactly where buttons appear in the layout
-   - Including image placeholders "[IMAGE: Description]" where visuals are shown
-   - Following the content flow and reading pattern established by the design
-
-3. ENSURE DESIGN COMPATIBILITY:
-   - Copy length must fit within designated text areas
-   - Content hierarchy must match visual emphasis
-   - Tone and style must complement the visual aesthetic
-   - All required framework elements must be present and positioned correctly
-
-4. FRAMEWORK IMAGE INTEGRATION:
-   - Use the visual layout as your structural blueprint
-   - Ensure every section of copy corresponds to a visual element
-   - Include specific image placeholders matching the template design
-   - Consider mobile responsiveness if layout indicates responsive design
-
-VISUAL COMPLIANCE IS MANDATORY - Your copy must work seamlessly with the exact layout shown in the framework images.
-` : ''}
-
-⚠️ ABSOLUTE PRIORITY: FRAMEWORK COMPLIANCE ⚠️
-1. Framework structure requirements override all other formatting preferences
-2. Expected length must be strictly adhered to (count every word)
-3. Visual layout compatibility is mandatory when images are provided
-4. All framework-specific elements must be included exactly as specified
-5. Output format must match framework requirements precisely
-
-FRAMEWORK ADHERENCE CHECKLIST:
-☐ Structure follows framework requirements exactly
-☐ All mandatory key elements are included
-☐ Copy fits visual layout constraints (if images provided)
-☐ Length matches expected word count
-☐ Output format matches framework specifications
-☐ Content hierarchy aligns with visual design
-☐ CTA placement matches framework guidelines
-
-Follow this framework structure with ABSOLUTE PRECISION to ensure the email follows the proven format and converts effectively.
-` : request.platform === 'Email' && request.emailType ? `
-EMAIL FRAMEWORK REQUIREMENT:
-You MUST follow the "${request.emailType}" email framework structure. This framework has specific requirements for:
-- Content organization and flow
-- Section structure and messaging
-- Call-to-action placement and style
-- Tone and approach
-- Length and format expectations
-
-Research and apply the best practices for the "${request.emailType}" framework to ensure the email follows the proven structure and converts effectively.
-` : ''}
-
-CRITICAL: Return ONLY plain text email copy. NO JSON, NO markdown, NO special formatting.
-
-${trainingConfig?.emailTemplates?.retention && trainingConfig.emailTemplates.retention.length > 0 ? `
-📧 EMAIL TEMPLATE VISUAL ANALYSIS REQUIRED 📧
-${trainingConfig.emailTemplates.retention.length} email template image(s) have been provided as additional visual references. You MUST:
-
-TEMPLATE ANALYSIS STEPS:
-1. EXAMINE each template image for:
-   - Overall layout structure and content organization
-   - Text placement areas and content blocks
-   - Visual hierarchy and emphasis patterns
-   - Image placement zones and sizing
-   - Header, body, and footer sections
-   - CTA button locations and styles
-   - Color scheme and design aesthetic
-
-2. ADAPT your copy to work with these templates by:
-   - Creating content that fits designated text areas
-   - Matching the tone suggested by the visual design
-   - Ensuring copy length aligns with template layout constraints
-   - Structuring content to match visible sections
-   - Including image placeholders where templates show image areas
-   - Following the content flow established by the template design
-
-3. TEMPLATE INTEGRATION REQUIREMENTS:
-   - Copy must be designed for professional email template insertion
-   - Include specific image placeholders: "[IMAGE: Product photo]", "[IMAGE: Hero banner]", "[IMAGE: Logo]"
-   - Consider mobile responsiveness and template flexibility
-   - Ensure copy works seamlessly with template design elements
-   - Match content hierarchy to template visual emphasis
-
-TEMPLATE COMPATIBILITY IS ESSENTIAL - Your copy will be inserted into these designed templates, so structure and length must align perfectly.
-` : ''}
-
-🎯 WORD COUNT PRIORITY: If an exact word count is specified (like "20 words"), that constraint takes ABSOLUTE PRIORITY over all other requirements. Your response must not exceed that limit.
-
-Requirements:
-1. Follow the ${request.platform === 'SMS' ? 'SMS' : 'email'} format and character/word limits for ${request.contentLength?.toLowerCase() || 'short'} content
-2. Use Jones Road Beauty's authentic, friendly tone throughout
-3. Target ${request.audience || 'general audience'} specifically
-4. Focus on ${request.goal?.toLowerCase() || 'driving sales'} as the primary goal
-5. Structure as ${request.campaignType?.toLowerCase() || 'promo'} campaign type
-6. Include clear, compelling call-to-action appropriate for the campaign
-${request.selectedProducts && request.selectedProducts.length > 0 ? `7. FEATURE THESE PRODUCTS: ${request.selectedProducts.join(', ')} - Include these products naturally in the copy with their benefits and create relevant calls-to-action` : ''}
-${request.keywordsToInclude && request.keywordsToInclude.length > 0 ? `8. Naturally incorporate these keywords: ${request.keywordsToInclude.join(', ')}` : ''}
-${request.wordsToAvoid && request.wordsToAvoid.length > 0 ? `9. Avoid using these words: ${request.wordsToAvoid.join(', ')}` : ''}
-
-${request.platform === 'SMS' ? `
-RETURN ONLY SMS TEXT:
-[Your SMS message here]
-` : `
-${request.selectedFramework ? `
-🎯 FRAMEWORK-COMPLIANT OUTPUT REQUIRED 🎯
-Your output must EXACTLY match the "${request.selectedFramework.displayName}" framework requirements:
-- Follow the specified output format from framework requirements
-- Include all mandatory elements in the correct order
-- Match the expected length precisely
-- Structure content according to framework specifications
-- Include visual layout elements if framework images were provided
-
-FRAMEWORK OUTPUT FORMAT:
-${request.selectedFramework.outputRequirements || 'Follow standard email format with framework-specific structure'}
-
-IF NO SPECIFIC FORMAT IS PROVIDED, USE THIS TEMPLATE-READY FORMAT:
-` : 'RETURN TEMPLATE-READY EMAIL COPY IN THIS FORMAT:'}
-
-SUBJECT LINE 1: [First subject line]
-SUBJECT LINE 2: [Second subject line]  
-PREHEADER: [4-6 word preview]
-
-MAIN COPY:
-[Write copy for designed email templates - short, scannable paragraphs that work with visual layouts. Focus on clear benefits and engaging content that fits into professional email designs. Include image placeholders using format "[IMAGE: Description]" where visual elements would enhance the message (e.g., "[IMAGE: Product photo]", "[IMAGE: Hero banner]", "[IMAGE: Logo]").${request.selectedFramework && request.selectedFramework.images && request.selectedFramework.images.length > 0 ? ' CRITICAL: Structure your copy to match the visual layout shown in the framework images - ensure headlines fit header areas, body content aligns with content blocks, and CTAs are placed where buttons appear in the layout.' : ''}]
-
-This copy will be inserted into designed email templates, NOT plain text emails.
-`}
-
-NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.${request.selectedFramework ? ` FRAMEWORK COMPLIANCE IS MANDATORY.` : ''}`;
+🎯 OUTPUT REQUIREMENTS:
+- Return ONLY the SMS message text
+- Keep under 160 characters when possible
+- Include one clear CTA
+- No markdown, no special formatting`;
 
   try {
-    // Debug: log final rendered prompts being sent to the model (Retention)
-    AILogger.logFinalPrompts('Email/SMS Retention', systemPrompt, userPrompt);
+    AILogger.logFinalPrompts('SMS Retention', systemPrompt, userPrompt);
+    const messageContent: any[] = [{ type: 'text', text: userPrompt }];
+
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      system: systemPrompt,
+      max_tokens: 1024,
+      messages: [{ role: 'user', content: messageContent }],
+    });
+
+    const content = response.content[0].type === 'text' ? response.content[0].text : '';
+    if (!content || content.trim().length === 0) {
+      throw new Error('Received empty response from Anthropic API');
+    }
+
+    return {
+      response: content.trim(),
+      debugInfo: {
+        systemPrompt,
+        userPrompt,
+        requestPayload: request,
+        rawResponse: content,
+        wordCount: content.trim().split(/\s+/).length,
+      }
+    };
+  } catch (error) {
+    console.error('Retention SMS generation error:', error);
+    throw new Error('Failed to generate SMS retention copy');
+  }
+}
+
+
+export async function generateRetentionEmail(request: {
+  keyMessage: string;
+  emailType?: string;
+  selectedFramework?: any;
+  selectedProducts?: string[];
+  audience?: string;
+  goal?: string;
+  campaignType?: string;
+  contentLength?: string;
+  keywordsToInclude?: string[];
+  wordsToAvoid?: string[];
+  persona?: string;
+  brandDrBalance?: number;
+  selectedProduct?: string;
+  useJonesBrandGuide?: boolean;
+}, trainingConfig: TrainingConfig) {
+  // Build system and user prompts via builders (pattern like ad/landing)
+  const systemPrompt = await AIPromptBuilder.buildStationSystemPrompt('email', trainingConfig, request, {
+    persona: request.persona || DEFAULT_PERSONA_KEY,
+    selectedProduct: request.selectedProduct,
+    selectedProducts: request.selectedProducts,
+  });
+  const userPrompt = await AIPromptBuilder.buildStationUserPrompt('email', trainingConfig, request, {
+    persona: request.persona || DEFAULT_PERSONA_KEY,
+    selectedProduct: request.selectedProduct,
+    selectedProducts: request.selectedProducts,
+  });
+
+  try {
+    AILogger.logFinalPrompts('Email Retention', systemPrompt, userPrompt);
     if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === 'dummy-key') {
       throw new Error('Anthropic API key not configured properly');
     }
 
     // Prepare message content with images if provided
     const messageContent: any[] = [{ type: 'text', text: userPrompt }];
-    
+
     // Add email template images from training configuration (not from request)
     const emailTemplates = trainingConfig?.emailTemplates?.retention || [];
     if (emailTemplates.length > 0) {
       console.log(`Processing ${emailTemplates.length} email template(s) for visual layout guidance`);
-      
+
       for (const [index, template] of emailTemplates.entries()) {
         try {
           // Clean the base64 string and detect format
           let mediaType = DEFAULT_IMAGE_MEDIA_TYPE;
           let cleanBase64 = template;
-          
+
           // Remove data URL prefix if present
           if (template.includes(',')) {
             const parts = template.split(',');
@@ -1500,7 +1142,7 @@ NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.${request
             for (let i = 0; i < binaryString.length; i++) {
               bytes[i] = binaryString.charCodeAt(i);
             }
-            
+
             // Check magic bytes for different formats
             if (bytes.length >= 4 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
               mediaType = 'image/png';
@@ -1508,23 +1150,23 @@ NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.${request
             } else if (bytes.length >= 3 && bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
               mediaType = 'image/jpeg';
               console.log(`Template ${index + 1}: Detected JPEG format via magic bytes`);
-            } else if (bytes.length >= 6 && bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && 
-                       bytes[3] === 0x38 && (bytes[4] === 0x37 || bytes[4] === 0x39) && bytes[5] === 0x61) {
+            } else if (bytes.length >= 6 && bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 &&
+              bytes[3] === 0x38 && (bytes[4] === 0x37 || bytes[4] === 0x39) && bytes[5] === 0x61) {
               mediaType = 'image/gif';
               console.log(`Template ${index + 1}: Detected GIF format via magic bytes`);
             } else if (bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
-                       bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
+              bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
               mediaType = 'image/webp';
               console.log(`Template ${index + 1}: Detected WebP format via magic bytes`);
             } else {
-              console.log(`Template ${index + 1}: Unknown format, using JPEG as default. First 8 bytes:`, 
-                         Array.from(bytes.slice(0, 8)).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' '));
+              console.log(`Template ${index + 1}: Unknown format, using JPEG as default. First 8 bytes:`,
+                Array.from(bytes.slice(0, 8)).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' '));
             }
           }
 
           // Resize template image if needed to prevent dimension errors
           const { data: resizedImageData, mediaType: finalMediaType } = await resizeImageIfNeeded(cleanBase64);
-          
+
           console.log(`Template ${index + 1}: Final media type: ${finalMediaType}, Processed Base64 length: ${resizedImageData.length}`);
 
           messageContent.push({
@@ -1541,18 +1183,18 @@ NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.${request
         }
       }
     }
-    
+
     // Add framework images if available
     if (request.selectedFramework?.images && Array.isArray(request.selectedFramework.images) && request.selectedFramework.images.length > 0) {
       console.log(`Processing ${request.selectedFramework.images.length} framework image(s) for visual layout reference`);
-      
+
       for (const [index, image] of request.selectedFramework.images.entries()) {
         if (image.dataUri) {
           try {
             // Extract media type and base64 data from data URI
-             let mediaType = DEFAULT_IMAGE_MEDIA_TYPE;
+            let mediaType = DEFAULT_IMAGE_MEDIA_TYPE;
             let cleanBase64 = image.dataUri;
-            
+
             if (image.dataUri.includes(',')) {
               const parts = image.dataUri.split(',');
               if (parts.length > 1) {
@@ -1578,7 +1220,7 @@ NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.${request
 
             // Resize framework image if needed to prevent dimension errors
             const { data: resizedImageData, mediaType: finalMediaType } = await resizeImageIfNeeded(cleanBase64);
-            
+
             console.log(`Framework image ${index + 1}: Final media type: ${finalMediaType}, Processed Base64 length: ${resizedImageData.length}`);
 
             messageContent.push({
@@ -1605,7 +1247,7 @@ NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.${request
     });
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
-    
+
     if (!content || content.trim().length === 0) {
       throw new Error('Received empty response from Anthropic API');
     }
@@ -1614,13 +1256,13 @@ NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.${request
     if (request.selectedFramework?.expectedLength && /^\d+\s*words?$/i.test(request.selectedFramework.expectedLength.trim())) {
       const expectedWordCount = parseInt(request.selectedFramework.expectedLength.match(/\d+/)?.[0] || '0');
       const actualWordCount = content.trim().split(/\s+/).length;
-      
+
       if (actualWordCount > expectedWordCount * 1.2) { // Allow 20% tolerance
         console.warn(`Word count validation failed: Expected ~${expectedWordCount} words, got ${actualWordCount} words`);
         // Log but don't throw error to avoid breaking the user experience
       }
     }
-    
+
     return {
       response: content.trim(),
       debugInfo: {
@@ -1634,7 +1276,7 @@ NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.${request
     };
   } catch (error) {
     console.error('Retention copy generation error:', error);
-    
+
     // Provide more specific error messages
     if (error instanceof Error) {
       if (error.message.includes('API key')) {
@@ -1647,7 +1289,7 @@ NO JSON STRUCTURE. NO MARKDOWN. JUST COPY ELEMENTS FOR EMAIL TEMPLATES.${request
         throw new Error('Anthropic API error: ' + error.message);
       }
     }
-    
+
     throw new Error('Failed to generate retention copy due to an unknown error');
   }
 }
@@ -1664,95 +1306,37 @@ export async function generateSocialCaptions(request: {
   persona?: string;
   imageData?: string; // Add image data parameter
 }, trainingConfig: TrainingConfig) {
-  
   const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY!,
   });
 
-  // Build comprehensive AI Settings context
-  const aiSettingsContext = buildAISettingsContext(trainingConfig, request);
-  
   // Build persona and product sections
   const safePersona = request.persona || DEFAULT_PERSONA_KEY;
-  const targetPersonaSection = buildTargetPersonaSection(safePersona, trainingConfig);
-  const selectedProductsSection = buildSelectedProductsSection(request.selectedProduct, request.selectedProducts, trainingConfig);
-  
-  const systemPrompt = `You are a social media expert specializing in creating engaging organic social content for Jones Road Beauty. Your goal is to create authentic, platform-optimized captions that drive engagement and reflect the brand's "effortless beauty" philosophy.
+  const systemPrompt = await AIPromptBuilder.buildStationSystemPrompt('socialCaptions', trainingConfig, request, {
+    persona: safePersona,
+    selectedProduct: request.selectedProduct,
+    selectedProducts: request.selectedProducts,
+  });
+  const userPrompt = await AIPromptBuilder.buildStationUserPrompt('socialCaptions', trainingConfig, request, {
+    persona: safePersona,
+    selectedProduct: request.selectedProduct,
+    selectedProducts: request.selectedProducts,
+  });
 
-${aiSettingsContext}
+  AILogger.logFinalPrompts('Social Captions', systemPrompt, userPrompt);
 
-PLATFORM OPTIMIZATION:
-- Instagram: Use relevant hashtags, encourage engagement, visual storytelling
-- Facebook: Longer form content, community building, discussion starters  
-- TikTok: Trending language, hooks, call-to-actions for engagement
-- Multi-Platform: Adaptable content that works across channels
-
-ENGAGEMENT TACTICS:
-- Start with strong hooks
-- Include questions to encourage comments
-- Use relevant hashtags strategically
-- Add clear call-to-actions
-- Create shareable moments
-- Encourage user-generated content`;
-
-  const platformGuidance = {
-    instagram: "Use 1-3 relevant hashtags, encourage saves/shares, ask engaging questions",
-    facebook: "Longer captions (150-250 words), storytelling approach, community discussion",
-    tiktok: "Trendy language, strong hooks, call-to-actions for engagement",
-    "multi-platform": "Adaptable content that works across Instagram, Facebook, and TikTok"
-  };
-
-  // Determine content source for prompt
-  let contentSource = '';
-  let hasImageContent = false;
-  
-  if (request.transcription && request.transcription.trim()) {
-    contentSource = `CONTENT TRANSCRIPTION: ${request.transcription}`;
-  } else if (request.imageData) {
-    contentSource = 'CONTENT: Analyze the uploaded image to create captions';
-    hasImageContent = true;
-  } else {
-    throw new Error('Either transcription or image data is required');
-  }
-
-  const userPrompt = `Create ${request.variations} unique social media captions for ${request.platform} based on this content:
-
-${contentSource}
-
-CONTENT TYPE: ${request.contentType}
-PLATFORM: ${request.platform}
-GOAL: ${request.goal}
-TONE: ${request.tone}
-VARIATIONS: ${request.variations}
-
-PLATFORM GUIDANCE: ${platformGuidance[request.platform as keyof typeof platformGuidance] || platformGuidance["multi-platform"]}
-
-${targetPersonaSection}
-
-Incorporate this product naturally into the captions
-${selectedProductsSection}
-
-REQUIREMENTS:
-- Create exactly ${request.variations} distinct caption variations
-- Each should be 50-150 words (adjust for platform)
-- Include relevant hashtags where appropriate
-- Add engaging hooks and call-to-actions
-- Maintain Jones Road Beauty's authentic voice
-- Make each variation unique in approach and angle
-${hasImageContent ? '- Analyze the image content to create relevant captions that describe or relate to what is shown' : ''}
-
-Return as a JSON array of strings:
-["Caption 1 text...", "Caption 2 text...", "Caption 3 text..."]`;
+  // Determine if there is image content to attach
+  const hasImageContent = !!(request.imageData && request.imageData.trim());
 
   try {
     // Build message content with optional image
     let messageContent: any[] = [{ type: 'text', text: userPrompt }];
-    
+
     if (hasImageContent && request.imageData) {
       // Process image data similar to generateAdCopy function
       let processedImageData = request.imageData;
       let mediaType = DEFAULT_IMAGE_MEDIA_TYPE;
-      
+
       // Handle data URI format
       if (request.imageData.startsWith('data:image/')) {
         const mimeMatch = request.imageData.match(/^data:image\/([a-zA-Z0-9+/]+);base64,(.+)$/);
@@ -1761,10 +1345,10 @@ Return as a JSON array of strings:
           processedImageData = mimeMatch[2];
         }
       }
-      
+
       // Resize image if needed to prevent dimension errors
       const { data: resizedImageData, mediaType: finalMediaType } = await resizeImageIfNeeded(processedImageData);
-      
+
       messageContent.push({
         type: 'image',
         source: {
@@ -1783,7 +1367,7 @@ Return as a JSON array of strings:
     });
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
-    
+
     // Parse JSON response
     let captions = TextUtils.tryParseJsonArray(content);
     if (!captions) {
@@ -1793,7 +1377,7 @@ Return as a JSON array of strings:
         try {
           const maybe = JSON.parse(TextUtils.stripCodeFences(arrayMatch[0]));
           if (Array.isArray(maybe)) captions = maybe;
-        } catch {/* ignore */}
+        } catch {/* ignore */ }
       }
     }
     if (!captions) {
@@ -1805,8 +1389,8 @@ Return as a JSON array of strings:
         .map(caption => caption.trim().replace(/^["']|["']$/g, ''))
         .slice(0, request.variations);
     }
-    
-    return { 
+
+    return {
       captions,
       debugInfo: {
         systemPrompt,
@@ -1832,108 +1416,39 @@ export async function generateStorySequence(request: {
   persona?: string;
   imageData?: string; // Add image data parameter
 }, trainingConfig: TrainingConfig) {
-  
   const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY!,
   });
 
-  // Build comprehensive AI Settings context
-  const aiSettingsContext = buildAISettingsContext(trainingConfig, request);
-  
   // Build persona and product sections
   const safePersona = request.persona || DEFAULT_PERSONA_KEY;
-  const targetPersonaSection = buildTargetPersonaSection(safePersona, trainingConfig);
-  const selectedProductsSection = buildSelectedProductsSection(request.selectedProduct, request.selectedProducts, trainingConfig);
-  
-  const systemPrompt = `You are a social media strategist specializing in Instagram Stories for Jones Road Beauty. Your goal is to create engaging story sequences that drive engagement and showcase the brand's "effortless beauty" philosophy.
+  const systemPrompt = await AIPromptBuilder.buildStationSystemPrompt('storySequences', trainingConfig, request, {
+    persona: safePersona,
+    selectedProduct: request.selectedProduct,
+    selectedProducts: request.selectedProducts,
+  });
+  const userPrompt = await AIPromptBuilder.buildStationUserPrompt('storySequences', trainingConfig, request, {
+    persona: safePersona,
+    selectedProduct: request.selectedProduct,
+    selectedProducts: request.selectedProducts,
+  });
+  AILogger.logFinalPrompts('Story Sequence', systemPrompt, userPrompt);
 
-${aiSettingsContext}
 
-STORY BEST PRACTICES:
-- Strong opening hook to stop the scroll
-- Clear visual direction for each slide
-- Progressive narrative that builds engagement
-- Interactive elements (polls, questions, swipe-ups)
-- Strong call-to-action in final slides
-- Consistent brand aesthetic and voice`;
-
-  const sequenceTypeGuidance = {
-    "product-showcase": "Feature product benefits, application, results, before/after",
-    "tutorial": "Step-by-step process, educational content, how-to guidance",
-    "behind-scenes": "Process, team, authenticity, brand personality, workspace",
-    "before-after": "Transformation journey, results, testimonials, progress",
-    "day-in-life": "Routine integration, lifestyle content, relatable moments"
-  };
-
-  const toneGuidance = {
-    "authentic-personal": "Personal stories, vulnerable moments, relatable experiences",
-    "educational-expert": "Tips, tutorials, ingredient benefits, how-to content",
-    "fun-playful": "Lighthearted, humorous, entertaining content",
-    "inspirational": "Motivational, empowering, confidence-building messages",
-    "conversational": "Casual chat, friend-to-friend tone, everyday language"
-  };
-
-  // Determine content source for prompt
-  let contentSource = '';
-  let hasImageContent = false;
-  
-  if (request.transcription && request.transcription.trim()) {
-    contentSource = `CONTENT: ${request.transcription}`;
-  } else if (request.imageData) {
-    contentSource = 'CONTENT: Analyze the uploaded image to create story sequence';
-    hasImageContent = true;
-  } else {
-    throw new Error('Either transcription or image data is required');
-  }
-
-  const userPrompt = `Create a ${request.length}-slide Instagram Story sequence based on this content:
-
-${contentSource}
-
-SEQUENCE TYPE: ${request.sequenceType}
-TONE: ${request.tone}
-LENGTH: ${request.length} slides
-
-SEQUENCE GUIDANCE: ${sequenceTypeGuidance[request.sequenceType as keyof typeof sequenceTypeGuidance] || "Create engaging story content"}
-TONE GUIDANCE: ${toneGuidance[request.tone as keyof typeof toneGuidance] || "Authentic and engaging"}
-
-${targetPersonaSection}
-
-Incorporate this product naturally into the captions
-${selectedProductsSection}
-
-REQUIREMENTS:
-- Create exactly ${request.length} slides
-- Each slide should have: title, content, visual direction
-- Progressive narrative that builds engagement
-- Include interactive elements where appropriate
-- Strong opening hook and closing call-to-action
-- Maintain Jones Road Beauty's authentic voice
-- Provide specific visual direction for each slide
-${hasImageContent ? '- Analyze the image content to create relevant story slides that describe or relate to what is shown' : ''}
-
-Return as JSON array with this structure:
-[
-  {
-    "slide": 1,
-    "type": "hook/intro/tutorial/etc",
-    "title": "Slide title",
-    "content": "Main text content for the slide",
-    "visualDirection": "Specific direction for what to show visually"
-  }
-]`;
+  // Determine if there is image content to attach
+  const hasImageContent = !!(request.imageData && request.imageData.trim());
 
   try {
     // Debug: log final rendered prompts being sent to the model (Story Sequence)
     AILogger.logFinalPrompts('Story Sequence', systemPrompt, userPrompt);
     // Build message content with optional image
     let messageContent: any[] = [{ type: 'text', text: userPrompt }];
-    
+
     if (hasImageContent && request.imageData) {
       // Process image data similar to generateAdCopy function
       let processedImageData = request.imageData;
       let mediaType = DEFAULT_IMAGE_MEDIA_TYPE;
-      
+
       // Handle data URI format
       if (request.imageData.startsWith('data:image/')) {
         const mimeMatch = request.imageData.match(/^data:image\/([a-zA-Z0-9+/]+);base64,(.+)$/);
@@ -1942,10 +1457,10 @@ Return as JSON array with this structure:
           processedImageData = mimeMatch[2];
         }
       }
-      
+
       // Resize image if needed to prevent dimension errors
       const { data: resizedImageData, mediaType: finalMediaType } = await resizeImageIfNeeded(processedImageData);
-      
+
       messageContent.push({
         type: 'image',
         source: {
@@ -1964,7 +1479,7 @@ Return as JSON array with this structure:
     });
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
-    
+
     // Parse JSON response
     let slides = TextUtils.tryParseJsonArray(content);
     if (!slides) {
@@ -1973,7 +1488,7 @@ Return as JSON array with this structure:
         try {
           const maybe = JSON.parse(TextUtils.stripCodeFences(arrayMatch[0]));
           if (Array.isArray(maybe)) slides = maybe;
-        } catch {/* ignore */}
+        } catch {/* ignore */ }
       }
     }
     if (!slides) {
@@ -1992,8 +1507,8 @@ Return as JSON array with this structure:
       }
       slides = fallbackSlides;
     }
-    
-    return { 
+
+    return {
       sequence: slides,
       debugInfo: {
         systemPrompt,
@@ -2007,19 +1522,7 @@ Return as JSON array with this structure:
     throw new Error('Failed to generate story sequence');
   }
 }
-
 // Product Launch Brief Generation
-interface BriefRequest {
-  notes: string;
-  googleDriveLinks?: string[];
-  selectedProduct?: string;
-  selectedProducts?: string[];
-  persona?: string;
-  brandDrBalance?: number;
-  useJonesBrandGuide?: boolean;
-  metadata?: GenerationMetadata;
-}
-
 export async function generateBrief(request: BriefRequest, trainingConfig: TrainingConfig) {
   try {
     const anthropic = new Anthropic({
@@ -2027,7 +1530,7 @@ export async function generateBrief(request: BriefRequest, trainingConfig: Train
     });
 
     // Build comprehensive AI Settings context including product claims
-    const aiSettingsContext = buildAISettingsContext(trainingConfig, {
+    const aiSettingsContext = buildAllBrandSettingsContext(trainingConfig, {
       persona: request.persona,
       selectedProduct: request.selectedProduct,
       selectedProducts: request.selectedProducts,
@@ -2099,21 +1602,21 @@ Create a strategic product launch brief that synthesizes the provided informatio
     if (trainingConfig.stationPrompts?.productLaunch?.userPromptTemplate) {
       userPrompt = trainingConfig.stationPrompts.productLaunch.userPromptTemplate
         .replace('{notes}', request.notes)
-        .replace('{googleDriveLinks}', request.googleDriveLinks && request.googleDriveLinks.length > 0 
-          ? `Referenced Past Briefs:\n${request.googleDriveLinks.map((link, i) => `${i + 1}. ${link}`).join('\n')}\n\nNote: Please reference the strategic frameworks and successful elements from these past briefs in your recommendations.\n`
+        .replace('{googleDriveLinks}', request.googleDriveLinks && request.googleDriveLinks.length > 0
+          ? `Referenced Past Briefs:\n${request.googleDriveLinks.map((link: string, i: number) => `${i + 1}. ${link}`).join('\n')}\n\nNote: Please reference the strategic frameworks and successful elements from these past briefs in your recommendations.\n`
           : '');
     } else {
       userPrompt = `Based on the following meeting notes and information, create a comprehensive product launch brief:\n\n# Meeting Notes & Input:\n${request.notes}`;
-      
+
       // Add Google Drive references if provided
       if (request.googleDriveLinks && request.googleDriveLinks.length > 0) {
         userPrompt += `\n\n# Referenced Past Briefs:\n`;
-        request.googleDriveLinks.forEach((link, index) => {
+        request.googleDriveLinks.forEach((link: string, index: number) => {
           userPrompt += `${index + 1}. ${link}\n`;
         });
         userPrompt += `\nNote: Please reference the strategic frameworks and successful elements from these past briefs in your recommendations.`;
       }
-      
+
       userPrompt += `\n\nPlease create a strategic, comprehensive product launch brief that incorporates these insights and provides clear direction for the launch campaign.`;
     }
 
@@ -2128,7 +1631,7 @@ Create a strategic product launch brief that synthesizes the provided informatio
 
     const content = response.content[0];
     if (content.type === 'text') {
-      return { 
+      return {
         brief: content.text,
         metadata: request.metadata
       };
@@ -2193,9 +1696,9 @@ SMS DESIGN:
 - Realistic timestamps and interface elements
 
 VISUAL LAYOUT ANALYSIS:
-${request.selectedFramework?.images && Array.isArray(request.selectedFramework.images) && request.selectedFramework.images.length > 0 ? 
-`CRITICAL: Framework images are provided. You MUST analyze these images to understand the EXACT layout, spacing, typography, and visual hierarchy. Create HTML that perfectly matches the visual structure shown in these reference images.` : 
-'Create a layout that follows Jones Road Beauty\'s typical email design patterns - clean, minimal, premium beauty brand aesthetic.'}
+${request.selectedFramework?.images && Array.isArray(request.selectedFramework.images) && request.selectedFramework.images.length > 0 ?
+      `CRITICAL: Framework images are provided. You MUST analyze these images to understand the EXACT layout, spacing, typography, and visual hierarchy. Create HTML that perfectly matches the visual structure shown in these reference images.` :
+      'Create a layout that follows Jones Road Beauty\'s typical email design patterns - clean, minimal, premium beauty brand aesthetic.'}
 
 OUTPUT REQUIREMENTS:
 - Return ONLY the complete HTML code
@@ -2254,8 +1757,8 @@ CRITICAL SUCCESS FACTORS:
 - Mobile-responsive design
 - Include realistic placeholder content (product images, logos, etc.)
 
-${request.selectedFramework?.images && Array.isArray(request.selectedFramework.images) && request.selectedFramework.images.length > 0 ? 
-`FRAMEWORK VISUAL COMPLIANCE:
+${request.selectedFramework?.images && Array.isArray(request.selectedFramework.images) && request.selectedFramework.images.length > 0 ?
+      `FRAMEWORK VISUAL COMPLIANCE:
 The selected framework includes reference images. Analyze these images carefully and ensure your HTML layout EXACTLY matches:
 - Header placement and styling
 - Content block organization
@@ -2273,17 +1776,17 @@ Return the complete, self-contained HTML that renders a pixel-perfect Jones Road
   try {
     // Prepare message content with framework images if available
     const messageContent: any[] = [{ type: 'text', text: userPrompt }];
-    
+
 
     // Add framework images if available for visual reference
     if (request.selectedFramework?.images && Array.isArray(request.selectedFramework.images) && request.selectedFramework.images.length > 0) {
       console.log(`Processing ${request.selectedFramework.images.length} framework image(s) for visual preview generation`);
-      
+
       for (const [index, imageObj] of request.selectedFramework.images.entries()) {
         try {
           let imageData = '';
           let mediaType = DEFAULT_IMAGE_MEDIA_TYPE;
-          
+
           // Handle different image object formats
           if (typeof imageObj === 'string') {
             // Direct base64 string
@@ -2300,11 +1803,11 @@ Return the complete, self-contained HTML that renders a pixel-perfect Jones Road
             imageData = imageObj.data;
             mediaType = imageObj.mediaType || DEFAULT_IMAGE_MEDIA_TYPE;
           }
-          
+
           if (imageData) {
             // Resize image if needed
             const { data: resizedImageData, mediaType: finalMediaType } = await resizeImageIfNeeded(imageData);
-            
+
             messageContent.push({
               type: 'image',
               source: {
@@ -2313,7 +1816,7 @@ Return the complete, self-contained HTML that renders a pixel-perfect Jones Road
                 data: resizedImageData
               }
             });
-            
+
             console.log(`Framework image ${index + 1} added for visual reference`);
           }
         } catch (error) {
@@ -2331,7 +1834,7 @@ Return the complete, self-contained HTML that renders a pixel-perfect Jones Road
 
     let htmlContent = response.content[0].type === 'text' ? response.content[0].text : '';
     htmlContent = TextUtils.stripCodeFences(htmlContent);
-    
+
     return {
       htmlContent,
       platform: request.platform,

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Target } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { TrainingConfig } from '@shared/training-config';
+import { MessageSquare } from 'lucide-react';
 import { StationSystemPromptSection, StationUserPromptSection } from '@/components/meta-ad-generator/ai-settings/common/StationPromptSections';
 import { StationToggleButton } from '@/components/meta-ad-generator/ai-settings/common/StationToggleButton';
-import { TrainingConfig, VariableDefinition } from '@shared/training-config';
 
-interface SocialCaptionsStationProps {
+interface SmsStationProps {
   editingConfig: TrainingConfig;
   setEditingConfig: (config: TrainingConfig) => void;
   effectiveUser: any;
@@ -14,7 +14,7 @@ interface SocialCaptionsStationProps {
   setIsDirty: (isDirty: boolean) => void;
 }
 
-export const SocialCaptionsStation: React.FC<SocialCaptionsStationProps> = ({
+export const SmsStation: React.FC<SmsStationProps> = ({
   editingConfig,
   setEditingConfig,
   effectiveUser,
@@ -23,31 +23,41 @@ export const SocialCaptionsStation: React.FC<SocialCaptionsStationProps> = ({
   copyToClipboard,
   setIsDirty
 }) => {
-  const stationConfig = editingConfig.stationPrompts?.socialCaptions;
+  const stationConfig = editingConfig.stationPrompts?.sms;
   const contextConfig = stationConfig?.contextConfiguration as any;
 
-  // Provide Insert Variable options based on anthropic-interface fields relevant to social captions
+  // Insert Variable keys for retention (sms) based on server request shapes
   // Variables now sourced from DB via contextConfiguration.availableVariables
 
+  const generateSystemPromptPreview = (config: TrainingConfig): string => {
+    const base = config.stationPrompts?.sms?.systemPrompt || '';
+    const ctx = config.stationPrompts?.sms?.contextConfiguration as any;
+    if (!ctx) return base;
+    const enabled = (ctx.contextSections || [])
+      .filter((s: any) => s.enabled)
+      .map((s: any) => `\n\n**[${s.name.toUpperCase()}]**\n{${s.id}}`)
+      .join('');
+    return `${base}${enabled}`;
+  };
 
   useEffect(() => {
-    if (!editingConfig.stationPrompts.socialCaptions) {
-      const socialCaptionsDefaults = {
-        userPromptTemplate: "Default user prompt for social captions...",
-        systemPrompt: "Default system prompt for social captions...",
+    if (!editingConfig.stationPrompts.sms) {
+      const smsDefaults = {
+        userPromptTemplate: "Default user prompt for sms...",
+        systemPrompt: "Default system prompt for sms...",
         contextConfiguration: {
           contextSections: [],
           availableVariables: [],
         },
-        platformGuidelines: [],
-        hashtagStrategy: [],
-        engagementTactics: [],
+        subjectLineFrameworks: [],
+        enabledSubjectLineFrameworks: [],
+        retentionBestPractices: [],
       };
       setEditingConfig({
         ...editingConfig,
         stationPrompts: {
           ...editingConfig.stationPrompts,
-          socialCaptions: socialCaptionsDefaults,
+          sms: smsDefaults,
         },
       });
     }
@@ -66,21 +76,21 @@ export const SocialCaptionsStation: React.FC<SocialCaptionsStationProps> = ({
   return (
     <div className="border border-gray-200 rounded-lg">
       <StationToggleButton
-        isOpen={expandedStations.has('socialCaptions')}
-        onClick={() => toggleStation('socialCaptions')}
-        title="Social Captions Station"
-        icon={<Target className="w-5 h-5" />}
-        iconColor="text-blue-400"
-        description="Platform-optimized social media captions and hashtag strategies"
+        isOpen={expandedStations.has('sms')}
+        onClick={() => toggleStation('sms')}
+        title="SMS Station"
+        icon={<MessageSquare className="w-5 h-5" />}
+        iconColor="text-blue-500"
+        description="SMS marketing specialist for customer retention"
       />
-      
-      {expandedStations.has('socialCaptions') && (
+
+      {expandedStations.has('sms') && (
         <div className="p-6 pt-4 border-t border-gray-100 space-y-6">
-          
+
           {/* System Prompt Section */}
           <StationSystemPromptSection
-            stationKey="socialCaptions"
-            sectionId="socialCaptions-systemPrompt"
+            stationKey="sms"
+            sectionId="sms-systemPrompt"
             title="System Prompt Configuration"
             description="Base System Prompt + AI Settings Context"
             headerColorClass="bg-blue-50 hover:bg-blue-100"
@@ -92,15 +102,14 @@ export const SocialCaptionsStation: React.FC<SocialCaptionsStationProps> = ({
             setEditingConfig={setEditingConfig}
             setIsDirty={setIsDirty}
             copyToClipboard={copyToClipboard}
-            contextConfiguration={editingConfig?.stationPrompts?.socialCaptions?.contextConfiguration as any}
-            placeholder="You are a social media copywriter specializing in platform-optimized captions and engagement..."
+            contextConfiguration={editingConfig?.stationPrompts?.sms?.contextConfiguration as any}
+            placeholder="You are an SMS marketing specialist focused on customer retention and engagement..."
           />
-
 
           {/* User Prompt Section */}
           <StationUserPromptSection
-            stationKey="socialCaptions"
-            sectionId="socialCaptions-userPrompt"
+            stationKey="sms"
+            sectionId="sms-userPrompt"
             title="User Prompt Configuration"
             description="Base User Template + Dynamic Sections"
             headerColorClass="bg-green-50 hover:bg-green-100"
@@ -112,12 +121,12 @@ export const SocialCaptionsStation: React.FC<SocialCaptionsStationProps> = ({
             setEditingConfig={setEditingConfig}
             setIsDirty={setIsDirty}
             copyToClipboard={copyToClipboard}
-            contextConfiguration={editingConfig?.stationPrompts?.socialCaptions?.contextConfiguration as any}
-            placeholder="Create [PLATFORM] caption for [CONTENT_TYPE] about [TOPIC] targeting [AUDIENCE]..."
+            contextConfiguration={editingConfig?.stationPrompts?.sms?.contextConfiguration as any}
+            placeholder="Create SMS retention copy for [CAMPAIGN_TYPE] targeting [AUDIENCE_SEGMENT]..."
           />
-          
+
         </div>
       )}
     </div>
   );
-}; 
+};

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Upload, Copy, Check, Target, Sparkles, Camera, FileText, AlertCircle, Settings, Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Globe, ThumbsUp, MessageSquare, Share2, Music, Volume2, Play, User as UserIcon } from 'lucide-react';
+import { Upload, Copy, Check, Target, Sparkles, Camera, FileText, AlertCircle, Settings, Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Globe, ThumbsUp, MessageSquare, Share2, Music, Volume2, Play, User as UserIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -213,6 +213,7 @@ export function OrganicSocialTab({
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
   const [captionError, setCaptionError] = useState<string | null>(null);
   const [storyError, setStoryError] = useState<string | null>(null);
+  const [currentStorySlide, setCurrentStorySlide] = useState(0);
 
   // Defensive fallbacks for undefined arrays
   const safeOrganicSelectedProducts = organicSelectedProducts || [];
@@ -1302,6 +1303,7 @@ export function OrganicSocialTab({
                     // }
                     
                     setGeneratedStorySequence(sequence);
+                    setCurrentStorySlide(0);
                   } catch (error) {
                     console.error('Error generating story sequence:', error);
                     setStoryError(error instanceof Error ? error.message : 'Failed to generate story sequence');
@@ -1375,47 +1377,93 @@ export function OrganicSocialTab({
                           <span>View Details</span>
                         </Button>
                       </div>
-                      <div className="space-y-4">
-                        {generatedStorySequence.map((slide, index) => (
-                          <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="flex items-center space-x-2">
-                                <span className="bg-jones-primary text-white text-xs px-2 py-1 rounded">
-                                  Slide {slide.slide}
-                                </span>
-                                <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded border">
-                                  {slide.type}
-                                </span>
+
+                      <div className="flex items-center justify-center">
+                        <div className="w-full max-w-[320px] mx-auto">
+                          <div className="relative bg-black border-[10px] border-gray-800 rounded-[40px] shadow-2xl overflow-hidden h-[580px]">
+                            <div className="absolute top-0 left-0 right-0 z-20 px-3 pt-3">
+                              <div className="flex items-center space-x-1">
+                                {generatedStorySequence.map((_, index) => (
+                                  <div key={index} className="h-1 flex-1 rounded-full bg-white/40 overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full bg-white transition-all duration-300 ease-linear ${index === currentStorySlide ? 'w-full' : 'w-0'} ${index < currentStorySlide ? 'w-full' : 'w-0'}`}
+                                    />
+                                  </div>
+                                ))}
                               </div>
-                              <button
-                                onClick={() => {
-                                  const slideContent = `${slide.title}\n\n${slide.content}\n\nVisual: ${slide.visualDirection}`;
-                                  navigator.clipboard.writeText(slideContent);
-                                }}
-                                className="text-jones-primary hover:text-jones-secondary text-sm"
-                              >
-                                <Copy size={16} />
-                              </button>
+                              <div className="flex items-center space-x-2 mt-2">
+                                <div className="w-8 h-8 rounded-full bg-gray-500"></div>
+                                <div className="text-white text-sm font-semibold">jonesroad</div>
+                                <div className="text-white/70 text-sm">2h</div>
+                              </div>
                             </div>
 
-                            {slide.title && (
-                              <div className="mb-2">
-                                <h4 className="font-semibold text-gray-900">{slide.title}</h4>
-                              </div>
+                            {storyImagePreview && (
+                              <>
+                                <img src={storyImagePreview} alt="Story preview" className="absolute inset-0 w-full h-full object-cover"/>
+                                <div className="absolute inset-0 bg-black/80"></div>
+                              </>
                             )}
 
-                            <div className="text-gray-900 text-sm mb-3 whitespace-pre-wrap">
-                              {slide.content}
-                            </div>
-
-                            {slide.visualDirection && (
-                              <div className="bg-blue-50 border border-blue-200 rounded p-2">
-                                <span className="text-xs font-medium text-blue-800">Visual Direction:</span>
-                                <p className="text-xs text-blue-700 mt-1">{slide.visualDirection}</p>
+                            <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
+                              <div className="relative">
+                                {generatedStorySequence[currentStorySlide]?.title && <h2 className="text-2xl font-bold text-white mb-4 drop-shadow-lg">{generatedStorySequence[currentStorySlide].title}</h2>}
+                                <p className="text-white text-lg whitespace-pre-wrap drop-shadow-md">{generatedStorySequence[currentStorySlide]?.content}</p>
                               </div>
+                            </div>
+                            
+                            {generatedStorySequence.length > 1 && (
+                              <>
+                                <button
+                                  onClick={() => setCurrentStorySlide(s => Math.max(0, s - 1))}
+                                  disabled={currentStorySlide === 0}
+                                  className="absolute left-1 top-1/2 -translate-y-1/2 z-20 bg-black/30 hover:bg-black/50 rounded-full p-1 text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                                >
+                                  <ChevronLeft size={24} />
+                                </button>
+                                <button
+                                  onClick={() => setCurrentStorySlide(s => Math.min(generatedStorySequence.length - 1, s + 1))}
+                                  disabled={currentStorySlide === generatedStorySequence.length - 1}
+                                  className="absolute right-1 top-1/2 -translate-y-1/2 z-20 bg-black/30 hover:bg-black/50 rounded-full p-1 text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                                >
+                                  <ChevronRight size={24} />
+                                </button>
+                              </>
                             )}
                           </div>
-                        ))}
+                          
+                          <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                             <div className="flex justify-between items-start mb-2">
+                               <div className="flex items-center space-x-2">
+                                 <span className="bg-jones-primary text-white text-xs font-semibold px-2 py-1 rounded">
+                                   Slide {generatedStorySequence[currentStorySlide]?.slide}
+                                 </span>
+                                 <span className="text-xs text-gray-600 font-medium bg-white px-2 py-1 rounded border">
+                                   {generatedStorySequence[currentStorySlide]?.type}
+                                 </span>
+                               </div>
+                               <button
+                                 onClick={() => {
+                                   const slide = generatedStorySequence[currentStorySlide];
+                                   if (!slide) return;
+                                   const slideContent = `Title: ${slide.title}\n\nContent: ${slide.content}\n\nVisual Direction: ${slide.visualDirection}`;
+                                   navigator.clipboard.writeText(slideContent);
+                                 }}
+                                 className="text-jones-primary hover:bg-jones-light p-1 rounded-md flex items-center space-x-1.5 text-xs font-medium"
+                               >
+                                 <Copy size={14} />
+                                 <span>Copy Slide</span>
+                               </button>
+                             </div>
+                             
+                             {generatedStorySequence[currentStorySlide]?.visualDirection && (
+                               <div className="bg-blue-50 border border-blue-200 rounded p-2 mt-3">
+                                 <h4 className="text-xs font-semibold text-blue-800">Visual Direction:</h4>
+                                 <p className="text-xs text-blue-700 mt-1 whitespace-pre-wrap">{generatedStorySequence[currentStorySlide].visualDirection}</p>
+                               </div>
+                             )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ) : (

@@ -115,12 +115,19 @@ export const STATION_CONFIGS = {
     outputFormat: 'flexible',
     maxTokens: 2048
   },
-  emailSmsRetention: {
-    name: 'Email/SMS Retention',
+  email: {
+    name: 'Email Retention',
     requiredSections: ['targetPersona', 'emailFrameworks'],
     optionalSections: ['selectedProducts', 'retentionBestPractices'],
     outputFormat: 'email_structure',
     maxTokens: 1500
+  },
+  sms: {
+    name: 'SMS Retention',
+    requiredSections: ['targetPersona'],
+    optionalSections: ['selectedProducts', 'retentionBestPractices'],
+    outputFormat: 'sms_structure',
+    maxTokens: 500
   },
   staticAd: {
     name: 'Static Ad Analysis',
@@ -136,20 +143,21 @@ export const STATION_CONFIGS = {
     outputFormat: 'strategic_brief',
     maxTokens: 3000
   },
-  organicSocial: {
-    name: 'Organic Social Content',
+  socialCaptions: {
+    name: 'Social Captions',
     requiredSections: ['targetPersona', 'selectedProducts'],
     optionalSections: ['platformGuidelines', 'toneGuidance'],
     outputFormat: 'social_captions',
     maxTokens: 1500
   },
-  storySequence: {
+  storySequences: {
     name: 'Story Sequence',
     requiredSections: ['targetPersona', 'selectedProducts'],
     optionalSections: ['sequenceGuidance', 'visualDirection'],
     outputFormat: 'story_sequence_json',
     maxTokens: 2000
-  }
+  },
+  
 } as const;
 
 export const OUTPUT_FORMAT_INSTRUCTIONS: Record<string, string> = {
@@ -175,16 +183,17 @@ Return ONLY valid JSON with this exact structure. Do NOT include any additional 
   "content": "Email body content",
   "cta": "Call to action text"
 }`,
+  sms_structure: `
+# Output Format:
+Return ONLY the SMS message as a raw string. Do NOT include any additional text, explanations, code fences, or backticks.`,
   social_captions: `
 # Output Format:
-Return ONLY valid JSON as a JSON array. Do NOT include any additional text, explanations, code fences, or backticks.
-[
-  {
-    "platform": "PLATFORM_NAME",
-    "caption": "Caption text",
-    "hashtags": ["#hashtag1", "#hashtag2"]
-  }
-]`,
+{
+  "captions": [
+    "Caption text #one #two",
+    "Another caption #tag"
+  ]
+}`,
   story_sequence_json: `
 # Output Format:
 Return ONLY valid JSON as a JSON array. Do NOT include any additional text, explanations, code fences, or backticks.
@@ -221,11 +230,16 @@ export const QUALITY_GUIDELINES_BY_STATION: Record<string, string[]> = {
     '- Include clear calls-to-action',
     '- Balance brand storytelling with direct response elements'
   ],
-  emailSmsRetention: [
+  email: [
     '- Subject lines must drive open rates',
     '- Content should re-engage inactive customers',
     '- Include personalization where possible',
     '- Provide clear value proposition for return'
+  ],
+  sms: [
+    '- Message must be concise and under 160 characters',
+    '- Content should be direct and have a clear call-to-action',
+    '- Use a friendly and approachable tone'
   ],
   landingPage: [
     '- Headlines should match ad messaging',
@@ -234,3 +248,35 @@ export const QUALITY_GUIDELINES_BY_STATION: Record<string, string[]> = {
     '- Optimize for conversion and user experience'
   ]
 };
+
+// Mapping of component output keys used in templates to their semantic meaning
+// Use with: {{ components.<key> }} inside prompt templates
+export const COMPONENT_KEY_MAP = {
+  // Persona and products
+  selectedProducts: 'Selected products details and claims for chosen products',
+  selectedPersona: 'Selected target persona (and subpersona) with pillars and requirements',
+  allProducts: 'Claims overview for all products in the catalog',
+  allPersonas: 'Overview of all configured target personas and subpersonas',
+
+  // Ad copy frameworks
+  metaAdCopyFrameworks: 'Guidance for all meta ad copy headline frameworks',
+  selectedMetaAdCopyFrameworks: 'Guidance for selected meta ad copy headline frameworks',
+
+  // Landing page frameworks
+  landingPageFrameworks: 'Guidance for all landing page frameworks (optionally filtered by landing page type)',
+  selectedLandingPageFrameworks: 'Guidance for selected landing page frameworks',
+
+  // Email frameworks
+  emailFrameworks: 'Guidance for all email frameworks',
+  selectedEmailFrameworks: 'Guidance for selected email frameworks',
+
+  // Brand settings and guidelines
+  allBrandSettingsContext: 'Comprehensive brand settings context including brand guidelines, product claims, persona pillars, and DR balance',
+  brandGuidelines: 'Jones Road Beauty brand guidelines',
+  productClaims: 'Claims for a specific selected product',
+  multiProductClaims: 'Claims for multiple selected products',
+  personaPillars: 'Pillars for a specific persona',
+  brandDrBalance: 'Brand vs Direct Response balance guidance',
+  brandFirstGuidelines: 'Brand-first guidelines list',
+  directResponseGuidelines: 'Direct response guidelines list',
+} as const;

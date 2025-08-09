@@ -52,7 +52,8 @@ export const RetentionTabs = (props: any) => {
         },
         
         // Mutations from generationMutations hook
-        generateRetentionCopyMutation: props.generationMutations?.generateRetentionCopyMutation || createDefaultMutation(),
+        generateRetentionEmailMutation: props.generationMutations?.generateRetentionEmailMutation || createDefaultMutation(),
+        generateRetentionSmsMutation: props.generationMutations?.generateRetentionSmsMutation || createDefaultMutation(),
         
         // Revision states from contentRevision hook
         setSelectedItemForRevision: contentRevision?.setSelectedItemForRevision || (() => {}),

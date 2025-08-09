@@ -70,8 +70,8 @@ interface AdCopyTabProps {
     setUploadedImage: (value: string) => void;
     customBrief: string;
     setCustomBrief: (value: string) => void;
-      persona: string;
-  setPersona: (value: string) => void;
+    persona: string;
+    setPersona: (value: string) => void;
     personas: any;
     landingPageUrl: string;
     setLandingPageUrl: (value: string) => void;
@@ -206,8 +206,8 @@ export const AdCopyTab = ({
                                 <button
                                     onClick={() => setContentType('video')}
                                     className={`p-3 border-2 rounded-lg text-center transition-colors ${contentType === 'video'
-                                            ? 'border-jones-primary bg-jones-light text-jones-primary'
-                                            : 'border-gray-300 hover:border-jones-primary'
+                                        ? 'border-jones-primary bg-jones-light text-jones-primary'
+                                        : 'border-gray-300 hover:border-jones-primary'
                                         }`}
                                 >
                                     <Camera size={20} className="mx-auto mb-2" />
@@ -216,8 +216,8 @@ export const AdCopyTab = ({
                                 <button
                                     onClick={() => setContentType('image')}
                                     className={`p-3 border-2 rounded-lg text-center transition-colors ${contentType === 'image'
-                                            ? 'border-jones-primary bg-jones-light text-jones-primary'
-                                            : 'border-gray-300 hover:border-jones-primary'
+                                        ? 'border-jones-primary bg-jones-light text-jones-primary'
+                                        : 'border-gray-300 hover:border-jones-primary'
                                         }`}
                                 >
                                     <FileText size={20} className="mx-auto mb-2" />
@@ -368,8 +368,8 @@ export const AdCopyTab = ({
                 {/* Persona Selection */}
                 <TargetPersona
                     personas={personas}
-                                    persona={persona}
-                setPersona={setPersona}
+                    persona={persona}
+                    setPersona={setPersona}
                     title="Primary Persona"
                 />
 
@@ -556,7 +556,7 @@ export const AdCopyTab = ({
 
                         <ProductSelection
                             selectedProducts={selectedProducts || []}
-                            setSelectedProducts={setSelectedProducts || (() => {})}
+                            setSelectedProducts={setSelectedProducts || (() => { })}
                             products={products}
                             title="Product Focus (Multi-Select)"
                             description="Choose products to feature in your ad copy. You can select multiple products for comprehensive campaigns."
@@ -794,7 +794,7 @@ export const AdCopyTab = ({
                 </Card>
 
                 {/* Feedback Section for Analytics */}
-                                            {currentCopyId && ((generatedHeadlines || []).length > 0 || generatedPrimaryText) && (
+                {currentCopyId && ((generatedHeadlines || []).length > 0 || generatedPrimaryText) && (
                     <Card className="border-2" style={{ borderColor: '#004182' }}>
                         <CardContent className="p-6">
                             <div className="text-center space-y-4">
@@ -810,7 +810,7 @@ export const AdCopyTab = ({
                                         variant={copyRating === 'excellent' ? 'default' : 'outline'}
                                         size="sm"
                                         className={copyRating === 'excellent' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
-                                                                                    onClick={() => setCopyRating?.('excellent')}
+                                        onClick={() => setCopyRating?.('excellent')}
                                     >
                                         <ThumbsUp size={16} className="mr-1" />
                                         Excellent
@@ -943,7 +943,7 @@ export const AdCopyTab = ({
 
                                 {/* Mobile Headline and Primary Text */}
                                 <div className="px-4 pb-3">
-                                   
+
                                     {generatedPrimaryText && (
                                         <p className="text-[15px] text-gray-900 leading-[1.4]">
                                             {generatedPrimaryText}
@@ -983,7 +983,7 @@ export const AdCopyTab = ({
                                     )}
                                 </div>
 
-                               
+
                                 {/* Mobile Link Preview Section */}
                                 {((generatedHeadlines || []).length > 0 || generatedPrimaryText) && (
                                     <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
@@ -991,15 +991,15 @@ export const AdCopyTab = ({
                                             JONESROADBEAUTY.COM
                                         </div>
                                         {(generatedHeadlines || []).length > 0 && (generatedHeadlines || [])[selectedHeadlineIndex] && (
-                                        <div className="mb-3">
-                                            <p className="text-[16px] font-semibold text-gray-900 leading-[1.3] mb-2">
-                                                {(generatedHeadlines || [])[selectedHeadlineIndex]?.copy}
-                                            </p>
-                                            {/* <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-300 text-xs font-medium px-2 py-1">
+                                            <div className="mb-3">
+                                                <p className="text-[16px] font-semibold text-gray-900 leading-[1.3] mb-2">
+                                                    {(generatedHeadlines || [])[selectedHeadlineIndex]?.copy}
+                                                </p>
+                                                {/* <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-300 text-xs font-medium px-2 py-1">
                                                 {(generatedHeadlines || [])[selectedHeadlineIndex]?.framework}
                                             </Badge> */}
-                                        </div>
-                                    )}
+                                            </div>
+                                        )}
                                         <div className="font-medium text-[15px] text-gray-900 mb-3 leading-tight">
                                             {products[selectedProducts[0]]?.displayName || 'Discover Your Perfect Beauty Match'}
                                         </div>

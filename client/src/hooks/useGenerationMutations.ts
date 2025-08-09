@@ -41,6 +41,8 @@ interface UseGenerationMutationsProps {
   setCustomRequestDebugInfo?: (info: any) => void;
   setLandingPageDebugInfo?: (info: any) => void;
   setRetentionDebugInfo?: (info: any) => void;
+  setRetentionEmailDebugInfo?: (info: any) => void;
+  setRetentionSmsDebugInfo?: (info: any) => void;
 }
 
 export const useGenerationMutations = (props: UseGenerationMutationsProps) => {
@@ -222,12 +224,11 @@ export const useGenerationMutations = (props: UseGenerationMutationsProps) => {
     }
   });
 
-  // Retention Copy Generation Mutation
-  const generateRetentionCopyMutation = useMutation({
+  // Retention Email Generation Mutation
+  const generateRetentionEmailMutation = useMutation({
     mutationFn: async () => {
       const payload = {
         keyMessage: props.retentionKeyMessage,
-        platform: props.retentionPlatform,
         emailType: props.retentionEmailType,
         selectedProducts: props.retentionSelectedProducts,
         audience: props.retentionAudience,
@@ -241,37 +242,74 @@ export const useGenerationMutations = (props: UseGenerationMutationsProps) => {
         useJonesBrandGuide: props.useJonesBrandGuide
       };
 
-      const result = await apiRequest('/api/generate-retention-copy', {
+      const result = await apiRequest('/api/generate-retention-email', {
         method: 'POST',
         body: payload
       });
 
-      // Store debug information
-      if (result.debugInfo && props.setRetentionDebugInfo) {
-        props.setRetentionDebugInfo({
-          systemPrompt: result.debugInfo.systemPrompt,
-          userPrompt: result.debugInfo.userPrompt,
-          requestPayload: payload,
-          rawResponse: result.debugInfo.rawResponse
-        });
+      if (result.debugInfo && props.setRetentionEmailDebugInfo) {
+        props.setRetentionEmailDebugInfo(result.debugInfo);
       }
 
       return result;
     },
     onSuccess: (data) => {
-      // Extract response from the response structure
       props.setGeneratedRetentionCopy?.(data.response || data);
-      
       toast({
-        title: "Retention Copy Generated",
-        description: "Your retention copy has been generated successfully.",
+        title: "Email Retention Copy Generated",
+        description: "Your email retention copy has been generated successfully.",
       });
     },
     onError: (error) => {
-      console.error('Retention copy generation error:', error);
+      console.error('Email retention copy generation error:', error);
       toast({
         title: "Generation Failed",
-        description: error.message || "Failed to generate retention copy. Please try again.",
+        description: error.message || "Failed to generate email retention copy. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Retention SMS Generation Mutation
+  const generateRetentionSmsMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        keyMessage: props.retentionKeyMessage,
+        selectedProducts: props.retentionSelectedProducts,
+        audience: props.retentionAudience,
+        goal: props.retentionGoal,
+        contentLength: props.retentionContentLength,
+        keywordsToInclude: props.retentionKeywordsToInclude,
+        wordsToAvoid: props.retentionWordsToAvoid,
+        persona: props.persona,
+        brandDrBalance: props.brandDrBalance && props.brandDrBalance.length > 0 ? props.brandDrBalance[0] : 50,
+        selectedProduct: props.selectedProduct,
+        useJonesBrandGuide: props.useJonesBrandGuide
+      };
+
+      const result = await apiRequest('/api/generate-retention-sms', {
+        method: 'POST',
+        body: payload
+      });
+
+      if (result.debugInfo && props.setRetentionSmsDebugInfo) {
+        props.setRetentionSmsDebugInfo(result.debugInfo);
+      }
+
+      return result;
+    },
+    onSuccess: (data) => {
+      props.setGeneratedRetentionCopy?.(data.response || data);
+      toast({
+        title: "SMS Retention Copy Generated",
+        description: "Your SMS retention copy has been generated successfully.",
+      });
+    },
+    onError: (error) => {
+      console.error('SMS retention copy generation error:', error);
+      toast({
+        title: "Generation Failed",
+        description: error.message || "Failed to generate SMS retention copy. Please try again.",
         variant: "destructive"
       });
     }
@@ -281,6 +319,7 @@ export const useGenerationMutations = (props: UseGenerationMutationsProps) => {
     analyzeStaticAdMutation,
     generateCustomCopyMutation,
     generateLandingCopyMutation,
-    generateRetentionCopyMutation
+    generateRetentionEmailMutation,
+    generateRetentionSmsMutation
   };
 };

@@ -1,11 +1,9 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import EnhancedContextConfigurator from '@/components/meta-ad-generator/ai-settings/EnhancedContextConfigurator';
-import { Button } from '@/components/ui/button';
-import { TrainingConfig, VariableDefinition } from '@shared/training-config';
-import { ChevronDown, ChevronRight, Target, Copy, Plus, Eye } from 'lucide-react';
-import ProtectedPromptEditor from '@/components/meta-ad-generator/ai-settings/common/ProtectedPromptEditor';
+import React, { useState, useEffect } from 'react';
+import { TrainingConfig } from '@shared/training-config';
+import { Target } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { extractOutputStructure as extractOutputStructureCommon } from '@/components/meta-ad-generator/ai-settings/common/promptUtils';
+import { StationSystemPromptSection, StationUserPromptSection } from '@/components/meta-ad-generator/ai-settings/common/StationPromptSections';
 
 const generateSystemPromptPreview = (config: TrainingConfig): string => {
   const adCopyPrompt = config.stationPrompts?.adCopy?.systemPrompt || '';
@@ -45,8 +43,6 @@ export const AdCopyStation: React.FC<AdCopyStationProps> = ({
   copyToClipboard,
   setIsDirty
 }) => {
-  const userPromptTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const systemPromptTextareaRef = useRef<HTMLTextAreaElement>(null);
   const stationConfig = editingConfig.stationPrompts?.adCopy;
   const contextConfig = stationConfig?.contextConfiguration as any;
   const [showUserPreview, setShowUserPreview] = useState(false);
@@ -82,32 +78,7 @@ export const AdCopyStation: React.FC<AdCopyStationProps> = ({
     setExpandedStations(newExpanded);
   };
 
-  // Restrict Insert Variable options to the explicit set requested for generateAdCopy
-  const allowedAdCopyVariableKeys = useMemo(
-    () => [
-      'transcription',
-      'customBrief',
-      'persona',
-      'landingPageUrl',
-      'brandDrBalance',
-      'useJonesBrandGuide',
-      'airLink',
-      'uploadedImage',
-      'selectedProduct',
-      'selectedProducts',
-    ],
-    []
-  );
-
-  const allowedVariables = useMemo(() => {
-    const normalizeKey = (key: string) => (key || '').replace(/[{}]/g, '').trim();
-    const available = ((contextConfig?.availableVariables || contextConfig?.variables) || []) as VariableDefinition[];
-    const byKey = new Map(available.map(v => [normalizeKey(v.key), v] as const));
-    // Preserve the exact order specified above; include only those present
-    return allowedAdCopyVariableKeys
-      .map((key) => byKey.get(normalizeKey(key)))
-      .filter((v): v is VariableDefinition => Boolean(v));
-  }, [contextConfig?.availableVariables, contextConfig?.variables, allowedAdCopyVariableKeys]);
+  // Variables are now sourced from database: contextConfiguration.availableVariables
 
   return (
     <div className="border border-gray-200 rounded-lg">
@@ -122,181 +93,43 @@ export const AdCopyStation: React.FC<AdCopyStationProps> = ({
 
       {expandedStations.has('adCopy') && (
         <div className="p-6 pt-4 border-t border-gray-100 space-y-6">
-          {/* Enhanced Context Configurator (shared) */}
-          <EnhancedContextConfigurator
-            stationKey={'adCopy'}
+          {/* System Prompt Section */}
+          <StationSystemPromptSection
+            stationKey="adCopy"
+            sectionId="adCopy-systemPrompt"
+            title="System Prompt Configuration"
+            description="Base System Prompt + AI Settings Context"
+            headerColorClass="bg-blue-50 hover:bg-blue-100"
+            iconEmoji="🔧"
+            isAdmin={effectiveUser?.role === 'admin'}
+            expandedStations={expandedStations}
+            setExpandedStations={setExpandedStations}
             editingConfig={editingConfig}
             setEditingConfig={setEditingConfig}
-            title="Enhanced Context Configuration"
+            setIsDirty={setIsDirty}
+            copyToClipboard={copyToClipboard}
+            contextConfiguration={editingConfig?.stationPrompts?.adCopy?.contextConfiguration as any}
+            placeholder="You are an expert Meta advertising copywriter specializing in short-form direct response ads..."
           />
 
-          {/* System Prompt Section */}
-          <div className="border border-gray-200 rounded-lg">
-            <button
-              onClick={() => {
-                const newExpanded = new Set(expandedStations);
-                if (expandedStations.has('adCopy-systemPrompt')) {
-                  newExpanded.delete('adCopy-systemPrompt');
-                } else {
-                  newExpanded.add('adCopy-systemPrompt');
-                }
-                setExpandedStations(newExpanded);
-              }}
-              className="flex items-center justify-between w-full p-4 bg-blue-50 hover:bg-blue-100 rounded-t-lg transition-colors duration-200"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
-                  {expandedStations.has('adCopy-systemPrompt') ? (
-                    <ChevronDown className="w-4 h-4 text-blue-600" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4 text-blue-600" />
-                  )}
-                  <span className="text-blue-600">🔧</span>
-                </div>
-                <div className="text-left">
-                  <h3 className="text-lg font-semibold text-blue-900">System Prompt Configuration</h3>
-                  {!expandedStations.has('adCopy-systemPrompt') && (
-                    <p className="text-sm text-blue-700 mt-1">Base System Prompt + AI Settings Context</p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-xs text-blue-600 font-medium">
-                  {expandedStations.has('adCopy-systemPrompt') ? 'Collapse' : 'Expand'}
-                </span>
-              </div>
-            </button>
-
-            {expandedStations.has('adCopy-systemPrompt') && (
-              <div className="p-6 border-t border-gray-100 space-y-6">
-
-
-                <ProtectedPromptEditor
-                  label="Base System Prompt (Editable)"
-                  value={editingConfig?.stationPrompts?.adCopy?.systemPrompt || ''}
-                  onChange={(newValue: string) => {
-                    if (effectiveUser?.role !== 'admin') return;
-                    setIsDirty(true);
-                    setEditingConfig({
-                      ...editingConfig,
-                      stationPrompts: {
-                        ...editingConfig.stationPrompts,
-                        adCopy: {
-                          ...stationConfig,
-                          systemPrompt: newValue,
-                        },
-                      },
-                    });
-                  }}
-                  placeholder="You are an expert Meta advertising copywriter specializing in short-form direct response ads..."
-                  rows={8}
-                  disabled={effectiveUser?.role !== 'admin'}
-                  copyToClipboard={copyToClipboard}
-                  textareaRef={systemPromptTextareaRef}
-                  variables={allowedVariables}
-                  contextConfiguration={editingConfig?.stationPrompts?.adCopy?.contextConfiguration as any}
-                />
-                <div className="flex justify-end">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowSystemPreview(true)}
-                    title="View resolved system prompt"
-                  >
-                    <Eye size={16} className="mr-1" />
-                    Preview
-                  </Button>
-                </div>
-
-                {/* Final System Prompt Preview removed; use Preview button */}
-              </div>
-            )}
-          </div>
-
           {/* User Prompt Section */}
-          <div className="border border-gray-200 rounded-lg">
-            <button
-              onClick={() => {
-                const newExpanded = new Set(expandedStations);
-                if (expandedStations.has('adCopy-userPrompt')) {
-                  newExpanded.delete('adCopy-userPrompt');
-                } else {
-                  newExpanded.add('adCopy-userPrompt');
-                }
-                setExpandedStations(newExpanded);
-              }}
-              className="flex items-center justify-between w-full p-4 bg-green-50 hover:bg-green-100 rounded-t-lg transition-colors duration-200"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
-                  {expandedStations.has('adCopy-userPrompt') ? (
-                    <ChevronDown className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4 text-green-600" />
-                  )}
-                  <span className="text-green-600">📝</span>
-                </div>
-                <div className="text-left">
-                  <h3 className="text-lg font-semibold text-green-900">User Prompt Configuration</h3>
-                  {!expandedStations.has('adCopy-userPrompt') && (
-                    <p className="text-sm text-green-700 mt-1">Base User Template + Dynamic Sections</p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-xs text-green-600 font-medium">
-                  {expandedStations.has('adCopy-userPrompt') ? 'Collapse' : 'Expand'}
-                </span>
-              </div>
-            </button>
-
-            {expandedStations.has('adCopy-userPrompt') && (
-              <div className="p-6 border-t border-gray-100 space-y-6">
-                {/* User Prompt Structure Explanation */}
-            
-
-                {/* Base User Prompt Template - Editable */}
-                <ProtectedPromptEditor
-                  label="Base User Prompt Template (Editable)"
-                  value={editingConfig?.stationPrompts?.adCopy?.userPromptTemplate || ''}
-                  onChange={(newValue: string) => {
-                    if (effectiveUser?.role !== 'admin') return;
-                    setIsDirty(true);
-                    setEditingConfig({
-                      ...editingConfig,
-                      stationPrompts: {
-                        ...editingConfig.stationPrompts,
-                        adCopy: {
-                          ...stationConfig,
-                          userPromptTemplate: newValue,
-                        },
-                      },
-                    });
-                  }}
-                  placeholder="Generate high-converting Meta/Facebook ad copy..."
-                  rows={6}
-                  disabled={effectiveUser?.role !== 'admin'}
-                  copyToClipboard={copyToClipboard}
-                  textareaRef={userPromptTextareaRef}
-                  variables={allowedVariables}
-                  contextConfiguration={editingConfig?.stationPrompts?.adCopy?.contextConfiguration as any}
-                />
-                <div className="flex justify-end">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowUserPreview(true)}
-                    title="View resolved user prompt"
-                  >
-                    <Eye size={16} className="mr-1" />
-                    Preview
-                  </Button>
-                </div>
-
-                {/* Dynamic Sections removed as requested */}
-              </div>
-            )}
-          </div>
+          <StationUserPromptSection
+            stationKey="adCopy"
+            sectionId="adCopy-userPrompt"
+            title="User Prompt Configuration"
+            description="Base User Template + Dynamic Sections"
+            headerColorClass="bg-green-50 hover:bg-green-100"
+            iconEmoji="📝"
+            isAdmin={effectiveUser?.role === 'admin'}
+            expandedStations={expandedStations}
+            setExpandedStations={setExpandedStations}
+            editingConfig={editingConfig}
+            setEditingConfig={setEditingConfig}
+            setIsDirty={setIsDirty}
+            copyToClipboard={copyToClipboard}
+            contextConfiguration={editingConfig?.stationPrompts?.adCopy?.contextConfiguration as any}
+            placeholder="Generate high-converting Meta/Facebook ad copy..."
+          />
 
 
         </div>

@@ -5,7 +5,8 @@ import { LandingPageStation } from './stations/LandingPageStation';
 import { StaticAdStation } from './stations/StaticAdStation';
 import { SocialCaptionsStation } from './stations/SocialCaptionsStation';
 import { StorySequencesStation } from './stations/StorySequencesStation';
-import { EmailSmsRetentionStation } from './stations/EmailSmsRetentionStation';
+import { EmailStation } from './stations/EmailStation';
+import { SmsStation } from './stations/SmsStation';
 import { CustomRequestStation } from './stations/CustomRequestStation';
 
 interface StationPromptsTabProps {
@@ -99,7 +100,16 @@ export const StationPromptsTab: React.FC<StationPromptsTabProps> = ({
         copyToClipboard={copyToClipboard}
         setIsDirty={setIsDirty}
       />
-      <EmailSmsRetentionStation
+      <EmailStation
+        editingConfig={editingConfig}
+        setEditingConfig={setEditingConfig}
+        effectiveUser={effectiveUser}
+        expandedStations={expandedStations}
+        setExpandedStations={setExpandedStations}
+        copyToClipboard={copyToClipboard}
+        setIsDirty={setIsDirty}
+      />
+      <SmsStation
         editingConfig={editingConfig}
         setEditingConfig={setEditingConfig}
         effectiveUser={effectiveUser}

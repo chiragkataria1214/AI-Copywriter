@@ -321,7 +321,7 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
       lastSavedRef.current.brandGuidelines = JSON.parse(JSON.stringify(editingConfig.brandGuidelines));
       setBaselineVersion((v) => v + 1);
     }
-  }, [saveBrandGuidelinesMutation?.isSuccess, editingConfig]);
+  }, [saveBrandGuidelinesMutation?.isSuccess]);
 
   React.useEffect(() => {
     if (!editingConfig || !lastSavedRef.current) return;
@@ -329,7 +329,7 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
       lastSavedRef.current.productClaims = JSON.parse(JSON.stringify(editingConfig.productClaims));
       setBaselineVersion((v) => v + 1);
     }
-  }, [saveProductClaimsMutation?.isSuccess, editingConfig]);
+  }, [saveProductClaimsMutation?.isSuccess]);
 
   React.useEffect(() => {
     if (!editingConfig || !lastSavedRef.current) return;
@@ -337,7 +337,7 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
       lastSavedRef.current.productClaims = JSON.parse(JSON.stringify(editingConfig.productClaims));
       setBaselineVersion((v) => v + 1);
     }
-  }, [saveSingleProductClaimsMutation?.isSuccess, editingConfig]);
+  }, [saveSingleProductClaimsMutation?.isSuccess]);
 
   React.useEffect(() => {
     if (!editingConfig || !lastSavedRef.current) return;
@@ -345,7 +345,7 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
       (lastSavedRef.current as any).personaPillars = JSON.parse(JSON.stringify((editingConfig as any).personaPillars));
       setBaselineVersion((v) => v + 1);
     }
-  }, [savePersonaPillarsMutation?.isSuccess, editingConfig]);
+  }, [savePersonaPillarsMutation?.isSuccess]);
 
   React.useEffect(() => {
     if (!editingConfig || !lastSavedRef.current) return;
@@ -353,7 +353,7 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
       (lastSavedRef.current as any).personaPillars = JSON.parse(JSON.stringify((editingConfig as any).personaPillars));
       setBaselineVersion((v) => v + 1);
     }
-  }, [saveSinglePersonaMutation?.isSuccess, editingConfig]);
+  }, [saveSinglePersonaMutation?.isSuccess]);
 
   React.useEffect(() => {
     if (!editingConfig || !lastSavedRef.current) return;
@@ -361,7 +361,7 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
       lastSavedRef.current.copyFrameworks = JSON.parse(JSON.stringify(editingConfig.copyFrameworks));
       setBaselineVersion((v) => v + 1);
     }
-  }, [saveCopyFrameworksMutation?.isSuccess, editingConfig]);
+  }, [saveCopyFrameworksMutation?.isSuccess]);
 
   React.useEffect(() => {
     if (!editingConfig || !lastSavedRef.current) return;
@@ -369,7 +369,7 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
       lastSavedRef.current.stationPrompts = JSON.parse(JSON.stringify(editingConfig.stationPrompts));
       setBaselineVersion((v) => v + 1);
     }
-  }, [saveStationPromptsMutation?.isSuccess, editingConfig]);
+  }, [saveStationPromptsMutation?.isSuccess]);
 
   React.useEffect(() => {
     if (!editingConfig || !lastSavedRef.current) return;
@@ -377,7 +377,7 @@ export const AISettingsComponent: React.FC<AISettingsComponentProps> = ({
       lastSavedRef.current.modelParameters = JSON.parse(JSON.stringify(editingConfig.modelParameters));
       setBaselineVersion((v) => v + 1);
     }
-  }, [saveModelParametersMutation?.isSuccess, editingConfig]);
+  }, [saveModelParametersMutation?.isSuccess]);
   return (
     <>
      {isActiveTabDirty && (

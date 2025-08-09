@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Copy } from 'lucide-react';
 import { VariableDefinition, ContextSectionConfig, BrandGuidelinesConfig } from '@shared/training-config';
 import { VariableInsertion } from '../editors/VariableEditor';
+import { COMPONENT_KEY_MAP } from '@shared/constants';
 
 export interface ProtectedPromptEditorProps {
   label: string;
@@ -13,13 +14,8 @@ export interface ProtectedPromptEditorProps {
   disabled?: boolean;
   copyToClipboard: (text: string, label: string) => Promise<void>;
   textareaRef?: React.RefObject<HTMLTextAreaElement>;
-  variables?: VariableDefinition[];
   contextConfiguration?: {
     availableVariables?: VariableDefinition[];
-    contextSections?: ContextSectionConfig[];
-    contextRules?: any;
-    aiSettingsContext?: any;
-    brandGuidelinesConfig?: BrandGuidelinesConfig[];
   };
 }
 
@@ -32,7 +28,6 @@ const ProtectedPromptEditor: React.FC<ProtectedPromptEditorProps> = ({
   disabled = false,
   copyToClipboard,
   textareaRef,
-  variables,
   contextConfiguration,
 }) => {
   // Maintain local editable content to avoid caret jumping to end on each parent update
@@ -54,40 +49,23 @@ const ProtectedPromptEditor: React.FC<ProtectedPromptEditorProps> = ({
     onChange(newEditableContent);
   };
 
-  // Build lists strictly from station's configuration, augmenting context dropdown with enabled context sections
-  const baseVariables: VariableDefinition[] = React.useMemo(() => {
-    return (variables || contextConfiguration?.availableVariables || []) as VariableDefinition[];
-  }, [variables, contextConfiguration?.availableVariables]);
 
-  const derivedContextSectionVariables: VariableDefinition[] = React.useMemo(() => {
-    const sections = contextConfiguration?.contextSections || [];
-    return sections
-      .filter((s: any) => s && (s.enabled ?? true))
-      .map((s: any) => ({
-        key: s.id,
-        label: `Context: ${s.name}`,
-        description: `Generated content from "${s.name}" context section: ${s.description || ''}`,
-        type: 'string',
-        category: 'context_section',
-        required: !!s.required,
-      } as VariableDefinition));
-  }, [contextConfiguration?.contextSections]);
+  // Component placeholders built from shared COMPONENT_KEY_MAP
+  const componentOptions: VariableDefinition[] = React.useMemo(() => {
+    const toTitle = (key: string) => {
+      const spaced = key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
+      return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+    };
+    return Object.entries(COMPONENT_KEY_MAP).map(([key, description]) => ({
+      key: `components.${key}`,
+      label: `Component: ${toTitle(key)}`,
+      description,
+      type: 'string',
+      category: 'system_generated',
+      required: false,
+    }));
+  }, []);
 
-  // Split into variable vs context options
-  const variableOptions = React.useMemo(() => {
-    const contextCategories = new Set(['context_section', 'brand_guideline']);
-    return baseVariables.filter((v: any) => !contextCategories.has((v as any)?.category));
-  }, [baseVariables]);
-
-  const contextOptions = React.useMemo(() => {
-    const contextCategories = new Set(['context_section', 'brand_guideline']);
-    const fromAvailable = baseVariables.filter((v: any) => contextCategories.has((v as any)?.category));
-    const mapByKey = new Map<string, VariableDefinition>();
-    [...fromAvailable, ...derivedContextSectionVariables].forEach((v) => {
-      if (v?.key) mapByKey.set(v.key, v);
-    });
-    return Array.from(mapByKey.values());
-  }, [baseVariables, derivedContextSectionVariables]);
 
   return (
     <div className="space-y-4">
@@ -96,14 +74,14 @@ const ProtectedPromptEditor: React.FC<ProtectedPromptEditorProps> = ({
           <div className="flex items-center justify-between mb-2">
             <h4 className="font-medium text-gray-900">{label}</h4>
             <div className="flex items-center space-x-2">
-              {!disabled && textareaRef && ((variableOptions.length + contextOptions.length) > 0) && (
+              {!disabled && textareaRef && ((contextConfiguration?.availableVariables?.length || 0) + componentOptions.length) > 0 && (
                 <>
                   <VariableInsertion
                     textareaRef={textareaRef}
                     value={editableContent}
                     onChange={handleChange}
                     position="right"
-                    availableVariables={variableOptions}
+                    availableVariables={contextConfiguration?.availableVariables || []}
                     buttonLabel="Insert Variable"
                   />
                   <VariableInsertion
@@ -111,8 +89,8 @@ const ProtectedPromptEditor: React.FC<ProtectedPromptEditorProps> = ({
                     value={editableContent}
                     onChange={handleChange}
                     position="right"
-                    availableVariables={contextOptions}
-                    buttonLabel="Insert Context"
+                    availableVariables={componentOptions}
+                    buttonLabel="Insert Component"
                   />
                 </>
               )}

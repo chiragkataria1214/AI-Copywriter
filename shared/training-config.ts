@@ -129,23 +129,8 @@ export interface TrainingConfig {
       narrativeTechniques?: string[];
       // Product Launch Station properties
       briefStructure?: string;
-      
-      // NEW: Enhanced context configuration
       contextConfiguration?: {
-        // Available variables for templates
         availableVariables?: VariableDefinition[];
-        
-        // Context sections configuration
-        contextSections?: ContextSectionConfig[];
-        
-        // Context building rules
-        contextRules?: ContextBuildingRules;
-        
-        // AI Settings context customization
-        aiSettingsContext?: AISettingsContextConfig;
-        
-        // Brand Guidelines configuration
-        brandGuidelinesConfig?: BrandGuidelinesConfig[];
       };
     };
   };

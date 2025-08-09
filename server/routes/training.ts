@@ -1,10 +1,7 @@
 import type { Express } from "express";
-import { type TrainingConfig } from '@shared/training-config';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { type TrainingConfig, type VariableDefinition } from '@shared/training-config';
 import { storage } from '../utils/storage';
 
-const TRAINING_CONFIG_PATH = path.join(process.cwd(), 'shared', 'training-config.ts');
 
 // Export function to get training config for use in other routes
 export async function getTrainingConfig(): Promise<TrainingConfig> {
@@ -377,6 +374,71 @@ export function registerTrainingRoutes(app: Express, requireAdmin: any) {
     } catch (error) {
       console.error('Error updating station prompts:', error);
       res.status(500).json({ message: 'Failed to update station prompts' });
+    }
+  });
+
+  // Variables management: get available variables for a station
+  app.get('/api/training-config/station-prompts/:stationKey/variables', requireAdmin, async (req, res) => {
+    try {
+      const { stationKey } = req.params as { stationKey: string };
+      const config = await getTrainingConfig();
+      const station = (config.stationPrompts as any)?.[stationKey] || {};
+      const contextCfg = station.contextConfiguration || {};
+      const variables: VariableDefinition[] = (contextCfg.availableVariables || []) as VariableDefinition[];
+      res.json({ variables });
+    } catch (error) {
+      console.error('Error fetching station variables:', error);
+      res.status(500).json({ message: 'Failed to fetch station variables' });
+    }
+  });
+
+  // Variables management: replace available variables for a station
+  app.post('/api/training-config/station-prompts/:stationKey/variables', requireAdmin, async (req, res) => {
+    req.setTimeout(300000);
+    res.setTimeout(300000);
+    try {
+      const { stationKey } = req.params as { stationKey: string };
+      const { variables } = req.body as { variables: VariableDefinition[] };
+      if (!Array.isArray(variables)) {
+        return res.status(400).json({ message: 'Invalid variables payload (expected array)' });
+      }
+
+      // Basic validation/sanitization
+      const cleaned: VariableDefinition[] = variables
+        .filter((v) => v && typeof v === 'object')
+        .map((v) => ({
+          key: String(v.key || '').trim(),
+          label: String(v.label || v.key || '').trim(),
+          description: String(v.description || ''),
+          type: (v.type as any) || 'string',
+          category: (v.category as any) || 'user_input',
+          required: Boolean(v.required),
+          ...(v.validation ? { validation: v.validation } : {}),
+          ...(v.defaultValue !== undefined ? { defaultValue: v.defaultValue } : {}),
+        }))
+        .filter((v) => v.key.length > 0);
+
+      const currentConfig = await getTrainingConfig();
+      const mergedStations: any = { ...(currentConfig as any).stationPrompts };
+      const existingStation = mergedStations[stationKey] || {};
+      const nextStation = {
+        ...existingStation,
+        contextConfiguration: {
+          ...(existingStation.contextConfiguration || {}),
+          availableVariables: cleaned,
+        },
+      };
+      mergedStations[stationKey] = nextStation;
+
+      const updatedConfig: TrainingConfig = {
+        ...currentConfig,
+        stationPrompts: mergedStations,
+      } as TrainingConfig;
+      await storage.saveTrainingConfiguration(updatedConfig);
+      res.json({ message: 'Variables updated successfully' });
+    } catch (error) {
+      console.error('Error updating station variables:', error);
+      res.status(500).json({ message: 'Failed to update station variables' });
     }
   });
 

@@ -12,7 +12,8 @@ import {
   reviseContent,
   generateCustomCopy,
   analyzeStaticAd,
-  generateRetentionCopy,
+  generateRetentionEmail,
+  generateRetentionSms,
   generateRetentionVisualPreview,
   generateSocialCaptions,
   generateStorySequence,
@@ -1223,14 +1224,14 @@ function registerConfigRoutes(app: Express) {
   // Station prompt validation endpoint
   app.post('/api/validate-station-prompts', requireAuth, async (req, res) => {
     try {
-      const { StationPromptManager } = await import('./services/anthropic-helpers');
+      const { AIPromptBuilder } = await import('./services/anthropic-helpers');
       const config = await storage.getTrainingConfiguration();
       
       const validationResults: Record<string, any> = {};
-      const stations = ['adCopy', 'landingPage', 'customRequest', 'emailSmsRetention', 'staticAd', 'productLaunch'];
+      const stations = ['adCopy', 'landingPage', 'customRequest', 'email', 'sms', 'staticAd', 'productLaunch'];
       
       for (const station of stations) {
-        validationResults[station] = StationPromptManager.validateStationPrompt(station, config);
+        validationResults[station] = AIPromptBuilder.validateStationPrompt(station, config);
       }
       
       // Overall health check
@@ -1253,11 +1254,11 @@ function registerConfigRoutes(app: Express) {
   // Debug station configuration endpoint
   app.get('/api/debug-station/:stationName', requireAuth, async (req, res) => {
     try {
-      const { StationPromptManager } = await import('./services/anthropic-helpers');
+      const { AIPromptBuilder } = await import('./services/anthropic-helpers');
       const { stationName } = req.params;
       const config = await storage.getTrainingConfiguration();
       
-      const debugInfo = StationPromptManager.debugStationConfig(stationName, config);
+      const debugInfo = AIPromptBuilder.debugStationConfig(stationName, config);
       
       res.json({
         station: stationName,
@@ -1981,17 +1982,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate retention copy endpoint (protected)
-  app.post('/api/generate-retention-copy', requireAuth, async (req, res) => {
+  app.post('/api/generate-retention-email', requireAuth, async (req, res) => {
     try {
       const { 
-        keyMessage, 
-        platform, 
+        keyMessage,
         emailType,
         selectedProducts,
         audience, 
         goal, 
         campaignType, 
+        contentLength, 
+        keywordsToInclude, 
+        wordsToAvoid,
+        persona,
+        brandDrBalance,
+        selectedProduct,
+        useJonesBrandGuide
+      } = req.body;
 
+      if (!process.env.ANTHROPIC_API_KEY || !keyMessage?.trim()) {
+        return res.status(400).json({ error: 'Missing required parameters.' });
+      }
+
+      const trainingConfig = await getTrainingConfig();
+      const frameworks = await storage.getAllEmailFrameworks();
+      const selectedFramework = emailType ? frameworks.find(f => f.displayName === emailType) : null;
+      
+      const result = await generateRetentionEmail({
+        keyMessage: keyMessage.trim(),
+        emailType,
+        selectedFramework,
+        selectedProducts,
+        audience,
+        goal,
+        campaignType,
+        contentLength,
+        keywordsToInclude,
+        wordsToAvoid,
+        persona,
+        brandDrBalance,
+        selectedProduct,
+        useJonesBrandGuide
+      }, trainingConfig);
+
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Email retention copy generation error:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate email retention copy',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.post('/api/generate-retention-sms', requireAuth, async (req, res) => {
+    try {
+      const { 
+        keyMessage,
+        selectedProducts,
+        audience, 
+        goal, 
+        campaignType, 
         contentLength, 
         keywordsToInclude, 
         wordsToAvoid,
@@ -2001,57 +2052,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         useJonesBrandGuide
       } = req.body;
       
-      console.log('Retention copy request:', { keyMessage, platform, emailType, selectedProducts, audience, goal, campaignType, contentLength });
-      
-      if (!process.env.ANTHROPIC_API_KEY) {
-        console.error('ANTHROPIC_API_KEY missing');
-        return res.status(400).json({ error: 'Anthropic API key not configured' });
+      if (!process.env.ANTHROPIC_API_KEY || !keyMessage?.trim()) {
+        return res.status(400).json({ error: 'Missing required parameters.' });
       }
-      
-      if (!keyMessage || !keyMessage.trim()) {
-        console.error('Key message missing');
-        return res.status(400).json({ error: 'Key message is required' });
-      }
-      
-      // Get current training config
+
       const trainingConfig = await getTrainingConfig();
-      
-      // Fetch framework details based on platform
-      let selectedFramework = null as any;
-      try {
-        if (platform === 'Email') {
-          const frameworks = await storage.getAllEmailFrameworks();
-          if (emailType) {
-            selectedFramework = frameworks.find(f => f.displayName === emailType) || null;
-          }
-        } else if (platform === 'SMS') {
-          const frameworks = await storage.getActiveSmsFrameworks();
-          // Reuse emailType as the label if provided; else default to first active
-          if (emailType) {
-            selectedFramework = frameworks.find((f: any) => f.displayName === emailType) || null;
-          }
-          if (!selectedFramework && frameworks && frameworks.length > 0) {
-            selectedFramework = frameworks[0];
-          }
-          if (selectedFramework) {
-            console.log('Selected SMS framework:', selectedFramework.displayName);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch frameworks:', error);
-        // Continue without framework details - generation will still work
-      }
-      
-      const result = await generateRetentionCopy({
+      const result = await generateRetentionSms({
         keyMessage: keyMessage.trim(),
-        platform,
-        emailType,
-        selectedFramework,
         selectedProducts,
         audience,
         goal,
         campaignType,
-
         contentLength,
         keywordsToInclude,
         wordsToAvoid,
@@ -2060,16 +2071,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         selectedProduct,
         useJonesBrandGuide
       }, trainingConfig);
-      
-      res.status(200).json({
-        response: result.response,
-        debugInfo: result.debugInfo
-      });
+
+      res.status(200).json(result);
     } catch (error) {
-      console.error('Retention copy generation error:', error);
-      // Ensure we always return JSON, never HTML
+      console.error('SMS retention copy generation error:', error);
       res.status(500).json({ 
-        error: 'Failed to generate retention copy',
+        error: 'Failed to generate SMS retention copy',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
@@ -2376,7 +2383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const revisionSchema = z.object({
         originalContent: z.string(),
         revisionInstructions: z.string(),
-        contentType: z.enum(['headline', 'primaryText', 'landingCopy', 'custom', 'retention']),
+        contentType: z.enum(['headline', 'primaryText', 'landingCopy', 'custom', 'email', 'sms']),
         context: z.object({
           transcription: z.string().optional(),
           customBrief: z.string().optional(),

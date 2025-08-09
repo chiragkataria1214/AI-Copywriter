@@ -154,7 +154,7 @@ export const useMetaAdGenerator = () => {
   }, [modelSettingsData]);
 
   // Helper function to check if generation buttons should be disabled
-  const getGenerationDisabledState = (stationType: 'adCopy' | 'landingPage' | 'customRequest' | 'emailSmsRetention' | 'staticAd') => {
+  const getGenerationDisabledState = (stationType: 'adCopy' | 'landingPage' | 'customRequest' | 'email' | 'sms' | 'staticAd') => {
     const hasModelName = modelSettings?.model && modelSettings.model.trim() !== '';
     const hasMaxTokens = modelSettings?.maxTokens && modelSettings.maxTokens > 0;
     
@@ -174,9 +174,13 @@ export const useMetaAdGenerator = () => {
         hasStationPrompt = stationPrompts?.customRequest?.systemPrompt && stationPrompts.customRequest.systemPrompt.trim() !== '';
         stationPromptReason = 'Custom Request system prompt is not configured';
         break;
-      case 'emailSmsRetention':
-        hasStationPrompt = stationPrompts?.emailSmsRetention?.systemPrompt && stationPrompts.emailSmsRetention.systemPrompt.trim() !== '';
-        stationPromptReason = 'Email/SMS Retention system prompt is not configured';
+      case 'email':
+        hasStationPrompt = stationPrompts?.email?.systemPrompt && stationPrompts.email.systemPrompt.trim() !== '';
+        stationPromptReason = 'Email system prompt is not configured';
+        break;
+      case 'sms':
+        hasStationPrompt = stationPrompts?.sms?.systemPrompt && stationPrompts.sms.systemPrompt.trim() !== '';
+        stationPromptReason = 'SMS system prompt is not configured';
         break;
       case 'staticAd':
         hasStationPrompt = stationPrompts?.staticAd?.systemPrompt && stationPrompts.staticAd.systemPrompt.trim() !== '';
