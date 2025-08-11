@@ -1,26 +1,5 @@
-// Generation metadata interface for debugging/transparency
-export interface GenerationMetadata {
-    stationName: string;
-    timestamp: string;
-    modelUsed: string;
-    temperature?: number;
-    maxTokens?: number;
-    systemPrompt: string;
-    userPrompt: string;
-    brandGuidelines?: string[];
-    frameworks?: string[];
-    personaSettings?: {
-      persona: string;
-    };
-    productClaims?: {
-      approved: string[];
-      prohibited: string[];
-    };
-    brandDrBalance?: number;
-    selectedProduct?: string;
-    settingsVersion?: string;
-  }
-  
+import { GenerationMetadata } from "@/components/main/shared/types";
+
   export interface AdCopyRequest {
     transcription: string;
     customBrief?: string;
@@ -70,7 +49,7 @@ export interface GenerationMetadata {
   export interface RevisionRequest {
     originalContent: string;
     revisionInstructions: string;
-    contentType: 'headline' | 'primaryText' | 'landingCopy' | 'custom' | 'email' | 'sms';
+    contentType: 'headline' | 'primaryText' | 'landingCopy' | 'custom' | 'email' | 'sms' | 'staticAd' | 'socialCaption' | 'retention';
     context?: {
       transcription?: string;
       customBrief?: string;

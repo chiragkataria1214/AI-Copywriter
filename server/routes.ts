@@ -42,6 +42,16 @@ import {
   productBriefs,
   insertProductBriefSchema
 } from "@shared/schema";
+import { BRAND_NAME } from "@shared/constants";
+import {
+  DEFAULT_MAX_TOKENS,
+  DEFAULT_TEMPERATURE,
+  FALLBACK_MODEL_STR,
+  DEFAULT_MAX_HEADLINES,
+  DEFAULT_HEADLINE_FRAMEWORK,
+  IMAGE_ANALYSIS_INSTRUCTIONS,
+  STATION_CONFIGS,
+} from '@shared/constants';
 
 const upload = multer({ dest: 'uploads/' });
 
@@ -1228,7 +1238,7 @@ function registerConfigRoutes(app: Express) {
       const config = await storage.getTrainingConfiguration();
       
       const validationResults: Record<string, any> = {};
-      const stations = ['adCopy', 'landingPage', 'customRequest', 'email', 'sms', 'staticAd', 'productLaunch'];
+      const stations = Object.keys(STATION_CONFIGS);
       
       for (const station of stations) {
         validationResults[station] = AIPromptBuilder.validateStationPrompt(station, config);
@@ -1794,6 +1804,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         copyId: savedCopy.id, // Return ID for feedback tracking
         headlines: result.headlines,
         primaryText: result.primaryText,
+        testingFocus: result.testingFocus,
+        strategicInsights: result.strategicInsights,
         debugInfo: result.debugInfo,
         performance: {
           estimatedCpc: 0.42,
@@ -2175,6 +2187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({
         captions: result?.captions || [],
+        strategicInsights: result?.strategicInsights || '',
         debugInfo: result?.debugInfo
       });
     } catch (error) {
@@ -2383,7 +2396,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const revisionSchema = z.object({
         originalContent: z.string(),
         revisionInstructions: z.string(),
-        contentType: z.enum(['headline', 'primaryText', 'landingCopy', 'custom', 'email', 'sms']),
+        contentType: z.enum(['headline', 'primaryText', 'landingCopy', 'custom', 'retention', 'staticAd', 'socialCaption', 'email', 'sms']),
         context: z.object({
           transcription: z.string().optional(),
           customBrief: z.string().optional(),
@@ -2606,7 +2619,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create prompt for influencer-style copy generation
       const prompt = `
-Product: ${data.selectedProduct || 'Jones Road Beauty products'}
+Product: ${data.selectedProduct || `${BRAND_NAME} products`}
 Transcription: ${data.transcription || ''}
 Custom Brief: ${data.customBrief || ''}
 Target Persona: ${data.persona}

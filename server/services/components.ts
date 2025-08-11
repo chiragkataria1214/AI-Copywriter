@@ -309,9 +309,28 @@ export function buildEmailFrameworksSection(trainingConfig: TrainingConfig): str
 
   return `
   
-  EMAIL FRAMEWORK GUIDANCE:
-  Use these proven frameworks to craft effective email campaigns:
   ${trainingConfig.copyFrameworks.emailFrameworks.map(framework => `
+  • ${framework.name}: ${framework.description}
+    Key Elements: ${framework.keyElements}
+    Structure: ${framework.structure}
+    Framework Content: ${framework.frameworkContent}
+    System Prompt: ${framework.systemPrompt}
+    Output Requirements: ${framework.outputRequirements}
+    Expected Length: ${framework.expectedLength}
+    Images: ${framework.images}`).join('')}
+`;
+}
+
+export function buildSmsFrameworksSection(trainingConfig: TrainingConfig): string {
+  if (!trainingConfig.copyFrameworks?.smsFrameworks) {
+    return '';
+  }
+
+  return `
+  
+  SMS FRAMEWORK GUIDANCE:
+  Use these proven frameworks to craft effective SMS campaigns:
+  ${trainingConfig.copyFrameworks.smsFrameworks.map(framework => `
   • ${framework.name}: ${framework.description}
     Key Elements: ${framework.keyElements}`).join('')}
   
@@ -412,16 +431,50 @@ export function buildSelectedEmailFrameworksSection(
   }
 
   return `
-  EMAIL FRAMEWORK GUIDANCE (SELECTED):
-  Use these selected frameworks to craft effective email campaigns:
   ${frameworks.map(framework => `
-  • ${framework.name}: ${framework.description}
-    Key Elements: ${framework.keyElements}`).join('')}
-  
-  FRAMEWORK APPLICATION:
-  - Select the framework that aligns with your campaign goal
-  - Incorporate all key elements for maximum impact
-  - Adapt the framework to your specific audience and offer`;
+  • ${framework.displayName}: ${framework.description}
+    Key Elements: ${framework.keyElements}
+    Structure: ${framework.structure}
+    Framework Content: ${framework.frameworkContent}
+    System Prompt: ${framework.systemPrompt}
+    Output Requirements: ${framework.outputRequirements}
+    Expected Length: ${framework.expectedLength}
+    Images: ${framework.images}`).join('')}
+    `;
+}
+
+export function buildSelectedSmsFrameworksSection(
+  trainingConfig: TrainingConfig,
+  selectedFrameworks?: string | string[]
+): string {
+  if (!trainingConfig.copyFrameworks?.smsFrameworks || !selectedFrameworks) {
+    return '';
+  }
+
+  const selectedList = Array.isArray(selectedFrameworks)
+    ? selectedFrameworks
+    : [selectedFrameworks];
+  const selectedSet = new Set(selectedList.map(name => name.toLowerCase()));
+
+  const frameworks = trainingConfig.copyFrameworks.smsFrameworks.filter(f =>
+    selectedSet.has(f.name.toLowerCase()) || (f.displayName && selectedSet.has(f.displayName.toLowerCase()))
+  );
+
+  if (frameworks.length === 0) {
+    return '';
+  }
+
+  return `
+  ${frameworks.map(framework => `
+  ${framework.displayName}: ${framework.description}
+    Key Elements: ${framework.keyElements}
+    Structure: ${framework.structure}
+    Framework Content: ${framework.frameworkContent}
+    System Prompt: ${framework.systemPrompt}
+    Output Requirements: ${framework.outputRequirements}
+    Expected Length: ${framework.expectedLength}
+    Images: ${framework.images}`).join('')}
+    `;
 }
 
 // Helper function to build comprehensive AI Settings context

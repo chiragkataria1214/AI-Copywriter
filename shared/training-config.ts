@@ -1,12 +1,8 @@
-// Training configuration for Claude AI copywriting prompts
-// This file contains all the brand guidelines, frameworks, and prompts used to train the AI
-
 export interface TrainingConfig {
   brandGuidelines: {
-    // Basic brand identity
     brandName?: string;
     website?: string;
-
+    brandLogo?: string;
     corePositioning: string;
     brandVoice: string[];
     keyTerminology: string[];

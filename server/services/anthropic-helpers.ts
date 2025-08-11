@@ -12,6 +12,7 @@ import {
   buildMetaAdCopyFrameworksSection,
   buildLandingPageFrameworksSection,
   buildEmailFrameworksSection,
+  buildSmsFrameworksSection,
   buildSelectedProductsSection,
   buildTargetPersonaSection,
   buildSelectedLandingPageFrameworksSection,
@@ -19,6 +20,7 @@ import {
   buildSelectedMetaAdCopyFrameworksSection,
   buildAllProductsSection,
   buildSelectedEmailFrameworksSection,
+  buildSelectedSmsFrameworksSection,
   buildAllBrandSettingsContext,
   buildBrandGuidelinesSection,
   buildProductClaimsSection,
@@ -94,7 +96,8 @@ export class AIPromptBuilder {
     persona?: string; 
     headline_frameworks?: string; 
     landing_frameworks?: string; 
-    email_frameworks?: string; 
+    email_frameworks?: string;
+    sms_frameworks?: string;
   } {
     const products = buildSelectedProductsSection(request.selectedProduct, request.selectedProducts, trainingConfig);
     const personaSection = buildSelectedTargetPersonaSection(request.persona || variables.persona || '', trainingConfig);
@@ -103,7 +106,8 @@ export class AIPromptBuilder {
       ? buildSelectedLandingPageFrameworksSection(trainingConfig, request.landingPageType)
       : buildLandingPageFrameworksSection(trainingConfig);
     const emailFrameworks = buildEmailFrameworksSection(trainingConfig);
-    return { products, persona: personaSection, headline_frameworks: headlineFrameworks, landing_frameworks: landingFrameworks, email_frameworks: emailFrameworks };
+    const smsFrameworks = buildSmsFrameworksSection(trainingConfig);
+    return { products, persona: personaSection, headline_frameworks: headlineFrameworks, landing_frameworks: landingFrameworks, email_frameworks: emailFrameworks, sms_frameworks: smsFrameworks };
   }
 
   /**
@@ -140,6 +144,11 @@ export class AIPromptBuilder {
       selectedEmailFrameworks: buildSelectedEmailFrameworksSection(
         trainingConfig,
         (request as any)?.selectedEmailFrameworks || variables?.selectedEmailFrameworks
+      ) || '',
+      smsFrameworks: simpleContext.sms_frameworks || buildSmsFrameworksSection(trainingConfig) || '',
+      selectedSmsFrameworks: buildSelectedSmsFrameworksSection(
+        trainingConfig,
+        (request as any)?.selectedSmsFrameworks || variables?.selectedSmsFrameworks
       ) || '',
       // Brand settings and related sections
       allBrandSettingsContext: buildAllBrandSettingsContext(trainingConfig, {
@@ -468,6 +477,8 @@ export class AIResponseParser {
   static parseAdCopyResponse(content: string): {
     headlines: Array<{ framework: string; copy: string }>;
     primaryText: string;
+    testingFocus?: string;
+    strategicInsights?: Record<string, any>;
   } {
     const parsedResponse = this.extractJSON(content);
     
@@ -484,8 +495,10 @@ export class AIResponseParser {
     })).filter((item: any) => item.copy.length > 0);
     
     const primaryText = this.cleanText(parsedResponse.primaryText);
+    const testingFocus = parsedResponse.testingFocus || undefined;
+    const strategicInsights = parsedResponse.strategicInsights || undefined;
     
-    return { headlines, primaryText };
+    return { headlines, primaryText, testingFocus, strategicInsights };
   }
 
   /**
@@ -494,6 +507,8 @@ export class AIResponseParser {
   static parseMarkdownResponse(content: string): {
     headlines: Array<{ framework: string; copy: string }>;
     primaryText: string;
+    testingFocus?: string;
+    strategicInsights?: Record<string, any>;
   } {
     const headlines: Array<{ framework: string; copy: string }> = [];
     
@@ -513,12 +528,30 @@ export class AIResponseParser {
     
     // Extract primary text
     let primaryText = '';
-    const primaryTextMatch = content.match(/(?:PRIMARY TEXT|##\s*PRIMARY TEXT)[^:]*:?\s*([\s\S]*?)(?=\n##|\n\*\*|$)/i);
+    const primaryTextMatch = content.match(/(?:PRIMARY TEXT|## TING FOCUS|## STRATEGIC INSIGHTS|##\s*PRIMARY TEXT)[^:]*:?\s*([\s\S]*?)(?=\n##|\n\*\*|$)/i);
     if (primaryTextMatch) {
       primaryText = this.cleanText(primaryTextMatch[1]);
     }
+
+    // Extract testing focus
+    let testingFocus: string | undefined;
+    const testingFocusMatch = content.match(/(?:TESTING FOCUS|##\s*TESTING FOCUS)[^:]*:?\s*(.+?)(?=\n##|\n\*\*|$)/i);
+    if (testingFocusMatch) {
+      testingFocus = this.cleanText(testingFocusMatch[1]);
+    }
+
+    // Extract strategic insights
+    let strategicInsights: Record<string, any> | undefined;
+    const strategicInsightsMatch = content.match(/(?:STRATEGIC INSIGHTS|##\s*STRATEGIC INSIGHTS)[^:]*:?\s*([\s\S]*)/i);
+    if (strategicInsightsMatch) {
+      // This part is tricky as insights can be complex.
+      // For now, we'll just take the raw text. A more sophisticated
+      // parser would be needed for structured data here in markdown.
+      const insightsText = this.cleanText(strategicInsightsMatch[1]);
+      strategicInsights = { raw: insightsText };
+    }
     
-    return { headlines, primaryText };
+    return { headlines, primaryText, testingFocus, strategicInsights };
   }
 
   /**
@@ -527,6 +560,8 @@ export class AIResponseParser {
   static parseWithFallback(content: string): {
     headlines: Array<{ framework: string; copy: string }>;
     primaryText: string;
+    testingFocus?: string;
+    strategicInsights?: Record<string, any>;
   } {
     try {
       // Try JSON parsing first
@@ -539,6 +574,214 @@ export class AIResponseParser {
   }
       throw new Error('Failed to parse AI response with any strategy');
     }
+  }
+
+  /**
+   * Parse landing page response with JSON and markdown fallback
+   */
+  static parseLandingPageResponse(content: string, landingPageType?: string): {
+    headline: string;
+    subheadline: string;
+    introduction: string;
+    sections: any[];
+    cta: string;
+    riskReversal: string;
+  } {
+    // Try to parse as JSON first, then fall back to text parsing (with fenced/embedded JSON support)
+    const parsedJson = TextUtils.tryParseJson(content);
+    
+    let headline = '';
+    let subheadline = '';
+    let introduction = '';
+    let sections: any[] = [];
+    let cta = '';
+    let riskReversal = '';
+
+    if (parsedJson) {
+      const page = parsedJson.landing_page || parsedJson;
+      headline = page.headline || '';
+      subheadline = page.subheadline || '';
+      introduction = page.introduction || '';
+      sections = page.sections || [];
+      cta = page.cta || '';
+      riskReversal = page.riskReversal || '';
+    } else {
+      // Fallback to text parsing
+      const headlineMatch = content.match(/HEADLINE:?\s*(.+?)(?=\n|SUBHEADLINE|INTRODUCTION|$)/is);
+      headline = headlineMatch ? headlineMatch[1].trim() : '';
+
+      const subheadlineMatch = content.match(/SUBHEADLINE:?\s*(.+?)(?=\n|INTRODUCTION|REASON|HERO PRODUCT|PRODUCT|$)/is);
+      subheadline = subheadlineMatch ? subheadlineMatch[1].trim() : '';
+      
+      const introMatch = landingPageType === 'multiProduct'
+        ? content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=HERO PRODUCT|PRODUCT #?1|$)/i)
+        : landingPageType === 'listicle'
+          ? null
+          : content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=REASON #?1|$)/i);
+      introduction = introMatch ? introMatch[1].trim() : '';
+
+      const ctaMatch = content.match(/CTA:?\s*([\s\S]*?)(?=RISK REVERSAL|$)/i);
+      cta = ctaMatch ? ctaMatch[1].trim() : '';
+
+      const riskReversalMatch = content.match(/RISK REVERSAL:?\s*([\s\S]*?)$/i);
+      riskReversal = riskReversalMatch ? riskReversalMatch[1].trim() : '';
+    }
+
+    return {
+      headline,
+      subheadline,
+      introduction,
+      sections,
+      cta,
+      riskReversal
+    };
+  }
+
+  /**
+   * Parse static ad analysis response with JSON and fallback
+   */
+  static parseStaticAdResponse(content: string, outputFormat?: string): {
+    analysis: string;
+    variations: any[];
+  } {
+    // Try to parse JSON response first
+    const parsedResponse = TextUtils.tryParseJson(content);
+    if (parsedResponse) {
+      if (outputFormat === 'analysis-only') {
+        return {
+          analysis: parsedResponse.analysis || 'Analysis not available',
+          variations: []
+        };
+      }
+      if (outputFormat === 'variations-only') {
+        return {
+          analysis: '',
+          variations: parsedResponse.variations || []
+        };
+      }
+      return {
+        analysis: parsedResponse.analysis || 'Analysis not available',
+        variations: parsedResponse.variations || []
+      };
+    }
+    
+    // Fallback to plain text
+    console.log('Failed to parse JSON, falling back to text formatting');
+    const cleanedContent = TextUtils.cleanPlainText(content);
+    return {
+      analysis: cleanedContent,
+      variations: []
+    };
+  }
+
+  /**
+   * Parse SMS response with JSON and fallback
+   */
+  static parseSmsResponse(content: string): {
+    smsVariations: any[];
+    strategicInsights?: Record<string, any>;
+  } {
+    const parsedJson = TextUtils.tryParseJson(content);
+    if (parsedJson && parsedJson.smsVariations) {
+      return {
+        smsVariations: Array.isArray(parsedJson.smsVariations) ? parsedJson.smsVariations : [],
+        strategicInsights: parsedJson.strategicInsights || undefined
+      };
+    }
+    
+    // Fallback for simple text response
+    return {
+      smsVariations: [{
+        variation: 'A',
+        message: TextUtils.cleanPlainText(content),
+        characterCount: content.length,
+        cta: '',
+        personalizationTokens: [],
+        testingFocus: 'N/A',
+        complianceNotes: 'N/A',
+        whyItWorks: 'N/A'
+      }],
+      strategicInsights: undefined
+    };
+  }
+
+  /**
+   * Parse social captions response with JSON array and fallback
+   */
+  static parseSocialCaptionsResponse(content: string, requestedVariations: number = 3): {
+    captions: string[];
+    strategicInsights?: Record<string, any>;
+  } {
+    // Try to parse full JSON response first
+    const parsedJson = TextUtils.tryParseJson(content);
+    if (parsedJson && parsedJson.captions) {
+      return {
+        captions: Array.isArray(parsedJson.captions) ? parsedJson.captions : [parsedJson.captions],
+        strategicInsights: parsedJson.strategicInsights || undefined
+      };
+    }
+
+    // Parse JSON response (legacy array format)
+    let captions = TextUtils.tryParseJsonArray(content);
+    if (!captions) {
+      // Try to find a JSON array pattern
+      const arrayMatch = content.match(/\[[\s\S]*?\]/);
+      if (arrayMatch) {
+        try {
+          const maybe = JSON.parse(TextUtils.stripCodeFences(arrayMatch[0]));
+          if (Array.isArray(maybe)) captions = maybe;
+        } catch {/* ignore */ }
+      }
+    }
+    if (!captions) {
+      // Fallback: split by double newlines and clean up
+      console.log('Using fallback parsing method for content:', content.substring(0, 200) + '...');
+      captions = content
+        .split('\n\n')
+        .filter(caption => caption.trim().length > 0)
+        .map(caption => caption.trim().replace(/^["']|["']$/g, ''))
+        .slice(0, requestedVariations);
+    }
+
+    return {
+      captions: captions || [],
+      strategicInsights: undefined
+    };
+  }
+
+  /**
+   * Parse story sequence response with JSON array and fallback
+   */
+  static parseStorySequenceResponse(content: string, requestLength: number, hasImageContent: boolean = false): any[] {
+    // Parse JSON response
+    let slides = TextUtils.tryParseJsonArray(content);
+    if (!slides) {
+      const arrayMatch = content.match(/\[[\s\S]*?\]/);
+      if (arrayMatch) {
+        try {
+          const maybe = JSON.parse(TextUtils.stripCodeFences(arrayMatch[0]));
+          if (Array.isArray(maybe)) slides = maybe;
+        } catch {/* ignore */ }
+      }
+    }
+    if (!slides) {
+      // Fallback: create simple slides from content
+      console.log('Using fallback parsing for story sequence');
+      const fallbackSlides: any[] = [];
+      const lines = content.split('\n').filter(line => line.trim());
+      for (let i = 0; i < Math.min(requestLength, lines.length); i++) {
+        fallbackSlides.push({
+          slide: i + 1,
+          type: i === 0 ? 'hook' : i === requestLength - 1 ? 'cta' : 'content',
+          title: `Slide ${i + 1}`,
+          content: lines[i].trim(),
+          visualDirection: hasImageContent ? 'Use the uploaded image as reference' : 'Show relevant visual content'
+        });
+      }
+      slides = fallbackSlides;
+    }
+
+    return slides || [];
   }
 }
 

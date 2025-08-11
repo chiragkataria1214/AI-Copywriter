@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/utils/useToast';
 import { Sparkles, Eye, EyeOff, Check, X } from 'lucide-react';
+import { ERROR_MESSAGES, logError } from '@/utils/errorMessages';
 
 export default function Register() {
   const [, setLocation] = useLocation();
@@ -46,7 +47,7 @@ export default function Register() {
       window.location.reload();
     },
     onError: (error) => {
-      console.error('Registration error:', error);
+      logError('Registration', error);
       toast({
         title: "Registration Failed",
         description: error.message || "Username may already exist. Please try a different one.",

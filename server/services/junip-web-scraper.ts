@@ -1,4 +1,5 @@
 import { importFromText } from './review-importer';
+import { BRAND_NAME } from "@shared/constants";
 
 // Function to extract product name from review content
 function extractProductFromContent(content: string): string {
@@ -363,7 +364,7 @@ async function importJunipReviewsFromPage() {
     });
   }).join('\n');
 
-  console.log(`Importing ${reviews.length} Jones Road reviews from comprehensive scraping...`);
+  console.log(`Importing ${reviews.length} ${BRAND_NAME} reviews from comprehensive scraping...`);
   const result = await importFromText(reviewText, 'junip-page');
   
   return result;

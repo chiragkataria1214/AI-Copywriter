@@ -3,32 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Copy, Settings, ChevronDown, ChevronRight, Eye, Cpu, FileText } from 'lucide-react';
-import { useToast } from '@/hooks/useToast';
-
-export interface GenerationMetadata {
-  stationName: string;
-  timestamp: string;
-  modelUsed: string;
-  temperature?: number;
-  maxTokens?: number;
-  systemPrompt: string;
-  userPrompt: string;
-  requestPayload?: any;
-  rawResponse?: string;
-  brandGuidelines?: string[];
-  frameworks?: string[];
-  personaSettings?: {
-    persona: string;
-  };
-  productClaims?: {
-    approved: string[];
-    prohibited: string[];
-  };
-  brandDrBalance?: number;
-  selectedProduct?: string;
-  settingsVersion?: string;
-}
+import { Copy, Settings, ChevronDown, ChevronRight, Eye, Cpu, FileText, Import } from 'lucide-react';
+import { useToast } from '@/hooks/utils/useToast';
+import { GenerationMetadata } from "@/components/main/shared/types";
 
 interface GenerationDetailsModalProps {
   isOpen: boolean;
@@ -151,25 +128,23 @@ export function GenerationDetailsModal({ isOpen, onClose, metadata, onEditSettin
             </CollapsibleContent>
           </Collapsible>
 
-      
-
           {/* Request Payload */}
-          {metadata.requestPayload && (
-            <Collapsible open={openSections.payload} onOpenChange={() => toggleSection('payload')}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full justify-between p-4 bg-white border rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    <span className="font-medium">Request Payload</span>
-                    <Badge variant="secondary">JSON</Badge>
-                  </div>
-                  {openSections.payload ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <div className="bg-white border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-gray-900">Request Payload</h4>
+          <Collapsible open={openSections.payload} onOpenChange={() => toggleSection('payload')}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="w-full justify-between p-4 bg-white border rounded-lg hover:bg-gray-50">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  <span className="font-medium">Request Payload</span>
+                  <Badge variant="secondary">JSON</Badge>
+                </div>
+                {openSections.payload ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2">
+              <div className="bg-white border rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium text-gray-900">Request Payload</h4>
+                  {metadata.requestPayload && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -178,34 +153,36 @@ export function GenerationDetailsModal({ isOpen, onClose, metadata, onEditSettin
                       <Copy size={16} className="mr-1" />
                       Copy
                     </Button>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4 border max-h-64 overflow-y-auto">
-                    <pre className="text-sm text-gray-700 whitespace-pre-wrap overflow-x-auto">
-                      {JSON.stringify(metadata.requestPayload, null, 2)}
-                    </pre>
-                  </div>
+                  )}
                 </div>
-              </CollapsibleContent>
-            </Collapsible>
-          )}
+                <div className="bg-gray-50 rounded-lg p-4 border max-h-64 overflow-y-auto">
+                  <pre className="text-sm text-gray-700 whitespace-pre-wrap overflow-x-auto">
+                    {metadata.requestPayload 
+                      ? JSON.stringify(metadata.requestPayload, null, 2)
+                      : "Request payload not available for this station."}
+                  </pre>
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
 
           {/* Raw Response */}
-          {metadata.rawResponse && (
-            <Collapsible open={openSections.response} onOpenChange={() => toggleSection('response')}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full justify-between p-4 bg-white border rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    <span className="font-medium">Raw AI Response</span>
-                    <Badge variant="secondary">Full</Badge>
-                  </div>
-                  {openSections.response ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <div className="bg-white border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-gray-900">Raw AI Response</h4>
+          <Collapsible open={openSections.response} onOpenChange={() => toggleSection('response')}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="w-full justify-between p-4 bg-white border rounded-lg hover:bg-gray-50">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  <span className="font-medium">Raw AI Response</span>
+                  <Badge variant="secondary">Full</Badge>
+                </div>
+                {openSections.response ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2">
+              <div className="bg-white border rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium text-gray-900">Raw AI Response</h4>
+                  {metadata.rawResponse && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -214,18 +191,19 @@ export function GenerationDetailsModal({ isOpen, onClose, metadata, onEditSettin
                       <Copy size={16} className="mr-1" />
                       Copy
                     </Button>
-                  </div>
-                  <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200 max-h-64 overflow-y-auto">
-                    <pre className="text-sm text-gray-700 whitespace-pre-wrap">
-                      {metadata.rawResponse}
-                    </pre>
-                  </div>
+                  )}
                 </div>
-              </CollapsibleContent>
-            </Collapsible>
-          )}
-              {/* Model Configuration */}
-              <Collapsible open={openSections.model} onOpenChange={() => toggleSection('model')}>
+                <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200 max-h-64 overflow-y-auto">
+                  <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+                    {metadata.rawResponse || "Raw response not available for this station."}
+                  </pre>
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Model Configuration */}
+          <Collapsible open={openSections.model} onOpenChange={() => toggleSection('model')}>
             <CollapsibleTrigger asChild>
               <Button variant="ghost" className="w-full justify-between p-4 bg-white border rounded-lg hover:bg-gray-50">
                 <div className="flex items-center gap-2">

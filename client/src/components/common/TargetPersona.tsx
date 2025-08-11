@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { Subpersona } from '@/components/meta-ad-generator/shared/types';
+import { Subpersona } from '@/components/main/shared/types';
 
 interface TargetPersonaProps {
   personas: Record<string, any>;

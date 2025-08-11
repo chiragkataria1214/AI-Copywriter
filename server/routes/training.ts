@@ -157,6 +157,9 @@ export function registerTrainingRoutes(app: Express, requireAdmin: any) {
         if (brandGuidelines.website !== undefined && brandGuidelines.website !== null) {
           brandGuidelines.website = String(brandGuidelines.website);
         }
+        if (brandGuidelines.brandLogo) {
+            brandGuidelines.brandLogo = String(brandGuidelines.brandLogo);
+        }
         if (brandGuidelines.brandVoice) {
           brandGuidelines.brandVoice = brandGuidelines.brandVoice.filter(item => item && item.trim() !== '');
         }

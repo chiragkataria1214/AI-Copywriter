@@ -4,6 +4,9 @@ export const FALLBACK_MODEL_STR = "claude-3-sonnet-20240229";
 export const DEFAULT_MAX_TOKENS = 2000;
 export const DEFAULT_TEMPERATURE = 0.7;
 
+// Brand name
+export const BRAND_NAME = 'Jones Road Beauty';
+
 // Server defaults
 export const DEFAULT_SERVER_PORT = 5000;
 export const DEFAULT_IMAGE_ANALYSIS_TYPE = 'ad_creative';
@@ -270,13 +273,18 @@ export const COMPONENT_KEY_MAP = {
   emailFrameworks: 'Guidance for all email frameworks',
   selectedEmailFrameworks: 'Guidance for selected email frameworks',
 
+  // SMS frameworks
+  smsFrameworks: 'Guidance for all SMS frameworks',
+  selectedSmsFrameworks: 'Guidance for selected SMS frameworks',
+
   // Brand settings and guidelines
   allBrandSettingsContext: 'Comprehensive brand settings context including brand guidelines, product claims, persona pillars, and DR balance',
-  brandGuidelines: 'Jones Road Beauty brand guidelines',
+  brandGuidelines: `${BRAND_NAME} brand guidelines`,
   productClaims: 'Claims for a specific selected product',
   multiProductClaims: 'Claims for multiple selected products',
   personaPillars: 'Pillars for a specific persona',
   brandDrBalance: 'Brand vs Direct Response balance guidance',
   brandFirstGuidelines: 'Brand-first guidelines list',
   directResponseGuidelines: 'Direct response guidelines list',
+
 } as const;

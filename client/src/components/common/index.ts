@@ -1,3 +1,4 @@
 export * from './FeatureTooltip';
 export * from './GenerationDetailsModal';
 export * from './ProductClaims';
+export type { GenerationMetadata } from '../main/shared/types';

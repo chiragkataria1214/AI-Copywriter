@@ -1,5 +1,6 @@
 import { db } from '../db';
 import { emailFrameworks } from '../../shared/schema';
+import { BRAND_NAME } from '../../shared/constants';
 
 const emailFrameworksData = [
   {
@@ -43,7 +44,7 @@ The Mascara: Finish the look with a coat or two for lift and definition.
 CTA: Shop The Hero Kit
 
 Section 2 Bobbi's Quote
-Dek: "I curated The Hero Kit to include my favorite basics that I use consistently. It's perfect for any Jones Road newbie - it has all of the fundamentals in one pouch." - Bobbi Brown
+Dek: "I curated The Hero Kit to include my favorite basics that I use consistently. It's perfect for any ${BRAND_NAME} newbie - it has all of the fundamentals in one pouch." - Bobbi Brown
 
 Section 3: [CUSTOMERS ONLY]
 Hed: Make It Your Own
@@ -439,7 +440,7 @@ Section 1:
 Hed:
 Dek:
 Where:
-Jones Road Bucktown
+${BRAND_NAME} Bucktown
 1655 N Damen Ave, Chicago, IL 60647
 When:
 Wednesday, June 25, 10am-5pm

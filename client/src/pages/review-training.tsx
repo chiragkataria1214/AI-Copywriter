@@ -10,8 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/utils/useToast';
 import { apiRequest } from '@/lib/queryClient';
+import { BRAND_NAME } from '@shared/constants';
 
 // Type definitions for API responses
 interface ReviewStats {
@@ -46,7 +47,7 @@ export default function ReviewTraining() {
     onSuccess: (data) => {
       toast({
         title: "Junip Import Complete!",
-        description: `Successfully imported ${data.imported} authentic reviews from Jones Road's Junip page`,
+        description: `Successfully imported ${data.imported} authentic reviews from ${BRAND_NAME}'s Junip page`,
       });
       // Refetch stats and reviews
       window.location.reload();
@@ -245,7 +246,7 @@ export default function ReviewTraining() {
                         </div>
                       ))}
                       <div className="mt-4 p-3 bg-green-50 rounded-lg">
-                        <p className="text-xs text-green-700">✅ Authentic reviews imported from Jones Road's Junip page</p>
+                        <p className="text-xs text-green-700">✅ Authentic reviews imported from ${BRAND_NAME}'s Junip page</p>
                       </div>
                     </div>
                   ) : (
@@ -662,7 +663,7 @@ Format examples:
                       <div>
                         <h3 className="font-medium text-green-800">Authentic Data Source Verified</h3>
                         <p className="text-sm text-green-600">
-                          Reviews imported from Jones Road's official Junip customer review platform
+                          Reviews imported from ${BRAND_NAME}'s official Junip customer review platform
                         </p>
                       </div>
                     </div>

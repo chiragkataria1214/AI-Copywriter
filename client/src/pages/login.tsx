@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/utils/useToast';
 import { Sparkles, Eye, EyeOff } from 'lucide-react';
+import { ERROR_MESSAGES, logError } from '@/utils/errorMessages';
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -38,10 +39,10 @@ export default function Login() {
       }, 200);
     },
     onError: (error) => {
-      console.error('Login error:', error);
+      logError('Login', error);
       toast({
         title: "Login Failed",
-        description: "Invalid username or password. Please try again.",
+        description: ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS,
         variant: "destructive",
       });
     },
@@ -183,7 +184,7 @@ export default function Login() {
         </Card>
 
         <div className="text-center text-xs text-gray-500">
-          <p>Powered by Claude AI • Secure Authentication</p>
+          <p>Secure Authentication</p>
         </div>
       </div>
     </div>
