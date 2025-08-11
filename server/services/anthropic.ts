@@ -15,8 +15,17 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || 'dummy-key',
 });
 
-export async function reviseContent(request: RevisionRequest, trainingConfig: TrainingConfig): Promise<string> {
+export async function reviseContent(request: RevisionRequest, trainingConfig: TrainingConfig): Promise<{ revisedContent: string; debugInfo: any }> {
   const { originalContent, revisionInstructions, contentType, context } = request;
+  
+  // 🔍 DEBUG: Log incoming revision request
+  console.group('🔄 BACKEND REVISION REQUEST');
+  console.log('📝 Revision Instructions:', revisionInstructions);
+  console.log('🎯 Content Type:', contentType);
+  console.log('📄 Original Content Length:', originalContent?.length || 0);
+  console.log('📄 Original Content Preview:', originalContent?.substring(0, 200) + (originalContent?.length > 200 ? '...' : ''));
+  console.log('🎯 Context:', context);
+  console.log('🕐 Request Timestamp:', new Date().toISOString());
 
   // Map content types to station names for getting the appropriate system prompt
   const contentTypeToStation: Record<string, string> = {
@@ -26,14 +35,22 @@ export async function reviseContent(request: RevisionRequest, trainingConfig: Tr
     'custom': 'customRequest',
     'email': 'email',
     'sms': 'sms',
+    'retention': 'email', // Map retention to email station for general retention copy
     'staticAd': 'staticAd',
-    'socialCaption': 'socialCaptions'
+    'socialCaption': 'socialCaptions',
+    'storySequence': 'socialCaptions' // Map story sequence to social captions station
   };
 
   const stationName = contentTypeToStation[contentType] || 'customRequest';
+  
+  console.log('🏭 Station Mapping:', { contentType, stationName });
+  console.log('📊 Available Stations:', Object.keys(trainingConfig?.stationPrompts || {}));
 
   // Get station-specific system prompt from training config
   const baseSystemPrompt = (trainingConfig?.stationPrompts as any)?.[stationName]?.systemPrompt;
+  
+  console.log('📋 Base System Prompt Found:', !!baseSystemPrompt);
+  console.log('📋 Base System Prompt Length:', baseSystemPrompt?.length || 0);
 
   // Build AI Settings context using the helper function
   const aiSettingsContext = buildAllBrandSettingsContext(trainingConfig, {
@@ -43,9 +60,35 @@ export async function reviseContent(request: RevisionRequest, trainingConfig: Tr
     brandDrBalance: context?.brandDrBalance || DEFAULT_BRAND_DR_BALANCE,
     useJonesBrandGuide: context?.useJonesBrandGuide ?? true
   });
+  
+  console.log('🎯 AI Settings Context Length:', aiSettingsContext?.length || 0);
+  console.log('🎯 Context Parameters:', {
+    persona: context?.persona,
+    selectedProduct: context?.selectedProduct,
+    selectedProducts: context?.selectedProducts,
+    brandDrBalance: context?.brandDrBalance,
+    useJonesBrandGuide: context?.useJonesBrandGuide
+  });
 
   // Create revision-specific system prompt
   let systemPrompt = '';
+  
+  // Check if this is a listicle revision by looking for listicle structure in original content
+  const isListicleRevision = originalContent && (
+    originalContent.includes('"listicle"') || 
+    originalContent.includes('"bullets"') || 
+    originalContent.includes('"bullet_1_hook"') ||
+    originalContent.includes('bullet_1_hook') ||
+    originalContent.includes('bullet_2_solution')
+  );
+  
+  console.log('🔍 REVISION LISTICLE DETECTION:', { 
+    isListicleRevision, 
+    contentType,
+    hasListicleKey: originalContent?.includes('"listicle"'),
+    hasBulletsKey: originalContent?.includes('"bullets"'),
+    originalContentPreview: originalContent?.substring(0, 200)
+  });
 
   if (baseSystemPrompt) {
     // Use station-specific prompt as base and add revision context
@@ -57,6 +100,93 @@ ${aiSettingsContext}
 
 REVISION TASK:
 Your task is to revise ${contentType} copy based on specific improvement instructions while maintaining the brand voice and style established above.
+
+${isListicleRevision ? `
+CRITICAL: This is a LISTICLE revision. You MUST return the response in the exact JSON format below:
+
+\`\`\`json
+{
+  "listicle": {
+    "meta": {
+      "target_audience": "string - specific audience segment",
+      "awareness_level": "problem-aware|solution-aware|product-aware", 
+      "ad_angle_match": "string - primary ad angle being matched",
+      "word_count": "number - total words",
+      "read_time_seconds": "number - estimated read time"
+    },
+    "headline": {
+      "text": "string - 8-15 words",
+      "framework_type": "problem_specific_benefit|curiosity_paradox|authority_disruption|positive_polarization|urgency_benefit",
+      "hook_strength": "high|medium|low"
+    },
+    "bullets": {
+      "bullet_1_hook": {
+        "text": "string - 1-3 sentences",
+        "purpose": "problem_agitation",
+        "emotional_trigger": "string - primary emotion targeted",
+        "template_used": "pain_point|disruption|urgency"
+      },
+      "bullet_2_solution": {
+        "text": "string - 2-4 sentences",
+        "purpose": "authority_establishment", 
+        "credibility_element": "string - main credibility factor",
+        "template_used": "science_innovation|authority|unique_mechanism"
+      },
+      "bullet_3_experience": {
+        "text": "string - 2-4 sentences",
+        "purpose": "desire_creation",
+        "transformation_focus": "string - main benefit highlighted", 
+        "template_used": "ease|transformation_timeline|sensory"
+      },
+      "bullet_4_validator": {
+        "text": "string - 1-3 sentences",
+        "purpose": "trust_building",
+        "proof_types": ["array of proof types used"],
+        "template_used": "media|expert|clinical|customer"
+      },
+      "bullet_5_closer": {
+        "text": "string - 1-2 sentences",
+        "purpose": "action_driver",
+        "urgency_element": "string - scarcity/urgency factor",
+        "template_used": "bundle_urgency|risk_reversal|scarcity"
+      }
+    },
+    "social_proof": {
+      "types_included": ["array - minimum 3 types"],
+      "volume_metrics": "string - if included",
+      "clinical_data": "string - if included",
+      "media_validation": "string - if included", 
+      "expert_endorsements": "string - if included",
+      "customer_testimonials": "string - if included",
+      "founder_authority": "string - if included"
+    },
+    "optimization_compliance": {
+      "reading_level": "number - grade level",
+      "customer_language_used": "boolean",
+      "specific_numbers_included": "boolean",
+      "power_words_count": "number", 
+      "mobile_optimized": "boolean",
+      "conversion_focused": "boolean"
+    },
+    "psychological_progression": {
+      "attention_grab": "boolean - headline + bullet 1",
+      "interest_build": "boolean - bullet 2",
+      "desire_create": "boolean - bullet 3", 
+      "trust_establish": "boolean - bullet 4",
+      "action_drive": "boolean - bullet 5"
+    },
+    "performance_indicators": {
+      "scroll_stopping_power": "high|medium|low",
+      "conversion_readiness": "high|medium|low",
+      "message_continuity": "perfect|good|needs_work",
+      "mobile_consumption": "optimized|adequate|poor"
+    }
+  }
+}
+\`\`\`
+
+You MUST return ONLY the JSON structure above. Do not include any explanations or additional text outside the JSON.
+` : ''}
 
 ${contentType === 'custom' ? `
 SPECIAL NOTES FOR CUSTOM COPY REVISION:
@@ -76,10 +206,10 @@ SPECIAL NOTES FOR SOCIAL CAPTION REVISION:
 - Keep the caption concise and easy to read.
 ` : ''}
 
-${contentType === 'sms' || contentType === 'email' ? `
+${contentType === 'sms' || contentType === 'email' || contentType === 'retention' ? `
 SPECIAL NOTES FOR RETENTION COPY REVISION:
-- This is ${context?.field === 'retention' ? 'email/SMS retention copy' : 'retention marketing content'}
-- Maintain platform-appropriate length and formatting (Email vs SMS)
+- This is ${contentType === 'sms' ? 'SMS' : contentType === 'email' ? 'email' : 'general retention'} content
+- Maintain platform-appropriate length and formatting (Email vs SMS vs general retention)
 - Focus on customer retention and engagement principles
 - Use personalized, relationship-building language appropriate for existing customers
 - Balance promotional content with value-driven messaging
@@ -89,6 +219,27 @@ SPECIAL NOTES FOR RETENTION COPY REVISION:
 ${context?.selectedProducts && context.selectedProducts.length > 0 ? `
 - Feature these selected products appropriately: ${context.selectedProducts.join(', ')}
 ` : ''}
+` : ''}
+
+${contentType === 'storySequence' ? `
+SPECIAL NOTES FOR STORY SEQUENCE REVISION:
+- This is a story sequence slide/frame for social media stories
+- Maintain the slide structure with title, content, and visual direction
+- Keep content concise and visually engaging for mobile viewing
+- Ensure the content flows well with other slides in the sequence
+- Consider the visual direction when crafting the text content
+- Use clean, plain text formatting without markdown or special characters
+- Focus on creating compelling, swipeable content that holds attention
+` : ''}
+
+${contentType === 'staticAd' ? `
+SPECIAL NOTES FOR STATIC AD ANALYSIS REVISION:
+- This is analysis of an existing static ad image
+- Maintain analytical depth while improving clarity and actionability
+- Focus on performance insights, creative feedback, and strategic recommendations
+- Structure insights in a clear, scannable format
+- Balance creative critique with strategic business impact
+- Use clean, plain text formatting without markdown or special characters
 ` : ''}
 
 REVISION PRINCIPLES:
@@ -146,15 +297,40 @@ ${context.customRequest && contentType === 'custom' ? `- Original Request: ${con
 
 Please revise the content applying the improvement instructions while maintaining the established brand voice and the original intent.`;
 
+  console.log('📋 Final System Prompt Length:', systemPrompt.length);
+  console.log('📄 Final User Prompt Length:', userPrompt.length);
+  console.log('📄 User Prompt Preview:', userPrompt.substring(0, 300) + (userPrompt.length > 300 ? '...' : ''));
+
   try {
+    const startTime = Date.now();
+    console.log('🤖 Sending request to Anthropic API...');
+    
+    // Increase max tokens for landing copy revisions (especially listicle format)
+    const maxTokens = contentType === 'landingCopy' ? 8000 : 1024;
+    
+    console.log('⚙️ Request Parameters:', {
+      model: DEFAULT_MODEL_STR,
+      max_tokens: maxTokens,
+      systemPromptLength: systemPrompt.length,
+      userPromptLength: userPrompt.length,
+      contentType: contentType
+    });
+
     const response = await anthropic.messages.create({
       model: DEFAULT_MODEL_STR,
       system: systemPrompt,
-      max_tokens: 1024,
+      max_tokens: maxTokens,
       messages: [{ role: 'user', content: userPrompt }],
     });
 
+    const endTime = Date.now();
+    console.log('✅ Anthropic API Response received in:', (endTime - startTime) + 'ms');
+    console.log('🤖 Response Usage:', response.usage);
+    console.log('🤖 Response Model:', response.model);
+
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
+    console.log('📄 Raw AI Response Length:', content.length);
+    console.log('📄 Raw AI Response Preview:', content.substring(0, 300) + (content.length > 300 ? '...' : ''));
 
     // Clean up the response - remove quotes and extra formatting
     const revisedContent = content
@@ -162,9 +338,28 @@ Please revise the content applying the improvement instructions while maintainin
       .replace(/^\*\*(.+)\*\*$/s, '$1') // Remove bold formatting
       .trim();
 
-    return revisedContent;
+    console.log('✨ Cleaned Response Length:', revisedContent.length);
+    console.log('✨ Cleaned Response Preview:', revisedContent.substring(0, 300) + (revisedContent.length > 300 ? '...' : ''));
+    console.log('✅ Revision completed successfully');
+    console.groupEnd();
+
+    return {
+      revisedContent,
+      debugInfo: {
+        systemPrompt,
+        userPrompt,
+        requestPayload: request,
+        rawResponse: content
+      }
+    };
   } catch (error) {
-    console.error('Content revision error:', error);
+    console.error('❌ Content revision error:', error);
+    console.error('💥 Error Details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
+    console.groupEnd();
     throw new Error('Failed to revise content');
   }
 }
@@ -317,43 +512,109 @@ export async function generateLandingPageCopy(request: LandingPageRequest, train
   try {
     // Use station-specific model parameters for Landing Page
     const modelParams = AIPromptBuilder.getStationModelParams('landingPage', trainingConfig);
+    
+    // Increase max tokens for listicle format due to detailed JSON structure
+    const maxTokens = landingPageType === 'listicle' ? 8000 : modelParams.max_tokens;
+    
 
     const response = await anthropic.messages.create({
       model: modelParams.model,
       system: systemPrompt,
-      max_tokens: modelParams.max_tokens,
+      max_tokens: maxTokens,
       temperature: modelParams.temperature,
       messages: [{ role: 'user', content: userPrompt }],
     });
 
     const content = response.content[0].type === 'text' ? response.content[0].text : '';
 
-    // Parse landing page response using centralized parser
-    const { headline, subheadline, introduction, sections, cta, riskReversal } = AIResponseParser.parseLandingPageResponse(content, landingPageType);
+    // Handle different landing page types
+    if (landingPageType === 'listicle') {
+      // Parse listicle response using specialized parser
+      const { listicle, rawContent } = AIResponseParser.parseListicleResponse(content);
+      
+      return {
+        headline: listicle?.headline?.text || '',
+        subheadline: '',
+        introduction: '',
+        sections: [],
+        cta: '',
+        riskReversal: '',
+        socialProof: '',
+        conclusion: '',
+        listicle: listicle, // Add the full listicle structure
+        rawResponse: content,
+        stats: {
+          totalWords: content.split(/\s+/).length,
+          sectionCount: 0,
+          avgSectionLength: 0
+        },
+        debugInfo: AIPromptBuilder.createDebugInfo(
+          systemPrompt,
+          userPrompt,
+          content,
+          modelParams.model,
+          request
+        )
+      };
+    } else if (landingPageType === 'multi_product_page') {
+      // Parse multi product page response using dedicated parser
+      const { multi_product_page } = AIResponseParser.parseMultiProductPageResponse(content);
+      
+      // Also parse standard fields as fallback
+      const { headline, subheadline, introduction, sections, cta, riskReversal } = AIResponseParser.parseLandingPageResponse(content, landingPageType);
 
-    return {
-      headline,
-      subheadline,
-      introduction,
-      sections,
-      cta,
-      riskReversal,
-      socialProof: '',
-      conclusion: '',
-      rawResponse: content,
-      stats: {
-        totalWords: content.split(/\s+/).length,
-        sectionCount: sections.length,
-        avgSectionLength: sections.length > 0 ? Math.round(sections.reduce((sum: number, s: any) => sum + (s.wordCount || 0), 0) / sections.length) : 0
-      },
-      debugInfo: AIPromptBuilder.createDebugInfo(
-        systemPrompt,
-        userPrompt,
-        content,
-        modelParams.model,
-        request
-      )
-    };
+      return {
+        headline,
+        subheadline,
+        introduction,
+        sections,
+        cta,
+        riskReversal,
+        socialProof: '',
+        conclusion: '',
+        multi_product_page,
+        rawResponse: content,
+        stats: {
+          totalWords: content.split(/\s+/).length,
+          sectionCount: sections.length,
+          avgSectionLength: sections.length > 0 ? Math.round(sections.reduce((sum: number, s: any) => sum + (s.wordCount || 0), 0) / sections.length) : 0
+        },
+        debugInfo: AIPromptBuilder.createDebugInfo(
+          systemPrompt,
+          userPrompt,
+          content,
+          modelParams.model,
+          request
+        )
+      };
+    } else {
+      // Parse standard landing page response using centralized parser
+      const { headline, subheadline, introduction, sections, cta, riskReversal } = AIResponseParser.parseLandingPageResponse(content, landingPageType);
+
+      return {
+        headline,
+        subheadline,
+        introduction,
+        sections,
+        cta,
+        riskReversal,
+        socialProof: '',
+        conclusion: '',
+        rawResponse: content,
+        stats: {
+          totalWords: content.split(/\s+/).length,
+          sectionCount: sections.length,
+          avgSectionLength: sections.length > 0 ? Math.round(sections.reduce((sum: number, s: any) => sum + (s.wordCount || 0), 0) / sections.length) : 0
+        },
+        debugInfo: AIPromptBuilder.createDebugInfo(
+          systemPrompt,
+          userPrompt,
+          content,
+          modelParams.model,
+          request
+        )
+      };
+    }
   } catch (error) {
     console.error('Anthropic API error:', error);
     throw new Error('Failed to generate landing page copy');

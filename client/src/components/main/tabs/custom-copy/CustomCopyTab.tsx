@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Brain, Sparkles, Copy, FileText, Download, Eye } from 'lucide-react';
+import { Brain, Sparkles, Copy, FileText, Download, Eye, Target } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import jsPDF from 'jspdf';
@@ -16,6 +16,8 @@ import { ProductSelection } from '@/components/common/ProductSelection';
 import { Product } from '@shared/schema';
 import { UseMutationResult } from '@tanstack/react-query';
 import { TargetPersona } from '@/components/common/TargetPersona';
+import { StandardizedDebugButton } from '@/components/common/StandardizedDebugButton';
+import { STATION_KEYS } from '@/hooks/generation/useDebugInfo';
 import { BRAND_NAME } from '@shared/constants';
 import { BrandDrBalance } from '@/components/common/BrandDrBalance';
 import { Check } from 'lucide-react';
@@ -53,7 +55,7 @@ interface CustomCopyTabProps {
   generateCustomCopyMutation: UseMutationResult<any, Error, void, unknown>;
   getGenerationDisabledState: (stationType: 'customRequest') => { disabled: boolean; reason: string };
   copyToClipboard: (text: string, type: string) => Promise<void>;
-  setSelectedItemForRevision: (value: { type: "headline" | "primaryText" | "landingCopy" | "custom" | "retention"; index?: number; field?: string } | null) => void;
+  setSelectedItemForRevision: (value: { type: "headline" | "primaryText" | "landingCopy" | "custom" | "retention" | "staticAd" | "socialCaption"; index?: number; field?: string } | null) => void;
   setShowRevisionPanel: (value: boolean) => void;
   setCurrentGenerationMetadata: (metadata: any) => void;
   setShowGenerationDetails: (value: boolean) => void;
@@ -77,18 +79,10 @@ interface CustomCopyTabProps {
       frameworks?: string[];
     };
   };
-  debugInfo?: {
-    systemPrompt: string;
-    userPrompt: string;
-    requestPayload: any;
-    rawResponse: string;
-  } | null;
-  customRequestDebugInfo?: {
-    systemPrompt: string;
-    userPrompt: string;
-    requestPayload: any;
-    rawResponse: string;
-  } | null;
+  debugInfoManager?: {
+    getDebugInfo: (stationKey: string) => any;
+    setDebugInfo: (stationKey: string, debugInfo: any) => void;
+  };
 }
 
 export function CustomCopyTab({
@@ -119,8 +113,7 @@ export function CustomCopyTab({
   stationPrompts,
   brandGuidelines,
   copyFrameworks,
-  debugInfo,
-  customRequestDebugInfo,
+  debugInfoManager,
 }: CustomCopyTabProps) {
 
   const generatedContentRef = useRef<HTMLDivElement>(null);
@@ -293,13 +286,13 @@ export function CustomCopyTab({
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
                   <Sparkles className="text-jones-primary mr-2 sm:mr-3" size={18} />
-                  Generated Copy
+                  Custom Copy
                 </h3>
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex items-center space-x-1">
-                        <Download size={14} />
+                      <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs">
+                        <Download size={14} className="mr-1" />
                         <span>Download</span>
                       </Button>
                     </DropdownMenuTrigger>
@@ -316,21 +309,22 @@ export function CustomCopyTab({
                       setSelectedItemForRevision({ type: 'custom' });
                       setShowRevisionPanel(true);
                     }}
-                    className="flex items-center space-x-1"
+                    className="w-full sm:w-auto text-xs"
                   >
-                    <Sparkles size={14} />
-                    <span>Edit</span>
+                    <Target size={14} className="mr-1" />
+                    <span>Improve</span>
                   </Button>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => handleCopyToClipboard(generatedCustomResponse, 'custom')}
-                        >
-                          {copiedStates['custom'] ? <Check size={14} /> : <Copy size={14} />}
-                        </Button>
+                                              <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCopyToClipboard(generatedCustomResponse, 'custom')}
+                        className="w-full sm:w-auto text-xs px-2"
+                      >
+                        {copiedStates['custom'] ? <Check size={14} /> : <Copy size={14} />}
+                      </Button>
                       </TooltipTrigger>
                       <TooltipContent>
                         {copiedStates['custom'] ? 'Copied' : 'Copy'}
@@ -338,28 +332,20 @@ export function CustomCopyTab({
                     </Tooltip>
                   </TooltipProvider>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setCurrentGenerationMetadata({
-                        stationName: 'Custom Request',
-                        timestamp: new Date().toISOString(),
-                        modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
-                        temperature: modelSettings?.temperature || 0.7,
-                        maxTokens: modelSettings?.maxTokens || 2000,
-                        systemPrompt: customRequestDebugInfo?.systemPrompt || stationPrompts?.customRequest?.systemPrompt || `Expert marketing copywriter for ${BRAND_NAME}...`,
-                        userPrompt: customRequestDebugInfo?.userPrompt || `Request: ${customRequest}\nAudience: ${persona}`,
-                        requestPayload: customRequestDebugInfo?.requestPayload,
-                        rawResponse: customRequestDebugInfo?.rawResponse
-                      });
-                      setShowGenerationDetails(true);
+                  <StandardizedDebugButton
+                    stationKey={STATION_KEYS.CUSTOM_REQUEST}
+                    stationName="Custom Request"
+                    fallbackPrompts={{
+                      systemPrompt: stationPrompts?.customRequest?.systemPrompt || `Expert marketing copywriter for ${BRAND_NAME}...`,
+                      userPrompt: `Request: ${customRequest}\nAudience: ${persona}`
                     }}
+                    modelSettings={modelSettings}
+                    setCurrentGenerationMetadata={setCurrentGenerationMetadata}
+                    setShowGenerationDetails={setShowGenerationDetails}
                     className="flex items-center space-x-1 text-xs"
-                  >
-                    <Eye size={12} />
-                    <span>View Details</span>
-                  </Button>
+                    size="sm"
+                    debugInfoManager={debugInfoManager}
+                  />
                 </div>
               </div>
 

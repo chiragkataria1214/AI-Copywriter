@@ -43,6 +43,8 @@ import {
     Label
 } from '@/components/ui/label';
 import { TargetPersona } from '@/components/common/TargetPersona';
+import { StandardizedDebugButton } from '@/components/common/StandardizedDebugButton';
+import { STATION_KEYS } from '@/hooks/generation/useDebugInfo';
 import {
     Video,
     FileText,
@@ -138,12 +140,10 @@ interface AdCopyTabProps {
     saveCopyMutation: any;
     selectedHeadlineIndex: number;
     setSelectedHeadlineIndex: (value: number) => void;
-    debugInfo?: {
-        systemPrompt: string;
-        userPrompt: string;
-        requestPayload: any;
-        rawResponse: string;
-    } | null;
+    debugInfoManager?: {
+        getDebugInfo: (stationKey: string) => any;
+        setDebugInfo: (stationKey: string, debugInfo: any) => void;
+    };
     testingFocus?: string;
     strategicInsights?: { [key: string]: string | string[] } | null;
 }
@@ -208,7 +208,7 @@ export const AdCopyTab = ({
     saveCopyMutation,
     selectedHeadlineIndex,
     setSelectedHeadlineIndex,
-    debugInfo,
+    debugInfoManager,
     testingFocus,
     strategicInsights
 }: AdCopyTabProps) => {
@@ -673,26 +673,14 @@ export const AdCopyTab = ({
                                                     </Badge>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center space-x-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                                                    onClick={() => {
-                                                        setSelectedItemForRevision({ type: 'headline', index });
-                                                        setShowRevisionPanel(true);
-                                                    }}
-                                                    title="Suggest improvements"
-                                                >
-                                                    <Target size={14} />
-                                                </Button>
+                                            {/* <div className="flex items-center">
                                                 <TooltipProvider>
                                                   <Tooltip>
                                                     <TooltipTrigger asChild>
                                                       <Button
                                                           variant="ghost"
                                                           size="sm"
-                                                          className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                                                          className="w-full sm:w-auto text-xs px-2"
                                                           onClick={() => {
                                                               copyToClipboard(headline.copy, 'headline');
                                                               setCopiedHeadlineIndex(index);
@@ -708,7 +696,7 @@ export const AdCopyTab = ({
                                                     </TooltipContent>
                                                   </Tooltip>
                                                 </TooltipProvider>
-                                            </div>
+                                            </div> */}
                                         </div>
                                     </div>
                                 ))}
@@ -733,7 +721,7 @@ export const AdCopyTab = ({
                                 <FileText className="text-jones-primary mr-2 sm:mr-3" size={18} />
                                 Primary Text
                             </h3>
-                            <div className="flex items-center space-x-2">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
                                 <Button
                                     variant="outline"
                                     size="sm"
@@ -742,21 +730,22 @@ export const AdCopyTab = ({
                                         setShowRevisionPanel(true);
                                     }}
                                     disabled={!generatedPrimaryText}
-                                    className="w-full sm:w-auto"
+                                    className="w-full sm:w-auto text-xs"
                                 >
-                                    <Target size={16} />
-                                    <span className="ml-1">Improve</span>
+                                    <Target size={14} className="mr-1" />
+                                    <span>Improve</span>
                                 </Button>
                                 <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <Button
                                           variant="outline"
-                                          size="icon"
+                                          size="sm"
                                           onClick={() => copyToClipboard(generatedPrimaryText, 'primary')}
                                           disabled={!generatedPrimaryText}
+                                          className="w-full sm:w-auto text-xs px-2"
                                       >
-                                          {copiedPrimaryText ? <Check size={16} /> : <Copy size={16} />}
+                                          {copiedPrimaryText ? <Check size={14} /> : <Copy size={14} />}
                                       </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
@@ -765,27 +754,22 @@ export const AdCopyTab = ({
                                   </Tooltip>
                                 </TooltipProvider>
 
-                                <Button
-                                    variant="outline"
+                                <StandardizedDebugButton
+                                    stationKey={STATION_KEYS.AD_COPY}
+                                    stationName="Ad Copy Generation"
+                                    fallbackPrompts={{
+                                        systemPrompt: stationPrompts?.adCopy?.systemPrompt || `Expert ad copy creator for ${BRAND_NAME}...`,
+                                        userPrompt: `Content Type: ${contentType}\nPersona: ${persona}\nTranscription: ${transcription?.substring(0, 100)}...`
+                                    }}
+                                    modelSettings={modelSettings}
+                                    setCurrentGenerationMetadata={setCurrentGenerationMetadata}
+                                    setShowGenerationDetails={setShowGenerationDetails}
+                                    disabled={!currentCopyId}
+                                    className="w-full sm:w-auto text-xs"
                                     size="sm"
-                                    disabled={!currentCopyId || saveCopyMutation?.isPending}
-                                    onClick={() => saveCopyMutation.mutate()}
-                                    className="flex items-center space-x-1 text-xs"
-                                >
-                                    <Eye size={14} />
-                                    <span>View Details</span>
-                                </Button>
+                                    debugInfoManager={debugInfoManager}
+                                />
 
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={!currentCopyId || saveCopyMutation?.isPending}
-                                    onClick={() => saveCopyMutation.mutate()}
-                                    className="flex items-center space-x-1"
-                                >
-                                    <Save size={14} />
-                                    <span>{saveCopyMutation?.isPending ? 'Saving...' : 'Save'}</span>
-                                </Button>
                             </div>
                         </div>
 
@@ -793,18 +777,6 @@ export const AdCopyTab = ({
                             <div className="border border-gray-200 rounded-lg p-3 sm:p-4 group">
                                 <div className="flex items-start justify-between">
                                     <p className="text-gray-900 leading-relaxed text-sm sm:text-base flex-1">{generatedPrimaryText}</p>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 mt-0"
-                                        onClick={() => {
-                                            setSelectedItemForRevision({ type: 'primaryText' });
-                                            setShowRevisionPanel(true);
-                                        }}
-                                        title="Suggest improvements"
-                                    >
-                                        <Target size={14} />
-                                    </Button>
                                 </div>
 
                                 <div className="flex flex-col space-y-2 mt-4 pt-4 border-t border-gray-200 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
@@ -842,7 +814,7 @@ export const AdCopyTab = ({
                 </Card>
 
                 {/*  Testing Focus */}
-                {testingFocus && (
+                {/* {testingFocus && (
                     <Card>
                         <CardContent className="p-4 sm:p-6">
                             {testingFocus && (
@@ -853,7 +825,7 @@ export const AdCopyTab = ({
                             )}
                         </CardContent>
                     </Card>
-                )}
+                )} */}
 
                 {/* Strategic Insights */}
                 {strategicInsights && Object.keys(strategicInsights).length > 0 && (

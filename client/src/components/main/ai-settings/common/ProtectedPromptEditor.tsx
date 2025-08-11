@@ -24,7 +24,7 @@ const ProtectedPromptEditor: React.FC<ProtectedPromptEditorProps> = ({
   value,
   onChange,
   placeholder,
-  rows = 8,
+  rows = 20,
   disabled = false,
   copyToClipboard,
   textareaRef,

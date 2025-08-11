@@ -32,6 +32,16 @@ export function registerReviewRoutes(app: Express) {
       const totalResult = await db.execute(sql`SELECT COUNT(*) as total_reviews FROM reviews`);
       const totalReviews = totalResult.rows?.[0]?.total_reviews || 0;
       
+      // If no reviews exist, return empty stats
+      if (parseInt(totalReviews as string) === 0) {
+        return res.json({
+          totalReviews: 0,
+          byProduct: {},
+          avgRating: "0.0",
+          positivePercentage: 0
+        });
+      }
+      
       // Get product breakdown
       const productResult = await db.execute(sql`
         SELECT 
@@ -73,7 +83,13 @@ export function registerReviewRoutes(app: Express) {
       });
     } catch (error) {
       console.error('Review stats error:', error);
-      res.status(500).json({ message: 'Failed to fetch review statistics' });
+      // Return empty stats instead of error
+      res.json({
+        totalReviews: 0,
+        byProduct: {},
+        avgRating: "0.0",
+        positivePercentage: 0
+      });
     }
   });
 

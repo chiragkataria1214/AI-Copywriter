@@ -116,7 +116,9 @@ export const PaidSocialTabs = (props: any) => {
                     stationPrompts={props.stationPrompts}
                     brandGuidelines={props.brandGuidelines}
                     copyFrameworks={props.copyFrameworks}
-                    debugInfo={props.staticAdDebugInfo}
+                    debugInfoManager={props.debugInfoManager}
+                    setSelectedItemForRevision={contentRevision?.setSelectedItemForRevision || (() => {})}
+                    setShowRevisionPanel={contentRevision?.setShowRevisionPanel || (() => {})}
                 />
             </TabsContent>
         </Tabs>

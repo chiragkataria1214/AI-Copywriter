@@ -22,9 +22,8 @@ export const CustomCopyTabs = (props: any) => {
         setSelectedItemForRevision: contentRevision?.setSelectedItemForRevision || (() => {}),
         setShowRevisionPanel: contentRevision?.setShowRevisionPanel || (() => {}),
         
-        // Debug info
-        debugInfo: null,
-        customRequestDebugInfo: props.customRequestDebugInfo || null,
+        // Debug info manager
+        debugInfoManager: props.debugInfoManager,
     });
     
     return <CustomCopyTab {...customCopyTabProps} />;

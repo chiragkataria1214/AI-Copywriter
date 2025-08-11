@@ -60,10 +60,8 @@ export const RetentionTabs = (props: any) => {
         setRevisionInstructions: () => {}, // Would need revision hook
         setShowRevisionPanel: contentRevision?.setShowRevisionPanel || (() => {}),
         
-        // Debug info
-        debugInfo: null,
-        retentionDebugInfo: props.retentionDebugInfo,
-        setRetentionDebugInfo: props.setRetentionDebugInfo,
+        // Debug info manager
+        debugInfoManager: props.debugInfoManager,
     });
     
     return <RetentionTab {...retentionTabProps} />;

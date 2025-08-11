@@ -25,7 +25,7 @@ export const CustomerReviewsTab: React.FC<CustomerReviewsTabProps> = ({
       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
         <p className="text-sm text-green-800 font-medium">Customer Review Analytics & Training</p>
         <p className="mt-2 text-sm text-gray-500">
-          Comprehensive analytics dashboard for your {reviewStats.totalReviews?.toLocaleString()}+ authentic customer reviews from {BRAND_NAME}'s Junip platform.
+          Comprehensive analytics dashboard for your {reviewStats?.totalReviews?.toLocaleString() || '0'}+ authentic customer reviews from {BRAND_NAME}'s Junip platform.
         </p>
       </div>
 
@@ -41,7 +41,7 @@ export const CustomerReviewsTab: React.FC<CustomerReviewsTabProps> = ({
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
-          {!reviewStats ? (
+          {reviewStats === undefined ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
@@ -49,7 +49,7 @@ export const CustomerReviewsTab: React.FC<CustomerReviewsTabProps> = ({
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="text-center bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 rounded-lg p-4">
-                  <div className="text-3xl font-bold text-[#004182]">{reviewStats.totalReviews?.toLocaleString()}</div>
+                  <div className="text-3xl font-bold text-[#004182]">{reviewStats?.totalReviews?.toLocaleString() || '0'}</div>
                   <div className="text-sm text-gray-600 mt-1">Total Reviews</div>
                   <div className="text-xs text-green-600 mt-2 flex items-center justify-center">
                     <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
@@ -58,19 +58,19 @@ export const CustomerReviewsTab: React.FC<CustomerReviewsTabProps> = ({
                 </div>
 
                 <div className="text-center bg-gradient-to-br from-green-50 to-green-100 border-green-200 rounded-lg p-4">
-                  <div className="text-3xl font-bold text-green-600">{reviewStats.avgRating}★</div>
+                  <div className="text-3xl font-bold text-green-600">{reviewStats?.avgRating || '0'}★</div>
                   <div className="text-sm text-gray-600 mt-1">Average Rating</div>
                   <div className="text-xs text-gray-500 mt-2">Perfect satisfaction</div>
                 </div>
 
                 <div className="text-center bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 rounded-lg p-4">
-                  <div className="text-3xl font-bold text-purple-600">{reviewStats.positivePercentage}%</div>
+                  <div className="text-3xl font-bold text-purple-600">{reviewStats?.positivePercentage || '0'}%</div>
                   <div className="text-sm text-gray-600 mt-1">Positive Sentiment</div>
                   <div className="text-xs text-gray-500 mt-2">Outstanding satisfaction</div>
                 </div>
 
                 <div className="text-center bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 rounded-lg p-4">
-                  <div className="text-3xl font-bold text-orange-600">{Object.keys(reviewStats.byProduct || {}).length}</div>
+                  <div className="text-3xl font-bold text-orange-600">{Object.keys(reviewStats?.byProduct || {}).length}</div>
                   <div className="text-sm text-gray-600 mt-1">Top Products</div>
                   <div className="text-xs text-gray-500 mt-2">With review data</div>
                 </div>
@@ -92,7 +92,7 @@ export const CustomerReviewsTab: React.FC<CustomerReviewsTabProps> = ({
                     </div>
                   </div>
                   <Badge variant="secondary" className="bg-green-100 text-green-700">
-                    {reviewStats.totalReviews?.toLocaleString()} Reviews Active
+                    {reviewStats?.totalReviews?.toLocaleString() || '0'} Reviews Active
                   </Badge>
                 </div>
               </div>
@@ -110,7 +110,7 @@ export const CustomerReviewsTab: React.FC<CustomerReviewsTabProps> = ({
             <p className="text-sm text-blue-600">Visual breakdown of your authentic customer reviews by product</p>
           </div>
 
-          {!reviewStats ? (
+          {reviewStats === undefined ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
@@ -118,11 +118,11 @@ export const CustomerReviewsTab: React.FC<CustomerReviewsTabProps> = ({
             <div className="space-y-4">
               {Object.entries(products).slice(0, 4).map(([key, product], index) => {
                 const colors = ['bg-blue-500', 'bg-purple-500', 'bg-yellow-500', 'bg-green-500'];
-                const count = reviewStats.byProduct?.[key] || 0;
+                const count = reviewStats?.byProduct?.[key] || 0;
                 const color = colors[index % colors.length];
                 return { product: (product as any).displayName, count, color, key };
               }).map(({ product, count, color, key }) => {
-                const percentage = reviewStats.totalReviews > 0 ? Math.round((count / reviewStats.totalReviews) * 100) : 0;
+                const percentage = (reviewStats?.totalReviews || 0) > 0 ? Math.round((count / (reviewStats?.totalReviews || 1)) * 100) : 0;
                 return (
                   <div key={product} className="space-y-2">
                     <div className="flex justify-between items-center">

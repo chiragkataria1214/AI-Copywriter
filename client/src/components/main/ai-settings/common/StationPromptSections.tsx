@@ -193,11 +193,11 @@ export const StationSystemPromptSection: React.FC<SystemSectionProps> = ({
       {isOpen && (
         <div className="p-6 border-t border-gray-100 space-y-6">
           <ProtectedPromptEditor
-            label=""
+            label="Base User Prompt Template (Editable)"
             value={systemPrompt}
             onChange={onChange}
             placeholder={placeholder}
-            rows={8}
+            rows={20}
             disabled={!isAdmin}
             copyToClipboard={copyToClipboard}
             textareaRef={systemTextareaRef}
@@ -320,7 +320,7 @@ export const StationUserPromptSection: React.FC<UserSectionProps> = ({
             value={userPromptTemplate}
             onChange={onChange}
             placeholder={placeholder}
-            rows={6}
+            rows={20}
             disabled={!isAdmin}
             copyToClipboard={copyToClipboard}
             textareaRef={userTextareaRef}

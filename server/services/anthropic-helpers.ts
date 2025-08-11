@@ -181,7 +181,7 @@ export class AIPromptBuilder {
 
     // Evaluate simple conditional blocks before variable replacement.
     // Supported syntax (non-nested):
-    // {{#if landingPageType == 'multiProduct'}} ... {{else if landingPageType == 'listicle'}} ... {{else}} ... {{/if}}
+            // {{#if landingPageType == 'multiProduct' || landingPageType == 'multi_product_page'}} ... {{else if landingPageType == 'listicle'}} ... {{else}} ... {{/if}}
     // Operators supported: ==, !=, in, includes (alias: contains)
     const evaluateCondition = (expr: string, scope: Record<string, any>): boolean => {
       const trimmed = (expr || '').trim();
@@ -613,7 +613,7 @@ export class AIResponseParser {
       const subheadlineMatch = content.match(/SUBHEADLINE:?\s*(.+?)(?=\n|INTRODUCTION|REASON|HERO PRODUCT|PRODUCT|$)/is);
       subheadline = subheadlineMatch ? subheadlineMatch[1].trim() : '';
       
-      const introMatch = landingPageType === 'multiProduct'
+      const introMatch = landingPageType === 'multiProduct' || landingPageType === 'multi_product_page'
         ? content.match(/INTRODUCTION:?\s*([\s\S]*?)(?=HERO PRODUCT|PRODUCT #?1|$)/i)
         : landingPageType === 'listicle'
           ? null
@@ -634,6 +634,137 @@ export class AIResponseParser {
       sections,
       cta,
       riskReversal
+    };
+  }
+
+  /**
+   * Parse multi product page response with structured JSON format
+   */
+  static parseMultiProductPageResponse(content: string): {
+    multi_product_page: any;
+    rawContent: string;
+  } {
+
+    // First try to parse the entire content as JSON
+    const parsedJson = TextUtils.tryParseJson(content);
+
+    if (parsedJson && (parsedJson.hero_section || parsedJson.product_showcase || parsedJson.comparison_grid)) {
+      console.log('✅ MULTI PRODUCT PAGE PARSER - Successfully found multi product page data');
+      return {
+        multi_product_page: parsedJson,
+        rawContent: content
+      };
+    }
+
+    // If that fails, try to extract JSON from markdown code blocks
+    const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      const jsonContent = jsonMatch[1];
+
+      const parsedFromBlock = TextUtils.tryParseJson(jsonContent);
+
+      if (parsedFromBlock && (parsedFromBlock.hero_section || parsedFromBlock.product_showcase || parsedFromBlock.comparison_grid)) {
+        console.log('✅ MULTI PRODUCT PAGE PARSER - Successfully found multi product page data in code block');
+        return {
+          multi_product_page: parsedFromBlock,
+          rawContent: content
+        };
+      }
+    }
+
+    // Try alternative code block patterns
+    const altJsonMatch = content.match(/```\s*([\s\S]*?)\s*```/);
+    if (altJsonMatch) {
+      const jsonContent = altJsonMatch[1];
+      const parsedFromAltBlock = TextUtils.tryParseJson(jsonContent);
+
+      if (parsedFromAltBlock && (parsedFromAltBlock.hero_section || parsedFromAltBlock.product_showcase || parsedFromAltBlock.comparison_grid)) {
+        return {
+          multi_product_page: parsedFromAltBlock,
+          rawContent: content
+        };
+      }
+    }
+
+    console.log('❌ MULTI PRODUCT PAGE PARSER - No multi product page found, returning null');
+
+    return {
+      multi_product_page: null,
+      rawContent: content
+    };
+  }
+
+  /**
+   * Parse listicle response with structured JSON format
+   */
+  static parseListicleResponse(content: string): {
+    listicle: any;
+    rawContent: string;
+  } {
+    console.log('🔍 LISTICLE PARSER DEBUG - Raw content:', content.substring(0, 1000));
+    
+    // First try to parse the entire content as JSON
+    const parsedJson = TextUtils.tryParseJson(content);
+    console.log('🔍 LISTICLE PARSER DEBUG - Parsed JSON:', parsedJson);
+    console.log('🔍 LISTICLE PARSER DEBUG - Has listicle key:', !!parsedJson?.listicle);
+    
+    if (parsedJson && parsedJson.listicle) {
+      console.log('✅ LISTICLE PARSER - Successfully found listicle data');
+      return {
+        listicle: parsedJson.listicle,
+        rawContent: content
+      };
+    }
+
+    // If that fails, try to extract JSON from markdown code blocks
+    const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      const jsonContent = jsonMatch[1];
+
+      const parsedFromBlock = TextUtils.tryParseJson(jsonContent);
+      
+      if (parsedFromBlock && parsedFromBlock.listicle) {
+        return {
+          listicle: parsedFromBlock.listicle,
+          rawContent: content
+        };
+      }
+    }
+
+    // Try alternative code block patterns
+    const altJsonMatch = content.match(/```\s*([\s\S]*?)\s*```/);
+    if (altJsonMatch) {
+      const jsonContent = altJsonMatch[1];
+      const parsedFromAltBlock = TextUtils.tryParseJson(jsonContent);
+      
+      if (parsedFromAltBlock && parsedFromAltBlock.listicle) {
+        return {
+          listicle: parsedFromAltBlock.listicle,
+          rawContent: content
+        };
+      }
+    }
+    
+    
+    // Try to extract headline from standard response for mock data
+    let mockHeadline = 'Sample Listicle Headline';
+    const headlineMatch = content.match(/HEADLINE:?\s*(.+?)(?=\n|SUBHEADLINE|INTRODUCTION|$)/is);
+    if (headlineMatch) {
+      mockHeadline = headlineMatch[1].trim();
+    }
+    
+    // Create a mock listicle structure for testing the UI
+    return {
+      listicle: {
+        meta: {},
+        headline: {},
+        bullets: {},
+        social_proof: {},
+        optimization_compliance: {},
+        psychological_progression: {},
+        performance_indicators: {}
+      },
+      rawContent: content
     };
   }
 

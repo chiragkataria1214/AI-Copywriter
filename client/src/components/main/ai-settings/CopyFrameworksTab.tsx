@@ -679,7 +679,7 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
                                 }
                               }));
                             }}
-                            className="mt-1"
+                            className="mt-1 h-10"
                             placeholder="BENEFIT DRIVEN"
                             disabled={effectiveUser?.role !== 'admin'}
                           />
@@ -701,7 +701,7 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
                                 }
                               }));
                             }}
-                            className="mt-1"
+                            className="mt-1 h-10"
                             placeholder="[Primary Benefit] + [Outcome]"
                             disabled={effectiveUser?.role !== 'admin'}
                           />
@@ -725,7 +725,7 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
                             }));
                           }}
                           className="mt-1"
-                          rows={2}
+                          rows={4}
                           placeholder="Lead with the primary benefit/transformation the product delivers"
                           disabled={effectiveUser?.role !== 'admin'}
                         />
@@ -751,7 +751,7 @@ export const CopyFrameworksTab: React.FC<CopyFrameworksTabProps> = ({
                             }));
                           }}
                           className="mt-1"
-                          rows={2}
+                          rows={4}
                           placeholder="Natural Glow Simplified
 Effortless Beauty Found
 Your Skin But Better"
@@ -883,7 +883,7 @@ Your Skin But Better"
                                     }
                                   }));
                                 }}
-                                className="mt-1"
+                                className="mt-1 h-10"
                                 placeholder="e.g., Get the Look"
                                 disabled={effectiveUser?.role !== 'admin'}
                               />
@@ -908,7 +908,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1"
-                              rows={2}
+                              rows={4}
                               placeholder="Brief description of this email framework..."
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -932,7 +932,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1"
-                              rows={2}
+                              rows={4}
                               placeholder="e.g., Hero: Hed / Dek / CTA → Intro Module → Product Breakdown..."
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -956,7 +956,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1"
-                              rows={2}
+                              rows={4}
                               placeholder="e.g., Product steps, application tips, seasonal inspiration..."
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -980,7 +980,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1 font-mono"
-                              rows={4}
+                              rows={6}
                               placeholder="Detailed framework structure, examples, best practices..."
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -1004,7 +1004,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1"
-                              rows={3}
+                              rows={5}
                               placeholder="Instructions for AI to generate this framework type..."
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -1028,7 +1028,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1"
-                              rows={2}
+                              rows={4}
                               placeholder="Expected output format and requirements..."
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -1051,7 +1051,7 @@ Your Skin But Better"
                                   }
                                 }));
                               }}
-                              className="mt-1"
+                              className="mt-1 h-10"
                               placeholder="e.g., short, medium, long, 300-500 words, 2-3 paragraphs, etc."
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -1339,7 +1339,7 @@ Your Skin But Better"
                                     }
                                   }));
                                 }}
-                                className="mt-1"
+                                className="mt-1 h-10"
                                 placeholder="e.g., Product Launch"
                                 disabled={effectiveUser?.role !== 'admin'}
                               />
@@ -1364,7 +1364,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1"
-                              rows={2}
+                              rows={4}
                               placeholder="Brief description of this SMS framework..."
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -1388,7 +1388,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1"
-                              rows={2}
+                              rows={4}
                               placeholder="Hook → Key benefit → CTA + short link"
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -1412,7 +1412,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1"
-                              rows={2}
+                              rows={4}
                               placeholder="e.g., Hook, benefit, urgency, single CTA"
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -1436,7 +1436,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1 font-mono"
-                              rows={4}
+                              rows={6}
                               placeholder="Detailed framework guidance and sample SMS variations..."
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -1460,7 +1460,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1"
-                              rows={3}
+                              rows={5}
                               placeholder="Instructions for AI to generate this SMS type..."
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -1484,7 +1484,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1"
-                              rows={2}
+                              rows={4}
                               placeholder="Under 250 chars, single CTA + link, no emojis, minimal punctuation"
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -1507,7 +1507,7 @@ Your Skin But Better"
                                   }
                                 }));
                               }}
-                              className="mt-1"
+                              className="mt-1 h-10"
                               placeholder="short"
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -1610,7 +1610,7 @@ Your Skin But Better"
                                     }
                                   }));
                                 }}
-                                className="mt-1"
+                                className="mt-1 h-10"
                                 placeholder="e.g., Listicle"
                                 disabled={effectiveUser?.role !== 'admin'}
                               />
@@ -1635,7 +1635,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1"
-                              rows={2}
+                              rows={4}
                               placeholder="Brief description of this landing page framework..."
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -1662,7 +1662,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1"
-                              rows={3}
+                              rows={5}
                               placeholder="1. IMMEDIATE PROBLEM SOLVER - addresses main pain point&#10;2. UNIQUE ADVANTAGE - what makes this different&#10;3. EASE OF USE - how simple/convenient it is"
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -1689,7 +1689,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1"
-                              rows={3}
+                              rows={5}
                               placeholder="- CLEAR BENEFIT STATEMENT (10-20 words): Direct, specific value&#10;- BRIEF EXPLANATION (30-60 words): Why this matters, how it works"
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -1716,7 +1716,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1"
-                              rows={3}
+                              rows={5}
                               placeholder="Maximum 100 words per reason section (concise and scannable)&#10;Lead with benefits, support with facts - not the other way around"
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -1743,7 +1743,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1"
-                              rows={3}
+                              rows={5}
                               placeholder="Grüns: 'Better Poops (Seriously)' - direct, honest, conversational&#10;Loop: 'Blocks Out The Loudest Tools - 24dB Reduction' - specific benefit + proof"
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -1767,7 +1767,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1"
-                              rows={3}
+                              rows={5}
                               placeholder="Instructions for AI to generate this framework type..."
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -1791,7 +1791,7 @@ Your Skin But Better"
                                 }));
                               }}
                               className="mt-1"
-                              rows={2}
+                              rows={4}
                               placeholder="Expected output format and requirements..."
                               disabled={effectiveUser?.role !== 'admin'}
                             />
@@ -1845,7 +1845,7 @@ Your Skin But Better"
             }
           }}
           className="mt-1 text-gray-900 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-          rows={6}
+          rows={8}
           placeholder="Headlines: Maximum 5 words, must fit in 1 line on mobile
 Primary text: 15-25 words optimal for Meta ads
 Keep sentences to 8-12 words for mobile comprehension
@@ -1890,7 +1890,7 @@ Test emotional triggers and rational benefits"
                       }
                     }));
                   }}
-                  className="flex-1 border-blue-200 focus:border-blue-400"
+                  className="flex-1 border-blue-200 focus:border-blue-400 h-10"
                   placeholder="Enter brand-first guideline..."
                   disabled={effectiveUser?.role !== 'admin'}
                 />
@@ -1971,7 +1971,7 @@ Test emotional triggers and rational benefits"
                       }
                     }));
                   }}
-                  className="flex-1 border-orange-200 focus:border-orange-400"
+                  className="flex-1 border-orange-200 focus:border-orange-400 h-10"
                   placeholder="Enter direct response guideline..."
                   disabled={effectiveUser?.role !== 'admin'}
                 />

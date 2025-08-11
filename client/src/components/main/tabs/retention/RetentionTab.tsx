@@ -14,6 +14,8 @@ import { apiRequest } from '@/lib/queryClient';
 import { TargetPersona } from '@/components/common/TargetPersona';
 import { BRAND_NAME } from '@shared/constants';
 import { BrandDrBalance } from '@/components/common/BrandDrBalance';
+import { StandardizedDebugButton } from '@/components/common/StandardizedDebugButton';
+import { STATION_KEYS } from '@/hooks/generation/useDebugInfo';
 
 const EmailContentRenderer = ({ content }: { content: string }) => {
   const regex = /(\[.*?\]|\*\*.*?\*\*)/g;
@@ -222,18 +224,10 @@ interface RetentionTabProps {
       frameworks?: string[];
     };
   };
-  retentionDebugInfo?: {
-    systemPrompt: string;
-    userPrompt: string;
-    requestPayload: any;
-    rawResponse: string;
-  } | null;
-  setRetentionDebugInfo: (debugInfo: {
-    systemPrompt: string;
-    userPrompt: string;
-    requestPayload: any;
-    rawResponse: string;
-  } | null) => void;
+  debugInfoManager?: {
+    getDebugInfo: (stationKey: string) => any;
+    setDebugInfo: (stationKey: string, debugInfo: any) => void;
+  };
 }
 
 export const RetentionTab: React.FC<RetentionTabProps> = ({
@@ -276,8 +270,7 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
   stationPrompts,
   brandGuidelines,
   copyFrameworks,
-  retentionDebugInfo,
-  setRetentionDebugInfo,
+  debugInfoManager,
 }) => {
   const [emailFrameworks, setEmailFrameworks] = useState<EmailFramework[]>([]);
   const [smsFrameworks, setSmsFrameworks] = useState<SmsFramework[]>([]);
@@ -373,8 +366,8 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
   const handleGenerate = () => {
     setParsingError(null);
     setShowVisualPreview(false);
-    setRetentionDebugInfo(null);
-    if (retentionPlatform === 'Email') {
+    debugInfoManager?.setDebugInfo(retentionPlatform.toLowerCase() === 'email' ? STATION_KEYS.RETENTION_EMAIL : STATION_KEYS.RETENTION_SMS, null);
+    if (retentionPlatform.toLowerCase() === 'email') {
       generateRetentionEmailMutation.mutate();
     } else {
       generateRetentionSmsMutation.mutate();
@@ -966,34 +959,26 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                         setRevisionInstructions('');
                         setShowRevisionPanel(true);
                       }}
-                      className="flex items-center space-x-2"
+                      className="w-full sm:w-auto text-xs"
                       size="sm"
                     >
-                      <Zap size={16} />
-                      <span>Edit Variation</span>
+                      <Zap size={14} className="mr-1" />
+                      <span>Improve</span>
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setCurrentGenerationMetadata({
-                          stationName: 'Email & SMS Retention',
-                          timestamp: new Date().toISOString(),
-                          modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
-                          temperature: modelSettings?.temperature || 0.7,
-                          maxTokens: modelSettings?.maxTokens || 2000,
-                          systemPrompt: retentionDebugInfo?.systemPrompt || stationPrompts?.retention?.systemPrompt || `Expert retention marketing copywriter for ${BRAND_NAME}...`,
-                          userPrompt: retentionDebugInfo?.userPrompt || `Platform: ${retentionPlatform}\nKey Message: ${retentionKeyMessage}\nProducts: ${retentionSelectedProducts.join(', ')}`,
-                          requestPayload: retentionDebugInfo?.requestPayload,
-                          rawResponse: retentionDebugInfo?.rawResponse
-                        });
-                        setShowGenerationDetails(true);
+                    <StandardizedDebugButton
+                      stationKey={retentionPlatform.toLowerCase() === 'email' ? STATION_KEYS.RETENTION_EMAIL : STATION_KEYS.RETENTION_SMS}
+                      stationName={`${retentionPlatform} Retention`}
+                      fallbackPrompts={{
+                        systemPrompt: stationPrompts?.retention?.systemPrompt || `Expert retention marketing copywriter for ${BRAND_NAME}...`,
+                        userPrompt: `Platform: ${retentionPlatform}\nKey Message: ${retentionKeyMessage}\nProducts: ${retentionSelectedProducts.join(', ')}`
                       }}
-                      className="flex items-center space-x-1 text-xs"
-                    >
-                      <Eye size={12} />
-                      <span>View Details</span>
-                    </Button>
+                      modelSettings={modelSettings}
+                      setCurrentGenerationMetadata={setCurrentGenerationMetadata}
+                      setShowGenerationDetails={setShowGenerationDetails}
+                      className="w-full sm:w-auto text-xs"
+                      size="sm"
+                      debugInfoManager={debugInfoManager}
+                    />
                   </div>
                 </div>
                 
@@ -1217,34 +1202,26 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                           setRevisionInstructions('');
                           setShowRevisionPanel(true);
                         }}
-                        className="flex items-center space-x-2"
+                        className="w-full sm:w-auto text-xs"
                         size="sm"
                       >
-                        <Zap size={16} />
-                        <span>Edit Variation</span>
+                        <Zap size={14} className="mr-1" />
+                        <span>Edit</span>
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setCurrentGenerationMetadata({
-                            stationName: 'Email & SMS Retention',
-                            timestamp: new Date().toISOString(),
-                            modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
-                            temperature: modelSettings?.temperature || 0.7,
-                            maxTokens: modelSettings?.maxTokens || 2000,
-                            systemPrompt: retentionDebugInfo?.systemPrompt || stationPrompts?.retention?.systemPrompt || `Expert retention marketing copywriter for ${BRAND_NAME}...`,
-                            userPrompt: retentionDebugInfo?.userPrompt || `Platform: ${retentionPlatform}\nKey Message: ${retentionKeyMessage}\nProducts: ${retentionSelectedProducts.join(', ')}`,
-                            requestPayload: retentionDebugInfo?.requestPayload,
-                            rawResponse: retentionDebugInfo?.rawResponse
-                          });
-                          setShowGenerationDetails(true);
+                      <StandardizedDebugButton
+                        stationKey={retentionPlatform.toLowerCase() === 'email' ? STATION_KEYS.RETENTION_EMAIL : STATION_KEYS.RETENTION_SMS}
+                        stationName={`${retentionPlatform} Retention`}
+                        fallbackPrompts={{
+                          systemPrompt: stationPrompts?.retention?.systemPrompt || `Expert retention marketing copywriter for ${BRAND_NAME}...`,
+                          userPrompt: `Platform: ${retentionPlatform}\nKey Message: ${retentionKeyMessage}\nProducts: ${retentionSelectedProducts.join(', ')}`
                         }}
+                        modelSettings={modelSettings}
+                        setCurrentGenerationMetadata={setCurrentGenerationMetadata}
+                        setShowGenerationDetails={setShowGenerationDetails}
                         className="flex items-center space-x-1 text-xs"
-                      >
-                        <Eye size={12} />
-                        <span>View Details</span>
-                      </Button>
+                        size="sm"
+                        debugInfoManager={debugInfoManager}
+                      />
                     </div>
                   </div>
 
@@ -1405,28 +1382,20 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                     )}
                   </Button>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setCurrentGenerationMetadata({
-                        stationName: 'Email & SMS Retention',
-                        timestamp: new Date().toISOString(),
-                        modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
-                        temperature: modelSettings?.temperature || 0.7,
-                        maxTokens: modelSettings?.maxTokens || 2000,
-                        systemPrompt: retentionDebugInfo?.systemPrompt || stationPrompts?.retention?.systemPrompt || `Expert retention marketing copywriter for ${BRAND_NAME}...`,
-                        userPrompt: retentionDebugInfo?.userPrompt || `Platform: ${retentionPlatform}\nKey Message: ${retentionKeyMessage}\nProducts: ${retentionSelectedProducts.join(', ')}`,
-                        requestPayload: retentionDebugInfo?.requestPayload,
-                        rawResponse: retentionDebugInfo?.rawResponse
-                      });
-                      setShowGenerationDetails(true);
+                  <StandardizedDebugButton
+                    stationKey={retentionPlatform.toLowerCase() === 'email' ? STATION_KEYS.RETENTION_EMAIL : STATION_KEYS.RETENTION_SMS}
+                    stationName={`${retentionPlatform} Retention`}
+                    fallbackPrompts={{
+                      systemPrompt: stationPrompts?.retention?.systemPrompt || `Expert retention marketing copywriter for ${BRAND_NAME}...`,
+                      userPrompt: `Platform: ${retentionPlatform}\nKey Message: ${retentionKeyMessage}\nProducts: ${retentionSelectedProducts.join(', ')}`
                     }}
+                    modelSettings={modelSettings}
+                    setCurrentGenerationMetadata={setCurrentGenerationMetadata}
+                    setShowGenerationDetails={setShowGenerationDetails}
                     className="flex items-center space-x-1 text-xs"
-                  >
-                    <Eye size={12} />
-                    <span>View Details</span>
-                  </Button>
+                    size="sm"
+                    debugInfoManager={debugInfoManager}
+                  />
 
                   <Button
                     variant="outline"
@@ -1439,9 +1408,9 @@ export const RetentionTab: React.FC<RetentionTabProps> = ({
                       setRevisionInstructions('');
                       setShowRevisionPanel(true);
                     }}
-                    className="flex items-center space-x-2"
+                    className="w-full sm:w-auto text-xs"
                   >
-                    <Zap size={16} />
+                    <Zap size={14} className="mr-1" />
                     <span>Edit</span>
                   </Button>
                 </div>

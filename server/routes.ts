@@ -4,7 +4,16 @@ import { registerTrainingRoutes } from "./routes/training";
 import { registerJunipRoutes } from "./routes/junip";
 import { registerAdminRoutes } from "./routes/admin";
 import { registerReviewRoutes } from "./routes/reviews";
-import { storage, crudHandlers, asyncRouteHandler, sendSuccess } from "./utils";
+import { storage, crudHandlers, asyncRouteHandler, sendSuccess, validateApiKey, validateRequiredFields, createFrameworkRoutes, getCurrentUserId } from "./utils";
+import { 
+  revisionSchema, 
+  feedbackSchema, 
+  updateCopySchema, 
+  influencerAnalysisSchema, 
+  influencerGenerationSchema,
+  briefFeedbackSchema,
+  emailRetentionSchema
+} from "./utils/validation-schemas";
 import multer from "multer";
 import {
   generateAdCopy,
@@ -42,16 +51,8 @@ import {
   productBriefs,
   insertProductBriefSchema
 } from "@shared/schema";
-import { BRAND_NAME } from "@shared/constants";
-import {
-  DEFAULT_MAX_TOKENS,
-  DEFAULT_TEMPERATURE,
-  FALLBACK_MODEL_STR,
-  DEFAULT_MAX_HEADLINES,
-  DEFAULT_HEADLINE_FRAMEWORK,
-  IMAGE_ANALYSIS_INSTRUCTIONS,
-  STATION_CONFIGS,
-} from '@shared/constants';
+import { BRAND_NAME, STATION_CONFIGS } from "@shared/constants";
+
 
 const upload = multer({ dest: 'uploads/' });
 
@@ -1053,7 +1054,7 @@ function registerConfigRoutes(app: Express) {
       
       // Create email analysis using the selected framework
       const analysisData = {
-        userId: (req.session as any).userId,
+        userId: getCurrentUserId(req),
         imagePath: file.path,
         selectedFramework,
         aiAnalysis: `Email analysis for ${framework.displayName} framework`,
@@ -1076,7 +1077,7 @@ function registerConfigRoutes(app: Express) {
   
   app.get("/api/email-image-analysis", requireAuth, async (req, res) => {
     try {
-      const analyses = await storage.getEmailImageAnalysisByUser((req.session as any).userId);
+      const analyses = await storage.getEmailImageAnalysisByUser(getCurrentUserId(req));
       res.json(analyses);
     } catch (error) {
       console.error("Error fetching email analyses:", error);
@@ -1588,7 +1589,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/me', requireAuth, async (req, res) => {
     try {
-      const userId = (req.session as any).userId;
+      const userId = getCurrentUserId(req);
       console.log('Getting user for session:', req.sessionID, 'userId:', userId);
       
       // Handle bypass user
@@ -1619,7 +1620,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // One-time admin setup endpoint (for making first user admin)
   app.post('/api/setup-admin', requireAuth, async (req, res) => {
     try {
-      const userId = (req.session as any).userId;
+      const userId = getCurrentUserId(req);
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
@@ -1717,7 +1718,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
-      const currentUserId = (req.session as any).userId;
+      const currentUserId = getCurrentUserId(req);
       
       // Prevent admin from deleting themselves
       if (id === currentUserId) {
@@ -1760,9 +1761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const startTime = Date.now();
       const { transcription, customBrief, persona, targetAudience, landingPageUrl, brandDrBalance, useJonesBrandGuide, airLink, uploadedImage, selectedProduct, selectedProducts } = req.body;
       
-      if (!process.env.ANTHROPIC_API_KEY) {
-        return res.status(400).json({ message: 'Anthropic API key not configured' });
-      }
+      if (!validateApiKey(res)) return;
       
       // Get current training config for snapshot
       const trainingConfig = await getTrainingConfig();
@@ -1784,13 +1783,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const generationTime = Date.now() - startTime;
 
       // Save generation to database for analytics
-      const userId = (req.session as any).userId;
+      const userId = getCurrentUserId(req);
+      
+      // Extract brandDrBalance as integer (it comes as array [50] from frontend)
+      const brandDrBalanceValue = Array.isArray(brandDrBalance) 
+        ? brandDrBalance[0] 
+        : (typeof brandDrBalance === 'number' ? brandDrBalance : DEFAULT_BRAND_DR_BALANCE);
+      
       const savedCopy = await storage.saveGeneratedCopy({
         userId: userId,
         inputText: transcription || persona || '',
         landingPageUrl: landingPageUrl || null,
         targetPersona: targetAudience || '',
-        brandDrBalance: brandDrBalance || DEFAULT_BRAND_DR_BALANCE,
+        brandDrBalance: brandDrBalanceValue,
         headlines: result.headlines,
         primaryText: result.primaryText,
         configSnapshot: trainingConfig,
@@ -1854,9 +1859,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
   
       
-      if (!process.env.ANTHROPIC_API_KEY) {
-        return res.status(400).json({ message: 'Anthropic API key not configured' });
-      }
+      if (!validateApiKey(res)) return;
       
       if (!customRequest || !customRequest.trim()) {
         return res.status(400).json({ message: 'Custom request is required' });
@@ -1906,9 +1909,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         brandDrBalance 
       });
       
-      if (!process.env.ANTHROPIC_API_KEY) {
-        return res.status(400).json({ message: 'Anthropic API key not configured' });
-      }
+      if (!validateApiKey(res)) return;
       
       if (!notes || !notes.trim()) {
         return res.status(400).json({ message: 'Notes are required for brief generation' });
@@ -1937,7 +1938,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let briefId = null;
       try {
         const [insertedBrief] = await db.insert(productBriefs).values({
-          userId: (req.session as any)?.userId || 'demo-user',
+          userId: getCurrentUserId(req),
           notes: notes.trim(),
           googleDriveLinks: googleDriveLinks || [],
           generatedBrief: result.brief,
@@ -2012,7 +2013,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         useJonesBrandGuide
       } = req.body;
 
-      if (!process.env.ANTHROPIC_API_KEY || !keyMessage?.trim()) {
+      if (!validateApiKey(res)) return;
+      
+      if (!keyMessage?.trim()) {
         return res.status(400).json({ error: 'Missing required parameters.' });
       }
 
@@ -2064,7 +2067,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         useJonesBrandGuide
       } = req.body;
       
-      if (!process.env.ANTHROPIC_API_KEY || !keyMessage?.trim()) {
+      if (!validateApiKey(res)) return;
+      
+      if (!keyMessage?.trim()) {
         return res.status(400).json({ error: 'Missing required parameters.' });
       }
 
@@ -2106,9 +2111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Retention visual preview request:', { platform, emailType, copyContentLength: copyContent?.length });
       
-      if (!process.env.ANTHROPIC_API_KEY) {
-        return res.status(400).json({ message: 'Anthropic API key not configured' });
-      }
+      if (!validateApiKey(res)) return;
       
       if (!copyContent?.trim()) {
         return res.status(400).json({ message: 'Copy content is required' });
@@ -2160,9 +2163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Social captions request:', { contentType, platform, goal, tone, variations, selectedProduct, persona, transcriptionLength: transcription?.length, hasImageData: !!imageData });
       
-      if (!process.env.ANTHROPIC_API_KEY) {
-        return res.status(400).json({ message: 'Anthropic API key not configured' });
-      }
+      if (!validateApiKey(res)) return;
       
       // Updated validation: require either transcription OR image data
       if (!transcription?.trim() && !imageData) {
@@ -2216,9 +2217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
   
       
-      if (!process.env.ANTHROPIC_API_KEY) {
-        return res.status(400).json({ message: 'Anthropic API key not configured' });
-      }
+      if (!validateApiKey(res)) return;
       
       // Updated validation: require either transcription OR image data
       if (!transcription?.trim() && !imageData) {
@@ -2260,9 +2259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Static ad analysis request:', { persona, brandDrBalance, selectedProduct, useJonesBrandGuide, outputFormat, analysisFocus, imageLength: staticAdImage?.length });
       
-      if (!process.env.ANTHROPIC_API_KEY) {
-        return res.status(400).json({ message: 'Anthropic API key not configured' });
-      }
+      if (!validateApiKey(res)) return;
       
       if (!staticAdImage) {
         return res.status(400).json({ message: 'Static ad image is required' });
@@ -2318,9 +2315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Landing copy request body:', { landingPageType, productBrief, persona, useAdsContent, adsContent, brandDrBalance, selectedProduct, mainAngle, transcription: transcription ? 'included' : 'none' });
       
-      if (!process.env.ANTHROPIC_API_KEY) {
-        return res.status(400).json({ message: 'Anthropic API key not configured' });
-      }
+      if (!validateApiKey(res)) return;
       
       // Get current training config
       const trainingConfig = await getTrainingConfig();
@@ -2370,7 +2365,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           socialProof: result.socialProof,
           conclusion: result.conclusion,
           cta: result.cta,
-          stats: result.stats
+          stats: result.stats,
+          // Include listicle data if present
+          ...(result.listicle && { listicle: result.listicle }),
+          // Include multi_product_page data if present  
+          ...(result.multi_product_page && { multi_product_page: result.multi_product_page }),
+          // Include raw response for debugging
+          rawResponse: result.rawResponse
         },
         analysis: {
           headlineLength: headlineScore,
@@ -2393,29 +2394,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Content revision endpoint (protected)
   app.post('/api/revise-content', requireAuth, async (req, res) => {
     try {
-      const revisionSchema = z.object({
-        originalContent: z.string(),
-        revisionInstructions: z.string(),
-        contentType: z.enum(['headline', 'primaryText', 'landingCopy', 'custom', 'retention', 'staticAd', 'socialCaption', 'email', 'sms']),
-        context: z.object({
-          transcription: z.string().optional(),
-          customBrief: z.string().optional(),
-          persona: z.string().optional(),
-          targetAudience: z.string().optional(),
-          brandDrBalance: z.number().optional(),
-          selectedProduct: z.string().optional(),
-          selectedProducts: z.array(z.string()).optional(),
-          field: z.string().optional(),
-          customRequest: z.string().optional(),
-          useJonesBrandGuide: z.boolean().optional()
-        }).optional()
-      });
-
       const { originalContent, revisionInstructions, contentType, context } = revisionSchema.parse(req.body);
       
-      if (!process.env.ANTHROPIC_API_KEY) {
-        return res.status(400).json({ message: 'Anthropic API key not configured' });
-      }
+      if (!validateApiKey(res)) return;
 
       // Get training configuration from database
       const trainingConfig = await storage.getTrainingConfiguration();
@@ -2426,7 +2407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Import and use revision function from anthropic module
       // reviseContent is now imported at the top
       
-      const revisedContent = await reviseContent({
+      const result = await reviseContent({
         originalContent,
         revisionInstructions,
         contentType,
@@ -2434,9 +2415,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }, trainingConfig);
       
       res.json({
-        revisedContent,
+        revisedContent: result.revisedContent,
         original: originalContent,
-        instructions: revisionInstructions
+        instructions: revisionInstructions,
+        debugInfo: result.debugInfo
       });
     } catch (error) {
       console.error('Revision error:', error);
@@ -2450,12 +2432,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Feedback endpoints for analytics (protected)
   app.post('/api/copy-feedback', requireAuth, async (req, res) => {
     try {
-      const feedbackSchema = z.object({
-        copyId: z.string(),
-        rating: z.enum(['excellent', 'good', 'poor']),
-        feedback: z.string().optional(),
-      });
-
       const { copyId, rating, feedback } = feedbackSchema.parse(req.body);
       
       await storage.updateCopyFeedback(copyId, rating, feedback);
@@ -2473,15 +2449,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update generated copy content (protected)
   app.put('/api/generated-copy/:id', requireAuth, async (req, res) => {
     try {
-      const updateSchema = z.object({
-        headlines: z.array(z.object({
-          framework: z.string(),
-          copy: z.string()
-        })).optional(),
-        primaryText: z.string().optional(),
-      });
-
-      const { headlines, primaryText } = updateSchema.parse(req.body);
+      const { headlines, primaryText } = updateCopySchema.parse(req.body);
       const copyId = req.params.id;
       
       if (!headlines && !primaryText) {
@@ -2521,7 +2489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/copy-history', requireAuth, async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
-      const userId = (req.session as any).userId;
+      const userId = getCurrentUserId(req);
       const history = await storage.getCopyHistory(userId, limit);
       res.json(history);
     } catch (error) {
@@ -2533,17 +2501,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Influencer voice analysis endpoint (protected)
   app.post('/api/analyze-influencer-voice', requireAuth, async (req, res) => {
     try {
-      const analysisSchema = z.object({
-        transcription: z.string().optional(),
-        influencerHandle: z.string().optional(),
-        voiceAnalysisMethod: z.enum(['video', 'social', 'combined'])
-      });
-
-      const { transcription, influencerHandle, voiceAnalysisMethod } = analysisSchema.parse(req.body);
+      const { transcription, influencerHandle, voiceAnalysisMethod } = influencerAnalysisSchema.parse(req.body);
       
-      if (!process.env.ANTHROPIC_API_KEY) {
-        return res.status(400).json({ message: 'Anthropic API key not configured' });
-      }
+      if (!validateApiKey(res)) return;
 
       let socialContent = '';
       
@@ -2585,34 +2545,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Enhanced ad copy generation with influencer voice (protected)
   app.post('/api/generate-influencer-copy', requireAuth, async (req, res) => {
     try {
-      const generationSchema = z.object({
-        transcription: z.string().optional(),
-        customBrief: z.string().optional(),
-        persona: z.string().optional(),
-        targetAudience: z.string().optional(),
-        landingPageUrl: z.string().optional(),
-        brandDrBalance: z.array(z.number()).optional(),
-        useJonesBrandGuide: z.boolean().optional(),
-        airLink: z.string().optional(),
-        uploadedImage: z.string().optional(),
-        selectedProduct: z.string().optional(),
-        voiceProfile: z.object({
-          vocabulary: z.array(z.string()),
-          toneDescriptors: z.array(z.string()),
-          sentenceStructure: z.string(),
-          commonPhrases: z.array(z.string()),
-          emotionalStyle: z.string(),
-          contentThemes: z.array(z.string()),
-          engagementStyle: z.string()
-        }),
-        influencerBrandBalance: z.array(z.number())
-      });
-
-      const data = generationSchema.parse(req.body);
+      const data = influencerGenerationSchema.parse(req.body);
       
-      if (!process.env.ANTHROPIC_API_KEY) {
-        return res.status(400).json({ message: 'Anthropic API key not configured' });
-      }
+      if (!validateApiKey(res)) return;
 
       // Get brand guidelines from training config
       const trainingConfig = await getTrainingConfig();
@@ -2633,7 +2568,7 @@ Landing Page: ${data.landingPageUrl || 'None provided'}
         data.influencerBrandBalance[0] || DEFAULT_BRAND_DR_BALANCE
       );
 
-      const userId = (req.session as any).userId;
+      const userId = getCurrentUserId(req);
       const savedCopy = await storage.saveGeneratedCopy({
         userId: userId,
         inputText: data.transcription || data.persona || '',

@@ -2,6 +2,9 @@ import React, { useEffect, useMemo } from 'react';
 import { toast } from '@/hooks/utils/useToast';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { Tabs } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { GenerationDetailsModal } from '@/components/common';
 import { DEFAULT_BRAND_DR_BALANCE, DEFAULT_PERSONA_KEY, DEFAULT_USE_JONES_BRAND_GUIDE, DEFAULT_CONTENT_TYPE, DEFAULT_SOCIAL_PLATFORM, DEFAULT_SOCIAL_GOAL, DEFAULT_TONE, DEFAULT_VARIATIONS, DEFAULT_SEQUENCE_TYPE, DEFAULT_STORY_LENGTH, DEFAULT_RETENTION_PLATFORM, DEFAULT_RETENTION_EMAIL_TYPE } from '@shared/constants';
 import { Header, MainTabs } from '@/components/main';
@@ -12,7 +15,8 @@ import { MetaAdGeneratorProvider, useAppContext } from '@/contexts/AppContext';
 import { useUIState } from '@/hooks/state/useUIState';
 import { useFormState } from '@/hooks/state/useFormState';
 import { useContentRevision } from '@/hooks/generation/useContentRevision';
-import { useGeneration } from '@/hooks/generation/useGeneration';
+import { useGenerationStandardized } from '@/hooks/generation/useGenerationStandardized';
+import { useDebugInfo } from '@/hooks/generation/useDebugInfo';
 import { 
   MemoizedPaidSocialTab,
   MemoizedOrganicSocialTab,
@@ -32,8 +36,49 @@ const RevisionPanel = React.memo(({
   applyRevision,
   reviseContentMutation 
 }: any) => {
-  // Component implementation from previous version
-  return null; // Placeholder - would include the full implementation
+  if (!showRevisionPanel) return null;
+
+  const isLoading = reviseContentMutation?.isPending || false;
+
+  return (
+    <Dialog open={showRevisionPanel} onOpenChange={() => !isLoading && cancelRevision()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Improve Content</DialogTitle>
+          <DialogDescription>
+            Describe how you'd like to improve this content. Be specific about what changes you want.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <Textarea
+            placeholder="e.g., Make it more engaging, shorter, focus on benefits, change tone to casual..."
+            value={revisionInstructions}
+            onChange={(e) => setRevisionInstructions(e.target.value)}
+            rows={4}
+            disabled={isLoading}
+            className="resize-none"
+          />
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={cancelRevision}
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={applyRevision}
+            disabled={!revisionInstructions.trim() || isLoading}
+          >
+            {isLoading ? 'Improving...' : 'Improve Content'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 });
 
 // Separate component for admin key dialog
@@ -244,15 +289,8 @@ const MetaAdGeneratorContent: React.FC = () => {
   const [isGeneratingCaptions, setIsGeneratingCaptions] = React.useState(false);
   const [isGeneratingStory, setIsGeneratingStory] = React.useState(false);
   
-  // Debug info states
-  const [staticAdDebugInfo, setStaticAdDebugInfo] = React.useState<any>(null);
-  const [customRequestDebugInfo, setCustomRequestDebugInfo] = React.useState<any>(null);
-  const [landingPageDebugInfo, setLandingPageDebugInfo] = React.useState<any>(null);
-  const [retentionDebugInfo, setRetentionDebugInfo] = React.useState<any>(null);
-  const [socialCaptionsDebugInfo, setSocialCaptionsDebugInfo] = React.useState<any>(null);
-  const [storySequenceDebugInfo, setStorySequenceDebugInfo] = React.useState<any>(null);
-
-  const setAdCopyDebugInfo = React.useCallback(() => {}, []);
+  // Centralized debug info management
+  const debugInfoManager = useDebugInfo();
   const setStaticAdAnalysis = React.useCallback((analysis: string) => {
     handleInputChange('staticAdAnalysis')(analysis);
   }, [handleInputChange]);
@@ -264,8 +302,8 @@ const MetaAdGeneratorContent: React.FC = () => {
     setIsGeneratingStory(value);
   }, []);
 
-  // Generation mutations hook
-  const generationMutations = useGeneration({
+  // Generation mutations hook with standardized debug info
+  const generationMutations = useGenerationStandardized({
     staticAdImage: formState.staticAdImage,
     persona: formState.persona,
     brandDrBalance: formState.brandDrBalance,
@@ -282,6 +320,10 @@ const MetaAdGeneratorContent: React.FC = () => {
     targetAudience: formState.targetAudience,
     landingPageUrl: formState.landingPageUrl,
     airLink: formState.airLink,
+    // Ad copy specific props
+    customBrief: formState.customBrief,
+    uploadedImage: formState.uploadedImage,
+    contentType: formState.contentType,
     // Retention copy props
     retentionKeyMessage: formState.retentionKeyMessage,
     retentionPlatform: formState.retentionPlatform,
@@ -298,11 +340,10 @@ const MetaAdGeneratorContent: React.FC = () => {
     setGeneratedLandingCopy: setGeneratedLandingCopy,
     setLandingPageAnalysis: setLandingPageAnalysis,
     setGeneratedRetentionCopy: setGeneratedRetentionCopy,
-    setStaticAdDebugInfo: setStaticAdDebugInfo,
-    setCustomRequestDebugInfo: setCustomRequestDebugInfo,
-    setLandingPageDebugInfo: setLandingPageDebugInfo,
-    setRetentionDebugInfo: setRetentionDebugInfo,
-    setAdCopyDebugInfo: setAdCopyDebugInfo
+    // Model settings for debug info
+    modelSettings: trainingConfig.editingConfig?.modelParameters,
+    // Debug info manager for consistent state
+    debugInfoManager: debugInfoManager
   });
 
   // Content revision hook
@@ -326,7 +367,20 @@ const MetaAdGeneratorContent: React.FC = () => {
     setGeneratedPrimaryText: generationMutations.setGeneratedPrimaryText,
     setGeneratedLandingCopy: setGeneratedLandingCopy,
     setGeneratedCustomResponse: setGeneratedCustomResponse,
-    setGeneratedRetentionCopy: () => {}
+    setGeneratedRetentionCopy: () => {},
+    generatedCaptions: formState.generatedCaptions,
+    setGeneratedCaptions: setGeneratedCaptions,
+    generatedStorySequence: formState.generatedStorySequence,
+    setGeneratedStorySequence: setGeneratedStorySequence,
+    staticAdAnalysis: formState.staticAdAnalysis,
+    setStaticAdAnalysis: handleInputChange('staticAdAnalysis'),
+    setRevisionDebugInfo: (debugInfo: any) => debugInfoManager.setDebugInfo('revision', debugInfo),
+    setCurrentGenerationMetadata: setCurrentGenerationMetadata,
+    setShowGenerationDetails: setShowGenerationDetails,
+    modelSettings: configData.modelSettings,
+    stationPrompts: configData.stationPrompts,
+    brandGuidelines: configData.brandGuidelines,
+    copyFrameworks: configData.copyFrameworks
   });
 
   // AUTHENTICATION
@@ -406,66 +460,45 @@ const MetaAdGeneratorContent: React.FC = () => {
               adCopyGeneration={generationMutations}
               contentRevision={contentRevision}
               generationMutations={generationMutations}
-              staticAdDebugInfo={staticAdDebugInfo}
+              debugInfoManager={debugInfoManager}
               {...commonTabProps}
             />
 
             <MemoizedOrganicSocialTab 
               isActive={uiState.activeTab === 'organic-social'}
+              formState={formState}
+              handleInputChange={handleInputChange}
+              contentRevision={contentRevision}
               organicSocialType={uiState.organicSocialType}
               setOrganicSocialType={setOrganicSocialType}
-              organicContentType={formState.organicContentType}
-              setOrganicContentType={setOrganicContentType}
               organicVideoFile={organicVideoFile}
               setOrganicVideoFile={setOrganicVideoFile}
-              organicVideoTranscription={formState.organicVideoTranscription}
               setOrganicVideoTranscription={setOrganicVideoTranscription}
+              setOrganicContentType={setOrganicContentType}
               organicImageFile={organicImageFile}
               setOrganicImageFile={setOrganicImageFile}
-              organicImagePreview={formState.organicImagePreview}
               setOrganicImagePreview={setOrganicImagePreview}
-              organicPlatform={formState.organicPlatform}
               setOrganicPlatform={setOrganicPlatform}
-              organicGoal={formState.organicGoal}
               setOrganicGoal={setOrganicGoal}
-              organicTone={formState.organicTone}
               setOrganicTone={setOrganicTone}
-              generatedCaptions={formState.generatedCaptions}
-              setGeneratedCaptions={setGeneratedCaptions}
-              captionVariations={formState.captionVariations}
-              setCaptionVariations={setCaptionVariations}
-              storyContentType={formState.storyContentType}
-              setStoryContentType={setStoryContentType}
-              storyVideoTranscription={formState.storyVideoTranscription}
-              setStoryVideoTranscription={setStoryVideoTranscription}
+              setOrganicSelectedProducts={setOrganicSelectedProducts}
               storyVideoFile={storyVideoFile}
               setStoryVideoFile={setStoryVideoFile}
+              setStoryVideoTranscription={setStoryVideoTranscription}
+              setStoryContentType={setStoryContentType}
               storyImageFile={storyImageFile}
               setStoryImageFile={setStoryImageFile}
-              storyImagePreview={formState.storyImagePreview}
               setStoryImagePreview={setStoryImagePreview}
-              storySequenceType={formState.storySequenceType}
               setStorySequenceType={setStorySequenceType}
-              storyLength={formState.storyLength}
               setStoryLength={setStoryLength}
-              storyTone={formState.storyTone}
               setStoryTone={setStoryTone}
-              generatedStorySequence={formState.generatedStorySequence}
-              setGeneratedStorySequence={setGeneratedStorySequence}
-              selectedProduct={formState.selectedProduct}
-              organicSelectedProducts={formState.organicSelectedProducts}
-              setOrganicSelectedProducts={setOrganicSelectedProducts}
-              storySelectedProducts={formState.storySelectedProducts}
               setStorySelectedProducts={setStorySelectedProducts}
-              persona={formState.persona}
+              setGeneratedCaptions={setGeneratedCaptions}
+              setGeneratedStorySequence={setGeneratedStorySequence}
               setPersona={setPersona}
               strategicInsights={strategicInsights}
               setStrategicInsights={setStrategicInsights}
-              debugInfo={null}
-              socialCaptionsDebugInfo={socialCaptionsDebugInfo}
-              storySequenceDebugInfo={storySequenceDebugInfo}
-              setSocialCaptionsDebugInfo={setSocialCaptionsDebugInfo}
-              setStorySequenceDebugInfo={setStorySequenceDebugInfo}
+              debugInfoManager={debugInfoManager}
               isGeneratingCaptions={isGeneratingCaptions}
               setIsGeneratingCaptions={setMemoizedIsGeneratingCaptions}
               isGeneratingStory={isGeneratingStory}
@@ -483,7 +516,7 @@ const MetaAdGeneratorContent: React.FC = () => {
               generatedLandingCopy={generatedLandingCopy}
               landingPageAnalysis={landingPageAnalysis}
               setGeneratedLandingCopy={setGeneratedLandingCopy}
-              landingPageDebugInfo={landingPageDebugInfo}
+              debugInfoManager={debugInfoManager}
               uiState={uiState}
               setCopiedWithTimeout={setCopiedWithTimeout}
               {...commonTabProps}
@@ -496,7 +529,7 @@ const MetaAdGeneratorContent: React.FC = () => {
               contentRevision={contentRevision}
               generationMutations={generationMutations}
               generatedCustomResponse={generatedCustomResponse}
-              customRequestDebugInfo={customRequestDebugInfo}
+              debugInfoManager={debugInfoManager}
               {...commonTabProps}
             />
 
@@ -507,8 +540,7 @@ const MetaAdGeneratorContent: React.FC = () => {
               contentRevision={contentRevision}
               generationMutations={generationMutations}
               generatedRetentionCopy={generatedRetentionCopy}
-              retentionDebugInfo={retentionDebugInfo}
-              setRetentionDebugInfo={setRetentionDebugInfo}
+              debugInfoManager={debugInfoManager}
               uiState={uiState}
               setCopiedWithTimeout={setCopiedWithTimeout}
               {...commonTabProps}

@@ -43,8 +43,7 @@ export const LandingPageTabs = (props: any) => {
         
         // Generated content and debug info
         generatedLandingCopy: props.generatedLandingCopy || {},
-        debugInfo: null,
-        landingPageDebugInfo: props.landingPageDebugInfo || null,
+        debugInfoManager: props.debugInfoManager,
     });
     
     return <LandingPageTab {...landingPageTabProps} />;

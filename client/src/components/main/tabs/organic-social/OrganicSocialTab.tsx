@@ -14,9 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { GenerationMetadata } from "@/components/main/shared/types";
-
 import { ProductSelection } from '@/components/common/ProductSelection';
 import { TargetPersona } from '@/components/common/TargetPersona';
+import { StandardizedDebugButton } from '@/components/common/StandardizedDebugButton';
+import { STATION_KEYS } from '@/hooks/generation/useDebugInfo';
 import { DEFAULT_SOCIAL_PLATFORM } from '@shared/constants';
 import { BRAND_NAME } from '@shared/constants';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -119,36 +120,10 @@ interface OrganicSocialTabProps {
       frameworks?: string[];
     };
   };
-  debugInfo?: {
-    systemPrompt: string;
-    userPrompt: string;
-    requestPayload: any;
-    rawResponse: string;
-  } | null;
-  socialCaptionsDebugInfo?: {
-    systemPrompt: string;
-    userPrompt: string;
-    requestPayload: any;
-    rawResponse: string;
-  } | null;
-  storySequenceDebugInfo?: {
-    systemPrompt: string;
-    userPrompt: string;
-    requestPayload: any;
-    rawResponse: string;
-  } | null;
-  setSocialCaptionsDebugInfo: (debugInfo: {
-    systemPrompt: string;
-    userPrompt: string;
-    requestPayload: any;
-    rawResponse: string;
-  } | null) => void;
-  setStorySequenceDebugInfo: (debugInfo: {
-    systemPrompt: string;
-    userPrompt: string;
-    requestPayload: any;
-    rawResponse: string;
-  } | null) => void;
+  debugInfoManager?: {
+    getDebugInfo: (stationKey: string) => any;
+    setDebugInfo: (stationKey: string, debugInfo: any) => void;
+  };
   
   // Persona props
   personas?: Record<string, any>;
@@ -160,7 +135,7 @@ interface OrganicSocialTabProps {
   setIsGeneratingCaptions: (value: boolean) => void;
   isGeneratingStory: boolean;
   setIsGeneratingStory: (value: boolean) => void;
-  setSelectedItemForRevision?: (item: { type: 'socialCaption' | 'storySequence'; index: number } | null) => void;
+  setSelectedItemForRevision?: (item: { type: 'socialCaption' | 'storySequence'; index?: number } | null) => void;
   setShowRevisionPanel?: (show: boolean) => void;
 }
 
@@ -217,11 +192,7 @@ export function OrganicSocialTab({
   stationPrompts,
   brandGuidelines,
   copyFrameworks,
-  debugInfo,
-  socialCaptionsDebugInfo,
-  storySequenceDebugInfo,
-  setSocialCaptionsDebugInfo,
-  setStorySequenceDebugInfo,
+  debugInfoManager,
   personas,
   persona,
   setPersona,
@@ -338,16 +309,13 @@ export function OrganicSocialTab({
     }
   ) => {
     const { platform, caption, imageSrc, captionIndex } = params;
-    const imgEl = (
+    
+    // Only render image element if imageSrc is provided
+    const imgEl = imageSrc ? (
       <div className={`${platform === 'tiktok' ? 'h-[520px]' : 'h-72'} w-full bg-gray-100 rounded-md overflow-hidden relative`}> 
-        {imageSrc ? (
-          <img src={imageSrc} alt="Preview" className="w-full h-full object-cover" />
-        ) : (
-          <></>
-          // <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">No image uploaded</div>
-        )}
+        <img src={imageSrc} alt="Preview" className="w-full h-full object-cover" />
       </div>
-    );
+    ) : null;
 
     if (platform === 'instagram') {
       return (
@@ -434,40 +402,48 @@ export function OrganicSocialTab({
           </div>
           <MoreHorizontal size={18} className="text-gray-500" />
         </div>
-        <div className="relative bg-black rounded-md mx-3 mb-3 overflow-hidden h-[120px]">
-          {imageSrc ? (
+        {imageSrc ? (
+          <div className="relative bg-black rounded-md mx-3 mb-3 overflow-hidden h-[120px]">
             <img src={imageSrc} alt="Preview" className="w-full h-full object-cover" />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">No image uploaded</div>
-          )}
 
-          <div className="absolute right-3 bottom-24 flex flex-col items-center space-y-4 text-white">
-            <div className="flex flex-col items-center">
-              <UserIcon size={24} />
+            <div className="absolute right-3 bottom-24 flex flex-col items-center space-y-4 text-white">
+              <div className="flex flex-col items-center">
+                <UserIcon size={24} />
+              </div>
+              <div className="flex flex-col items-center">
+                <Heart size={24} />
+                <span className="text-xs mt-1">1.2K</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <MessageCircle size={24} />
+                <span className="text-xs mt-1">87</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <Share2 size={24} />
+                <span className="text-xs mt-1">12</span>
+              </div>
             </div>
-            <div className="flex flex-col items-center">
-              <Heart size={24} />
-              <span className="text-xs mt-1">1.2K</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <MessageCircle size={24} />
-              <span className="text-xs mt-1">87</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <Share2 size={24} />
-              <span className="text-xs mt-1">12</span>
+
+            <div className="absolute left-3 right-16 bottom-4 text-white">
+              <div className="text-sm font-semibold">@jonesroadbeauty</div>
+              <div className="text-sm whitespace-pre-wrap">{caption}</div>
+              <div className="mt-2 flex items-center space-x-2 text-xs">
+                <Music size={14} />
+                <span>Jones Road • Original audio</span>
+              </div>
             </div>
           </div>
-
-          <div className="absolute left-3 right-16 bottom-4 text-white">
-            <div className="text-sm font-semibold">@jonesroadbeauty</div>
-            <div className="text-sm whitespace-pre-wrap">{caption}</div>
-            <div className="mt-2 flex items-center space-x-2 text-xs">
+        ) : (
+          <div className="px-4 pb-3">
+            <div className="text-sm text-gray-900 whitespace-pre-wrap">
+              <span className="font-semibold">@jonesroadbeauty</span> {caption}
+            </div>
+            <div className="mt-2 flex items-center space-x-2 text-xs text-gray-500">
               <Music size={14} />
               <span>Jones Road • Original audio</span>
             </div>
           </div>
-        </div>
+        )}
       </div>
     );
   };
@@ -794,7 +770,7 @@ export function OrganicSocialTab({
 
                   setIsGeneratingCaptions(true);
                   setCaptionError(null);
-                  setSocialCaptionsDebugInfo?.(null);
+                  debugInfoManager?.setDebugInfo(STATION_KEYS.ORGANIC_SOCIAL, null);
                   setStrategicInsights(null);
 
                   try {
@@ -860,11 +836,13 @@ export function OrganicSocialTab({
                     
                     // Store debug information from backend response
                     if (data.debugInfo) {
-                      setSocialCaptionsDebugInfo?.({
+                      debugInfoManager?.setDebugInfo(STATION_KEYS.ORGANIC_SOCIAL, {
                         systemPrompt: data.debugInfo.systemPrompt,
                         userPrompt: data.debugInfo.userPrompt,
                         requestPayload: requestPayload,
-                        rawResponse: data.debugInfo.rawResponse
+                        rawResponse: data.debugInfo.rawResponse,
+                        stationName: 'Social Captions',
+                        timestamp: new Date().toISOString()
                       });
                     }
                     
@@ -984,33 +962,25 @@ export function OrganicSocialTab({
                                 setSelectedItemForRevision?.({ type: 'socialCaption', index: activeCaptionIndex });
                                 setShowRevisionPanel?.(true);
                               }}
-                              className="flex items-center space-x-2"
+                              className="w-full sm:w-auto text-xs"
                           >
-                              <Target size={16} />
+                              <Target size={14} className="mr-1" />
                               <span>Improve</span>
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setCurrentGenerationMetadata({
-                                stationName: 'Social Captions',
-                                timestamp: new Date().toISOString(),
-                                modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
-                                temperature: modelSettings?.temperature || 0.7,
-                                maxTokens: modelSettings?.maxTokens || 2000,
-                                systemPrompt: socialCaptionsDebugInfo?.systemPrompt || stationPrompts?.socialCaptions?.systemPrompt || `Expert social media copywriter for ${BRAND_NAME}...`,
-                                userPrompt: socialCaptionsDebugInfo?.userPrompt || `Content Type: ${organicContentType}\nTranscription: ${organicVideoTranscription}\nPlatform: ${organicPlatform}\nGoal: ${organicGoal}\nTone: ${organicTone}\nVariations: ${captionVariations}\nSelected Products: ${safeOrganicSelectedProducts.length > 0 ? safeOrganicSelectedProducts.join(', ') : selectedProduct || 'None'}`,
-                                requestPayload: socialCaptionsDebugInfo?.requestPayload,
-                                rawResponse: socialCaptionsDebugInfo?.rawResponse
-                              });
-                              setShowGenerationDetails(true);
+                          <StandardizedDebugButton
+                            stationKey={STATION_KEYS.ORGANIC_SOCIAL}
+                            stationName="Social Captions"
+                            fallbackPrompts={{
+                              systemPrompt: stationPrompts?.socialCaptions?.systemPrompt || `Expert social media copywriter for ${BRAND_NAME}...`,
+                              userPrompt: `Content Type: ${organicContentType}\nTranscription: ${organicVideoTranscription}\nPlatform: ${organicPlatform}\nGoal: ${organicGoal}\nTone: ${organicTone}\nVariations: ${captionVariations}\nSelected Products: ${safeOrganicSelectedProducts.length > 0 ? safeOrganicSelectedProducts.join(', ') : selectedProduct || 'None'}`
                             }}
-                            className="flex items-center space-x-1 text-xs"
-                          >
-                            <Eye size={12} />
-                            <span>View Details</span>
-                          </Button>
+                            modelSettings={modelSettings}
+                            setCurrentGenerationMetadata={setCurrentGenerationMetadata}
+                            setShowGenerationDetails={setShowGenerationDetails}
+                            className="w-full sm:w-auto text-xs"
+                            size="sm"
+                            debugInfoManager={debugInfoManager}
+                          />
                         </div>
                       </div>
                       <div className="relative">
@@ -1402,7 +1372,7 @@ export function OrganicSocialTab({
 
                   setIsGeneratingStory(true);
                   setStoryError(null);
-                  setStorySequenceDebugInfo?.(null);
+                  debugInfoManager?.setDebugInfo(STATION_KEYS.STORY_SEQUENCE, null);
 
                   try {
                     // Prepare image data if available
@@ -1411,15 +1381,6 @@ export function OrganicSocialTab({
                       imageData = storyImagePreview; // This contains the full data URI
                     }
 
-                    // console.log('🚀 Sending Story Sequence Request:', {
-                    //   contentType: storyContentType,
-                    //   transcription: storyVideoTranscription,
-                    //   sequenceType: storySequenceType,
-                    //   length: storyLength,
-                    //   tone: storyTone,
-                    //   selectedProduct: selectedProduct,
-                    //   hasImageData: !!imageData
-                    // });
 
                     const response = await fetch('/api/generate-story-sequence', {
                       method: 'POST',
@@ -1437,7 +1398,6 @@ export function OrganicSocialTab({
                       })
                     });
 
-                    // console.log('📡 Story Sequence Response Status:', response.status, response.statusText);
 
                     if (!response.ok) {
                       const errorData = await response.json().catch(() => ({ error: 'Failed to generate story sequence' }));
@@ -1446,10 +1406,7 @@ export function OrganicSocialTab({
                     }
 
                     const data = await response.json();
-                    // console.log('🔍 Story Sequence API Response:', data);
-                    // console.log('📚 Generated Story Sequence Array:', data.sequence);
-                    // console.log('📊 Number of slides received:', data.sequence?.length || 0);
-                    
+               
                     // Store debug information
                       const requestPayload = {
                       contentType: storyContentType,
@@ -1464,11 +1421,13 @@ export function OrganicSocialTab({
                     
                     // Store debug information from backend response
                     if (data.debugInfo) {
-                      setStorySequenceDebugInfo?.({
+                      debugInfoManager?.setDebugInfo(STATION_KEYS.STORY_SEQUENCE, {
                         systemPrompt: data.debugInfo.systemPrompt,
                         userPrompt: data.debugInfo.userPrompt,
                         requestPayload: requestPayload,
-                        rawResponse: data.debugInfo.rawResponse
+                        rawResponse: data.debugInfo.rawResponse,
+                        stationName: 'Story Sequences',
+                        timestamp: new Date().toISOString()
                       });
                     }
                     
@@ -1555,28 +1514,34 @@ export function OrganicSocialTab({
                     <div>
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xl font-semibold text-gray-900">Generated Story Sequence</h3>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setCurrentGenerationMetadata({
-                              stationName: 'Story Sequences',
-                              timestamp: new Date().toISOString(),
-                              modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
-                              temperature: modelSettings?.temperature || 0.7,
-                              maxTokens: modelSettings?.maxTokens || 2000,
-                              systemPrompt: storySequenceDebugInfo?.systemPrompt || stationPrompts?.storySequence?.systemPrompt || `Expert Instagram story sequence creator for ${BRAND_NAME}...`,
-                              userPrompt: storySequenceDebugInfo?.userPrompt || `Content Type: ${storyContentType}\nTranscription: ${storyVideoTranscription}\nSequence Type: ${storySequenceType}\nLength: ${storyLength || 5} slides\nTone: ${storyTone}\nSelected Products: ${safeStorySelectedProducts.length > 0 ? safeStorySelectedProducts.join(', ') : selectedProduct || 'None'}`,
-                              requestPayload: storySequenceDebugInfo?.requestPayload,
-                              rawResponse: storySequenceDebugInfo?.rawResponse
-                            });
-                            setShowGenerationDetails(true);
-                          }}
-                          className="flex items-center space-x-1 text-xs"
-                        >
-                          <Eye size={12} />
-                          <span>View Details</span>
-                        </Button>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedItemForRevision?.({ type: 'storySequence', index: currentStorySlide });
+                              setShowRevisionPanel?.(true);
+                            }}
+                            className="w-full sm:w-auto text-xs"
+                          >
+                            <Target size={14} className="mr-1" />
+                            <span>Improve</span>
+                          </Button>
+                          <StandardizedDebugButton
+                            stationKey={STATION_KEYS.STORY_SEQUENCE}
+                            stationName="Story Sequences"
+                            fallbackPrompts={{
+                              systemPrompt: stationPrompts?.storySequence?.systemPrompt || `Expert Instagram story sequence creator for ${BRAND_NAME}...`,
+                              userPrompt: `Content Type: ${storyContentType}\nTranscription: ${storyVideoTranscription}\nSequence Type: ${storySequenceType}\nLength: ${storyLength || 5} slides\nTone: ${storyTone}\nSelected Products: ${safeStorySelectedProducts.length > 0 ? safeStorySelectedProducts.join(', ') : selectedProduct || 'None'}`
+                            }}
+                            modelSettings={modelSettings}
+                            setCurrentGenerationMetadata={setCurrentGenerationMetadata}
+                            setShowGenerationDetails={setShowGenerationDetails}
+                            className="w-full sm:w-auto text-xs"
+                            size="sm"
+                            debugInfoManager={debugInfoManager}
+                          />
+                        </div>
                       </div>
 
                       <div className="flex items-center justify-center">

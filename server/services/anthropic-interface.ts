@@ -49,7 +49,7 @@ import { GenerationMetadata } from "@/components/main/shared/types";
   export interface RevisionRequest {
     originalContent: string;
     revisionInstructions: string;
-    contentType: 'headline' | 'primaryText' | 'landingCopy' | 'custom' | 'email' | 'sms' | 'staticAd' | 'socialCaption' | 'retention';
+    contentType: 'headline' | 'primaryText' | 'landingCopy' | 'custom' | 'email' | 'sms' | 'staticAd' | 'socialCaption' | 'retention' | 'storySequence';
     context?: {
       transcription?: string;
       customBrief?: string;

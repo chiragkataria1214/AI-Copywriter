@@ -4,8 +4,10 @@ import { toast } from '@/hooks/utils/useToast';
 import { useCopyToClipboard } from '@/hooks/utils/useCopyToClipboard';
 import { useState, useCallback } from 'react';
 import { ERROR_MESSAGES, logError } from '@/utils/errorMessages';
+import { useDebugInfo, STATION_KEYS, StationKey } from './useDebugInfo';
+import { createDebugInfoSetter } from '@/utils/debugHelpers';
 
-interface UseGenerationProps {
+interface UseGenerationStandardizedProps {
   // Form state props needed for mutations
   staticAdImage?: string;
   persona: string;
@@ -23,6 +25,11 @@ interface UseGenerationProps {
   targetAudience: string;
   landingPageUrl: string;
   airLink: string;
+  
+  // Ad copy specific props
+  customBrief?: string;
+  uploadedImage?: string;
+  contentType?: string;
   
   // Retention copy props
   retentionKeyMessage?: string;
@@ -42,18 +49,75 @@ interface UseGenerationProps {
   setLandingPageAnalysis?: (analysis: any) => void;
   setGeneratedRetentionCopy?: (copy: any) => void;
   
-  // Debug info setters
-  setStaticAdDebugInfo?: (info: any) => void;
-  setCustomRequestDebugInfo?: (info: any) => void;
-  setLandingPageDebugInfo?: (info: any) => void;
-  setRetentionDebugInfo?: (info: any) => void;
-  setRetentionEmailDebugInfo?: (info: any) => void;
-  setRetentionSmsDebugInfo?: (info: any) => void;
-  setAdCopyDebugInfo?: (info: any) => void;
+  // Model settings for debug info
+  modelSettings?: {
+    model?: string;
+    temperature?: number;
+    maxTokens?: number;
+  };
+  
+  // Debug info manager for consistent state
+  debugInfoManager?: {
+    getDebugInfo: (stationKey: string) => any;
+    setDebugInfo: (stationKey: string, debugInfo: any) => void;
+  };
 }
 
-const useAnalyzeStaticAd = (props: UseGenerationProps) => {
-  return useMutation({
+/**
+ * Standardized generation hook with consistent debug info handling
+ */
+export const useGenerationStandardized = (props: UseGenerationStandardizedProps) => {
+  // Use passed debugInfoManager if available, otherwise fallback to hook
+  const fallbackDebugInfo = useDebugInfo();
+  const setDebugInfo = props.debugInfoManager?.setDebugInfo || fallbackDebugInfo.setDebugInfo;
+  const getDebugInfo = props.debugInfoManager?.getDebugInfo || fallbackDebugInfo.getDebugInfo;
+  
+  // Ad copy generation states
+  const [generatedHeadlines, setGeneratedHeadlines] = useState<Array<{ framework: string; copy: string }>>([]);
+  const [generatedPrimaryText, setGeneratedPrimaryText] = useState('');
+  const [selectedHeadlineIndex, setSelectedHeadlineIndex] = useState<number>(0);
+  const [testingFocus, setTestingFocus] = useState<string | null>(null);
+  const [strategicInsights, setStrategicInsights] = useState<Record<string, any> | null>(null);
+  const [currentCopyId, setCurrentCopyId] = useState<string | null>(null);
+  const [copyRating, setCopyRating] = useState<string | null>(null);
+  const [feedbackText, setFeedbackText] = useState('');
+
+  const { isCopied: copiedHeadlines, copyToClipboard: copyHeadlinesToClipboard } = useCopyToClipboard();
+  const { isCopied: copiedPrimaryText, copyToClipboard: copyPrimaryTextToClipboard } = useCopyToClipboard();
+
+  // Create standardized debug info setters
+  const setStaticAdDebugInfo = useCallback(
+    createDebugInfoSetter(setDebugInfo, STATION_KEYS.STATIC_AD, 'Static Ad Analysis', props.modelSettings),
+    [setDebugInfo, props.modelSettings, props.debugInfoManager]
+  );
+
+  const setCustomRequestDebugInfo = useCallback(
+    createDebugInfoSetter(setDebugInfo, STATION_KEYS.CUSTOM_REQUEST, 'Custom Request', props.modelSettings),
+    [setDebugInfo, props.modelSettings, props.debugInfoManager]
+  );
+
+  const setLandingPageDebugInfo = useCallback(
+    createDebugInfoSetter(setDebugInfo, STATION_KEYS.LANDING_PAGE, 'Landing Page', props.modelSettings),
+    [setDebugInfo, props.modelSettings, props.debugInfoManager]
+  );
+
+  const setRetentionEmailDebugInfo = useCallback(
+    createDebugInfoSetter(setDebugInfo, STATION_KEYS.RETENTION_EMAIL, 'Retention Email', props.modelSettings),
+    [setDebugInfo, props.modelSettings, props.debugInfoManager]
+  );
+
+  const setRetentionSmsDebugInfo = useCallback(
+    createDebugInfoSetter(setDebugInfo, STATION_KEYS.RETENTION_SMS, 'Retention SMS', props.modelSettings),
+    [setDebugInfo, props.modelSettings, props.debugInfoManager]
+  );
+
+  const setAdCopyDebugInfo = useCallback(
+    createDebugInfoSetter(setDebugInfo, STATION_KEYS.AD_COPY, 'Ad Copy', props.modelSettings),
+    [setDebugInfo, props.modelSettings, props.debugInfoManager]
+  );
+
+  // Static Ad Analysis Mutation
+  const analyzeStaticAdMutation = useMutation({
     mutationFn: async ({ analysisFocus, outputFormat, selectedProducts }: {
       analysisFocus?: string;
       outputFormat?: string;
@@ -76,15 +140,10 @@ const useAnalyzeStaticAd = (props: UseGenerationProps) => {
         method: 'POST',
         body: payload
       });
-      if (result.debugInfo && props.setStaticAdDebugInfo) {
-        console.log('!!!!!!!!!!!result.debugInfo', result.debugInfo);
-        props.setStaticAdDebugInfo({
-          systemPrompt: result.debugInfo.systemPrompt,
-          userPrompt: result.debugInfo.userPrompt,
-          requestPayload: payload,
-          rawResponse: result.debugInfo.rawResponse
-        });
-      }
+      
+      // Standardized debug info processing
+      setStaticAdDebugInfo(result, payload);
+      
       return result;
     },
     onSuccess: (data) => {
@@ -114,10 +173,9 @@ const useAnalyzeStaticAd = (props: UseGenerationProps) => {
       });
     }
   });
-};
 
-const useGenerateCustomCopy = (props: UseGenerationProps) => {
-  return useMutation({
+  // Custom Copy Generation Mutation
+  const generateCustomCopyMutation = useMutation({
     mutationFn: async () => {
       if (!props.customRequest.trim()) {
         throw new Error(ERROR_MESSAGES.GENERATION.NO_CONTENT);
@@ -135,14 +193,10 @@ const useGenerateCustomCopy = (props: UseGenerationProps) => {
         method: 'POST',
         body: payload
       });
-      if (result.debugInfo && props.setCustomRequestDebugInfo) {
-        props.setCustomRequestDebugInfo({
-          systemPrompt: result.debugInfo.systemPrompt,
-          userPrompt: result.debugInfo.userPrompt,
-          requestPayload: payload,
-          rawResponse: result.debugInfo.rawResponse
-        });
-      }
+      
+      // Standardized debug info processing
+      setCustomRequestDebugInfo(result, payload);
+      
       return result;
     },
     onSuccess: (data) => {
@@ -161,10 +215,9 @@ const useGenerateCustomCopy = (props: UseGenerationProps) => {
       });
     }
   });
-};
 
-const useGenerateLandingCopy = (props: UseGenerationProps) => {
-  return useMutation({
+  // Landing Page Copy Generation Mutation
+  const generateLandingCopyMutation = useMutation({
     mutationFn: async () => {
       const payload = {
         landingPageType: props.landingPageType,
@@ -173,7 +226,6 @@ const useGenerateLandingCopy = (props: UseGenerationProps) => {
         useAdsContent: props.useAdsForLanding,
         adsContent: props.useAdsForLanding ? {
           transcription: props.transcription,
-          // Could include generated headlines/primary text if available
         } : undefined,
         brandDrBalance: props.brandDrBalance && props.brandDrBalance.length > 0 ? props.brandDrBalance[0] : 50,
         selectedProduct: props.selectedProduct,
@@ -185,15 +237,10 @@ const useGenerateLandingCopy = (props: UseGenerationProps) => {
         method: 'POST',
         body: payload
       });
-      if (result.debugInfo && props.setLandingPageDebugInfo) {
-        // console.log('!!!!!!!!!!!result.debugInfo', result.debugInfo);
-        props.setLandingPageDebugInfo({
-          systemPrompt: result.debugInfo.systemPrompt,
-          userPrompt: result.debugInfo.userPrompt,
-          requestPayload: payload,
-          rawResponse: result.debugInfo.rawResponse
-        });
-      }
+      
+      // Standardized debug info processing
+      setLandingPageDebugInfo(result, payload);
+      
       return result;
     },
     onSuccess: (data) => {
@@ -213,10 +260,9 @@ const useGenerateLandingCopy = (props: UseGenerationProps) => {
       });
     }
   });
-};
 
-const useGenerateRetentionEmail = (props: UseGenerationProps) => {
-  return useMutation({
+  // Retention Email Generation Mutation
+  const generateRetentionEmailMutation = useMutation({
     mutationFn: async () => {
       const payload = {
         keyMessage: props.retentionKeyMessage,
@@ -236,10 +282,10 @@ const useGenerateRetentionEmail = (props: UseGenerationProps) => {
         method: 'POST',
         body: payload
       });
-      if (result.debugInfo && props.setRetentionEmailDebugInfo) {
-        console.log('!!!!!!!!!!!result.debugInfo', result.debugInfo);
-        props.setRetentionEmailDebugInfo(result.debugInfo);
-      }
+      
+      // Standardized debug info processing
+      setRetentionEmailDebugInfo(result, payload);
+      
       return result;
     },
     onSuccess: (data) => {
@@ -258,10 +304,9 @@ const useGenerateRetentionEmail = (props: UseGenerationProps) => {
       });
     }
   });
-};
 
-const useGenerateRetentionSms = (props: UseGenerationProps) => {
-  return useMutation({
+  // Retention SMS Generation Mutation
+  const generateRetentionSmsMutation = useMutation({
     mutationFn: async () => {
       const payload = {
         keyMessage: props.retentionKeyMessage,
@@ -280,10 +325,10 @@ const useGenerateRetentionSms = (props: UseGenerationProps) => {
         method: 'POST',
         body: payload
       });
-      if (result.debugInfo && props.setRetentionSmsDebugInfo) {
-        console.log('!!!!!!!!!!!result.debugInfo', result.debugInfo);
-        props.setRetentionSmsDebugInfo(result.debugInfo);
-      }
+      
+      // Standardized debug info processing
+      setRetentionSmsDebugInfo(result, payload);
+      
       return result;
     },
     onSuccess: (data) => {
@@ -302,67 +347,55 @@ const useGenerateRetentionSms = (props: UseGenerationProps) => {
       });
     }
   });
-};
 
-const useGenerateAdCopy = (
-  props: UseGenerationProps,
-  stateSetters: {
-    setGeneratedHeadlines: (headlines: Array<{ framework: string; copy: string }>) => void;
-    setGeneratedPrimaryText: (text: string) => void;
-    setCurrentCopyId: (id: string | null) => void;
-    setTestingFocus: (focus: string | null) => void;
-    setStrategicInsights: (insights: Record<string, any> | null) => void;
-    setSelectedHeadlineIndex: (index: number) => void;
-    setCopyRating: (rating: string | null) => void;
-    setFeedbackText: (text: string) => void;
-  }
-) => {
-  return useMutation({
+  // Ad Copy Generation Mutation
+  const generateAdCopyMutation = useMutation({
     mutationFn: async () => {
-      const payload = {
-        transcription: props.transcription,
-        customBrief: props.customRequest,
-        persona: props.persona,
-        targetAudience: props.targetAudience || props.personas[props.persona]?.label || props.persona,
-        landingPageUrl: props.landingPageUrl,
-        brandDrBalance: props.brandDrBalance && props.brandDrBalance.length > 0 ? props.brandDrBalance[0] : 50,
-        useJonesBrandGuide: props.useJonesBrandGuide,
-        airLink: props.airLink,
-        uploadedImage: props.staticAdImage,
-        selectedProduct: props.selectedProduct,
-        selectedProducts: props.selectedProducts
-      };
-      const result = await apiRequest('/api/generate-ad-copy', {
+      const response = await apiRequest('/api/generate-ad-copy', {
         method: 'POST',
-        body: payload
+        body: {
+          transcription: props.transcription,
+          customBrief: props.customBrief || '',
+          persona: props.persona,
+          targetAudience: props.targetAudience,
+          landingPageUrl: props.landingPageUrl,
+          brandDrBalance: props.brandDrBalance,
+          useJonesBrandGuide: props.useJonesBrandGuide,
+          airLink: props.airLink,
+          uploadedImage: props.uploadedImage || '',
+          selectedProduct: props.selectedProduct,
+          selectedProducts: props.selectedProducts
+        }
       });
-      if (result.debugInfo && props.setAdCopyDebugInfo) {
-        props.setAdCopyDebugInfo({
-          systemPrompt: result.debugInfo.systemPrompt,
-          userPrompt: result.debugInfo.userPrompt,
-          requestPayload: payload,
-          rawResponse: result.debugInfo.rawResponse
+
+      if (response.debugInfo) {
+        setDebugInfo(STATION_KEYS.AD_COPY, {
+          systemPrompt: response.debugInfo.systemPrompt,
+          userPrompt: response.debugInfo.userPrompt,
+          requestPayload: response.debugInfo.requestPayload,
+          rawResponse: response.debugInfo.rawResponse,
+          stationName: 'Ad Copy Generation',
+          timestamp: new Date().toISOString()
         });
       }
-      return result;
+
+      // Update states with the response
+      setGeneratedHeadlines(response.headlines || []);
+      setGeneratedPrimaryText(response.primaryText || '');
+      setTestingFocus(response.testingFocus || null);
+      setStrategicInsights(response.strategicInsights || null);
+      setCurrentCopyId(response.copyId || null);
+      
+      return response;
     },
-    onSuccess: (data) => {
-      stateSetters.setGeneratedHeadlines(data.headlines || []);
-      stateSetters.setGeneratedPrimaryText(data.primaryText || '');
-      stateSetters.setCurrentCopyId(data.copyId || null);
-      stateSetters.setTestingFocus(data.testingFocus || null);
-      stateSetters.setStrategicInsights(data.strategicInsights || null);
-      stateSetters.setSelectedHeadlineIndex(0);
-      // Reset feedback state for new generation
-      stateSetters.setCopyRating(null);
-      stateSetters.setFeedbackText('');
+    onSuccess: () => {
       toast({
-        title: "Ad Copy Generated Successfully",
-        description: "Your ad copy has been generated using Claude AI.",
+        title: "Ad Copy Generated",
+        description: "Your ad copy has been generated successfully!"
       });
     },
-    onError: (error) => {
-      logError('Ad copy generation', error);
+    onError: (error: any) => {
+      logError('Ad copy generation failed', error);
       toast({
         title: "Generation Failed",
         description: error.message || "Failed to generate ad copy. Please try again.",
@@ -370,101 +403,63 @@ const useGenerateAdCopy = (
       });
     }
   });
-};
 
-const useSubmitFeedback = () => {
-  return useMutation({
-    mutationFn: async (data: { copyId: string; rating: string; feedback?: string }) => {
-      return await apiRequest('/api/copy-feedback', {
+  // Submit Feedback Mutation
+  const submitFeedbackMutation = useMutation({
+    mutationFn: async ({ copyId, rating, feedback }: { copyId: string; rating: string; feedback?: string }) => {
+      const response = await apiRequest('/api/submit-feedback', {
         method: 'POST',
-        body: data
-      });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Thank you!",
-        description: "Your feedback helps improve the AI copywriter.",
-      });
-    },
-    onError: (error) => {
-      logError('Feedback submission', error);
-      toast({
-        title: "Error",
-        description: "Failed to submit feedback. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-};
-
-const useSaveCopy = (currentCopyId: string | null, generatedHeadlines: Array<{ framework: string; copy: string }>, generatedPrimaryText: string) => {
-  return useMutation({
-    mutationFn: async () => {
-      if (!currentCopyId) {
-        throw new Error(ERROR_MESSAGES.GENERIC.OPERATION_FAILED('Save copy - no ID available'));
-      }
-      return await apiRequest(`/api/generated-copy/${currentCopyId}`, {
-        method: 'PUT',
         body: {
-          headlines: generatedHeadlines,
-          primaryText: generatedPrimaryText
+          copyId,
+          rating,
+          feedback
         }
       });
+      return response;
     },
     onSuccess: () => {
       toast({
-        title: "Changes Saved",
-        description: "Your ad copy changes have been saved successfully.",
+        title: "Feedback Submitted",
+        description: "Thank you for your feedback!"
       });
+      // Reset feedback state
+      setCopyRating(null);
+      setFeedbackText('');
     },
-    onError: () => {
+    onError: (error: any) => {
+      logError('Feedback submission failed', error);
       toast({
-        title: "Save Failed",
-        description: "Failed to save changes. Please try again.",
+        title: "Submission Failed",
+        description: error.message || "Failed to submit feedback. Please try again.",
         variant: "destructive"
       });
     }
   });
-};
 
-export const useGeneration = (props: UseGenerationProps) => {
-  const [generatedHeadlines, setGeneratedHeadlines] = useState<Array<{ framework: string; copy: string }>>([]);
-  const [generatedPrimaryText, setGeneratedPrimaryText] = useState('');
-  const [selectedHeadlineIndex, setSelectedHeadlineIndex] = useState<number>(0);
-  const [testingFocus, setTestingFocus] = useState<string | null>(null);
-  const [strategicInsights, setStrategicInsights] = useState<Record<string, any> | null>(null);
-  const [currentCopyId, setCurrentCopyId] = useState<string | null>(null);
-  const [copyRating, setCopyRating] = useState<string | null>(null);
-  const [feedbackText, setFeedbackText] = useState('');
-  const [debugInfo, setDebugInfo] = useState<{
-    systemPrompt: string;
-    userPrompt: string;
-    requestPayload: any;
-    rawResponse: string;
-  } | null>(null);
-
-  const { isCopied: copiedHeadlines, copyToClipboard: copyHeadlinesToClipboard } = useCopyToClipboard();
-  const { isCopied: copiedPrimaryText, copyToClipboard: copyPrimaryTextToClipboard } = useCopyToClipboard();
-
-  const analyzeStaticAdMutation = useAnalyzeStaticAd({ ...props, setStaticAdDebugInfo: setDebugInfo });
-  const generateCustomCopyMutation = useGenerateCustomCopy(props);
-  const generateLandingCopyMutation = useGenerateLandingCopy(props);
-  const generateRetentionEmailMutation = useGenerateRetentionEmail(props);
-  const generateRetentionSmsMutation = useGenerateRetentionSms(props);
-  const generateAdCopyMutation = useGenerateAdCopy(props, {
-    setGeneratedHeadlines,
-    setGeneratedPrimaryText,
-    setCurrentCopyId,
-    setTestingFocus,
-    setStrategicInsights,
-    setSelectedHeadlineIndex,
-    setCopyRating,
-    setFeedbackText
+  // Save Copy Mutation (placeholder for now)
+  const saveCopyMutation = useMutation({
+    mutationFn: async () => {
+      // Implementation would depend on requirements
+      throw new Error('Save copy not implemented yet');
+    }
   });
-  const submitFeedbackMutation = useSubmitFeedback();
-  const saveCopyMutation = useSaveCopy(currentCopyId, generatedHeadlines, generatedPrimaryText);
+
+  // Unified copy function that handles different content types
+  const copyToClipboard = (text: string, type: string) => {
+    if (type === 'headlines' || type === 'headline') {
+      copyHeadlinesToClipboard(text);
+    } else if (type === 'primary' || type === 'primaryText') {
+      copyPrimaryTextToClipboard(text);
+    } else {
+      copyPrimaryTextToClipboard(text);
+    }
+  };
+
+  // Helper function to get debug info for any station
+  const getStationDebugInfo = (stationKey: StationKey) => getDebugInfo(stationKey);
 
   return {
+    // Mutations
     analyzeStaticAdMutation,
     generateCustomCopyMutation,
     generateLandingCopyMutation,
@@ -473,6 +468,8 @@ export const useGeneration = (props: UseGenerationProps) => {
     generateAdCopyMutation,
     submitFeedbackMutation,
     saveCopyMutation,
+    
+    // Ad copy states
     generatedHeadlines,
     setGeneratedHeadlines,
     generatedPrimaryText,
@@ -484,12 +481,20 @@ export const useGeneration = (props: UseGenerationProps) => {
     setCopyRating,
     feedbackText,
     setFeedbackText,
-    debugInfo,
     copiedHeadlines,
     copiedPrimaryText,
     testingFocus,
     strategicInsights,
+    
+    // Utility functions
+    copyToClipboard,
     copyHeadlinesToClipboard,
     copyPrimaryTextToClipboard,
+    
+    // Debug info access
+    getStationDebugInfo,
+    
+    // Station keys for consistency
+    STATION_KEYS
   };
 };

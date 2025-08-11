@@ -14,6 +14,8 @@ import { apiRequest } from '@/lib/queryClient';
 import { TargetPersona } from '@/components/common/TargetPersona';
 import { BRAND_NAME } from '@shared/constants';
 import { BrandDrBalance } from '@/components/common/BrandDrBalance';
+import { StandardizedDebugButton } from '@/components/common/StandardizedDebugButton';
+import { STATION_KEYS } from '@/hooks/generation/useDebugInfo';
 
 interface LandingPageFramework {
   id: string;
@@ -96,7 +98,7 @@ interface LandingPageTabProps {
   copyToClipboard: (text: string, type: string) => Promise<void>;
 
   // Revision States
-  setSelectedItemForRevision: (value: any) => void;
+  setSelectedItemForRevision: (value: { type: "headline" | "primaryText" | "landingCopy" | "custom" | "retention" | "staticAd" | "socialCaption"; index?: number; field?: string } | null) => void;
   setShowRevisionPanel: (value: boolean) => void;
 
   // Generation Details
@@ -106,18 +108,10 @@ interface LandingPageTabProps {
   stationPrompts: any;
   brandGuidelines: any;
   copyFrameworks: any;
-  debugInfo?: {
-    systemPrompt: string;
-    userPrompt: string;
-    requestPayload: any;
-    rawResponse: string;
-  } | null;
-  landingPageDebugInfo?: {
-    systemPrompt: string;
-    userPrompt: string;
-    requestPayload: any;
-    rawResponse: string;
-  } | null;
+  debugInfoManager?: {
+    getDebugInfo: (stationKey: string) => any;
+    setDebugInfo: (stationKey: string, debugInfo: any) => void;
+  };
 }
 
 // Simple scalable placeholder graphic for visual preview boxes/avatars
@@ -185,21 +179,33 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
   stationPrompts,
   brandGuidelines,
   copyFrameworks,
-  debugInfo,
-  landingPageDebugInfo,
+  debugInfoManager,
 }) => {
   const [landingPageFrameworks, setLandingPageFrameworks] = useState<LandingPageFramework[]>([]);
   const [loadingFrameworks, setLoadingFrameworks] = useState(false);
   const [copied, setCopied] = useState(false);
   const selectedFrameworkDetails = landingPageFrameworks.find((f) => f.name === landingPageType);
   // Normalize known typo from upstream to ensure UI behavior remains correct
-  const normalizedLandingPageType = landingPageType === 'peoduct_framework' ? 'product_framework' : landingPageType;
+  const normalizedLandingPageType = landingPageType === 'peoduct_framework' ? 'multi_product_page' : landingPageType;
 
-  // Visual Preview helpers (product framework support)
-  const productFrameworkRaw: any = (generatedLandingCopy as any)?.productFramework || (generatedLandingCopy as any)?.product_framework || null;
-  const isProductFrameworkMode = normalizedLandingPageType === 'product_framework';
-  const productFramework: any = productFrameworkRaw || ((isProductFrameworkMode && (generatedLandingCopy as any)?.hero_section) ? (generatedLandingCopy as any) : null);
-  const isProductFramework = isProductFrameworkMode && !!productFramework;
+  // Visual Preview helpers (multi product page support)
+  const multiProductPageRaw: any = (generatedLandingCopy as any)?.multiProductPage || (generatedLandingCopy as any)?.multi_product_page || null;
+  const isMultiProductPageMode = normalizedLandingPageType === 'multi_product_page';
+  const multiProductPage: any = multiProductPageRaw || ((isMultiProductPageMode && (generatedLandingCopy as any)?.hero_section) ? (generatedLandingCopy as any) : null);
+  const isMultiProductPage = isMultiProductPageMode && !!multiProductPage;
+
+
+
+  // Visual Preview helpers (listicle support)
+  const listicleRaw: any = (generatedLandingCopy as any)?.listicle || null;
+  const isListicleMode = normalizedLandingPageType === 'listicle';
+  const listicle: any = listicleRaw;
+  const isListicle = isListicleMode && !!listicle;
+
+
+
+  // Additional debugging for listicle issue
+
 
   // Load landing page frameworks on component mount
   useEffect(() => {
@@ -256,8 +262,8 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
             },
             {
               id: '4',
-              name: 'product_framework',
-              displayName: 'Product Framework',
+              name: 'multi_product_page',
+              displayName: 'Multi Product Page',
               description: 'Structured, product-first framework (hero, showcase, grid, benefits, social, CTA)',
               contentSequence: [],
               reasonStructure: [],
@@ -278,7 +284,11 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
   }, []);
 
   const handleCopy = () => {
+    if (isListicle && listicle) {
+      copyToClipboard(JSON.stringify(listicle, null, 2), 'listicle');
+    } else {
     copyToClipboard(JSON.stringify(generatedLandingCopy, null, 2), 'landing');
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -312,7 +322,7 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                         return Target;
                       case 'multi_product':
                         return Sparkles;
-                      case 'product_framework':
+                      case 'multi_product_page':
                         return Sparkles;
                       default:
                         return FileText;
@@ -607,16 +617,31 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                 <FileText className="text-jones-primary mr-2 sm:mr-3" size={18} />
                 Generated Landing Page
               </h3>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedItemForRevision({ type: 'landingCopy' });
+                    setShowRevisionPanel(true);
+                  }}
+                  disabled={!generatedLandingCopy.headline && !isMultiProductPage && !isListicle}
+                  className="w-full sm:w-auto text-xs"
+                >
+                  <Target size={14} className="mr-1" />
+                  <span>Improve</span>
+                </Button>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="outline"
-                      size="icon"
+                        size="sm"
                       onClick={handleCopy}
-                      disabled={(!generatedLandingCopy.headline && !isProductFramework) || copied}
+                      disabled={(!generatedLandingCopy.headline && !isMultiProductPage && !isListicle) || copied}
+                        className="w-full sm:w-auto text-xs px-2"
                     >
-                      {copied ? <Check size={16} /> : <Copy size={16} />}
+                        {copied ? <Check size={14} /> : <Copy size={14} />}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -624,30 +649,22 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!generatedLandingCopy.headline && !isProductFramework}
-                onClick={() => {
-                  setCurrentGenerationMetadata({
-                    stationName: 'Landing Page',
-                    timestamp: new Date().toISOString(),
-                    modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
-                    temperature: modelSettings?.temperature || 0.7,
-                    maxTokens: modelSettings?.maxTokens || 2000,
-                    systemPrompt: landingPageDebugInfo?.systemPrompt || stationPrompts?.landingPage?.systemPrompt || `Expert landing page copywriter specializing in ${BRAND_NAME} conversions...`,
-                    userPrompt: landingPageDebugInfo?.userPrompt || `Type: ${landingPageType}\nProduct Brief: ${productBrief}\nMain Angle: ${mainAngle}`,
-                    requestPayload: landingPageDebugInfo?.requestPayload,
-                    rawResponse: landingPageDebugInfo?.rawResponse
-                  });
-                  setShowGenerationDetails(true);
+              <StandardizedDebugButton
+                stationKey={STATION_KEYS.LANDING_PAGE}
+                stationName="Landing Page"
+                fallbackPrompts={{
+                  systemPrompt: stationPrompts?.landingPage?.systemPrompt || `Expert landing page copywriter specializing in ${BRAND_NAME} conversions...`,
+                  userPrompt: `Type: ${landingPageType}\nProduct Brief: ${productBrief}\nMain Angle: ${mainAngle}`
                 }}
-                className="flex items-center space-x-1 text-xs"
-              >
-                <Eye size={12} />
-                <span>View Details</span>
-              </Button>
+                modelSettings={modelSettings}
+                setCurrentGenerationMetadata={setCurrentGenerationMetadata}
+                setShowGenerationDetails={setShowGenerationDetails}
+                disabled={!generatedLandingCopy.headline && !isMultiProductPage && !isListicle}
+                className="w-full sm:w-auto text-xs"
+                size="sm"
+                debugInfoManager={debugInfoManager}
+              />
+              </div>
             </div>
 
             {generateLandingCopyMutation.isPending ? (
@@ -664,56 +681,57 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                   Creating high-converting landing page sections optimized for your product and audience...
                 </p>
               </div>
-            ) : isProductFramework ? (
+            ) : isMultiProductPage ? (
               <div className="space-y-4 sm:space-y-6">
-                {/* Product Framework: Hero */}
-                {(productFramework?.hero_section?.headline || productFramework?.hero_section?.sub_headline) && (
+            
+                {/* Multi Product Page: Hero */}
+                {(multiProductPage?.hero_section?.headline || multiProductPage?.hero_section?.sub_headline) && (
                   <div className="border-l-4 border-jones-primary pl-3 sm:pl-4">
                     <h4 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Hero</h4>
-                    {productFramework?.hero_section?.headline && (
-                      <p className="text-lg sm:text-xl font-bold text-gray-900">{productFramework.hero_section.headline}</p>
+                    {multiProductPage?.hero_section?.headline && (
+                      <p className="text-lg sm:text-xl font-bold text-gray-900">{multiProductPage.hero_section.headline}</p>
                     )}
-                    {productFramework?.hero_section?.sub_headline && (
-                      <p className="mt-1 text-sm text-gray-700">{productFramework.hero_section.sub_headline}</p>
+                    {multiProductPage?.hero_section?.sub_headline && (
+                      <p className="mt-1 text-sm text-gray-700">{multiProductPage.hero_section.sub_headline}</p>
                     )}
-                    {productFramework?.hero_section?.key_message && (
-                      <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{productFramework.hero_section.key_message}</p>
+                    {multiProductPage?.hero_section?.key_message && (
+                      <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{multiProductPage.hero_section.key_message}</p>
                     )}
-                    {productFramework?.hero_section?.tone && (
+                    {multiProductPage?.hero_section?.tone && (
                       <div className="mt-2 flex flex-wrap gap-2">
-                        <Badge variant="outline" className="text-xs">Tone: {productFramework.hero_section.tone}</Badge>
+                        <Badge variant="outline" className="text-xs">Tone: {multiProductPage.hero_section.tone}</Badge>
                       </div>
                     )}
-                    {Array.isArray(productFramework?.hero_section?.call_to_action_guidance) && productFramework.hero_section.call_to_action_guidance.length > 0 && (
+                    {Array.isArray(multiProductPage?.hero_section?.call_to_action_guidance) && multiProductPage.hero_section.call_to_action_guidance.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {productFramework.hero_section.call_to_action_guidance.map((g: string, gi: number) => (
+                        {multiProductPage.hero_section.call_to_action_guidance.map((g: string, gi: number) => (
                           <Badge key={gi} variant="secondary" className="text-xs">{g}</Badge>
                         ))}
                       </div>
                     )}
-                    {(productFramework?.hero_section?.cta_button || productFramework?.final_cta?.cta_button) && (
+                    {(multiProductPage?.hero_section?.cta_button || multiProductPage?.final_cta?.cta_button) && (
                       <div className="mt-2">
                         <Badge variant="outline" className="text-xs">
-                          CTA: {productFramework?.hero_section?.cta_button || productFramework?.final_cta?.cta_button}
+                          CTA: {multiProductPage?.hero_section?.cta_button || multiProductPage?.final_cta?.cta_button}
                         </Badge>
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* Product Framework: Product Showcase */}
-                {productFramework?.product_showcase && (
+                {/* Multi Product Page: Product Showcase */}
+                {multiProductPage?.product_showcase && (
                   <div className="border-l-4 border-blue-500 pl-3 sm:pl-4">
-                    <h4 className="font-semibold text-gray-900 mb-2">{productFramework.product_showcase.section_title || 'Product Showcase'}</h4>
-                    {productFramework.product_showcase.body_copy && (
-                      <p className="text-sm text-gray-700 whitespace-pre-line">{productFramework.product_showcase.body_copy}</p>
+                    <h4 className="font-semibold text-gray-900 mb-2">{multiProductPage.product_showcase.section_title || 'Product Showcase'}</h4>
+                    {multiProductPage.product_showcase.body_copy && (
+                      <p className="text-sm text-gray-700 whitespace-pre-line">{multiProductPage.product_showcase.body_copy}</p>
                     )}
-                    {productFramework.product_showcase.key_message && (
-                      <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{productFramework.product_showcase.key_message}</p>
+                    {multiProductPage.product_showcase.key_message && (
+                      <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{multiProductPage.product_showcase.key_message}</p>
                     )}
-                    {Array.isArray(productFramework.product_showcase.product_lines) && productFramework.product_showcase.product_lines.length > 0 && (
+                    {Array.isArray(multiProductPage.product_showcase.product_lines) && multiProductPage.product_showcase.product_lines.length > 0 && (
                       <div className="mt-3 space-y-3">
-                        {productFramework.product_showcase.product_lines.map((pl: any, idx: number) => (
+                        {multiProductPage.product_showcase.product_lines.map((pl: any, idx: number) => (
                           <div key={idx} className="border rounded p-3">
                             <div className="font-medium text-gray-900 text-sm">{pl.name || pl.headline}</div>
                             {Array.isArray(pl.bullet_points) && pl.bullet_points.length > 0 && (
@@ -727,9 +745,9 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                         ))}
                       </div>
                     )}
-                    {Array.isArray(productFramework?.product_showcase?.call_to_action_guidance) && productFramework.product_showcase.call_to_action_guidance.length > 0 && (
+                    {Array.isArray(multiProductPage?.product_showcase?.call_to_action_guidance) && multiProductPage.product_showcase.call_to_action_guidance.length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-2">
-                        {productFramework.product_showcase.call_to_action_guidance.map((g: string, gi: number) => (
+                        {multiProductPage.product_showcase.call_to_action_guidance.map((g: string, gi: number) => (
                           <Badge key={gi} variant="secondary" className="text-xs">{g}</Badge>
                         ))}
                       </div>
@@ -737,25 +755,25 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                   </div>
                 )}
 
-                {/* Product Framework: Comparison Grid */}
-                {productFramework?.comparison_grid?.table && Array.isArray(productFramework.comparison_grid.table.columns) && Array.isArray(productFramework.comparison_grid.table.rows) && (
+                {/* Multi Product Page: Comparison Grid */}
+                {multiProductPage?.comparison_grid?.table && Array.isArray(multiProductPage.comparison_grid.table.columns) && Array.isArray(multiProductPage.comparison_grid.table.rows) && (
                   <div className="border-l-4 border-purple-500 pl-3 sm:pl-4">
-                    <h4 className="font-semibold text-gray-900 mb-2">{productFramework.comparison_grid.section_title || 'Comparison'}</h4>
-                    {productFramework.comparison_grid.key_message && (
-                      <p className="mb-2 text-sm text-gray-700 whitespace-pre-line">{productFramework.comparison_grid.key_message}</p>
+                    <h4 className="font-semibold text-gray-900 mb-2">{multiProductPage.comparison_grid.section_title || 'Comparison'}</h4>
+                    {multiProductPage.comparison_grid.key_message && (
+                      <p className="mb-2 text-sm text-gray-700 whitespace-pre-line">{multiProductPage.comparison_grid.key_message}</p>
                     )}
                     <div className="overflow-x-auto">
                       <table className="min-w-full border rounded-lg overflow-hidden bg-white">
                         <thead className="bg-gray-50">
                           <tr>
                             <th className="text-left text-xs font-semibold text-gray-600 p-2">Feature</th>
-                            {productFramework.comparison_grid.table.columns.map((col: string, ci: number) => (
+                            {multiProductPage.comparison_grid.table.columns.map((col: string, ci: number) => (
                               <th key={ci} className="text-left text-xs font-semibold text-gray-600 p-2">{col}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
-                          {productFramework.comparison_grid.table.rows.map((row: any, ri: number) => (
+                          {multiProductPage.comparison_grid.table.rows.map((row: any, ri: number) => (
                             <tr key={ri} className="border-t">
                               <td className="p-2 text-xs sm:text-sm text-gray-900 font-medium">{row.feature}</td>
                               {Array.isArray(row.values) && row.values.map((val: string, vi: number) => (
@@ -766,9 +784,9 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                         </tbody>
                       </table>
                     </div>
-                    {Array.isArray(productFramework.comparison_grid.call_to_action_guidance) && productFramework.comparison_grid.call_to_action_guidance.length > 0 && (
+                    {Array.isArray(multiProductPage.comparison_grid.call_to_action_guidance) && multiProductPage.comparison_grid.call_to_action_guidance.length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-2">
-                        {productFramework.comparison_grid.call_to_action_guidance.map((g: string, gi: number) => (
+                        {multiProductPage.comparison_grid.call_to_action_guidance.map((g: string, gi: number) => (
                           <Badge key={gi} variant="secondary" className="text-xs">{g}</Badge>
                         ))}
                       </div>
@@ -776,15 +794,15 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                   </div>
                 )}
 
-                {/* Product Framework: Universal Benefits */}
-                {productFramework?.universal_benefits && Array.isArray(productFramework.universal_benefits.features) && productFramework.universal_benefits.features.length > 0 && (
+                {/* Multi Product Page: Universal Benefits */}
+                {multiProductPage?.universal_benefits && Array.isArray(multiProductPage.universal_benefits.features) && multiProductPage.universal_benefits.features.length > 0 && (
                   <div className="border-l-4 border-green-500 pl-3 sm:pl-4">
-                    <h4 className="font-semibold text-gray-900 mb-2">{productFramework.universal_benefits.section_title || 'Universal Benefits'}</h4>
-                    {productFramework.universal_benefits.key_message && (
-                      <p className="mb-2 text-sm text-gray-700 whitespace-pre-line">{productFramework.universal_benefits.key_message}</p>
+                    <h4 className="font-semibold text-gray-900 mb-2">{multiProductPage.universal_benefits.section_title || 'Universal Benefits'}</h4>
+                    {multiProductPage.universal_benefits.key_message && (
+                      <p className="mb-2 text-sm text-gray-700 whitespace-pre-line">{multiProductPage.universal_benefits.key_message}</p>
                     )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {productFramework.universal_benefits.features.slice(0, 6).map((f: any, fi: number) => (
+                      {multiProductPage.universal_benefits.features.slice(0, 6).map((f: any, fi: number) => (
                         <div key={fi} className="border rounded p-3 bg-white">
                           <div className="font-semibold text-gray-900 text-sm">{f.headline}</div>
                           <div className="mt-1 text-sm text-gray-700">{f.description}</div>
@@ -794,38 +812,459 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                   </div>
                 )}
 
-                {/* Product Framework: Social Proof */}
-                {productFramework?.social_proof && Array.isArray(productFramework.social_proof.testimonials) && productFramework.social_proof.testimonials.length > 0 && (
+                {/* Multi Product Page: Social Proof */}
+                {multiProductPage?.social_proof && Array.isArray(multiProductPage.social_proof.testimonials) && multiProductPage.social_proof.testimonials.length > 0 && (
                   <div className="border-l-4 border-yellow-500 pl-3 sm:pl-4">
-                    <h4 className="font-semibold text-gray-900 mb-2">{productFramework.social_proof.section_title || 'Social Proof'}</h4>
-                    {productFramework.social_proof.key_message && (
-                      <p className="mb-2 text-sm text-gray-700 whitespace-pre-line">{productFramework.social_proof.key_message}</p>
+                    <h4 className="font-semibold text-gray-900 mb-2">{multiProductPage.social_proof.section_title || 'Social Proof'}</h4>
+                    {multiProductPage.social_proof.key_message && (
+                      <p className="mb-2 text-sm text-gray-700 whitespace-pre-line">{multiProductPage.social_proof.key_message}</p>
                     )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {productFramework.social_proof.testimonials.slice(0, 3).map((t: any, ti: number) => (
+                      {multiProductPage.social_proof.testimonials.slice(0, 3).map((t: any, ti: number) => (
                         <div key={ti} className="border rounded p-3 bg-white">
                           <div className="text-sm font-semibold text-gray-900">{t.reviewer_name}</div>
                           {t.reviewer_title_or_handle && <div className="text-xs text-gray-500">{t.reviewer_title_or_handle}</div>}
-                          <blockquote className="text-sm text-gray-700 mt-2">“{t.quote}”</blockquote>
+                          <blockquote className="text-sm text-gray-700 mt-2">"{t.quote}"</blockquote>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Product Framework: Final CTA */}
-                {productFramework?.final_cta?.cta_button && (
+                {/* Multi Product Page: Final CTA */}
+                {multiProductPage?.final_cta?.cta_button && (
                   <div className="border-l-4 border-emerald-600 pl-3 sm:pl-4">
-                    <h4 className="font-semibold text-gray-900 mb-2">{productFramework.final_cta.section_title || 'Call to Action'}</h4>
-                    {productFramework.final_cta.key_message && (
-                      <p className="mb-2 text-sm text-gray-700 whitespace-pre-line">{productFramework.final_cta.key_message}</p>
+                    <h4 className="font-semibold text-gray-900 mb-2">{multiProductPage.final_cta.section_title || 'Call to Action'}</h4>
+                    {multiProductPage.final_cta.key_message && (
+                      <p className="mb-2 text-sm text-gray-700 whitespace-pre-line">{multiProductPage.final_cta.key_message}</p>
                     )}
-                    <p className="text-sm font-medium text-emerald-700">{productFramework.final_cta.cta_button}</p>
+                    <p className="text-sm font-medium text-emerald-700">{multiProductPage.final_cta.cta_button}</p>
                   </div>
                 )}
               </div>
+            ) : isListicle ? (
+              <div className="space-y-4 sm:space-y-6">
+           
+                {/* Listicle: Meta Information */}
+                {listicle?.meta && (
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 mb-3 text-sm sm:text-base flex items-center">
+                      <Target className="text-blue-600 mr-2" size={16} />
+                      Strategy Overview
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {listicle.meta.target_audience && (
+                        <div className="bg-white rounded p-3">
+                          <div className="text-xs text-gray-500 mb-1">Target Audience</div>
+                          <div className="text-sm font-medium text-gray-900">{listicle.meta.target_audience}</div>
+                        </div>
+                      )}
+                      {listicle.meta.awareness_level && (
+                        <div className="bg-white rounded p-3">
+                          <div className="text-xs text-gray-500 mb-1">Awareness Level</div>
+                          <Badge variant="outline" className="text-xs">{listicle.meta.awareness_level}</Badge>
+                        </div>
+                      )}
+                      {listicle.meta.word_count && (
+                        <div className="bg-white rounded p-3">
+                          <div className="text-xs text-gray-500 mb-1">Word Count</div>
+                          <div className="text-sm font-medium text-gray-900">{listicle.meta.word_count}</div>
+                        </div>
+                      )}
+                      {listicle.meta.read_time_seconds && (
+                        <div className="bg-white rounded p-3">
+                          <div className="text-xs text-gray-500 mb-1">Read Time</div>
+                          <div className="text-sm font-medium text-gray-900">{Math.ceil(listicle.meta.read_time_seconds / 60)} min</div>
+                        </div>
+                      )}
+                      {listicle.meta.ad_angle_match && (
+                        <div className="bg-white rounded p-3 sm:col-span-2">
+                          <div className="text-xs text-gray-500 mb-1">Ad Angle Match</div>
+                          <div className="text-sm font-medium text-gray-900">{listicle.meta.ad_angle_match}</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Listicle: Headline */}
+                {listicle?.headline?.text && (
+                  <div className="border-l-4 border-jones-primary pl-3 sm:pl-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Headline</h4>
+                        <p className="text-lg sm:text-xl font-bold text-gray-900 mb-2">{listicle.headline.text}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {listicle.headline.framework_type && (
+                            <Badge variant="secondary" className="text-xs">Framework: {listicle.headline.framework_type}</Badge>
+                          )}
+                          {listicle.headline.hook_strength && (
+                            <Badge 
+                              variant={listicle.headline.hook_strength === 'high' ? 'default' : 'outline'} 
+                              className={`text-xs ${listicle.headline.hook_strength === 'high' ? 'bg-green-100 text-green-800' : listicle.headline.hook_strength === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}
+                            >
+                              Hook: {listicle.headline.hook_strength}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full sm:w-auto text-xs px-2"
+                                onClick={() => copyToClipboard(listicle.headline.text, 'headline')}
+                              >
+                                <Copy size={14} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Copy Headline</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Listicle: Bullets */}
+                {listicle?.bullets && (
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-gray-900 flex items-center">
+                      Strategic Bullet Points
+                      <Badge variant="secondary" className="ml-2 text-xs">
+                        {Object.keys(listicle.bullets).length}/5
+                      </Badge>
+                    </h4>
+
+                    {/* Bullet 1: Hook */}
+                    {listicle.bullets.bullet_1_hook && (
+                      <div className="border border-red-200 rounded-lg p-4 bg-red-50 hover:border-red-300 transition-colors group">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded">
+                                #1 Hook
+                              </span>
+                              <Badge variant="outline" className="text-xs">{listicle.bullets.bullet_1_hook.purpose}</Badge>
+                            </div>
+                            <div className="text-sm text-gray-700 leading-relaxed mb-3">
+                              {listicle.bullets.bullet_1_hook.text}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {listicle.bullets.bullet_1_hook.emotional_trigger && (
+                                <Badge variant="outline" className="text-xs bg-red-100 border-red-200 text-red-800">
+                                  {listicle.bullets.bullet_1_hook.emotional_trigger}
+                                </Badge>
+                              )}
+                              {listicle.bullets.bullet_1_hook.template_used && (
+                                <Badge variant="outline" className="text-xs">
+                                  Template: {listicle.bullets.bullet_1_hook.template_used}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full sm:w-auto text-xs px-2"
+                                    onClick={() => copyToClipboard(listicle.bullets.bullet_1_hook.text, 'bullet-1')}
+                                  >
+                                    <Copy size={14} />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Copy</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Bullet 2: Solution */}
+                    {listicle.bullets.bullet_2_solution && (
+                      <div className="border border-blue-200 rounded-lg p-4 bg-blue-50 hover:border-blue-300 transition-colors group">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded">
+                                #2 Solution
+                              </span>
+                              <Badge variant="outline" className="text-xs">{listicle.bullets.bullet_2_solution.purpose}</Badge>
+                            </div>
+                            <div className="text-sm text-gray-700 leading-relaxed mb-3">
+                              {listicle.bullets.bullet_2_solution.text}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {listicle.bullets.bullet_2_solution.credibility_element && (
+                                <Badge variant="outline" className="text-xs bg-blue-100 border-blue-200 text-blue-800">
+                                  {listicle.bullets.bullet_2_solution.credibility_element}
+                                </Badge>
+                              )}
+                              {listicle.bullets.bullet_2_solution.template_used && (
+                                <Badge variant="outline" className="text-xs">
+                                  Template: {listicle.bullets.bullet_2_solution.template_used}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full sm:w-auto text-xs px-2"
+                                    onClick={() => copyToClipboard(listicle.bullets.bullet_2_solution.text, 'bullet-2')}
+                                  >
+                                    <Copy size={14} />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Copy</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Bullet 3: Experience */}
+                    {listicle.bullets.bullet_3_experience && (
+                      <div className="border border-green-200 rounded-lg p-4 bg-green-50 hover:border-green-300 transition-colors group">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">
+                                #3 Experience
+                              </span>
+                              <Badge variant="outline" className="text-xs">{listicle.bullets.bullet_3_experience.purpose}</Badge>
+                            </div>
+                            <div className="text-sm text-gray-700 leading-relaxed mb-3">
+                              {listicle.bullets.bullet_3_experience.text}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {listicle.bullets.bullet_3_experience.transformation_focus && (
+                                <Badge variant="outline" className="text-xs bg-green-100 border-green-200 text-green-800">
+                                  {listicle.bullets.bullet_3_experience.transformation_focus}
+                                </Badge>
+                              )}
+                              {listicle.bullets.bullet_3_experience.template_used && (
+                                <Badge variant="outline" className="text-xs">
+                                  Template: {listicle.bullets.bullet_3_experience.template_used}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full sm:w-auto text-xs px-2"
+                                    onClick={() => copyToClipboard(listicle.bullets.bullet_3_experience.text, 'bullet-3')}
+                                  >
+                                    <Copy size={14} />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Copy</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Bullet 4: Validator */}
+                    {listicle.bullets.bullet_4_validator && (
+                      <div className="border border-purple-200 rounded-lg p-4 bg-purple-50 hover:border-purple-300 transition-colors group">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-1 rounded">
+                                #4 Validator
+                              </span>
+                              <Badge variant="outline" className="text-xs">{listicle.bullets.bullet_4_validator.purpose}</Badge>
+                            </div>
+                            <div className="text-sm text-gray-700 leading-relaxed mb-3">
+                              {listicle.bullets.bullet_4_validator.text}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {Array.isArray(listicle.bullets.bullet_4_validator.proof_types) && listicle.bullets.bullet_4_validator.proof_types.map((proof: string, idx: number) => (
+                                <Badge key={idx} variant="outline" className="text-xs bg-purple-100 border-purple-200 text-purple-800">
+                                  {proof}
+                                </Badge>
+                              ))}
+                              {listicle.bullets.bullet_4_validator.template_used && (
+                                <Badge variant="outline" className="text-xs">
+                                  Template: {listicle.bullets.bullet_4_validator.template_used}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full sm:w-auto text-xs px-2"
+                                    onClick={() => copyToClipboard(listicle.bullets.bullet_4_validator.text, 'bullet-4')}
+                                  >
+                                    <Copy size={14} />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Copy</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Bullet 5: Closer */}
+                    {listicle.bullets.bullet_5_closer && (
+                      <div className="border border-orange-200 rounded-lg p-4 bg-orange-50 hover:border-orange-300 transition-colors group">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="bg-orange-100 text-orange-800 text-xs font-medium px-2 py-1 rounded">
+                                #5 Closer
+                              </span>
+                              <Badge variant="outline" className="text-xs">{listicle.bullets.bullet_5_closer.purpose}</Badge>
+                            </div>
+                            <div className="text-sm text-gray-700 leading-relaxed mb-3">
+                              {listicle.bullets.bullet_5_closer.text}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {listicle.bullets.bullet_5_closer.urgency_element && (
+                                <Badge variant="outline" className="text-xs bg-orange-100 border-orange-200 text-orange-800">
+                                  {listicle.bullets.bullet_5_closer.urgency_element}
+                                </Badge>
+                              )}
+                              {listicle.bullets.bullet_5_closer.template_used && (
+                                <Badge variant="outline" className="text-xs">
+                                  Template: {listicle.bullets.bullet_5_closer.template_used}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full sm:w-auto text-xs px-2"
+                                    onClick={() => copyToClipboard(listicle.bullets.bullet_5_closer.text, 'bullet-5')}
+                                  >
+                                    <Copy size={14} />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Copy</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Listicle: Social Proof */}
+                {listicle?.social_proof && (
+                  <div className="border-l-4 border-yellow-500 pl-3 sm:pl-4">
+                    <h4 className="font-semibold text-gray-900 mb-3">Social Proof Elements</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {Array.isArray(listicle.social_proof.types_included) && listicle.social_proof.types_included.map((type: string, idx: number) => (
+                        <div key={idx} className="bg-yellow-50 border border-yellow-200 rounded p-2">
+                          <Badge variant="outline" className="text-xs">{type}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {listicle.social_proof.volume_metrics && (
+                        <div className="text-sm text-gray-700"><strong>Volume:</strong> {listicle.social_proof.volume_metrics}</div>
+                      )}
+                      {listicle.social_proof.clinical_data && (
+                        <div className="text-sm text-gray-700"><strong>Clinical:</strong> {listicle.social_proof.clinical_data}</div>
+                      )}
+                      {listicle.social_proof.media_validation && (
+                        <div className="text-sm text-gray-700"><strong>Media:</strong> {listicle.social_proof.media_validation}</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Listicle: Performance Indicators */}
+                {/* {listicle?.performance_indicators && (
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                      <Zap className="text-green-600 mr-2" size={16} />
+                      Performance Indicators
+                    </h4>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                      {listicle.performance_indicators.scroll_stopping_power && (
+                        <div className="bg-white rounded p-3">
+                          <div className="text-xs text-gray-500 mb-1">Scroll Stop</div>
+                          <Badge 
+                            variant={listicle.performance_indicators.scroll_stopping_power === 'high' ? 'default' : 'outline'}
+                            className={`text-xs ${listicle.performance_indicators.scroll_stopping_power === 'high' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
+                          >
+                            {listicle.performance_indicators.scroll_stopping_power}
+                          </Badge>
+                        </div>
+                      )}
+                      {listicle.performance_indicators.conversion_readiness && (
+                        <div className="bg-white rounded p-3">
+                          <div className="text-xs text-gray-500 mb-1">Conversion</div>
+                          <Badge 
+                            variant={listicle.performance_indicators.conversion_readiness === 'high' ? 'default' : 'outline'}
+                            className={`text-xs ${listicle.performance_indicators.conversion_readiness === 'high' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
+                          >
+                            {listicle.performance_indicators.conversion_readiness}
+                          </Badge>
+                        </div>
+                      )}
+                      {listicle.performance_indicators.message_continuity && (
+                        <div className="bg-white rounded p-3">
+                          <div className="text-xs text-gray-500 mb-1">Message Flow</div>
+                          <Badge 
+                            variant={listicle.performance_indicators.message_continuity === 'perfect' ? 'default' : 'outline'}
+                            className={`text-xs ${listicle.performance_indicators.message_continuity === 'perfect' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
+                          >
+                            {listicle.performance_indicators.message_continuity}
+                          </Badge>
+                        </div>
+                      )}
+                      {listicle.performance_indicators.mobile_consumption && (
+                        <div className="bg-white rounded p-3">
+                          <div className="text-xs text-gray-500 mb-1">Mobile</div>
+                          <Badge 
+                            variant={listicle.performance_indicators.mobile_consumption === 'optimized' ? 'default' : 'outline'}
+                            className={`text-xs ${listicle.performance_indicators.mobile_consumption === 'optimized' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
+                          >
+                            {listicle.performance_indicators.mobile_consumption}
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )} */}
+              </div>
             ) : generatedLandingCopy.headline ? (
               <div className="space-y-4 sm:space-y-6">
+             
                 <div className="border-l-4 border-jones-primary pl-3 sm:pl-4 group">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -833,25 +1272,13 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                       <p className="text-lg sm:text-xl font-bold text-gray-900">{generatedLandingCopy.headline}</p>
                     </div>
                     <div className="flex items-center space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity ml-2"
-                        onClick={() => {
-                          setSelectedItemForRevision({ type: 'landingCopy', field: 'headline' });
-                          setShowRevisionPanel(true);
-                        }}
-                        title="Suggest improvements"
-                      >
-                        <Target size={14} />
-                      </Button>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="w-full sm:w-auto text-xs px-2"
                                 onClick={() => copyToClipboard(generatedLandingCopy.headline, 'headline')}
                             >
                                 <Copy size={14} />
@@ -866,45 +1293,7 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                   </div>
                 </div>
 
-                <div className="border-l-4 border-gray-300 pl-4 group">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-2">Introduction</h4>
-                      <p className="text-gray-700">{generatedLandingCopy.introduction}</p>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity ml-2"
-                        onClick={() => {
-                          setSelectedItemForRevision({ type: 'landingCopy', field: 'introduction' });
-                          setShowRevisionPanel(true);
-                        }}
-                        title="Suggest improvements"
-                      >
-                        <Target size={14} />
-                      </Button>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => copyToClipboard(generatedLandingCopy.introduction, 'introduction')}
-                            >
-                                <Copy size={14} />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            Copy
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                  </div>
-                </div>
+
 
                 {generatedLandingCopy.sections.length > 0 && (
                   <div className="space-y-4">
@@ -940,25 +1329,13 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                             </div>
                           </div>
                           <div className="flex items-center space-x-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity ml-2"
-                              onClick={() => {
-                                setSelectedItemForRevision({ type: 'landingCopy', field: `section-${index}` });
-                                setShowRevisionPanel(true);
-                              }}
-                              title="Suggest improvements"
-                            >
-                              <Target size={14} />
-                            </Button>
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                      className="w-full sm:w-auto text-xs px-2"
                                       onClick={() => copyToClipboard(section.content, `section-${index}`)}
                                   >
                                       <Copy size={14} />
@@ -976,47 +1353,7 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                   </div>
                 )}
 
-                {generatedLandingCopy.riskReversal && (
-                  <div className="border-l-4 border-orange-500 pl-4 group">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900 mb-2">Risk Reversal</h4>
-                        <p className="text-gray-700">{generatedLandingCopy.riskReversal}</p>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity ml-2"
-                          onClick={() => {
-                            setSelectedItemForRevision({ type: 'landingCopy', field: 'riskReversal' });
-                            setShowRevisionPanel(true);
-                          }}
-                          title="Suggest improvements"
-                        >
-                          <Target size={14} />
-                        </Button>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={() => copyToClipboard(generatedLandingCopy.riskReversal, 'riskReversal')}
-                              >
-                                  <Copy size={14} />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Copy
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </div>
-                  </div>
-                )}
+
 
                 <div className="border-l-4 border-green-500 pl-4 group">
                   <div className="flex items-start justify-between">
@@ -1025,25 +1362,13 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
                       <p className="text-lg font-medium text-green-700">{generatedLandingCopy.cta}</p>
                     </div>
                     <div className="flex items-center space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity ml-2"
-                        onClick={() => {
-                          setSelectedItemForRevision({ type: 'landingCopy', field: 'cta' });
-                          setShowRevisionPanel(true);
-                        }}
-                        title="Suggest improvements"
-                      >
-                        <Target size={14} />
-                      </Button>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="w-full sm:w-auto text-xs px-2"
                                 onClick={() => copyToClipboard(generatedLandingCopy.cta, 'cta')}
                             >
                                 <Copy size={14} />
@@ -1195,256 +1520,7 @@ export const LandingPageTab: React.FC<LandingPageTabProps> = ({
           </Card>
         )}
 
-        {/* Visual Landing Page Preview */}
-        {generatedLandingCopy.headline && (
-          <Card className="overflow-hidden">
-            <CardContent className="p-0">
-              <div className="flex items-center justify-between p-4 sm:p-6 border-b">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
-                  <Globe className="text-jones-primary mr-2 sm:mr-3" size={18} />
-                  Visual Preview
-                </h3>
-                <div className="text-xs text-gray-500">Responsive landing page mock</div>
-              </div>
 
-              <div className="bg-white">
-                {/* Hero Section */}
-                <section className="relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-pink-50" />
-                  <div className="relative mx-auto max-w-6xl px-4 py-10 sm:py-14 lg:py-16">
-                    <div className="grid lg:grid-cols-2 gap-8 items-center">
-                      <div className="text-center lg:text-left">
-                        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 tracking-tight">
-                          {isProductFramework ? (productFramework?.hero_section?.headline || generatedLandingCopy.headline) : generatedLandingCopy.headline}
-                        </h1>
-                        {isProductFramework ? (
-                          (productFramework?.hero_section?.sub_headline || productFramework?.hero_section?.key_message) && (
-                            <p className="mt-3 text-sm sm:text-base text-gray-700 max-w-3xl lg:max-w-none mx-auto lg:mx-0 break-words">
-                              {productFramework?.hero_section?.sub_headline || productFramework?.hero_section?.key_message}
-                            </p>
-                          )
-                        ) : (generatedLandingCopy.subheadline || generatedLandingCopy.introduction ? (
-                          <p className="mt-3 text-sm sm:text-base text-gray-700 max-w-3xl lg:max-w-none mx-auto lg:mx-0 break-words">
-                            {generatedLandingCopy.subheadline || generatedLandingCopy.introduction}
-                          </p>
-                        ) : null)}
-                        {(isProductFramework ? (productFramework?.hero_section?.cta_button || productFramework?.final_cta?.cta_button) : generatedLandingCopy.cta) && (
-                          <div className="mt-6">
-                            <Button className="text-white px-6 py-2 text-sm sm:text-base" style={{ backgroundColor: '#004182' }} size="sm">
-                              {isProductFramework ? (productFramework?.hero_section?.cta_button || productFramework?.final_cta?.cta_button) : generatedLandingCopy.cta}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex justify-center lg:justify-end">
-                        <div className="relative w-64 h-64 sm:w-80 sm:h-80 rounded-2xl shadow-2xl border bg-white overflow-hidden ring-1 ring-black/5">
-                          <PlaceholderGraphic className="w-full h-full" />
-                          <div className="pointer-events-none absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-pink-200/40 blur-2xl" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Product Showcase & Benefit Categories */}
-                {isProductFramework && productFramework?.product_showcase ? (
-                  <section className="mx-auto max-w-5xl px-4 py-10">
-                    <div className="text-center mb-6">
-                      <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{productFramework.product_showcase.section_title || 'Product Showcase & Benefits'}</h2>
-                      {productFramework.product_showcase.body_copy && (
-                        <p className="text-sm text-gray-600 mt-1 whitespace-pre-line">{productFramework.product_showcase.body_copy}</p>
-                      )}
-                    </div>
-                    <div className="space-y-4">
-                      {(productFramework.product_showcase.product_lines || []).map((pl: any, idx: number) => (
-                        <div key={idx} className="flex gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-                          <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                            <PlaceholderGraphic className="w-full h-full" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{pl.name || pl.headline}</h3>
-                            </div>
-                            {Array.isArray(pl.bullet_points) && pl.bullet_points.length > 0 && (
-                              <ul className="mt-2 list-disc list-inside text-sm text-gray-700 space-y-1">
-                                {pl.bullet_points.slice(0, 4).map((b: string, bi: number) => (
-                                  <li key={bi}>{b}</li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                ) : (
-                  generatedLandingCopy.sections?.length > 0 && (
-                    <section className="mx-auto max-w-4xl px-4 py-10">
-                      <div className="text-center mb-6">
-                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Benefits & Reasons to Believe</h2>
-                        <p className="text-sm text-gray-600 mt-1">A focused, scroll-friendly breakdown</p>
-                      </div>
-                      <div className="space-y-4">
-                        {generatedLandingCopy.sections.map((section, index) => (
-                          <div key={index} className="relative flex gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex-shrink-0">
-                              <div className="h-9 w-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">{index + 1}</div>
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-start justify-between">
-                                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{section.title}</h3>
-                                <span className="ml-3 text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">{(section as any)?.wordCount || section.content.split(/\s+/).length} words</span>
-                              </div>
-                              <p className="mt-2 text-sm text-gray-700 whitespace-pre-line leading-relaxed break-words">{section.content}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  )
-                )}
-
-                {/* Comparison Grid / Which One is for You? */}
-                {isProductFramework && productFramework?.comparison_grid && (
-                  <section className="mx-auto max-w-6xl px-4 py-10">
-                    <div className="text-center mb-6">
-                      <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{productFramework.comparison_grid.section_title || 'Which One Is For You?'}</h2>
-                    </div>
-                    {/* Desktop table */}
-                    {productFramework.comparison_grid.table && Array.isArray(productFramework.comparison_grid.table.columns) && Array.isArray(productFramework.comparison_grid.table.rows) && (
-                      <div className="hidden md:block overflow-x-auto">
-                        <table className="min-w-full border rounded-lg overflow-hidden bg-white">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="text-left text-xs font-semibold text-gray-600 p-3">Feature</th>
-                              {productFramework.comparison_grid.table.columns.map((col: string, ci: number) => (
-                                <th key={ci} className="text-left text-xs font-semibold text-gray-600 p-3">{col}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {productFramework.comparison_grid.table.rows.map((row: any, ri: number) => (
-                              <tr key={ri} className="border-t">
-                                <td className="p-3 text-sm text-gray-900 font-medium">{row.feature}</td>
-                                {Array.isArray(row.values) && row.values.map((val: string, vi: number) => (
-                                  <td key={vi} className="p-3 text-sm text-gray-700">{val}</td>
-                                ))}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                    {/* Mobile cards */}
-                    {productFramework.comparison_grid.table && (
-                      <div className="grid md:hidden grid-cols-1 gap-4 mt-4">
-                        {productFramework.comparison_grid.table.rows.map((row: any, ri: number) => (
-                          <div key={ri} className="border rounded-lg p-4 bg-white">
-                            <div className="text-sm font-semibold text-gray-900 mb-1">{row.feature}</div>
-                            <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
-                              {row.values?.map((val: string, vi: number) => (
-                                <div key={vi} className="p-2 rounded bg-gray-50 border">{val}</div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </section>
-                )}
-
-                {/* Universal Benefits & Features */}
-                {isProductFramework && productFramework?.universal_benefits && (
-                  <section className="mx-auto max-w-5xl px-4 py-10">
-                    <div className="text-center mb-6">
-                      <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{productFramework.universal_benefits.section_title || 'Universal Benefits & Features'}</h2>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {(productFramework.universal_benefits.features || []).slice(0, 6).map((f: any, fi: number) => (
-                        <div key={fi} className="border rounded-lg p-4 bg-white">
-                          <div className="font-semibold text-gray-900">{f.headline}</div>
-                          <div className="mt-1 text-sm text-gray-700">{f.description}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                {/* Social Proof */}
-                {isProductFramework && productFramework?.social_proof && (
-                  <section className="mx-auto max-w-5xl px-4 py-10">
-                    <div className="text-center mb-6">
-                      <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{productFramework.social_proof.section_title || 'What People Are Saying'}</h2>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {(productFramework.social_proof.testimonials || []).slice(0, 3).map((t: any, ti: number) => (
-                        <div key={ti} className="border rounded-lg p-4 bg-white">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100">
-                              <PlaceholderGraphic className="w-full h-full" />
-                            </div>
-                            <div>
-                              <div className="text-sm font-semibold text-gray-900">{t.reviewer_name}</div>
-                              {t.reviewer_title_or_handle && <div className="text-xs text-gray-500">{t.reviewer_title_or_handle}</div>}
-                            </div>
-                          </div>
-                          <blockquote className="text-sm text-gray-700">“{t.quote}”</blockquote>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                {/* Risk Reversal */}
-                {generatedLandingCopy.riskReversal && (
-                  <section className="mx-auto max-w-4xl px-4 py-8">
-                    <div className="rounded-lg border bg-orange-50 border-orange-200 p-5">
-                      <h3 className="font-semibold text-orange-900 mb-1">Risk Reversal</h3>
-                      <p className="text-sm text-orange-900/90 break-words">{generatedLandingCopy.riskReversal}</p>
-                    </div>
-                  </section>
-                )}
-
-                {/* Social Proof */}
-                {generatedLandingCopy.socialProof && (
-                  <section className="mx-auto max-w-4xl px-4 py-8">
-                    <div className="text-center">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3">What People Are Saying</h3>
-                      <blockquote className="mx-auto max-w-3xl bg-gray-50 border rounded-lg p-5 text-gray-700 text-sm">
-                        “{generatedLandingCopy.socialProof}”
-                      </blockquote>
-                    </div>
-                  </section>
-                )}
-
-                {/* Final CTA */}
-                {isProductFramework ? (
-                  productFramework?.final_cta?.cta_button && (
-                    <section className="mx-auto max-w-5xl px-4 py-12">
-                      <div className="text-center border rounded-xl p-8 bg-gradient-to-r from-gray-50 to-blue-50">
-                        <h3 className="text-xl font-bold text-gray-900 mb-3">{productFramework.final_cta.section_title || 'Ready to take the next step?'}</h3>
-                        <Button className="text-white px-6 py-2 text-sm sm:text-base" style={{ backgroundColor: '#004182' }} size="sm">
-                          {productFramework.final_cta.cta_button}
-                        </Button>
-                      </div>
-                    </section>
-                  )
-                ) : (
-                  generatedLandingCopy.cta && (
-                    <section className="mx-auto max-w-5xl px-4 py-12">
-                      <div className="text-center border rounded-xl p-8 bg-gradient-to-r from-gray-50 to-blue-50">
-                        <h3 className="text-xl font-bold text-gray-900 mb-3">Ready to take the next step?</h3>
-                        <Button className="text-white px-6 py-2 text-sm sm:text-base" style={{ backgroundColor: '#004182' }} size="sm">
-                          {generatedLandingCopy.cta}
-                        </Button>
-                      </div>
-                    </section>
-                  )
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );

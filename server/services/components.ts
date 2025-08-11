@@ -293,9 +293,9 @@ export function buildLandingPageFrameworksSection(trainingConfig: TrainingConfig
   Use these proven frameworks to structure compelling landing page copy:
   ${frameworks.map(framework => `
   • ${framework.name}: ${framework.description}
-    Content Sequence: ${framework.contentSequence.join(' → ')}
-    Reason Structure: ${framework.reasonStructure.join(', ')}
-    Optimization Rules: ${framework.optimizationRules.join('; ')}
+    Content Sequence: ${framework.contentSequence}
+    Reason Structure: ${framework.reasonStructure}
+    Optimization Rules: ${framework.optimizationRules}
     ${framework.realExamples && framework.realExamples.length > 0 ? `Examples: ${framework.realExamples.slice(0, 2).join(', ')}` : ''}
     ${framework.outputRequirements ? `Output Requirements: ${framework.outputRequirements}` : ''}
     ${framework.systemPrompt ? `System Prompt: ${framework.systemPrompt}` : ''}`).join('')}
@@ -398,13 +398,14 @@ export function buildSelectedLandingPageFrameworksSection(
 
   return `
   ${frameworks.map(framework => `
-  ${framework.name}: ${framework.description}
-    Content Sequence: ${framework.contentSequence.join(' → ')}
-    Reason Structure: ${framework.reasonStructure.join(', ')}
-    Optimization Rules: ${framework.optimizationRules.join('; ')}
-    ${framework.systemPrompt ? `System Prompt: ${framework.systemPrompt}` : ''}
-    ${framework.realExamples && framework.realExamples.length > 0 ? `Examples: ${framework.realExamples.slice(0, 2).join(', ')}` : ''}
-    ${framework.outputRequirements ? `CRITICAL OUTPUT REQUIREMENTS: ${framework.outputRequirements}` : ''}
+Name: ${framework.name}
+Description: ${framework.description}
+Content Sequence: ${framework.contentSequence}
+Reason Structure: ${framework.reasonStructure}
+Optimization Rules: ${framework.optimizationRules}
+${framework.systemPrompt ? `System Prompt: ${framework.systemPrompt}` : ''}
+${framework.realExamples && framework.realExamples.length > 0 ? `Examples: ${framework.realExamples.slice(0, 2).join(', ')}` : ''}
+${framework.outputRequirements ? `CRITICAL OUTPUT REQUIREMENTS: ${framework.outputRequirements}` : ''}
     `).join('')}
     `;
 }

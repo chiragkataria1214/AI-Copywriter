@@ -34,6 +34,8 @@ import {
 import React, { useState } from 'react';
 import { ProductSelection } from '@/components/common/ProductSelection';
 import { TargetPersona } from '@/components/common/TargetPersona';
+import { StandardizedDebugButton } from '@/components/common/StandardizedDebugButton';
+import { STATION_KEYS } from '@/hooks/generation/useDebugInfo';
 import { BRAND_NAME } from '@shared/constants';
 import {
     Tooltip,
@@ -82,12 +84,10 @@ interface StaticAdTabProps {
             frameworks?: string[];
         };
     };
-    staticAdDebugInfo?: {
-        systemPrompt: string;
-        userPrompt: string;
-        requestPayload: any;
-        rawResponse: string;
-    } | null;
+    debugInfoManager?: {
+        getDebugInfo: (stationKey: string) => any;
+        setDebugInfo: (stationKey: string, debugInfo: any) => void;
+    };
     setSelectedItemForRevision?: (value: any) => void;
     setShowRevisionPanel?: (value: boolean) => void;
 }
@@ -115,7 +115,7 @@ export const StaticAdTab = ({
     stationPrompts,
     brandGuidelines,
     copyFrameworks,
-    staticAdDebugInfo,
+    debugInfoManager,
     setSelectedItemForRevision,
     setShowRevisionPanel
 }: StaticAdTabProps) => {
@@ -374,18 +374,36 @@ export const StaticAdTab = ({
                                                             <Target className="text-jones-primary mr-2 sm:mr-3" size={18} />
                                                             Ad Analysis
                                                         </h3>
-                                                        <div className="flex items-center space-x-2">
+                                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    setSelectedItemForRevision?.({
+                                                                        type: 'staticAd',
+                                                                        content: {
+                                                                            analysis: parsedResult.analysis
+                                                                        }
+                                                                    });
+                                                                    setShowRevisionPanel?.(true);
+                                                                }}
+                                                                className="w-full sm:w-auto text-xs"
+                                                            >
+                                                                <Target size={14} className="mr-1" />
+                                                                <span>Improve</span>
+                                                            </Button>
                                                             <TooltipProvider>
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
                                                                         <Button
                                                                             variant="outline"
-                                                                            size="icon"
+                                                                            size="sm"
                                                                             onClick={() => handleCopyToClipboard(parsedResult.analysis, 'analysis')}
-                                                                            className="w-full sm:w-auto"
+                                                                            className="w-full sm:w-auto text-xs"
                                                                             disabled={copiedStates['analysis']}
                                                                         >
-                                                                            {copiedStates['analysis'] ? <Check size={16} /> : <Copy size={16} />}
+                                                                            {copiedStates['analysis'] ? <Check size={14} /> : <Copy size={14} />}
+                                                                            <span className="ml-1 hidden sm:inline">Copy</span>
                                                                         </Button>
                                                                     </TooltipTrigger>
                                                                     <TooltipContent>
@@ -393,28 +411,20 @@ export const StaticAdTab = ({
                                                                     </TooltipContent>
                                                                 </Tooltip>
                                                             </TooltipProvider>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => {
-                                                                    setCurrentGenerationMetadata?.({
-                                                                        stationName: 'Static Ad Analysis',
-                                                                        timestamp: new Date().toISOString(),
-                                                                        modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
-                                                                        temperature: modelSettings?.temperature || 0.7,
-                                                                        maxTokens: modelSettings?.maxTokens || 2000,
-                                                                        systemPrompt: staticAdDebugInfo?.systemPrompt || stationPrompts?.staticAd?.systemPrompt || `Expert static ad analyzer for ${BRAND_NAME}...`,
-                                                                        userPrompt: staticAdDebugInfo?.userPrompt || `Analysis Focus: ${analysisFocus}\nOutput Format: ${outputFormat}\nTarget Persona: ${persona}\nSelected Products: ${selectedProducts.join(', ')}`,
-                                                                        requestPayload: staticAdDebugInfo?.requestPayload,
-                                                                        rawResponse: staticAdDebugInfo?.rawResponse
-                                                                    });
-                                                                    setShowGenerationDetails?.(true);
+                                                            <StandardizedDebugButton
+                                                                stationKey={STATION_KEYS.STATIC_AD}
+                                                                stationName="Static Ad Analysis"
+                                                                fallbackPrompts={{
+                                                                    systemPrompt: stationPrompts?.staticAd?.systemPrompt || `Expert static ad analyzer for ${BRAND_NAME}...`,
+                                                                    userPrompt: `Analysis Focus: ${analysisFocus}\nOutput Format: ${outputFormat}\nTarget Persona: ${persona}\nSelected Products: ${selectedProducts.join(', ')}`
                                                                 }}
-                                                                className="flex items-center space-x-1 text-xs"
-                                                            >
-                                                                <Eye size={14} />
-                                                                <span>View Details</span>
-                                                            </Button>
+                                                                modelSettings={modelSettings}
+                                                                setCurrentGenerationMetadata={setCurrentGenerationMetadata!}
+                                                                setShowGenerationDetails={setShowGenerationDetails!}
+                                                                className="w-full sm:w-auto text-xs"
+                                                                size="sm"
+                                                                debugInfoManager={debugInfoManager}
+                                                            />
                                                         </div>
                                                     </div>
 
@@ -436,23 +446,24 @@ export const StaticAdTab = ({
                                                             <Sparkles className="text-jones-primary mr-2 sm:mr-3" size={18} />
                                                             Copy Variations ({parsedResult.variations.length})
                                                         </h3>
-                                                        <div className="flex items-center space-x-2">
+                                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
                                                           <TooltipProvider>
                                                             <Tooltip>
                                                               <TooltipTrigger asChild>
                                                                 <Button
                                                                     variant="outline"
-                                                                    size="icon"
+                                                                    size="sm"
                                                                     onClick={() => {
                                                                         const allVariations = parsedResult.variations.map((v: any, i: number) => 
                                                                             `VARIATION ${i + 1} (${v.framework || 'Framework'}):\n\nHeadline: ${v.headline}\n\n${v.primaryText}`
                                                                         ).join('\n\n---\n\n');
                                                                         handleCopyToClipboard(allVariations, 'all-variations');
                                                                     }}
-                                                                    className="w-full sm:w-auto"
+                                                                    className="w-full sm:w-auto text-xs"
                                                                     disabled={copiedStates['all-variations']}
                                                                 >
-                                                                    {copiedStates['all-variations'] ? <Check size={16} /> : <Copy size={16} />}
+                                                                    {copiedStates['all-variations'] ? <Check size={14} /> : <Copy size={14} />}
+                                                                    <span className="ml-1 hidden sm:inline">Copy All</span>
                                                                 </Button>
                                                               </TooltipTrigger>
                                                               <TooltipContent>
@@ -477,48 +488,29 @@ export const StaticAdTab = ({
                                                                             </Badge>
                                                                         )}
                                                                     </div>
-                                                                    <div className="flex items-center space-x-1">
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="sm"
-                                                                            onClick={() => {
-                                                                                setSelectedItemForRevision?.({
-                                                                                    type: 'staticAd',
-                                                                                    index,
-                                                                                    content: {
-                                                                                        headline: variation.headline,
-                                                                                        primaryText: variation.primaryText,
-                                                                                    },
-                                                                                });
-                                                                                setShowRevisionPanel?.(true);
-                                                                            }}
-                                                                            className="h-8 px-2"
-                                                                            title="Improve"
-                                                                        >
-                                                                            <Target size={14} />
-                                                                        </Button>
-                                                                        <TooltipProvider>
-                                                                          <Tooltip>
-                                                                            <TooltipTrigger asChild>
-                                                                              <Button
-                                                                                  variant="ghost"
-                                                                                  size="sm"
-                                                                                  onClick={() => {
-                                                                                      const variationText = `Headline: ${variation.headline}\n\n${variation.primaryText}`;
-                                                                                      handleCopyToClipboard(variationText, `variation-${index + 1}`);
-                                                                                  }}
-                                                                                  className="h-8 px-2"
-                                                                                  disabled={copiedStates[`variation-${index + 1}`]}
-                                                                              >
-                                                                                  {copiedStates[`variation-${index + 1}`] ? <Check size={14} /> : <Copy size={14} />}
-                                                                              </Button>
-                                                                            </TooltipTrigger>
-                                                                            <TooltipContent>
-                                                                              {copiedStates[`variation-${index + 1}`] ? 'Copied' : 'Copy'}
-                                                                            </TooltipContent>
-                                                                          </Tooltip>
-                                                                        </TooltipProvider>
-                                                                    </div>
+                                                                                                                                                                                            <div className="flex items-center">
+                                                        <TooltipProvider>
+                                                          <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                              <Button
+                                                                  variant="ghost"
+                                                                  size="sm"
+                                                                  onClick={() => {
+                                                                      const variationText = `Headline: ${variation.headline}\n\n${variation.primaryText}`;
+                                                                      handleCopyToClipboard(variationText, `variation-${index + 1}`);
+                                                                  }}
+                                                                  className="w-full sm:w-auto text-xs px-2"
+                                                                  disabled={copiedStates[`variation-${index + 1}`]}
+                                                              >
+                                                                  {copiedStates[`variation-${index + 1}`] ? <Check size={14} /> : <Copy size={14} />}
+                                                              </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                              {copiedStates[`variation-${index + 1}`] ? 'Copied' : 'Copy'}
+                                                            </TooltipContent>
+                                                          </Tooltip>
+                                                        </TooltipProvider>
+                                                    </div>
                                                                 </div>
                                                                 
                                                                 <div className="space-y-3">
@@ -581,29 +573,21 @@ export const StaticAdTab = ({
                                                             </TooltipContent>
                                                         </Tooltip>
                                                     </TooltipProvider>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        disabled={!staticAdAnalysis}
-                                                        onClick={() => {
-                                                            setCurrentGenerationMetadata?.({
-                                                                stationName: 'Static Ad Analysis',
-                                                                timestamp: new Date().toISOString(),
-                                                                modelUsed: modelSettings?.model || 'Claude Sonnet 4.0',
-                                                                temperature: modelSettings?.temperature || 0.7,
-                                                                maxTokens: modelSettings?.maxTokens || 2000,
-                                                                systemPrompt: staticAdDebugInfo?.systemPrompt || stationPrompts?.staticAd?.systemPrompt || `Expert static ad analyzer for ${BRAND_NAME}...`,
-                                                                userPrompt: staticAdDebugInfo?.userPrompt || `Analysis Focus: ${analysisFocus}\nOutput Format: ${outputFormat}\nTarget Persona: ${persona}\nSelected Products: ${selectedProducts.join(', ')}`,
-                                                                requestPayload: staticAdDebugInfo?.requestPayload,
-                                                                rawResponse: staticAdDebugInfo?.rawResponse
-                                                            });
-                                                            setShowGenerationDetails?.(true);
+                                                    <StandardizedDebugButton
+                                                        stationKey={STATION_KEYS.STATIC_AD}
+                                                        stationName="Static Ad Analysis"
+                                                        fallbackPrompts={{
+                                                            systemPrompt: stationPrompts?.staticAd?.systemPrompt || `Expert static ad analyzer for ${BRAND_NAME}...`,
+                                                            userPrompt: `Analysis Focus: ${analysisFocus}\nOutput Format: ${outputFormat}\nTarget Persona: ${persona}\nSelected Products: ${selectedProducts.join(', ')}`
                                                         }}
+                                                        modelSettings={modelSettings}
+                                                        setCurrentGenerationMetadata={setCurrentGenerationMetadata!}
+                                                        setShowGenerationDetails={setShowGenerationDetails!}
+                                                        disabled={!staticAdAnalysis}
                                                         className="flex items-center space-x-1 text-xs"
-                                                    >
-                                                        <Eye size={14} />
-                                                        <span>View Details</span>
-                                                    </Button>
+                                                        size="sm"
+                                                        debugInfoManager={debugInfoManager}
+                                                    />
                                                 </div>
                                             </div>
 

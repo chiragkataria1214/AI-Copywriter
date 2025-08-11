@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { toast } from '@/hooks/utils/useToast';
 import { TrainingConfig } from '@shared/training-config';
@@ -11,7 +11,13 @@ export const useTrainingConfiguration = () => {
   const [editingConfig, setEditingConfig] = useState<TrainingConfig | null>(null);
   const [newProductName, setNewProductName] = useState('');
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
-  const [reviewStats, setReviewStats] = useState<any>(null);
+  
+  // Fetch review stats
+  const { data: reviewStats } = useQuery({
+    queryKey: ['/api/reviews/stats'],
+    queryFn: () => apiRequest('/api/reviews/stats'),
+    retry: false,
+  });
 
   const loadTrainingConfigMutation = useMutation({
     mutationFn: async () => apiRequest('/api/training-config'),
@@ -238,7 +244,6 @@ export const useTrainingConfiguration = () => {
     expandedProducts,
     setExpandedProducts,
     reviewStats,
-    setReviewStats,
     
     // Mutations
     loadTrainingConfigMutation,
